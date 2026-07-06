@@ -174,6 +174,67 @@ homework. This revision keeps the depth but cuts the mental math.
   clear locked state per shelf. Simulated win rate ≈ **98/80/63%** easy/med/hard
   — easy stays forgiving, hard genuinely depends on unlocking shelves.
 
+## Design revision v3 — Cauldron‑First pivot (⏳ NEXT, supersedes the shop)
+
+**Why.** Playtesting showed the shop isn't a real decision: you're told the need,
+you grab matching ingredients, done. The genuinely good moments live in the
+**cauldron** (limited slots, hidden effects, allergy, stop‑or‑risk) and in the
+**reveal timer**. So we remove the shop and make the cauldron the whole game.
+
+**New loop:** Start → Customer → **Scoop** (how big is my haul) → **Pop** (draft a
+random‑but‑fair hand of ingredients + the occasional special charm) → **Cauldron**
+(choose what to use, play charms, race the reveal timer, dodge the allergy, decide
+when to stop) → Result.
+
+### What's removed
+- The **Shop phase**, **charms‑as‑currency**, **shelves**, **shelf‑keys**, the
+  **reroll**, and the Toad's shop grab/key‑find. "Bonus Gift" upgrade retires
+  (every pop already gives an ingredient); "Undo" becomes a special charm.
+
+### What's new
+- **Pop → ingredients.** Each pop yields an **ingredient** (dupes possible), with
+  the occasional **special charm**, gold, or treat mixed in. Drops are **biased
+  toward the customer's needs** so a hand is always attemptable (no impossible
+  rounds), and the hand is a **surplus** (more ingredients than slots) so the real
+  decision is *what to leave out* and *when to stop*.
+- **Special charms** — a small set (~4–5) of clear, mostly‑deterministic power‑ups
+  you pop from bubbles and **play in the cauldron** (a little tray; tap to use):
+  🧹 **Cleanse** (allergy meter down) · 🔍 **Insight** (reveal an ingredient's
+  hidden effects) · ✨ **Potent** (next ingredient counts double) · ⏭️ **Peek**
+  (reveal the next need now) · 🌈 **Wild** (one mystery/gamble). These are the main
+  new source of cauldron depth.
+- **Reveal timer moves into the cauldron.** Main need shown immediately; second /
+  final needs reveal over a short timer. **Quick‑Service Tip:** if you **serve
+  early** (before the needs finish revealing) **and the potion meets or exceeds the
+  required match**, you earn a **gold tip** (bigger the earlier you serve). Miss the
+  match → no tip. Potion is scored against *all* needs at serve, revealed or not —
+  so serving early is a real gamble that your mix already covers the hidden needs.
+- **Trim ingredients ~40 → ~20**, keeping ≥1–2 whose *main* magic is each type
+  (for winnable biased hands). Fewer, more memorable ingredients → players learn
+  them, and duplicates come up more often (feeds triple‑match/Potent).
+
+### What's kept
+Allergies, partial credit ("So Close!"), triple‑match → Potent, hidden secondaries,
+needs weighting (40/30/30…), difficulty ramp incl. veryhard, the Shop & Upgrades
+**menu** (treats, Toad upgrades, daily gift), and the gold economy (gold still buys
+treats/upgrades — it just no longer buys ingredients). **Better Scoop** upgrade
+still applies (more bubbles = more ingredients).
+
+### Build order (each step testable)
+1. **C1 – Data:** trim ingredient library to ~20 (keep per‑type main coverage);
+   define the special‑charm set; retire the charm‑currency object.
+2. **C2 – Flow:** delete the shop screen; make Pop grant ingredients (biased,
+   dupes) + special charms; route Pop → Cauldron directly.
+3. **C3 – Cauldron:** move the reveal timer here + Quick‑Service Tip; add the
+   special‑charm tray and effects; keep allergy/partial/triple/stop‑or‑risk.
+4. **C4 – Cleanup & balance:** retire shelves/keys/reroll/shop‑Toad; rework the
+   Toad upgrades & menu copy; re‑simulate hand fairness, tip economy, win curve.
+
+**Success test:** a round is a real decision (surplus hand, leave‑outs, charm
+timing, serve‑early gamble), always attemptable, and faster than the shop loop.
+
+---
+
 ## Phase 5 — Magic Allergy system — ✅ DONE
 Hard customers may be **allergic** to a magic type (never one of their needs;
 themed per customer where defined). A live **allergy meter** in the cauldron
