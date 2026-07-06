@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#2a1a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Wish Pop: Bubble Shop</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%;
+    margin: 0; overflow: hidden;
+    overscroll-behavior: none;
+    background: #1a0f30;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  #wrap {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 20%, #3a2166 0%, #1a0f30 70%);
+  }
+  canvas {
+    display: block;
+    touch-action: none;
+    /* fills available space, aspect preserved in JS layout */
+  }
+  /* Landscape nudge */
+  #rotate {
+    position: fixed; inset: 0; z-index: 50;
+    display: none;
+    align-items: center; justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    background: linear-gradient(160deg, #2a1a4a, #150a28);
+    color: #ffe9ff; padding: 24px;
+  }
+  #rotate .emoji { font-size: 64px; margin-bottom: 16px; animation: spin 2.5s ease-in-out infinite; }
+  #rotate h2 { font-size: 22px; margin-bottom: 8px; }
+  #rotate p { font-size: 15px; opacity: .8; max-width: 320px; line-height: 1.5; }
+  @keyframes spin { 0%,100%{transform:rotate(0)} 50%{transform:rotate(-90deg)} }
+  @media (orientation: landscape) and (max-height: 520px) {
+    #rotate { display: flex; }
+    #wrap { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game"></canvas></div>
+<div id="rotate">
+  <div class="emoji">📱</div>
+  <h2>Please rotate to portrait</h2>
+  <p>Wish Pop is played holding your phone upright. Turn it back to keep making wishes come true!</p>
+</div>
+
+<script>
+(function () {
+"use strict";
+
+// ---------------------------------------------------------------------------
+// Wish Pop: Bubble Shop
+// A cozy portrait potion-matching game. Fairytale customers arrive with a wish;
+// tap bubbles & charms to match their recipe before their patience runs out.
+// ---------------------------------------------------------------------------
+
+const VW = 450, VH = 800;              // virtual portrait resolution
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let scale = 1, offX = 0, offY = 0, dpr = 1;
+
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  const availW = window.innerWidth;
+  const availH = window.innerHeight;
+  scale = Math.min(availW / VW, availH / VH);
+  const cssW = VW * scale, cssH = VH * scale;
+  offX = (availW - cssW) / 2;
+  offY = (availH - cssH) / 2;
+  canvas.style.width = cssW + "px";
+  canvas.style.height = cssH + "px";
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+}
+window.addEventListener("resize", resize);
+window.addEventListener("orientationchange", () => setTimeout(resize, 120));
+resize();
+
+// ---- Input --------------------------------------------------------------
+const pointer = { x: -1, y: -1, down: false, tapped: false };
+function toVirtual(clientX, clientY) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: (clientX - r.left) / r.width * VW,
+    y: (clientY - r.top) / r.height * VH
+  };
+}
+function onDown(x, y) {
+  const p = toVirtual(x, y);
+  pointer.x = p.x; pointer.y = p.y; pointer.down = true; pointer.tapped = true;
+  ensureAudio();
+}
+function onUp() { pointer.down = false; }
+canvas.addEventListener("touchstart", e => { e.preventDefault(); const t = e.changedTouches[0]; onDown(t.clientX, t.clientY); }, { passive: false });
+canvas.addEventListener("touchend", e => { e.preventDefault(); onUp(); }, { passive: false });
+canvas.addEventListener("touchcancel", e => { e.preventDefault(); onUp(); }, { passive: false });
+canvas.addEventListener("mousedown", e => onDown(e.clientX, e.clientY));
+window.addEventListener("mouseup", onUp);
+
+// ---- Audio (tiny WebAudio blips) ---------------------------------------
+let actx = null, muted = false;
+function ensureAudio() {
+  if (actx) { if (actx.state === "suspended") actx.resume(); return; }
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; }
+}
+function beep(freq, dur, type, vol) {
+  if (!actx || muted) return;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type || "sine"; o.frequency.value = freq;
+  g.gain.value = vol || 0.06;
+  o.connect(g); g.connect(actx.destination);
+  const t = actx.currentTime;
+  g.gain.setValueAtTime(g.gain.value, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.start(t); o.stop(t + dur);
+}
+function sPop()    { beep(520 + Math.random()*120, 0.12, "sine", 0.05); }
+function sAdd()    { beep(660, 0.09, "triangle", 0.045); }
+function sGood()   { [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,0.16,"sine",0.06),i*70)); }
+function sBad()    { beep(180, 0.25, "sawtooth", 0.05); }
+function sCoin()   { beep(880,0.07,"square",0.03); setTimeout(()=>beep(1180,0.09,"square",0.03),60); }
+
+// ---- Deterministic-ish helpers -----------------------------------------
+function rand(a, b) { return a + Math.random() * (b - a); }
+function choice(arr) { return arr[(Math.random() * arr.length) | 0]; }
+function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+// ---- Ingredients --------------------------------------------------------
+// Bubbles are glossy colored circles; charms render as emoji.
+const INGREDIENTS = [
+  { id: "pink",   kind: "bubble", color: "#ff7eb9", light: "#ffd6ea", name: "Love"    },
+  { id: "blue",   kind: "bubble", color: "#6db8ff", light: "#cfeaff", name: "Calm"    },
+  { id: "gold",   kind: "bubble", color: "#ffcf5c", light: "#fff0c2", name: "Fortune" },
+  { id: "green",  kind: "bubble", color: "#7ee08a", light: "#d4f8d9", name: "Luck"    },
+  { id: "purple", kind: "bubble", color: "#c48bff", light: "#ecd8ff", name: "Magic"   },
+  { id: "star",   kind: "charm",  color: "#ffe36b", emoji: "⭐", name: "Star"  },
+  { id: "moon",   kind: "charm",  color: "#bcd0ff", emoji: "🌙", name: "Moon"  },
+];
+const ING_BY_ID = {}; INGREDIENTS.forEach(i => ING_BY_ID[i.id] = i);
+
+// Customers (fairytale folk) + wish flavor lines
+const CUSTOMERS = [
+  { emoji: "🧚", name: "Thistle the Fairy" },
+  { emoji: "🧜‍♀️", name: "Coral the Mermaid" },
+  { emoji: "🐸", name: "Prince Ribbit" },
+  { emoji: "👸", name: "Princess Mae" },
+  { emoji: "🧙", name: "Old Wizard Fen" },
+  { emoji: "🦄", name: "Sparkle the Unicorn" },
+  { emoji: "🧞", name: "Genie Zim" },
+  { emoji: "🐺", name: "Mr. Wolfe" },
+  { emoji: "🦉", name: "Professor Hoot" },
+  { emoji: "🧝‍♀️", name: "Elowen the Elf" },
+];
+const WISHES = [
+  "I wish for true love!", "Grant me good fortune!", "I long for sweet dreams…",
+  "Make me lucky today!", "I wish to feel calm.", "Fill my heart with magic!",
+  "A wish upon a star, please!", "Bubble me something wonderful!",
+  "I need a little sparkle.", "Brew me pure joy!",
+];
+
+// ---- Game state ---------------------------------------------------------
+let state = "menu"; // menu | playing | gameover
+let best = +(localStorage.getItem("wishpop_best") || 0);
+
+const game = {
+  score: 0, coins: 0, hearts: 3, day: 1, servedToday: 0, servedTotal: 0,
+  combo: 0,
+  customer: null,       // {def, wish, recipe:[ids], patience, patienceMax}
+  cauldron: [],         // ids the player has added
+  palette: [],          // ingredient ids available on the bar
+  shake: 0, flash: 0, flashColor: "#ff5a5a",
+  intro: 0,             // customer entrance animation timer
+};
+
+function paletteForDay(day) {
+  let n = 3;
+  if (day >= 2) n = 4;
+  if (day >= 3) n = 5;
+  if (day >= 4) n = 6;
+  if (day >= 5) n = 7;
+  return INGREDIENTS.slice(0, n).map(i => i.id);
+}
+function recipeLenForDay(day) {
+  const base = 2 + Math.floor((day - 1) / 1.5);
+  return clamp(base, 2, 5);
+}
+function secPerItem(day) { return Math.max(2.4, 4.2 - day * 0.22); }
+
+function newCustomer() {
+  game.palette = paletteForDay(game.day);
+  const len = recipeLenForDay(game.day);
+  const recipe = [];
+  for (let i = 0; i < len; i++) recipe.push(choice(game.palette));
+  const pMax = len * secPerItem(game.day);
+  game.customer = {
+    def: choice(CUSTOMERS),
+    wish: choice(WISHES),
+    recipe,
+    patience: pMax,
+    patienceMax: pMax,
+    mood: "wait", // wait | happy | angry
+    moodT: 0,
+  };
+  game.cauldron = [];
+  game.intro = 1;
+}
+
+function startGame() {
+  game.score = 0; game.coins = 0; game.hearts = 3; game.day = 1;
+  game.servedToday = 0; game.servedTotal = 0; game.combo = 0;
+  game.shake = 0; game.flash = 0;
+  particles.length = 0; floaters.length = 0;
+  newCustomer();
+  state = "playing";
+}
+
+function multisetEqual(a, b) {
+  if (a.length !== b.length) return false;
+  const count = {};
+  a.forEach(x => count[x] = (count[x] || 0) + 1);
+  for (const x of b) { if (!count[x]) return false; count[x]--; }
+  return true;
+}
+
+function addToCauldron(id) {
+  if (game.cauldron.length >= 6) return;
+  game.cauldron.push(id);
+  sAdd();
+  const pos = cauldronSlotPos(game.cauldron.length - 1, game.cauldron.length);
+  for (let i = 0; i < 5; i++) spawnParticle(pos.x, pos.y, ING_BY_ID[id].color, 0.6);
+}
+
+function serve() {
+  if (!game.customer || game.cauldron.length === 0) return;
+  const c = game.customer;
+  if (multisetEqual(game.cauldron, c.recipe)) {
+    // success!
+    game.combo++;
+    const mult = 1 + Math.min(game.combo - 1, 6) * 0.25;
+    const patienceBonus = Math.round((c.patience / c.patienceMax) * 60);
+    const gained = Math.round((40 * c.recipe.length + patienceBonus) * mult);
+    const coins = 4 + c.recipe.length + Math.floor(game.combo / 2);
+    game.score += gained;
+    game.coins += coins;
+    c.mood = "happy"; c.moodT = 0;
+    sGood(); sCoin();
+    burstHearts(VW / 2, 150);
+    for (let i = 0; i < 26; i++) spawnParticle(VW/2, 430, choice(["#ffd86b","#ff7eb9","#c48bff","#7ee08a"]), 1.2);
+    addFloater(VW/2, 400, "+" + gained, "#fff3a8");
+    addFloater(VW/2, 360, (game.combo > 1 ? "COMBO x" + game.combo + "!" : "Wish granted!"), "#ffd6ea");
+    game.servedToday++; game.servedTotal++;
+    // advance day every 5 served
+    if (game.servedToday >= 5) { game.servedToday = 0; game.day++; addFloater(VW/2, 300, "Day " + game.day + "!", "#9be7ff"); }
+    setTimeout(() => { if (state === "playing") newCustomer(); }, 850);
+    game.customer._done = true;
+  } else {
+    // wrong mix
+    game.combo = 0;
+    game.shake = 0.5;
+    game.flash = 0.4; game.flashColor = "#ff5a5a";
+    c.patience = Math.max(0, c.patience - 2.2);
+    c.mood = "angry"; c.moodT = 0;
+    sBad();
+    game.cauldron = [];
+    addFloater(VW/2, 400, "Not quite!", "#ff9a9a");
+  }
+}
+
+function clearCauldron() {
+  if (game.cauldron.length === 0) return;
+  game.cauldron = [];
+  sPop();
+}
+
+function customerTimeout() {
+  const c = game.customer;
+  c.mood = "angry"; c.moodT = 0;
+  game.combo = 0;
+  game.hearts--;
+  game.shake = 0.4;
+  game.flash = 0.35; game.flashColor = "#ff5a5a";
+  sBad();
+  addFloater(VW/2, 150, "😢 left unhappy", "#ffb3b3");
+  c._done = true;
+  if (game.hearts <= 0) {
+    setTimeout(() => { endGame(); }, 700);
+  } else {
+    setTimeout(() => { if (state === "playing") newCustomer(); }, 800);
+  }
+}
+
+function endGame() {
+  state = "gameover";
+  if (game.score > best) { best = game.score; localStorage.setItem("wishpop_best", best); }
+}
+
+// ---- Particles & floaters ----------------------------------------------
+const particles = [];
+function spawnParticle(x, y, color, power) {
+  particles.push({
+    x, y,
+    vx: rand(-1, 1) * 120 * (power || 1),
+    vy: rand(-1.6, -0.2) * 120 * (power || 1),
+    life: 1, decay: rand(0.8, 1.6),
+    r: rand(3, 7), color
+  });
+}
+const floaters = [];
+function addFloater(x, y, text, color) {
+  floaters.push({ x, y, text, color, life: 1 });
+}
+const heartParts = [];
+function burstHearts(x, y) {
+  for (let i = 0; i < 6; i++) heartParts.push({ x: x + rand(-40,40), y, vy: rand(-40,-70), life: 1 });
+}
+
+// ---- Layout regions -----------------------------------------------------
+const SAFE_TOP = 0;   // safe-area handled by canvas centering already
+// HUD:        y 0..56
+// Customer:   y 56..330
+// Cauldron:   y 330..560  (serve/clear buttons y 470..540)
+// Palette:    y 560..800
+
+function cauldronSlotPos(i, total) {
+  const cx = VW / 2, cy = 415;
+  const spread = Math.min(56, 300 / Math.max(total, 1));
+  const startX = cx - (total - 1) * spread / 2;
+  return { x: startX + i * spread, y: cy };
+}
+
+// Palette button geometry
+function paletteButtons() {
+  const ids = game.palette;
+  const cols = Math.min(ids.length, 4);
+  const rows = Math.ceil(ids.length / 4);
+  const areaY = 590, areaH = 190;
+  const btnR = 34;
+  const gapX = VW / (cols + 1);
+  const btns = [];
+  ids.forEach((id, idx) => {
+    const row = Math.floor(idx / 4);
+    const col = idx % 4;
+    const rowCount = (row === rows - 1) ? (ids.length - row * 4) : 4;
+    const gx = VW / (rowCount + 1);
+    const x = gx * (col + 1);
+    const y = areaY + row * 92 + 40;
+    btns.push({ id, x, y, r: btnR });
+  });
+  return btns;
+}
+
+// Buttons (serve / clear)
+const serveBtn = { x: VW/2 + 78, y: 505, w: 130, h: 54 };
+const clearBtn = { x: VW/2 - 78, y: 505, w: 130, h: 54 };
+
+function inRect(px, py, r) {
+  return px >= r.x - r.w/2 && px <= r.x + r.w/2 && py >= r.y - r.h/2 && py <= r.y + r.h/2;
+}
+function inCircle(px, py, cx, cy, cr) {
+  const dx = px - cx, dy = py - cy; return dx*dx + dy*dy <= cr*cr;
+}
+
+// ---- Update -------------------------------------------------------------
+let lastT = performance.now();
+function update(dt) {
+  // decay effects
+  game.shake = Math.max(0, game.shake - dt * 1.6);
+  game.flash = Math.max(0, game.flash - dt * 1.2);
+  game.intro = Math.max(0, game.intro - dt * 2.2);
+
+  // particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 320 * dt;
+    p.life -= p.decay * dt;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i]; f.y -= 34 * dt; f.life -= dt * 0.9;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
+  for (let i = heartParts.length - 1; i >= 0; i--) {
+    const h = heartParts[i]; h.y += h.vy * dt; h.vy += 12 * dt; h.life -= dt * 0.8;
+    if (h.life <= 0) heartParts.splice(i, 1);
+  }
+  bgBubblesUpdate(dt);
+
+  if (state === "playing" && game.customer && !game.customer._done) {
+    const c = game.customer;
+    if (c.mood !== "angry") {
+      c.patience -= dt;
+      if (c.patience <= 0) { c.patience = 0; customerTimeout(); }
+    }
+    c.moodT += dt;
+  }
+
+  // input handling
+  if (pointer.tapped) {
+    pointer.tapped = false;
+    handleTap(pointer.x, pointer.y);
+  }
+}
+
+function handleTap(x, y) {
+  // mute toggle (top-right corner) works in all states
+  if (x > VW - 44 && y < 44) { muted = !muted; sPop(); return; }
+
+  if (state === "menu") { startGame(); return; }
+  if (state === "gameover") {
+    // play-again button
+    if (inRect(x, y, { x: VW/2, y: 520, w: 220, h: 62 })) startGame();
+    return;
+  }
+  if (state === "playing") {
+    if (game.customer && game.customer._done) return;
+    // palette
+    for (const b of paletteButtons()) {
+      if (inCircle(x, y, b.x, b.y, b.r + 6)) { addToCauldron(b.id); return; }
+    }
+    // serve / clear
+    if (inRect(x, y, serveBtn)) { serve(); return; }
+    if (inRect(x, y, clearBtn)) { clearCauldron(); return; }
+    // tapping an added bubble removes it
+    for (let i = game.cauldron.length - 1; i >= 0; i--) {
+      const pos = cauldronSlotPos(i, game.cauldron.length);
+      if (inCircle(x, y, pos.x, pos.y, 24)) {
+        game.cauldron.splice(i, 1); sPop(); return;
+      }
+    }
+  }
+}
+
+// ---- Background bubbles -------------------------------------------------
+const bgBubbles = [];
+for (let i = 0; i < 16; i++) bgBubbles.push({ x: rand(0,VW), y: rand(0,VH), r: rand(6,22), sp: rand(8,26), a: rand(0.05,0.16) });
+function bgBubblesUpdate(dt) {
+  for (const b of bgBubbles) {
+    b.y -= b.sp * dt;
+    b.x += Math.sin(b.y * 0.02) * 6 * dt;
+    if (b.y < -30) { b.y = VH + 30; b.x = rand(0, VW); }
+  }
+}
+
+// ---- Rendering ----------------------------------------------------------
+function drawBubble(x, y, r, color, light, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha == null ? 1 : alpha;
+  const g = ctx.createRadialGradient(x - r*0.3, y - r*0.35, r*0.1, x, y, r);
+  g.addColorStop(0, light);
+  g.addColorStop(0.5, color);
+  g.addColorStop(1, shade(color, -0.25));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  // glossy highlight
+  ctx.globalAlpha = (alpha == null ? 1 : alpha) * 0.75;
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.beginPath(); ctx.ellipse(x - r*0.32, y - r*0.38, r*0.22, r*0.13, -0.5, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawCharm(x, y, r, ing, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha == null ? 1 : alpha;
+  // soft glow disc
+  const g = ctx.createRadialGradient(x, y, 1, x, y, r);
+  g.addColorStop(0, "rgba(255,255,255,0.9)");
+  g.addColorStop(0.6, ing.color);
+  g.addColorStop(1, shade(ing.color, -0.3));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  ctx.font = (r*1.1|0) + "px serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(ing.emoji, x, y + r*0.05);
+  ctx.restore();
+}
+function drawIngredient(x, y, r, ing, alpha) {
+  if (ing.kind === "charm") drawCharm(x, y, r, ing, alpha);
+  else drawBubble(x, y, r, ing.color, ing.light, alpha);
+}
+function shade(hex, amt) {
+  let c = hex.replace("#","");
+  if (c.length === 3) c = c.split("").map(ch=>ch+ch).join("");
+  let r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+  r = clamp(Math.round(r + 255*amt),0,255);
+  g = clamp(Math.round(g + 255*amt),0,255);
+  b = clamp(Math.round(b + 255*amt),0,255);
+  return "rgb(" + r + "," + g + "," + b + ")";
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+function draw() {
+  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  // shake
+  let sx = 0, sy = 0;
+  if (game.shake > 0) { sx = rand(-1,1) * game.shake * 8; sy = rand(-1,1) * game.shake * 8; }
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  // background
+  const bg = ctx.createLinearGradient(0, 0, 0, VH);
+  bg.addColorStop(0, "#3a2166");
+  bg.addColorStop(0.5, "#2a1a4a");
+  bg.addColorStop(1, "#160c2c");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, VW, VH);
+  // bg bubbles
+  for (const b of bgBubbles) drawBubble(b.x, b.y, b.r, "#ffffff", "#ffffff", b.a);
+
+  if (state === "menu") drawMenu();
+  else if (state === "playing") drawPlaying();
+  else if (state === "gameover") drawGameOver();
+
+  // particles + floaters (on top)
+  for (const p of particles) {
+    ctx.globalAlpha = clamp(p.life, 0, 1);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * clamp(p.life,0.2,1), 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for (const h of heartParts) {
+    ctx.globalAlpha = clamp(h.life,0,1);
+    ctx.font = "24px serif"; ctx.textAlign = "center";
+    ctx.fillText("💖", h.x, h.y);
+  }
+  ctx.globalAlpha = 1;
+  for (const f of floaters) {
+    ctx.globalAlpha = clamp(f.life,0,1);
+    ctx.font = "bold 26px -apple-system, sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineWidth = 5; ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.strokeText(f.text, f.x, f.y);
+    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // flash overlay
+  if (game.flash > 0) {
+    ctx.fillStyle = game.flashColor;
+    ctx.globalAlpha = game.flash * 0.4;
+    ctx.fillRect(0, 0, VW, VH);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+
+  // mute button (fixed, not shaken)
+  drawMuteButton();
+}
+
+function drawMuteButton() {
+  ctx.font = "22px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.globalAlpha = 0.85;
+  ctx.fillText(muted ? "🔇" : "🔊", VW - 24, 24);
+  ctx.globalAlpha = 1;
+}
+
+function drawTitleText(text, x, y, size, color) {
+  ctx.font = "800 " + size + "px -apple-system, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.lineWidth = size * 0.14; ctx.strokeStyle = "rgba(80,20,90,0.55)";
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color; ctx.fillText(text, x, y);
+}
+
+function drawMenu() {
+  const t = performance.now() / 1000;
+  // floating title bubbles
+  const bob = Math.sin(t * 1.5) * 8;
+  drawBubble(VW/2 - 66, 210 + bob, 30, "#ff7eb9", "#ffd6ea");
+  drawBubble(VW/2, 195 + Math.sin(t*1.5+1)*8, 40, "#c48bff", "#ecd8ff");
+  drawBubble(VW/2 + 70, 214 + Math.sin(t*1.5+2)*8, 28, "#6db8ff", "#cfeaff");
+
+  drawTitleText("Wish Pop", VW/2, 320, 58, "#fff0fb");
+  drawTitleText("Bubble Shop", VW/2, 372, 30, "#ffd6ea");
+
+  ctx.font = "17px -apple-system, sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.82)";
+  ctx.textAlign = "center";
+  ctx.fillText("Fairytale folk arrive with a wish.", VW/2, 430);
+  ctx.fillText("Mix bubbles & charms to match it!", VW/2, 456);
+
+  // play button pulse
+  const pulse = 1 + Math.sin(t * 3) * 0.03;
+  ctx.save();
+  ctx.translate(VW/2, 545); ctx.scale(pulse, pulse);
+  const g = ctx.createLinearGradient(-110, 0, 110, 0);
+  g.addColorStop(0, "#ff7eb9"); g.addColorStop(1, "#c48bff");
+  ctx.fillStyle = g;
+  roundRect(-115, -34, 230, 68, 34); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = "800 26px -apple-system, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("▶  Tap to Play", 0, 2);
+  ctx.restore();
+
+  if (best > 0) {
+    ctx.font = "16px -apple-system, sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.fillText("Best score: " + best, VW/2, 620);
+  }
+  ctx.font = "22px serif";
+  ctx.fillText("🧚 🧜‍♀️ 👸 🦄 🧙", VW/2, 680);
+}
+
+function drawHUD() {
+  // top bar
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  roundRect(10, 10, VW - 20, 42, 14); ctx.fill();
+  ctx.textBaseline = "middle";
+  // hearts
+  ctx.font = "20px serif"; ctx.textAlign = "left";
+  let hs = "";
+  for (let i = 0; i < 3; i++) hs += i < game.hearts ? "❤️" : "🖤";
+  ctx.fillText(hs, 20, 32);
+  // score center
+  ctx.font = "bold 20px -apple-system, sans-serif"; ctx.fillStyle = "#fff";
+  ctx.textAlign = "center";
+  ctx.fillText(game.score.toLocaleString(), VW/2, 31);
+  // coins + day right
+  ctx.font = "15px -apple-system, sans-serif"; ctx.textAlign = "right";
+  ctx.fillStyle = "#ffe08a";
+  ctx.fillText("🪙 " + game.coins + "   Day " + game.day, VW - 56, 31);
+}
+
+function drawPlaying() {
+  drawHUD();
+  const c = game.customer;
+  if (!c) return;
+
+  // --- Customer scene ---
+  const introOff = game.intro * 260; // slide in from right
+  const t = performance.now() / 1000;
+
+  // patience bar
+  const barX = 40, barY = 70, barW = VW - 80, barH = 12;
+  ctx.fillStyle = "rgba(255,255,255,0.15)";
+  roundRect(barX, barY, barW, barH, 6); ctx.fill();
+  const frac = clamp(c.patience / c.patienceMax, 0, 1);
+  const pcol = frac > 0.5 ? "#7ee08a" : frac > 0.25 ? "#ffcf5c" : "#ff6b6b";
+  ctx.fillStyle = pcol;
+  roundRect(barX, barY, Math.max(4, barW * frac), barH, 6); ctx.fill();
+
+  // customer avatar
+  const cx = 92 + introOff, cy = 150;
+  const bounce = c.mood === "happy" ? Math.abs(Math.sin(t*8)) * 10 : (c.mood === "angry" ? Math.sin(t*20)*3 : Math.sin(t*2)*4);
+  ctx.save();
+  ctx.globalAlpha = clamp(1 - game.intro, 0, 1);
+  // pedestal glow
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.beginPath(); ctx.ellipse(cx, cy + 44, 46, 14, 0, 0, Math.PI*2); ctx.fill();
+  ctx.font = "72px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(c.def.emoji, cx, cy - bounce);
+  ctx.restore();
+
+  // speech bubble with wish + recipe
+  const sbX = 160 + introOff, sbY = 96, sbW = VW - sbX - 24, sbH = 118;
+  ctx.save();
+  ctx.globalAlpha = clamp(1 - game.intro, 0, 1);
+  ctx.fillStyle = "rgba(255,255,255,0.96)";
+  roundRect(sbX, sbY, sbW, sbH, 16); ctx.fill();
+  // tail
+  ctx.beginPath();
+  ctx.moveTo(sbX, sbY + 40); ctx.lineTo(sbX - 16, sbY + 54); ctx.lineTo(sbX, sbY + 66);
+  ctx.closePath(); ctx.fill();
+  // name + wish
+  ctx.fillStyle = "#7a3b7a"; ctx.font = "bold 13px -apple-system, sans-serif";
+  ctx.textAlign = "left"; ctx.textBaseline = "top";
+  ctx.fillText(c.def.name, sbX + 14, sbY + 10);
+  ctx.fillStyle = "#4a2a55"; ctx.font = "italic 13px -apple-system, sans-serif";
+  wrapText(c.wish, sbX + 14, sbY + 30, sbW - 28, 16);
+  // recipe icons
+  const rr = 15;
+  const rn = c.recipe.length;
+  const startRX = sbX + 20 + rr;
+  const spread = Math.min(38, (sbW - 40) / rn);
+  for (let i = 0; i < rn; i++) {
+    const ix = startRX + i * spread;
+    drawIngredient(ix, sbY + sbH - 26, rr, ING_BY_ID[c.recipe[i]]);
+  }
+  ctx.restore();
+
+  // --- Cauldron ---
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  // pot
+  const potY = 415;
+  ctx.save();
+  const pg = ctx.createLinearGradient(0, potY - 60, 0, potY + 70);
+  pg.addColorStop(0, "rgba(255,255,255,0.10)");
+  pg.addColorStop(1, "rgba(120,80,180,0.28)");
+  ctx.fillStyle = pg;
+  roundRect(VW/2 - 165, potY - 62, 330, 132, 26); ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.16)"; ctx.lineWidth = 2;
+  roundRect(VW/2 - 165, potY - 62, 330, 132, 26); ctx.stroke();
+  ctx.restore();
+
+  // label
+  ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.font = "13px -apple-system, sans-serif";
+  if (game.cauldron.length === 0) {
+    ctx.fillText("tap bubbles below to add", VW/2, potY);
+  }
+  // added bubbles (with gentle bob)
+  game.cauldron.forEach((id, i) => {
+    const pos = cauldronSlotPos(i, game.cauldron.length);
+    const by = pos.y + Math.sin(t*3 + i) * 3;
+    drawIngredient(pos.x, by, 22, ING_BY_ID[id]);
+  });
+
+  // --- Serve / Clear buttons ---
+  // Clear
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.14)";
+  roundRect(clearBtn.x - clearBtn.w/2, clearBtn.y - clearBtn.h/2, clearBtn.w, clearBtn.h, 16); ctx.fill();
+  ctx.fillStyle = "#ffd6ea"; ctx.font = "bold 18px -apple-system, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("Clear", clearBtn.x, clearBtn.y);
+  ctx.restore();
+  // Serve
+  ctx.save();
+  const ready = game.cauldron.length > 0;
+  const sg = ctx.createLinearGradient(serveBtn.x - 65, 0, serveBtn.x + 65, 0);
+  if (ready) { sg.addColorStop(0, "#7ee08a"); sg.addColorStop(1, "#4fd1c5"); }
+  else { sg.addColorStop(0, "rgba(255,255,255,0.12)"); sg.addColorStop(1, "rgba(255,255,255,0.12)"); }
+  ctx.fillStyle = sg;
+  roundRect(serveBtn.x - serveBtn.w/2, serveBtn.y - serveBtn.h/2, serveBtn.w, serveBtn.h, 16); ctx.fill();
+  ctx.fillStyle = ready ? "#0d2a1a" : "rgba(255,255,255,0.4)";
+  ctx.font = "bold 18px -apple-system, sans-serif";
+  ctx.fillText("✨ Serve", serveBtn.x, serveBtn.y);
+  ctx.restore();
+
+  // combo indicator
+  if (game.combo > 1) {
+    ctx.fillStyle = "#ffd86b"; ctx.font = "bold 15px -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("🔥 Combo x" + game.combo, VW/2, 470);
+  }
+
+  // --- Palette ---
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  roundRect(10, 578, VW - 20, VH - 578 - 12, 18); ctx.fill();
+  for (const b of paletteButtons()) {
+    const ing = ING_BY_ID[b.id];
+    const pressed = pointer.down && inCircle(pointer.x, pointer.y, b.x, b.y, b.r + 6);
+    const rr = pressed ? b.r - 2 : b.r;
+    drawIngredient(b.x, b.y, rr, ing);
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.font = "11px -apple-system, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText(ing.name, b.x, b.y + b.r + 6);
+  }
+}
+
+function wrapText(text, x, y, maxW, lh) {
+  const words = text.split(" ");
+  let line = "", yy = y;
+  for (const w of words) {
+    const test = line + w + " ";
+    if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line, x, yy); line = w + " "; yy += lh; }
+    else line = test;
+  }
+  ctx.fillText(line, x, yy);
+}
+
+function drawGameOver() {
+  const t = performance.now() / 1000;
+  ctx.fillStyle = "rgba(10,4,22,0.55)";
+  ctx.fillRect(0, 0, VW, VH);
+
+  drawTitleText("Shop's Closed", VW/2, 250, 42, "#fff0fb");
+  ctx.font = "22px serif"; ctx.textAlign = "center";
+  ctx.fillText("😴", VW/2, 300);
+
+  ctx.font = "bold 20px -apple-system, sans-serif"; ctx.fillStyle = "#fff";
+  ctx.fillText("Score  " + game.score.toLocaleString(), VW/2, 360);
+  ctx.font = "16px -apple-system, sans-serif"; ctx.fillStyle = "#ffe08a";
+  ctx.fillText("🪙 " + game.coins + " coins   •   reached Day " + game.day, VW/2, 392);
+  ctx.fillStyle = game.score >= best ? "#7ee08a" : "rgba(255,255,255,0.75)";
+  ctx.fillText((game.score >= best && best > 0 ? "🏆 New best! " : "Best ") + best, VW/2, 424);
+
+  // play again
+  const pulse = 1 + Math.sin(t*3) * 0.03;
+  ctx.save();
+  ctx.translate(VW/2, 520); ctx.scale(pulse, pulse);
+  const g = ctx.createLinearGradient(-110,0,110,0);
+  g.addColorStop(0,"#ff7eb9"); g.addColorStop(1,"#c48bff");
+  ctx.fillStyle = g;
+  roundRect(-110,-31,220,62,31); ctx.fill();
+  ctx.fillStyle="#fff"; ctx.font="800 22px -apple-system, sans-serif";
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("Play Again", 0, 2);
+  ctx.restore();
+}
+
+// ---- Main loop ----------------------------------------------------------
+function loop(now) {
+  let dt = (now - lastT) / 1000;
+  lastT = now;
+  if (dt > 0.05) dt = 0.05; // clamp big frame gaps
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
