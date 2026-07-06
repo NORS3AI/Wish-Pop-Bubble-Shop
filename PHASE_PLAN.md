@@ -182,7 +182,7 @@ homework. This revision keeps the depth but cuts the mental math.
 > **100 / 87 / 55 / 43%** (easy/medium/hard/veryhard) — forgiving early, a real
 > puzzle later, cushioned by partial credit + charms. Quick‑service tip = serve
 > before the needs finish revealing **and** hit the match → gold tip (+8/hidden
-> need). Only C4 leftover is cosmetic dead‑code cleanup (old shop CSS/div).
+> need). **All of C1–C4 complete** (data, flow, cauldron, cleanup + balance).
 
 
 **Why.** Playtesting showed the shop isn't a real decision: you're told the need,
