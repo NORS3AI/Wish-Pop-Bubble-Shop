@@ -95,16 +95,10 @@ html, body {
   border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 14px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: 0; }
 .need-chip .dot { width: 12px; height: 12px; }
-.ing-card .q .dot, .inv-tile .q .dot { width: 9px; height: 9px; margin-right: 1px; }
+.inv-tile .q .dot { width: 9px; height: 9px; margin-right: 1px; }
 .need-chip.hidden-need { color: var(--ink-dim); font-style: italic; }
 .stat-line { display: flex; justify-content: space-between; font-size: 15px; padding: 4px 2px; }
 .stat-line span:last-child { font-weight: 800; }
-
-/* --- Charms bar --- */
-.charms { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-.charm { display: flex; align-items: center; gap: 5px; font-weight: 800; font-size: 15px;
-  background: var(--card2); border-radius: 999px; padding: 5px 10px; }
-.charm .swatch { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 6px rgba(255,255,255,.25); }
 
 /* --- Bubble queue --- */
 .bubble-queue { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -117,44 +111,12 @@ html, body {
   display: flex; align-items: center; justify-content: center; font-size: 40px; transition: transform .08s; }
 .big-bubble:active { transform: scale(0.94); }
 
-/* --- Shelves / ingredient cards --- */
-.shelf-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.shelf-name { font-weight: 800; font-size: 17px; }
-.ing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; overflow-y: auto; }
-.ing-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-.ing-card:active { transform: scale(0.97); }
-.ing-card .nm { font-weight: 800; font-size: 14px; }
-.ing-card .q { font-size: 11px; color: var(--ink-dim); min-height: 26px; }
-.ing-card .cost { font-size: 12px; font-weight: 800; }
-.ing-card.wild { border-style: dashed; }
-
-/* --- Shop (Phase 3) --- */
-.reveal-panel { padding: 10px 12px; margin-bottom: 8px; }
-.reveal-panel .needs-row { justify-content: flex-start; }
-.need-chip.pay { cursor: pointer; border-color: var(--gold); color: var(--gold); }
-.reveal-slots { font-size: 13px; color: var(--ink-dim); margin-top: 6px; text-align: center; }
-.reveal-slots b { color: var(--good); }
-.shelf-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 6px; }
+/* --- +/- stepper buttons (treat quantity in the menu) --- */
 .shelf-arrow { font-size: 20px; padding: 8px 14px; background: var(--card2); border: 1px solid var(--line);
   border-radius: 12px; cursor: pointer; user-select: none; }
 .shelf-arrow:active { transform: scale(0.94); }
-.shelf-title { font-weight: 800; font-size: 16px; text-align: center; }
-.shelf-title small { display: block; font-weight: 500; font-size: 11px; color: var(--ink-dim); }
-.dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 6px; }
-.dots .d { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
-.dots .d.on { background: var(--pink); }
-.dots .d.locked { background: transparent; box-shadow: inset 0 0 0 1px var(--line); opacity: .6; }
-.locked-shelf { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 8px; padding: 34px 16px; text-align: center; }
-.locked-shelf .lk { font-size: 52px; opacity: .85; }
-.locked-shelf .lkt { font-weight: 800; font-size: 17px; }
-.shelf-tools { display: flex; align-items: center; justify-content: space-between; min-height: 26px; margin-bottom: 4px; }
-.shelf-tools .dots { margin: 0; }
-.reroll-btn { margin-left: auto; background: var(--card2); border: 1px solid var(--line); color: var(--ink);
-  border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
-.reroll-btn:active { transform: scale(0.95); }
-.reroll-btn[disabled] { opacity: .4; pointer-events: none; }
+
+/* --- Familiar badge + confirm dialog --- */
 .fam-badge { position: absolute; top: -4px; right: -4px; font-size: 13px;
   background: var(--gold); border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
 .confirm-overlay { position: absolute; inset: 0; z-index: 46; display: flex; align-items: center; justify-content: center;
@@ -162,11 +124,6 @@ html, body {
 .confirm-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px;
   text-align: center; max-width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
 .confirm-msg { font-weight: 800; font-size: 17px; margin-bottom: 16px; }
-.ing-card.cant { opacity: .45; }
-.ing-card .cost .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: 2px; }
-.bag-btn { background: var(--card); border: 1px solid var(--line); color: var(--ink); border-radius: 12px;
-  padding: 8px 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
-.bag-drawer { max-height: 34vh; overflow-y: auto; margin-top: 6px; }
 
 /* --- Mixing --- */
 .slots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
