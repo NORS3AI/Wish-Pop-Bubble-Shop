@@ -160,6 +160,10 @@ homework. This revision keeps the depth but cuts the mental math.
   ingredients (library now 40). Shelf guarantee keys off the **visible** main
   quality so the player can always see a match.
 
+> **Overall progress:** ✅ Phases 0–7 done (core game, revisions, allergies,
+> familiar upgrades, progression). Remaining: Phase 8 (art‑upload/admin) and
+> Phase 9 (polish + sound). Multi‑location maps deferred per the design's MVP note.
+
 ### Revision B — Shelf keys & per‑round unlocks — ✅ DONE
 - Each round starts with **one shelf unlocked** (chosen so it stocks ≥2 visible
   main‑need ingredients); the other three start **locked**.
@@ -192,41 +196,25 @@ difficulty curve holds. Thresholds/chance live in `BALANCE`.
 
 ---
 
-## Phase 6 — Familiar (Toad) & treats
-
-**Goal:** The optional helper that makes rounds easier/more exciting.
-
-- **Familiar** visible & tappable during scoop, pop, shop, and mixing phases;
-  only acts when tapped; each use costs **1 treat** (max **5 uses per round**).
-- **Default ability (shopping):** "Feed familiar 1 treat?" → grabs 1 random
-  ingredient from the current shelf, free, removed from shelf (timer pauses during
-  the prompt). "No treats left!" when empty.
-- **Upgrades (bought with gold):** Better Scoop (more bubbles), Bonus‑Bubble Gift
-  (bonus bubble → also a random ingredient), Undo Ingredient (remove last add; it
-  disappears, doesn't return; recalc match/allergy).
-- **Treats** purchasable with gold from the shop (±, up to 25 at a time; unlimited
-  to own, 5 usable per round).
-
-**Done when:** each ability triggers in its phase, treat spending is enforced, and
-the 5‑per‑round cap holds.
+## Phase 6 — Familiar (Toad) & treats — ✅ DONE
+Shop & Upgrades menu (from Start): buy treats (± up to 25, 10g each), unlock the
+three Toad upgrades with gold, and claim a daily gift (150g/day). Abilities:
+**Better Scoop** (passive, +1 max bubble per scoop), **Bonus Gift** (passive, a
+bonus bubble also grants a random ingredient), **Undo** (mix: spend a treat to
+remove the last ingredient). The default shelf‑grab / key‑find (from the recovery
+kit) is free. Treats cap at 5 uses/round.
 
 ---
 
-## Phase 7 — Progression, economy & difficulty
+## Phase 7 — Progression, economy & difficulty — ✅ (core done)
+Gold sinks in place (treats, three upgrade unlocks, pay‑to‑reveal, reroll is free)
+plus a **daily gift** so a player can always recover. Difficulty ramp extended with
+a **veryhard** tier (customer 11+: 3 needs, 80% required, always allergic; sim win
+~34% — a genuine ceiling, cushioned by partial credit + recovery tools). **Multi‑
+location maps are intentionally deferred** per the design doc's MVP guidance ("do
+not build a full map yet"); Drury Lane is the single location, with the data/menu
+groundwork noting more are coming.
 
-**Goal:** Give the game a reason to keep playing and a smooth difficulty ramp.
-
-- **Gold sinks**: treats, early wish reveals, familiar‑ability unlocks, (later)
-  new locations. **Daily grant** so a broke player recovers.
-- **Difficulty scaling**: Easy (Main only) → Medium (+Second) → Hard (+Twist,
-  maybe 1 allergy) → Very Hard (2 allergies, higher required match).
-- **Locations** groundwork (Drury Lane first; Royal Row, Goblin Camp, etc. later),
-  unlockable with gold — data/hooks now, content later.
-
-**Done when:** difficulty ramps sensibly across rounds and the gold economy is
-balanced (not too easy, never a dead end).
-
----
 
 ## Phase 8 — Placeholder‑art system & Admin uploader
 

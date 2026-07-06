@@ -78,10 +78,10 @@ function ingredientPointsFor(ing, magicType) {
 
 /* --- Difficulty ramp ---------------------------------------------------- */
 function difficultyFor(servedTotal) {
-  if (servedTotal < 2) return "easy";     // customers 1-2: Main need only
-  if (servedTotal < 5) return "medium";   // 3-5: + Second
-  return "hard";                          // 6+: + Final Twist
-  // veryhard / allergies arrive in later phases
+  if (servedTotal < 2) return "easy";       // customers 1-2: Main need only
+  if (servedTotal < 5) return "medium";     // 3-5: + Second
+  if (servedTotal < 10) return "hard";      // 6-10: + Final Twist, maybe allergy
+  return "veryhard";                        // 11+: higher required match, always allergy
 }
 function needCountFor(diff) {
   return diff === "easy" ? 1 : diff === "medium" ? 2 : 3;
@@ -154,8 +154,9 @@ function newRound(state) {
   const payment = R.int(pmin / 10, pmax / 10) * 10;
   // scoops from payment; each scoop rolls its own bubble yield (randomized)
   const scoops = Math.max(1, Math.round(payment / 10));
+  const smax = BALANCE.BUBBLES_PER_SCOOP_MAX + (state.betterScoop ? 1 : 0); // Toad "Better Scoop" upgrade
   const scoopYields = [];
-  for (let i = 0; i < scoops; i++) scoopYields.push(R.int(BALANCE.BUBBLES_PER_SCOOP_MIN, BALANCE.BUBBLES_PER_SCOOP_MAX));
+  for (let i = 0; i < scoops; i++) scoopYields.push(R.int(BALANCE.BUBBLES_PER_SCOOP_MIN, smax));
   let bubbles = scoopYields.reduce((a, b) => a + b, 0);
   if (bubbles < BALANCE.MIN_BUBBLES) { scoopYields[0] += BALANCE.MIN_BUBBLES - bubbles; bubbles = BALANCE.MIN_BUBBLES; }
 

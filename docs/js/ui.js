@@ -82,18 +82,89 @@ function renderStart() {
     </div>
     <button class="btn" id="play-btn">▶  Play</button>
     <div style="height:8px"></div>
+    <button class="btn secondary" id="menu-btn">🛍️  Shop & Upgrades</button>
+    <div style="height:8px"></div>
     <button class="btn secondary small" id="admin-btn" style="align-self:center">⚙️ Admin (art upload — coming soon)</button>
   `);
   on("#play-btn", "click", startRound);
+  on("#menu-btn", "click", renderMenu);
   on("#admin-btn", "click", () => toast("Art uploader arrives in a later phase."));
   show("start");
+}
+
+/* ======================================================================= */
+/* MENU / UPGRADES (gold-spending hub)                                     */
+/* ======================================================================= */
+function todayStr() { const d = new Date(); return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); }
+function dailyAvailable() { return GAME.lastDaily !== todayStr(); }
+function renderMenu() {
+  const A = D.FAMILIAR.abilities;
+  const abilityRow = key => {
+    const ab = A[key], owned = !!GAME.unlocked[key], afford = GAME.gold >= ab.unlockCost;
+    return `<div class="up-card">
+      <div class="up-body"><div class="up-name">${ab.name}</div><div class="muted" style="font-size:12px">${ab.desc}</div></div>
+      <button class="btn small ${owned ? "secondary" : "good"}" id="unlock-${key}" ${owned || !afford ? "disabled" : ""}>${owned ? "✓ Owned" : "🪙 " + ab.unlockCost}</button>
+    </div>`;
+  };
+  const canDaily = dailyAvailable();
+  html("menu", `
+    ${hud("Shop & Upgrades")}
+    <div class="grow" style="overflow-y:auto">
+      <div class="card center" style="margin-bottom:10px;gap:8px">
+        <div style="font-weight:800">🎁 Daily Gift</div>
+        <button class="btn ${canDaily ? "" : "secondary"}" id="daily-btn" ${canDaily ? "" : "disabled"} style="max-width:240px">${canDaily ? "Claim 🪙 " + BALANCE.DAILY_GRANT : "Come back tomorrow!"}</button>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:8px">🐸 Treats <span class="muted" style="font-weight:500;font-size:13px">· ${GAME.treats} owned · 🪙${BALANCE.PRICES.treat} each</span></div>
+        <div class="row" style="align-items:center;justify-content:center">
+          <button class="shelf-arrow" id="tr-minus">−</button>
+          <div id="tr-qty" style="min-width:36px;text-align:center;font-weight:800;font-size:18px">1</div>
+          <button class="shelf-arrow" id="tr-plus">+</button>
+          <button class="btn good small" id="tr-buy" style="margin-left:8px">Buy <span id="tr-cost">🪙${BALANCE.PRICES.treat}</span></button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-weight:800;margin-bottom:8px">Toad Upgrades</div>
+        <div class="up-grid">${abilityRow("scoop")}${abilityRow("bonus")}${abilityRow("undo")}</div>
+        <div class="muted" style="font-size:11px;margin-top:8px">The Toad's shelf‑grab (and key‑find) is free from the start. New fairytale locations with fresh customers are coming soon!</div>
+      </div>
+    </div>
+    <button class="btn secondary" id="menu-back">←  Back</button>
+  `);
+  let qty = 1;
+  const updQty = () => { const q = $("#tr-qty"), c = $("#tr-cost"); if (q) q.textContent = qty; if (c) c.textContent = "🪙" + qty * BALANCE.PRICES.treat; };
+  on("#tr-minus", "click", () => { qty = Math.max(1, qty - 1); updQty(); });
+  on("#tr-plus", "click", () => { qty = Math.min(25, qty + 1); updQty(); });
+  on("#tr-buy", "click", () => buyTreats(qty));
+  ["scoop", "bonus", "undo"].forEach(k => on("#unlock-" + k, "click", () => unlockAbility(k)));
+  on("#daily-btn", "click", claimDaily);
+  on("#menu-back", "click", renderStart);
+  show("menu");
+}
+function buyTreats(qty) {
+  const cost = qty * BALANCE.PRICES.treat;
+  if (GAME.gold < cost) { toast("Not enough gold."); return; }
+  GAME.gold -= cost; GAME.treats += qty; save();
+  toast(`Bought ${qty} treat${qty > 1 ? "s" : ""}! 🐸`); renderMenu();
+}
+function unlockAbility(key) {
+  const ab = D.FAMILIAR.abilities[key];
+  if (GAME.unlocked[key]) return;
+  if (GAME.gold < ab.unlockCost) { toast("Not enough gold."); return; }
+  GAME.gold -= ab.unlockCost; GAME.unlocked[key] = true; save();
+  toast(`Unlocked ${ab.name}! 🎉`); renderMenu();
+}
+function claimDaily() {
+  if (!dailyAvailable()) { toast("Already claimed today."); return; }
+  GAME.gold += BALANCE.DAILY_GRANT; GAME.lastDaily = todayStr(); save();
+  toast(`🎁 +${BALANCE.DAILY_GRANT} gold!`); renderMenu();
 }
 
 /* ======================================================================= */
 /* CUSTOMER                                                                */
 /* ======================================================================= */
 function startRound() {
-  ROUND = newRound({ servedTotal });
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop });
   renderCustomer();
 }
 function renderCustomer() {
@@ -144,7 +215,7 @@ function renderScoop() {
       <button class="btn secondary" id="auto-sift">Auto Sift</button>
       <button class="btn" id="scoop-continue" disabled>Continue</button>
     </div>
-    ${familiarToken()}
+    ${familiarToken("scoop")}
   `);
 
   function siftOne() {
@@ -208,7 +279,7 @@ function renderPop() {
       <button class="btn secondary" id="pop-all">Pop All</button>
       <button class="btn" id="pop-continue" disabled>Continue</button>
     </div>
-    ${familiarToken()}
+    ${familiarToken("pop")}
   `);
   renderQueue();
   on("#big-bubble", "click", onBubbleTap);
@@ -264,6 +335,11 @@ function revealPending() {
   } else if (b.type === "bubble") {
     ROUND.bubblesLeft++; ROUND.bubblesTotal++; ROUND.bonusBubblesGained++;
     msg = `🫧 +1 bonus bubble!`;
+    if (GAME.unlocked.bonus) { // Toad "Bonus Gift" upgrade: also a random ingredient
+      const ing = R.pick(D.INGREDIENTS.filter(i => !i.wild));
+      ROUND.inventory.push({ id: ing.id, potent: false });
+      msg += ` + ${ing.name}`;
+    }
   }
   flashReward(msg);
   refreshPop();
@@ -594,7 +670,7 @@ function paintMix() {
     ${ROUND.inventory.length
       ? `<div class="inv-2row" id="inv-row">${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("")}</div>`
       : `<div class="muted" style="text-align:center;padding:12px">Bag empty — do your best with what's in the pot!</div>`}
-    ${familiarToken()}
+    ${familiarToken("mix")}
   `);
   ROUND.inventory.forEach((inst, idx) => {
     const tile = document.getElementById("invt-" + idx);
@@ -714,7 +790,8 @@ function ingCardMini(inst, idx) {
   </div>`;
 }
 function familiarToken(phase) {
-  const badge = phase === "shop" ? `<span class="fam-badge">🐸</span>` : "";
+  const active = phase === "shop" || (phase === "mix" && GAME.unlocked.undo);
+  const badge = active ? `<span class="fam-badge">🐸</span>` : "";
   return `<div class="familiar" id="familiar">${D.FAMILIAR.emoji}${badge}</div>`;
 }
 function wireFamiliar(phase) {
@@ -723,7 +800,20 @@ function wireFamiliar(phase) {
   if (!el) return;
   el.addEventListener("click", () => {
     if (phase === "shop") familiarShopAbility();
-    else toast("🐸 Tap the Toad in the shop to spend a treat!");
+    else if (phase === "mix") { if (GAME.unlocked.undo) familiarUndo(); else toast("🐸 Unlock 'Undo' in Shop & Upgrades!"); }
+    else if (phase === "scoop") toast(GAME.unlocked.scoop ? "🐸 Better Scoop is boosting your haul!" : "🐸 Unlock 'Better Scoop' in Shop & Upgrades!");
+    else toast(GAME.unlocked.bonus ? "🐸 Bonus Gift works automatically here!" : "🐸 The Toad helps most in the shop!");
+  });
+}
+function familiarUndo() {
+  if (!ROUND.slots.length) { toast("Nothing to undo."); return; }
+  if (GAME.treats <= 0) { toast("No treats left! Buy more with gold."); return; }
+  if (ROUND.treatsUsed >= BALANCE.MAX_TREATS_PER_ROUND) { toast("Toad's had enough (5 per round)."); return; }
+  confirmDialog("Undo the last ingredient? (1 treat) 🐸", () => {
+    GAME.treats--; ROUND.treatsUsed++; save();
+    ROUND.slots.pop(); // removed ingredient disappears (does not return to the bag)
+    toast("🐸 Removed the last ingredient.");
+    paintMix();
   });
 }
 

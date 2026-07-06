@@ -47,7 +47,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   allergy meter warns you as you mix, and since ingredients have hidden effects, a
   "safe" ingredient can secretly nudge it up — real risk/reward. It only affects
   how much you're paid on a win, never whether you win.
-- Next up: the full familiar upgrades & progression (see `PHASE_PLAN.md`).
+- 🐸 **Toad upgrades & a Shop (Phases 6–7).** A new "Shop & Upgrades" menu lets you
+  spend gold: buy treats, claim a **daily gift**, and unlock Toad powers — **Better
+  Scoop** (more bubbles), **Bonus Gift** (bonus bubbles also give an ingredient),
+  and **Undo** (remove your last ingredient in the cauldron). There's now a
+  **very‑hard** tier for seasoned players, too.
+- Charms trimmed to **3 colors** to keep buying simple.
+- Next up: the art‑upload tool and final polish + sound (see `PHASE_PLAN.md`).
 - Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
   a "rotate to portrait" nudge in landscape.
 
