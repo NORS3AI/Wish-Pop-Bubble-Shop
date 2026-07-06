@@ -6,12 +6,15 @@
 
 /* --- BALANCE: every tunable number in one place ------------------------- */
 const BALANCE = {
-  // Scoring
-  NEED_TARGET: 7,                // magic points needed to fill one need's bar to 100%
-  POWER_BY_COST: { 1: 4, 2: 4, 3: 3, 5: 3, 7: 3 }, // hidden strength each quality adds
+  // Scoring — each ingredient shows ONE main quality (qualities[0]); the rest are
+  // hidden secondaries revealed only by the cauldron bars.
+  NEED_TARGET: 12,               // magic points to fill one need's bar to 100%
+  MAIN_POWER: 6,                 // strength of an ingredient's shown (main) quality
+  SECONDARY_POWER: 3,            // strength of each hidden secondary quality
   POTENT_MULT: 2.5,              // tripled -> Potent ingredient multiplier
-  WILD_MIN: 2, WILD_MAX: 4,      // wild ingredient random strength per rolled quality
+  WILD_MIN: 3, WILD_MAX: 6,      // wild ingredient random strength per rolled quality
   NEED_WEIGHTS: { 1: [1.0], 2: [0.6, 0.4], 3: [0.4, 0.3, 0.3] }, // Main / Second / Final
+  INGREDIENT_COST: 1,            // every ingredient costs 1 charm of its (random) color
 
   // Difficulty by how many customers served so far
   //   easy: Main only | medium: +Second | hard: +Final Twist
@@ -52,9 +55,12 @@ const R = {
   shuffle: (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; },
 };
 
-/* Hidden strength a single (non-potent) ingredient adds to each of its qualities */
-function ingredientPower(ing) {
-  return BALANCE.POWER_BY_COST[ing.cost] || 3;
+/* Points an ingredient adds to a given magic type:
+ * main (shown) quality = MAIN_POWER, hidden secondaries = SECONDARY_POWER. */
+function ingredientPointsFor(ing, magicType) {
+  const idx = ing.qualities.indexOf(magicType);
+  if (idx < 0) return 0;
+  return idx === 0 ? BALANCE.MAIN_POWER : BALANCE.SECONDARY_POWER;
 }
 
 /* --- Difficulty ramp ---------------------------------------------------- */
@@ -178,12 +184,12 @@ function populateShelves(wish) {
     const eligible = DATA.INGREDIENTS.filter(i => i.shelves.includes(shelf));
     shelves[shelf] = R.shuffle(eligible).slice(0, BALANCE.SHELF_MAX).map(i => i.id);
   });
+  // Guarantee >=2 ingredients whose VISIBLE main quality is the main need, so the
+  // player can actually see and buy matches. (Secondaries are hidden.)
   const mainType = wish.needs[0].type;
-  const countMain = () => DATA.SHELF_ORDER.reduce((n, s) => n + shelves[s].filter(id => {
-    const ing = DATA.INGREDIENT_BY_ID[id];
-    return !ing.wild && ing.qualities.includes(mainType);
-  }).length, 0);
-  const matching = R.shuffle(DATA.INGREDIENTS.filter(i => !i.wild && i.qualities.includes(mainType)));
+  const showsMain = id => { const ing = DATA.INGREDIENT_BY_ID[id]; return !ing.wild && ing.qualities[0] === mainType; };
+  const countMain = () => DATA.SHELF_ORDER.reduce((n, s) => n + shelves[s].filter(showsMain).length, 0);
+  const matching = R.shuffle(DATA.INGREDIENTS.filter(i => !i.wild && i.qualities[0] === mainType));
   let mi = 0;
   while (countMain() < 2 && mi < matching.length) {
     const ing = matching[mi++];
@@ -192,7 +198,7 @@ function populateShelves(wish) {
     const arr = shelves[shelf];
     const repl = arr.findIndex(id => {
       const c = DATA.INGREDIENT_BY_ID[id];
-      return !c.wild && !c.qualities.includes(mainType);
+      return !c.wild && c.qualities[0] !== mainType;
     });
     if (repl >= 0) arr[repl] = ing.id;
     else if (arr.length < BALANCE.SHELF_MAX) arr.push(ing.id);
@@ -224,14 +230,14 @@ function scoreMix(slots, wish) {
     let points = 0;
     slots.forEach(inst => {
       const ing = DATA.INGREDIENT_BY_ID[inst.id];
-      let quals = ing.qualities;
-      if (ing.wild) quals = inst.wildQualities || [];
-      if (quals.includes(need.type)) {
-        let p = ingredientPower(ing);
-        if (inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
-        if (inst.wildStrength) p = inst.wildStrength;
-        points += p;
+      let p = 0;
+      if (ing.wild) {
+        if ((inst.wildQualities || []).includes(need.type)) p = inst.wildStrength || BALANCE.WILD_MIN;
+      } else {
+        p = ingredientPointsFor(ing, need.type);
       }
+      if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
+      points += p;
     });
     const pct = Math.min(100, Math.round((points / need.target) * 100));
     return { type: need.type, label: need.label, pct, points };
@@ -262,7 +268,7 @@ function scoreResult(round) {
 
 /* Expose */
 const ENGINE = {
-  BALANCE, R, ingredientPower, difficultyFor, needCountFor,
+  BALANCE, R, ingredientPointsFor, difficultyFor, needCountFor,
   generateWish, newRound, applyTripleMatch, scoreMix, scoreResult,
   scoopSplit, weightedPick, rollPop, populateShelves,
 };

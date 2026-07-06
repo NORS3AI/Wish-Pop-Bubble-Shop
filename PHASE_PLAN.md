@@ -144,6 +144,29 @@ serving produces the right result + gold, and the loop is genuinely fun to play.
 
 ---
 
+## Design revision v2 (mid‑build) — make it a quick game, not a spreadsheet
+
+Playtesting showed reading 2–3 tags per ingredient against 2–3 need bars felt like
+homework. This revision keeps the depth but cuts the mental math.
+
+### Revision A — Simpler ingredients & 1‑charm buying — ✅ DONE
+- Each ingredient shows only its **one main magic quality** (`qualities[0]`); the
+  rest are **hidden secondaries** that still affect scoring and are revealed only
+  by the cauldron bars (preserves surprise + push‑your‑luck).
+- **Every ingredient costs 1 charm** of its required (random) color — color is the
+  only charm friction now. Kid‑simple.
+- Rebalanced scoring (main quality +6, hidden secondary +3, need target 12) and
+  added Lavender + Ginger Root so every magic type is the main quality of ≥2
+  ingredients (library now 40). Shelf guarantee keys off the **visible** main
+  quality so the player can always see a match.
+
+### Revision B — Shelf keys & per‑round unlocks — ⏳ NEXT
+- Each round starts with **one shelf unlocked** (guaranteed to cover the main
+  need); the other three start **locked**.
+- Bubbles can drop **shelf keys** that unlock a random locked shelf for this
+  customer — adds the lucky‑scoop "did I get the shelf I wanted?" tension without
+  ever making a round impossible.
+
 ## Phase 5 — Magic Allergy system
 
 **Goal:** Add risk/depth for harder customers (introduced *after* the basics).

@@ -41,9 +41,10 @@ const SHELVES = {
 const SHELF_ORDER = ["Fresh", "Royal", "Sparkle", "Backroom"];
 
 /* --- 4. Ingredient library (from the design doc) -----------------------
- * cost: fixed (1/3/5/7).  qualities: visible magic list.  emoji: placeholder.
- * shelves: which shelves it can appear on (a few appear on 2 for tripling).
- * The required charm COLOR is rolled per round (cost stays fixed).
+ * qualities[0] = the ONE magic quality shown to the player (its identity).
+ * qualities[1..] = hidden secondary magics, revealed only by the cauldron bars.
+ * Every ingredient costs 1 charm of its required COLOR (rolled per round).
+ * (cost field is legacy/unused now that all ingredients cost 1 charm.)
  * ---------------------------------------------------------------------- */
 const INGREDIENTS = [
   // Fresh Shelf
@@ -90,10 +91,14 @@ const INGREDIENTS = [
   { id: "thunder_root", name: "Thunder Root",  cost: 5, qualities: ["Strength", "Energy", "Light"], emoji: "⚡", shelves: ["Sparkle"] },
   { id: "bull_horn",    name: "Bull Horn",     cost: 3, qualities: ["Strength", "Courage"],        emoji: "🐂", shelves: ["Backroom"] },
   { id: "ogre_stew",    name: "Ogre Stew",     cost: 5, qualities: ["Strength", "Protection", "Calm"], emoji: "🍲", shelves: ["Backroom", "Royal"] },
+  // Extra Calm/Energy main-quality options so every magic has >=2 visible sources.
+  { id: "lavender",     name: "Lavender",      cost: 3, qualities: ["Calm", "Sleep"],              emoji: "🪻", shelves: ["Fresh", "Sparkle"] },
+  { id: "ginger_root",  name: "Ginger Root",   cost: 3, qualities: ["Energy", "Courage"],          emoji: "🫚", shelves: ["Fresh", "Backroom"] },
 ];
 const INGREDIENT_BY_ID = {};
 INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
-// 38 ingredients (32 from the doc + 6 Strength-bearing). A couple more can round to 40.
+// 40 ingredients (32 from the doc + 6 Strength + Lavender & Ginger Root for
+// full main-quality coverage). Every magic type is the MAIN quality of >=2.
 
 /* --- 5. Wish types: need pools + the customer line that fits them -------- */
 const WISH_TYPES = {

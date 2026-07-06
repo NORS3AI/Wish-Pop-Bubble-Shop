@@ -360,21 +360,23 @@ function paintShop() {
 function shopCard(id) {
   const ing = D.INGREDIENT_BY_ID[id];
   const color = ROUND.charmColorFor[id];
-  const afford = ROUND.charms[color] >= ing.cost;
-  const quals = ing.wild ? "??? (wild)" : ing.qualities.join(", ");
+  const cost = BALANCE.INGREDIENT_COST;
+  const afford = ROUND.charms[color] >= cost;
+  const quals = ing.wild ? "❓ ???" : `${magicDot(ing.qualities[0])} ${ing.qualities[0]}`;
   return `<div class="ing-card ${ing.wild ? "wild" : ""} ${afford ? "" : "cant"}" data-buy="${id}">
     <div class="ph" style="width:40px;height:40px;font-size:24px">${ing.emoji}</div>
     <div class="nm">${ing.name}</div>
-    <div class="q">${quals}</div>
-    <div class="cost"><span class="swatch" style="background:${D.CHARMS[color]}"></span> ${ing.cost}</div>
+    <div class="q main-q">${quals}</div>
+    <div class="cost"><span class="swatch" style="background:${D.CHARMS[color]}"></span> ${cost}</div>
   </div>`;
 }
 
 function buy(id) {
   const ing = D.INGREDIENT_BY_ID[id];
   const color = ROUND.charmColorFor[id];
-  if (ROUND.charms[color] < ing.cost) { toast(`Not enough ${color} charms!`); return; }
-  ROUND.charms[color] -= ing.cost;
+  const cost = BALANCE.INGREDIENT_COST;
+  if (ROUND.charms[color] < cost) { toast(`Not enough ${color} charms!`); return; }
+  ROUND.charms[color] -= cost;
   ROUND.inventory.push({ id, potent: false });
   const arr = ROUND.shelves[shelfName()];
   const i = arr.indexOf(id); if (i >= 0) arr.splice(i, 1);
@@ -527,7 +529,7 @@ function paintMix() {
 }
 function invTile(inst, idx) {
   const ing = D.INGREDIENT_BY_ID[inst.id];
-  const quals = ing.wild ? "???" : ing.qualities.join(", ");
+  const quals = ing.wild ? "❓ ???" : `${magicDot(ing.qualities[0])} ${ing.qualities[0]}`;
   return `<div class="inv-tile ${ing.wild ? "wild" : ""} ${inst.potent ? "potent" : ""}" id="invt-${idx}">
     <div class="emoji">${ing.emoji}</div>
     <div class="nm">${inst.potent ? "✨" : ""}${ing.name}</div>
@@ -608,14 +610,12 @@ function renderResult(res) {
 function ingCardMini(inst, idx) {
   const ing = D.INGREDIENT_BY_ID[inst.id];
   const wild = ing.wild;
-  const quals = wild ? "???" : ing.qualities.join(", ");
-  const color = D.CHARMS[ROUND.charmColorFor[ing.id]];
+  const quals = wild ? "???" : ing.qualities[0];
   const id = idx != null ? ` id="inv-${idx}"` : "";
   return `<div class="ing-card ${wild ? "wild" : ""}"${id}>
     <div class="ph" style="width:40px;height:40px;font-size:24px">${ing.emoji}</div>
     <div class="nm">${inst.potent ? "✨" : ""}${ing.name}</div>
     <div class="q">${quals}</div>
-    <div class="cost"><span style="color:${color}">●</span> ${ing.cost}</div>
   </div>`;
 }
 function familiarToken() { return `<div class="familiar" id="familiar">${D.FAMILIAR.emoji}</div>`; }

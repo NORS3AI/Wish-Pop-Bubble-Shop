@@ -85,7 +85,9 @@ html, body {
 .needs-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .need-chip { display: flex; align-items: center; gap: 7px; background: var(--card2); border: 1px solid var(--line);
   border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 14px; }
-.need-chip .dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: 0; }
+.need-chip .dot { width: 12px; height: 12px; }
+.ing-card .q .dot, .inv-tile .q .dot { width: 9px; height: 9px; margin-right: 1px; }
 .need-chip.hidden-need { color: var(--ink-dim); font-style: italic; }
 .stat-line { display: flex; justify-content: space-between; font-size: 15px; padding: 4px 2px; }
 .stat-line span:last-child { font-weight: 800; }
