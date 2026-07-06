@@ -35,9 +35,10 @@ A cute **familiar** (a Toad) helps for the cost of treats. Harder customers add
 
 ---
 
-> **Progress:** ✅ Phases 0, 1 and 2 are complete. The full round loops
-> end‑to‑end with real scoring, the gold economy, glitter‑sifting, and real
-> bubble‑pop rewards. The ingredient shop is still a placeholder (Phase 3).
+> **Progress:** ✅ Phases 0–3 are complete. The full round loops end‑to‑end
+> with real scoring, gold economy, glitter‑sifting, bubble‑pop rewards, and the
+> real ingredient shop (four shelves, charm‑spending, reveal timers, speed‑bonus
+> slots). Next: Phase 4 makes the mixing step its final, polished version.
 
 ## Phase 0 — Foundation & Data (the engine room) — ✅ DONE
 
@@ -104,7 +105,7 @@ routes every reward type correctly; Pop‑All works with a quick summary.
 
 ---
 
-## Phase 3 — Ingredient shopping & wish reveals
+## Phase 3 — Ingredient shopping & wish reveals — ✅ DONE
 
 **Goal:** Spend charms to build a round inventory, under a reveal timer.
 

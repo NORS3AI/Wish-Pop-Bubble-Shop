@@ -119,6 +119,27 @@ html, body {
 .ing-card .cost { font-size: 12px; font-weight: 800; }
 .ing-card.wild { border-style: dashed; }
 
+/* --- Shop (Phase 3) --- */
+.reveal-panel { padding: 10px 12px; margin-bottom: 8px; }
+.reveal-panel .needs-row { justify-content: flex-start; }
+.need-chip.pay { cursor: pointer; border-color: var(--gold); color: var(--gold); }
+.reveal-slots { font-size: 13px; color: var(--ink-dim); margin-top: 6px; text-align: center; }
+.reveal-slots b { color: var(--good); }
+.shelf-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 6px; }
+.shelf-arrow { font-size: 20px; padding: 8px 14px; background: var(--card2); border: 1px solid var(--line);
+  border-radius: 12px; cursor: pointer; user-select: none; }
+.shelf-arrow:active { transform: scale(0.94); }
+.shelf-title { font-weight: 800; font-size: 16px; text-align: center; }
+.shelf-title small { display: block; font-weight: 500; font-size: 11px; color: var(--ink-dim); }
+.dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 6px; }
+.dots .d { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.dots .d.on { background: var(--pink); }
+.ing-card.cant { opacity: .45; }
+.ing-card .cost .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: 2px; }
+.bag-btn { background: var(--card); border: 1px solid var(--line); color: var(--ink); border-radius: 12px;
+  padding: 8px 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
+.bag-drawer { max-height: 34vh; overflow-y: auto; margin-top: 6px; }
+
 /* --- Mixing --- */
 .slots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .slot { width: 44px; height: 44px; border-radius: 12px; border: 1px dashed var(--line);

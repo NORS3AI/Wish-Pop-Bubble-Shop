@@ -29,8 +29,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   to reveal Wish Bubbles, then pop them for charms plus surprise rewards —
   ingredients, gold, treats, rare wild ingredients, and bonus bubbles, revealed
   by tapping question‑mark bubbles.
-- The ingredient shop is still a simple placeholder for now — the full version
-  (shelves, charm‑spending, reveal timers) arrives next (see `PHASE_PLAN.md`).
+- 🛒 **The real ingredient shop is in (Phase 3).** Swipe through four shelves
+  (Fresh, Royal, Sparkle, Backroom), spend your charms to buy ingredients, and
+  watch the customer's wish reveal more needs over time — finish shopping fast for
+  bonus mixing slots, or pay gold to reveal a need early.
+- Next up: Phase 4 gives the mixing step its final polish (see `PHASE_PLAN.md`).
 - Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
   a "rotate to portrait" nudge in landscape.
 

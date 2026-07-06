@@ -291,44 +291,146 @@ function refreshPop() {
 }
 
 /* ======================================================================= */
-/* SHOP  (Phase-1 placeholder: auto-grant a relevant starter inventory)    */
+/* SHOP  (Phase 3: real shelves, charm-spending, reveal timers)            */
 /* ======================================================================= */
 function renderShop() {
-  // Keep ingredients already won from popping bubbles; top up so each need has
-  // at least 2 matching options available, then add a little filler.
-  const nonWild = D.INGREDIENTS.filter(i => !i.wild);
-  const picks = [];
-  ROUND.wish.needs.forEach(need => {
-    const have = ROUND.inventory.filter(inst => {
-      const ing = D.INGREDIENT_BY_ID[inst.id];
-      return !ing.wild && ing.qualities.includes(need.type);
-    }).length;
-    const want = Math.max(0, 2 - have);
-    const matching = R.shuffle(nonWild.filter(i => i.qualities.includes(need.type)));
-    matching.slice(0, want).forEach(i => picks.push(i.id));
-  });
-  R.shuffle(nonWild).slice(0, 2).forEach(i => picks.push(i.id)); // filler
-  picks.forEach(id => ROUND.inventory.push({ id, potent: false }));
-  const merged = applyTripleMatch(ROUND.inventory);
-  ROUND.inventory = merged.inventory;
-  ROUND.maxSlots = BALANCE.SLOTS.slow; // no shop timer yet -> base 5 slots
+  if (ROUND._shopTimer) clearInterval(ROUND._shopTimer);
+  ROUND.shelves = ENGINE.populateShelves(ROUND.wish);
+  ROUND.currentShelf = 0;
+  ROUND.bagOpen = false;
+  ROUND.shopStart = Date.now();
+  paintShop();
+  show("shop");
+  ROUND._shopTimer = setInterval(paintReveal, 500);
+}
+function shelfName() { return D.SHELF_ORDER[ROUND.currentShelf]; }
 
+function paintShop() {
+  const shelf = shelfName();
+  const info = D.SHELVES[shelf];
+  const cards = ROUND.shelves[shelf].map(id => shopCard(id)).join("") ||
+    `<div class="muted" style="grid-column:1/-1;text-align:center;padding:20px">Sold out! Swipe to another shelf.</div>`;
+  const dots = D.SHELF_ORDER.map((s, i) => `<span class="d ${i === ROUND.currentShelf ? "on" : ""}"></span>`).join("");
+  const bagN = ROUND.inventory.length;
   html("shop", `
     ${hud("Shop Phase")}
-    <div class="grow center" style="gap:14px">
-      <div class="ph big">🛒</div>
-      <div style="font-weight:800;font-size:18px">Ingredients gathered!</div>
-      <p class="muted" style="max-width:320px">Placeholder shop — full shelves, charm‑spending, and reveal timers arrive in <b>Phase 3</b>. For now, here's everything you won from bubbles plus a helpful top‑up:</p>
-      <div class="inv" style="max-width:340px">
-        ${ROUND.inventory.map(inst => ingCardMini(inst)).join("")}
-      </div>
+    <div class="card reveal-panel" id="reveal-panel"></div>
+    ${charmsBar()}
+    <div class="shelf-bar">
+      <div class="shelf-arrow" id="shelf-prev">‹</div>
+      <div class="shelf-title">${info.name}<small>${info.style}</small></div>
+      <div class="shelf-arrow" id="shelf-next">›</div>
     </div>
-    <button class="btn" id="shop-continue">Done Shopping  →</button>
+    <div class="dots">${dots}</div>
+    <div class="ing-grid grow" id="shelf-grid">${cards}</div>
+    ${ROUND.bagOpen ? `<div class="bag-drawer inv">${ROUND.inventory.map(inst => ingCardMini(inst)).join("") || '<div class="muted">Empty — buy or win ingredients.</div>'}</div>` : ""}
+    <div class="row" style="margin-top:8px">
+      <button class="bag-btn" id="bag-btn">🎒 Bag (${bagN})</button>
+      <button class="btn" id="done-shop" style="flex:1">Done Shopping  →</button>
+    </div>
     ${familiarToken()}
   `);
-  on("#shop-continue", "click", renderMix);
+  paintReveal();
+  // shelf navigation
+  on("#shelf-prev", "click", () => changeShelf(-1));
+  on("#shelf-next", "click", () => changeShelf(1));
+  on("#bag-btn", "click", () => { ROUND.bagOpen = !ROUND.bagOpen; paintShop(); });
+  on("#done-shop", "click", doneShopping);
+  // buy via delegation
+  const grid = $("#shelf-grid");
+  if (grid) grid.addEventListener("click", e => {
+    const card = e.target.closest("[data-buy]");
+    if (card) buy(card.getAttribute("data-buy"));
+  });
+  // swipe between shelves
+  addSwipe($("#shelf-grid"), dir => changeShelf(dir));
   wireFamiliar("shop");
-  show("shop");
+}
+
+function shopCard(id) {
+  const ing = D.INGREDIENT_BY_ID[id];
+  const color = ROUND.charmColorFor[id];
+  const afford = ROUND.charms[color] >= ing.cost;
+  const quals = ing.wild ? "??? (wild)" : ing.qualities.join(", ");
+  return `<div class="ing-card ${ing.wild ? "wild" : ""} ${afford ? "" : "cant"}" data-buy="${id}">
+    <div class="ph" style="width:40px;height:40px;font-size:24px">${ing.emoji}</div>
+    <div class="nm">${ing.name}</div>
+    <div class="q">${quals}</div>
+    <div class="cost"><span class="swatch" style="background:${D.CHARMS[color]}"></span> ${ing.cost}</div>
+  </div>`;
+}
+
+function buy(id) {
+  const ing = D.INGREDIENT_BY_ID[id];
+  const color = ROUND.charmColorFor[id];
+  if (ROUND.charms[color] < ing.cost) { toast(`Not enough ${color} charms!`); return; }
+  ROUND.charms[color] -= ing.cost;
+  ROUND.inventory.push({ id, potent: false });
+  const arr = ROUND.shelves[shelfName()];
+  const i = arr.indexOf(id); if (i >= 0) arr.splice(i, 1);
+  paintShop();
+}
+
+function changeShelf(dir) {
+  ROUND.currentShelf = (ROUND.currentShelf + dir + D.SHELF_ORDER.length) % D.SHELF_ORDER.length;
+  paintShop();
+}
+
+/* Reveal panel — auto-reveals needs on the timer; tap a hidden need to pay. */
+function paintReveal() {
+  const el = $("#reveal-panel"); if (!el) return;
+  const w = ROUND.wish;
+  const elapsed = Date.now() - ROUND.shopStart;
+  if (w.needs[1] && !w.needs[1].revealed && elapsed >= BALANCE.REVEAL_SECOND_MS) w.needs[1].revealed = true;
+  if (w.needs[2] && !w.needs[2].revealed && elapsed >= BALANCE.REVEAL_TWIST_MS) w.needs[2].revealed = true;
+
+  const chips = w.needs.map((n, i) => {
+    if (n.revealed) return `<div class="need-chip">${magicDot(n.type)} ${n.type}</div>`;
+    const at = i === 1 ? BALANCE.REVEAL_SECOND_MS : BALANCE.REVEAL_TWIST_MS;
+    const price = i === 1 ? BALANCE.PRICES.revealSecond : BALANCE.PRICES.revealTwist;
+    const secs = Math.max(0, Math.ceil((at - elapsed) / 1000));
+    return `<div class="need-chip pay" id="reveal-${i}">❔ in ${secs}s · 🪙${price}</div>`;
+  }).join("");
+  const revealed = w.needs.filter(n => n.revealed).length;
+  const slots = Math.max(5, Math.min(7, 8 - revealed));
+  el.innerHTML = `
+    <div style="font-weight:800;font-size:14px;margin-bottom:6px">${ROUND.customer.emoji} “${ROUND.customer.line}”</div>
+    <div class="needs-row">${chips}</div>
+    <div class="reveal-slots">Finish now → <b>${slots} mixing slots</b> · Required match ${w.requiredMatch}%</div>`;
+  // pay-to-reveal handlers
+  w.needs.forEach((n, i) => {
+    if (!n.revealed) on(`#reveal-${i}`, "click", () => payReveal(i));
+  });
+}
+function payReveal(i) {
+  const price = i === 1 ? BALANCE.PRICES.revealSecond : BALANCE.PRICES.revealTwist;
+  if (GAME.gold < price) { toast("Not enough gold to reveal early."); return; }
+  GAME.gold -= price; save();
+  ROUND.wish.needs[i].revealed = true;
+  syncHud("shop");
+  paintReveal();
+}
+
+function doneShopping() {
+  if (ROUND._shopTimer) { clearInterval(ROUND._shopTimer); ROUND._shopTimer = null; }
+  const revealed = ROUND.wish.needs.filter(n => n.revealed).length;
+  ROUND.maxSlots = Math.max(5, Math.min(7, 8 - revealed));
+  const merged = applyTripleMatch(ROUND.inventory);
+  ROUND.inventory = merged.inventory;
+  if (merged.merged.length) toast(`✨ Triple match! ${merged.merged.length} potent ingredient${merged.merged.length > 1 ? "s" : ""} made.`);
+  renderMix();
+}
+
+/* Lightweight horizontal swipe helper */
+function addSwipe(el, cb) {
+  if (!el) return;
+  let x0 = null;
+  el.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  el.addEventListener("touchend", e => {
+    if (x0 == null) return;
+    const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 45) cb(dx < 0 ? 1 : -1);
+  }, { passive: true });
 }
 
 /* ======================================================================= */

@@ -32,6 +32,11 @@ const BALANCE = {
   // Ingredient slots earned by shopping speed
   SLOTS: { fast: 7, medium: 6, slow: 5 },
 
+  // Shop (Phase 3)
+  SHELF_MAX: 6,                  // ingredient cards per shelf
+  REVEAL_SECOND_MS: 30000,      // Second Need auto-reveals after 30s
+  REVEAL_TWIST_MS: 60000,       // Final Twist auto-reveals after 60s
+
   // Gold economy (kid-simple, patterned, scarce)
   PRICES: { treat: 10, revealSecond: 25, revealTwist: 50, ability: [100, 250, 500], location: 1000 },
   DAILY_GRANT: 150,
@@ -164,6 +169,39 @@ function rollPop(round) {
   return { charms, bonus };
 }
 
+/* --- Populate the four shelves for a round ------------------------------
+ * Each shelf draws up to SHELF_MAX from its eligible ingredients. Guarantees
+ * at least 2 ingredients matching the Main Need are stocked somewhere so a
+ * round is never impossible to attempt.
+ * ---------------------------------------------------------------------- */
+function populateShelves(wish) {
+  const shelves = {};
+  DATA.SHELF_ORDER.forEach(shelf => {
+    const eligible = DATA.INGREDIENTS.filter(i => i.shelves.includes(shelf));
+    shelves[shelf] = R.shuffle(eligible).slice(0, BALANCE.SHELF_MAX).map(i => i.id);
+  });
+  const mainType = wish.needs[0].type;
+  const countMain = () => DATA.SHELF_ORDER.reduce((n, s) => n + shelves[s].filter(id => {
+    const ing = DATA.INGREDIENT_BY_ID[id];
+    return !ing.wild && ing.qualities.includes(mainType);
+  }).length, 0);
+  const matching = R.shuffle(DATA.INGREDIENTS.filter(i => !i.wild && i.qualities.includes(mainType)));
+  let mi = 0;
+  while (countMain() < 2 && mi < matching.length) {
+    const ing = matching[mi++];
+    if (DATA.SHELF_ORDER.some(s => shelves[s].includes(ing.id))) continue;
+    const shelf = R.pick(ing.shelves);
+    const arr = shelves[shelf];
+    const repl = arr.findIndex(id => {
+      const c = DATA.INGREDIENT_BY_ID[id];
+      return !c.wild && !c.qualities.includes(mainType);
+    });
+    if (repl >= 0) arr[repl] = ing.id;
+    else if (arr.length < BALANCE.SHELF_MAX) arr.push(ing.id);
+  }
+  return shelves;
+}
+
 /* --- Triple match: 3 identical ingredients -> 1 Potent ------------------ */
 function applyTripleMatch(inventory) {
   const counts = {};
@@ -228,5 +266,5 @@ function scoreResult(round) {
 const ENGINE = {
   BALANCE, R, ingredientPower, difficultyFor, needCountFor,
   generateWish, newRound, applyTripleMatch, scoreMix, scoreResult,
-  scoopSplit, weightedPick, rollPop,
+  scoopSplit, weightedPick, rollPop, populateShelves,
 };
