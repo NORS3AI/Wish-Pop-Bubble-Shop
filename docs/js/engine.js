@@ -19,7 +19,9 @@ const BALANCE = {
   // Difficulty by how many customers served so far
   //   easy: Main only | medium: +Second | hard: +Final Twist
   REQUIRED_MATCH: { easy: 50, medium: 60, hard: 70, veryhard: 80 },
-  PAYMENT:        { easy: 20, medium: 30, hard: 40, veryhard: 50 },
+  // Payment is a random multiple of 10 in this range per customer, so gold AND
+  // scoops (1 scoop per 10 gold) vary from customer to customer.
+  PAYMENT_RANGE:  { easy: [20, 30], medium: [20, 40], hard: [30, 50], veryhard: [40, 60] },
   TIP: 10, TIP_MARGIN: 20,       // exceed required by this much -> tip
   CONSOLATION_FRACTION: 0.35,    // partial-credit gold on a miss (scaled to match)
   FAMILIAR_KEY_CHANCE: 0.5,      // chance the Toad finds a key (if shelves locked)
@@ -111,7 +113,9 @@ function newRound(state) {
   const customer = R.pick(DATA.CUSTOMERS);
   const diff = difficultyFor(state.servedTotal);
   const wish = generateWish(customer, diff);
-  const payment = BALANCE.PAYMENT[diff];
+  // payment: random multiple of 10 within the tier's range -> varies gold & scoops
+  const [pmin, pmax] = BALANCE.PAYMENT_RANGE[diff];
+  const payment = R.int(pmin / 10, pmax / 10) * 10;
   // scoops from payment; each scoop rolls its own bubble yield (randomized)
   const scoops = Math.max(1, Math.round(payment / 10));
   const scoopYields = [];
