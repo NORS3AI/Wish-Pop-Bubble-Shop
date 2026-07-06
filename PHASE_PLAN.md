@@ -35,9 +35,9 @@ A cute **familiar** (a Toad) helps for the cost of treats. Harder customers add
 
 ---
 
-> **Progress:** ✅ Phase 0 and ✅ Phase 1 are complete — the full round loops
-> end‑to‑end with real scoring and the gold economy. Scoop/Pop/Shop are still
-> placeholders (Phases 2–3 make them fully interactive).
+> **Progress:** ✅ Phases 0, 1 and 2 are complete. The full round loops
+> end‑to‑end with real scoring, the gold economy, glitter‑sifting, and real
+> bubble‑pop rewards. The ingredient shop is still a placeholder (Phase 3).
 
 ## Phase 0 — Foundation & Data (the engine room) — ✅ DONE
 
@@ -85,7 +85,7 @@ on a result, earn gold, and start the next customer — repeatedly.
 
 ---
 
-## Phase 2 — Scoop & Bubble‑Pop phases
+## Phase 2 — Scoop & Bubble‑Pop phases — ✅ DONE
 
 **Goal:** The first two interactive phases feel satisfying.
 

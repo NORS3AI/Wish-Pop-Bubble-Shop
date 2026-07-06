@@ -21,7 +21,13 @@ const BALANCE = {
 
   // Scoop / bubbles  (bubbles = max(3, round(payment/10) + 1))
   MIN_BUBBLES: 3,
-  CHARMS_PER_POP: 2,             // Phase-1 placeholder charm yield per bubble
+
+  // Bubble-pop rewards (Phase 2)
+  CHARM_POP_MIN: 2, CHARM_POP_MAX: 3,   // charms granted per pop (always)
+  BONUS_CHANCE: 0.5,                    // chance a pop also gives a bonus reward
+  BONUS_WEIGHTS: { ingredient: 40, gold: 25, bubble: 15, treat: 12, wild: 8 },
+  BONUS_GOLD_MIN: 3, BONUS_GOLD_MAX: 8,
+  MAX_BONUS_BUBBLES: 3,                 // cap extra bubbles per round (anti-runaway)
 
   // Ingredient slots earned by shopping speed
   SLOTS: { fast: 7, medium: 6, slow: 5 },
@@ -99,12 +105,63 @@ function newRound(state) {
     customer, wish, payment, bubblesTotal: bubbles,
     charmColorFor,
     charms: { Pink: 0, Blue: 0, Gold: 0, Green: 0, Purple: 0 },
+    bonusBubblesGained: 0,             // extra bubbles won this round (capped)
     inventory: [],                     // ingredient instances the player owns this round
     slots: [],                         // ingredients added to the cauldron
     maxSlots: BALANCE.SLOTS.slow,      // updated by shopping speed later
     treatsUsed: 0,
     result: null,
   };
+}
+
+/* --- Scoop split: distribute total bubbles across scoops (each >=1) ------ */
+function scoopSplit(total, scoops) {
+  scoops = Math.max(1, scoops);
+  const base = Math.floor(total / scoops);
+  let rem = total - base * scoops;
+  const out = [];
+  for (let i = 0; i < scoops; i++) out.push(base + (rem-- > 0 ? 1 : 0));
+  return out; // e.g. total 5 scoops 2 -> [3,2]
+}
+
+/* --- Weighted pick from a {key: weight} map ----------------------------- */
+function weightedPick(weights) {
+  const entries = Object.entries(weights);
+  const total = entries.reduce((s, [, w]) => s + w, 0);
+  let r = Math.random() * total;
+  for (const [k, w] of entries) { if ((r -= w) < 0) return k; }
+  return entries[0][0];
+}
+
+/* --- Roll one bubble pop: always charms, sometimes a bonus -------------- */
+function rollPop(round) {
+  // charms (always)
+  const charms = {};
+  const n = R.int(BALANCE.CHARM_POP_MIN, BALANCE.CHARM_POP_MAX);
+  for (let i = 0; i < n; i++) {
+    const c = R.pick(DATA.CHARM_TYPES);
+    charms[c] = (charms[c] || 0) + 1;
+  }
+  // bonus (sometimes)
+  let bonus = null;
+  if (R.chance(BALANCE.BONUS_CHANCE)) {
+    let type = weightedPick(BALANCE.BONUS_WEIGHTS);
+    if (type === "bubble" && round.bonusBubblesGained >= BALANCE.MAX_BONUS_BUBBLES) type = "gold";
+    if (type === "ingredient") {
+      const ing = R.pick(DATA.INGREDIENTS.filter(i => !i.wild));
+      bonus = { type, ingId: ing.id };
+    } else if (type === "wild") {
+      const ing = R.pick(DATA.INGREDIENTS.filter(i => i.wild));
+      bonus = { type, ingId: ing.id };
+    } else if (type === "treat") {
+      bonus = { type, amount: 1 };
+    } else if (type === "gold") {
+      bonus = { type, amount: R.int(BALANCE.BONUS_GOLD_MIN, BALANCE.BONUS_GOLD_MAX) };
+    } else { // bubble
+      bonus = { type: "bubble" };
+    }
+  }
+  return { charms, bonus };
 }
 
 /* --- Triple match: 3 identical ingredients -> 1 Potent ------------------ */
@@ -171,4 +228,5 @@ function scoreResult(round) {
 const ENGINE = {
   BALANCE, R, ingredientPower, difficultyFor, needCountFor,
   generateWish, newRound, applyTripleMatch, scoreMix, scoreResult,
+  scoopSplit, weightedPick, rollPop,
 };

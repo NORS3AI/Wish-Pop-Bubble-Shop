@@ -25,8 +25,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   ingredients → mix to match the wish → get scored → earn gold → next customer.
 - Built on the real game data (12 magic types, 5 charms, the ingredient library,
   wish types & customers) with a scoring engine and a kid‑simple gold economy.
-- The scoop, pop, and shop steps are simple placeholders for now — the fully
-  interactive versions arrive in the next phases (see `PHASE_PLAN.md`).
+- 🫧 **Scooping and popping are now real (Phase 2).** Sift each scoop of glitter
+  to reveal Wish Bubbles, then pop them for charms plus surprise rewards —
+  ingredients, gold, treats, rare wild ingredients, and bonus bubbles, revealed
+  by tapping question‑mark bubbles.
+- The ingredient shop is still a simple placeholder for now — the full version
+  (shelves, charm‑spending, reveal timers) arrives next (see `PHASE_PLAN.md`).
 - Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
   a "rotate to portrait" nudge in landscape.
 

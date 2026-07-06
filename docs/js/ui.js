@@ -42,9 +42,15 @@ function toast(msg) {
 }
 function magicDot(type) { return `<span class="dot" style="background:${D.MAGIC[type]}"></span>`; }
 function hud(title) {
-  return `<div class="hud"><span>🐸 <span>${GAME.treats}</span> treats</span>
+  return `<div class="hud"><span>🐸 <span class="treatcount">${GAME.treats}</span> treats</span>
     <span class="title">${title}</span>
     <span class="gold">🪙 ${GAME.gold}</span></div>`;
+}
+function syncHud(id) {
+  const g = document.querySelector("#screen-" + id + " .hud .gold");
+  if (g) g.textContent = "🪙 " + GAME.gold;
+  const t = document.querySelector("#screen-" + id + " .hud .treatcount");
+  if (t) t.textContent = GAME.treats;
 }
 function charmsBar() {
   return `<div class="charms">${D.CHARM_TYPES.map(c =>
@@ -106,48 +112,85 @@ function renderCustomer() {
 }
 
 /* ======================================================================= */
-/* SCOOP  (placeholder reveal)                                             */
+/* SCOOP  (Phase 2: sift each scoop of glitter to reveal Wish Bubbles)      */
 /* ======================================================================= */
 function renderScoop() {
+  const scoops = Math.max(1, Math.round(ROUND.payment / 10));
+  const split = ENGINE.scoopSplit(ROUND.bubblesTotal, scoops);
+  let idx = 0, revealed = 0;
+
   html("scoop", `
     ${hud("Scoop Phase")}
-    <div class="grow center" style="gap:18px">
-      <div class="ph big" id="scoop-token">🥄</div>
-      <div id="scoop-text" class="muted">Tap the scoop to sift away the glitter!</div>
-      <div id="scoop-result" style="font-size:24px;font-weight:900;min-height:30px"></div>
+    <div class="grow center" style="gap:16px">
+      <div id="scoop-token" class="ph big" style="position:relative">
+        <span id="scoop-face">🥄</span>
+        <span id="glitter" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px">✨✨</span>
+      </div>
+      <div id="scoop-step" class="muted">Scoop 1 of ${scoops}</div>
+      <div id="scoop-text" style="font-size:20px;font-weight:800;min-height:26px">Tap to sift the glitter!</div>
+      <div id="scoop-result" class="muted"></div>
     </div>
-    <button class="btn secondary" id="scoop-continue" disabled>Continue</button>
+    <div class="row">
+      <button class="btn secondary" id="auto-sift">Auto Sift</button>
+      <button class="btn" id="scoop-continue" disabled>Continue</button>
+    </div>
     ${familiarToken()}
   `);
-  let sifted = false;
-  const doSift = () => {
-    if (sifted) return; sifted = true;
-    $("#scoop-token").textContent = "✨";
-    $("#scoop-text").textContent = "Wish Bubbles revealed!";
-    $("#scoop-result").innerHTML = `🫧 <b>${ROUND.bubblesTotal}</b> Bubbles Found!`;
-    $("#scoop-continue").disabled = false;
-    $("#scoop-continue").classList.remove("secondary");
-  };
-  on("#scoop-token", "click", doSift);
+
+  function siftOne() {
+    if (idx >= scoops) return;
+    const found = split[idx];
+    revealed += found;
+    idx++;
+    const g = $("#glitter"); if (g) { g.textContent = "🫧"; g.style.transition = "opacity .3s"; g.style.opacity = "0"; }
+    const face = $("#scoop-face"); if (face) face.textContent = "🫧";
+    $("#scoop-text").innerHTML = `🫧 <b>${found}</b> found!`;
+    $("#scoop-result").textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
+    if (idx < scoops) {
+      $("#scoop-step").textContent = `Scoop ${idx + 1} of ${scoops}`;
+      setTimeout(() => {
+        const g2 = $("#glitter"); if (g2) { g2.textContent = "✨✨"; g2.style.opacity = "1"; }
+        const f2 = $("#scoop-face"); if (f2) f2.textContent = "🥄";
+        const t = $("#scoop-text"); if (t) t.textContent = "Tap to sift the glitter!";
+      }, 350);
+    } else {
+      finish();
+    }
+  }
+  function finish() {
+    $("#scoop-step").textContent = "All scooped!";
+    $("#scoop-text").innerHTML = `🫧 <b>${revealed}</b> Wish Bubbles found!`;
+    ROUND.bubblesTotal = revealed;
+    const c = $("#scoop-continue"); if (c) { c.disabled = false; }
+    const a = $("#auto-sift"); if (a) a.disabled = true;
+  }
+  on("#scoop-token", "click", siftOne);
+  on("#auto-sift", "click", () => { while (idx < scoops) siftOne(); });
   on("#scoop-continue", "click", renderPop);
   wireFamiliar("scoop");
   show("scoop");
 }
 
 /* ======================================================================= */
-/* BUBBLE POP  (minimal: pops grant charms)                                */
+/* BUBBLE POP  (Phase 2: real rewards + question-mark reveals)             */
 /* ======================================================================= */
+const REWARD_LABEL = {
+  ingredient: "Ingredient!", wild: "Wild Ingredient!", treat: "Treat!",
+  gold: "Gold!", bubble: "Bonus Bubble!",
+};
 function renderPop() {
   ROUND.bubblesLeft = ROUND.bubblesTotal;
+  ROUND.pending = null;   // an unrevealed "?" reward, or null
   html("pop", `
     ${hud("Pop Phase")}
     <div class="hud" style="background:none;padding:2px 4px">
       <div class="bubble-queue" id="queue"></div>
       <span class="muted" id="left-count"></span>
     </div>
-    <div class="grow center" style="gap:20px">
+    <div class="grow center" style="gap:16px">
       <div class="big-bubble" id="big-bubble">🫧</div>
-      <div class="muted">Tap the bubble to pop it and collect charms!</div>
+      <div class="muted" id="pop-hint">Tap the bubble to pop it and collect charms!</div>
+      <div id="reward-flash" style="font-size:18px;font-weight:800;min-height:24px"></div>
       ${charmsBar()}
     </div>
     <div class="row">
@@ -157,53 +200,116 @@ function renderPop() {
     ${familiarToken()}
   `);
   renderQueue();
-  const popOne = () => {
-    if (ROUND.bubblesLeft <= 0) return;
-    ROUND.bubblesLeft--;
-    // Phase-1 reward: charms of a random color
-    for (let i = 0; i < BALANCE.CHARMS_PER_POP; i++) {
-      ROUND.charms[R.pick(D.CHARM_TYPES)]++;
-    }
-    refreshPop();
-  };
-  on("#big-bubble", "click", popOne);
-  on("#pop-all", "click", () => { while (ROUND.bubblesLeft > 0) popOne(); });
+  on("#big-bubble", "click", onBubbleTap);
+  on("#pop-all", "click", popAll);
   on("#pop-continue", "click", renderShop);
   wireFamiliar("pop");
   show("pop");
+  refreshPop();
 }
+
+function onBubbleTap() {
+  if (ROUND.pending) { revealPending(); return; }
+  if (ROUND.bubblesLeft > 0) popOne();
+}
+
+function popOne() {
+  if (ROUND.bubblesLeft <= 0 || ROUND.pending) return;
+  ROUND.bubblesLeft--;
+  const roll = ENGINE.rollPop(ROUND);
+  // charms are always collected immediately
+  Object.keys(roll.charms).forEach(c => { ROUND.charms[c] += roll.charms[c]; });
+  flashReward("＋ charms");
+  if (roll.bonus) {
+    ROUND.pending = roll.bonus;   // becomes a "?" to reveal
+  }
+  refreshPop();
+}
+
+function revealPending() {
+  const b = ROUND.pending; if (!b) return;
+  ROUND.pending = null;
+  let msg = "";
+  if (b.type === "ingredient" || b.type === "wild") {
+    ROUND.inventory.push({ id: b.ingId, potent: false });
+    const ing = D.INGREDIENT_BY_ID[b.ingId];
+    msg = `${ing.emoji} ${b.type === "wild" ? "Wild " : ""}${ing.name} → bag`;
+  } else if (b.type === "treat") {
+    GAME.treats += b.amount; save();
+    msg = `🐸 +${b.amount} treat`;
+  } else if (b.type === "gold") {
+    GAME.gold += b.amount; save();
+    msg = `🪙 +${b.amount} gold`;
+  } else if (b.type === "bubble") {
+    ROUND.bubblesLeft++; ROUND.bubblesTotal++; ROUND.bonusBubblesGained++;
+    msg = `🫧 +1 bonus bubble!`;
+  }
+  flashReward(msg);
+  refreshPop();
+}
+
+function popAll() {
+  let guard = 200;
+  while ((ROUND.bubblesLeft > 0 || ROUND.pending) && guard-- > 0) {
+    if (ROUND.pending) revealPending();
+    else popOne();
+  }
+  refreshPop();
+}
+
 function renderQueue() {
   const total = ROUND.bubblesTotal, left = ROUND.bubblesLeft;
   let q = "";
-  for (let i = 0; i < total; i++) q += `<span class="b ${i >= left ? "popped" : ""}"></span>`;
+  for (let i = 0; i < total; i++) q += `<span class="b ${i >= total - left ? "" : "popped"}"></span>`;
   const el = $("#queue"); if (el) el.innerHTML = q;
   const lc = $("#left-count"); if (lc) lc.textContent = left + " left";
 }
+let flashT = null;
+function flashReward(msg) {
+  const el = $("#reward-flash"); if (!el) return;
+  el.textContent = msg; el.style.opacity = "1";
+  clearTimeout(flashT); flashT = setTimeout(() => { if (el) el.style.opacity = ".0"; el && (el.style.transition = "opacity .4s"); }, 900);
+}
 function refreshPop() {
   renderQueue();
+  syncHud("pop");
   const cb = $(".charms"); if (cb) cb.outerHTML = charmsBar();
-  if (ROUND.bubblesLeft <= 0) {
-    const bb = $("#big-bubble"); if (bb) { bb.style.opacity = ".3"; bb.textContent = "✓"; }
-    const cont = $("#pop-continue"); if (cont) cont.disabled = false;
-    const pa = $("#pop-all"); if (pa) pa.disabled = true;
+  const bb = $("#big-bubble"), hint = $("#pop-hint");
+  if (ROUND.pending) {
+    if (bb) { bb.textContent = "❓"; bb.style.opacity = "1"; }
+    if (hint) hint.textContent = "Tap the ❓ to reveal your bonus!";
+  } else if (ROUND.bubblesLeft > 0) {
+    if (bb) { bb.textContent = "🫧"; bb.style.opacity = "1"; }
+    if (hint) hint.textContent = "Tap the bubble to pop it and collect charms!";
+  } else {
+    if (bb) { bb.textContent = "✓"; bb.style.opacity = ".35"; }
+    if (hint) hint.textContent = "All bubbles popped!";
   }
+  const done = ROUND.bubblesLeft <= 0 && !ROUND.pending;
+  const cont = $("#pop-continue"); if (cont) cont.disabled = !done;
+  const pa = $("#pop-all"); if (pa) pa.disabled = done;
 }
 
 /* ======================================================================= */
 /* SHOP  (Phase-1 placeholder: auto-grant a relevant starter inventory)    */
 /* ======================================================================= */
 function renderShop() {
-  // Build an inventory that makes success achievable but not automatic.
+  // Keep ingredients already won from popping bubbles; top up so each need has
+  // at least 2 matching options available, then add a little filler.
   const nonWild = D.INGREDIENTS.filter(i => !i.wild);
   const picks = [];
   ROUND.wish.needs.forEach(need => {
+    const have = ROUND.inventory.filter(inst => {
+      const ing = D.INGREDIENT_BY_ID[inst.id];
+      return !ing.wild && ing.qualities.includes(need.type);
+    }).length;
+    const want = Math.max(0, 2 - have);
     const matching = R.shuffle(nonWild.filter(i => i.qualities.includes(need.type)));
-    matching.slice(0, 2).forEach(i => picks.push(i.id));
+    matching.slice(0, want).forEach(i => picks.push(i.id));
   });
-  // filler
-  R.shuffle(nonWild).slice(0, 3).forEach(i => picks.push(i.id));
-  const insts = picks.map(id => ({ id, potent: false }));
-  const merged = applyTripleMatch(insts);
+  R.shuffle(nonWild).slice(0, 2).forEach(i => picks.push(i.id)); // filler
+  picks.forEach(id => ROUND.inventory.push({ id, potent: false }));
+  const merged = applyTripleMatch(ROUND.inventory);
   ROUND.inventory = merged.inventory;
   ROUND.maxSlots = BALANCE.SLOTS.slow; // no shop timer yet -> base 5 slots
 
@@ -212,7 +318,7 @@ function renderShop() {
     <div class="grow center" style="gap:14px">
       <div class="ph big">🛒</div>
       <div style="font-weight:800;font-size:18px">Ingredients gathered!</div>
-      <p class="muted" style="max-width:320px">Placeholder shop — full shelves, charms, and reveal timers arrive in <b>Phase 3</b>. For now, a helpful starter set was gathered for you:</p>
+      <p class="muted" style="max-width:320px">Placeholder shop — full shelves, charm‑spending, and reveal timers arrive in <b>Phase 3</b>. For now, here's everything you won from bubbles plus a helpful top‑up:</p>
       <div class="inv" style="max-width:340px">
         ${ROUND.inventory.map(inst => ingCardMini(inst)).join("")}
       </div>
