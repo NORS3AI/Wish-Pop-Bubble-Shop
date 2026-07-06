@@ -160,12 +160,15 @@ homework. This revision keeps the depth but cuts the mental math.
   ingredients (library now 40). Shelf guarantee keys off the **visible** main
   quality so the player can always see a match.
 
-### Revision B — Shelf keys & per‑round unlocks — ⏳ NEXT
-- Each round starts with **one shelf unlocked** (guaranteed to cover the main
-  need); the other three start **locked**.
-- Bubbles can drop **shelf keys** that unlock a random locked shelf for this
-  customer — adds the lucky‑scoop "did I get the shelf I wanted?" tension without
-  ever making a round impossible.
+### Revision B — Shelf keys & per‑round unlocks — ✅ DONE
+- Each round starts with **one shelf unlocked** (chosen so it stocks ≥2 visible
+  main‑need ingredients); the other three start **locked**.
+- Bubbles drop **shelf keys** (~32%/pop) that unlock a random locked shelf for
+  this customer — the lucky‑scoop "did I get the shelf I wanted?" tension, never
+  impossible since the open shelf always covers the main need.
+- Pop screen shows which shelves are open and flashes unlocks; the shop shows a
+  clear locked state per shelf. Simulated win rate ≈ **98/80/63%** easy/med/hard
+  — easy stays forgiving, hard genuinely depends on unlocking shelves.
 
 ## Phase 5 — Magic Allergy system
 

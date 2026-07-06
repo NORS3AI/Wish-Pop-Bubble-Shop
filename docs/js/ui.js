@@ -202,6 +202,7 @@ function renderPop() {
       <div class="muted" id="pop-hint">Tap the bubble to pop it and collect charms!</div>
       <div id="reward-flash" style="font-size:18px;font-weight:800;min-height:24px"></div>
       ${charmsBar()}
+      <div id="unlocked-line" class="muted" style="font-size:13px"></div>
     </div>
     <div class="row">
       <button class="btn secondary" id="pop-all">Pop All</button>
@@ -230,10 +231,20 @@ function popOne() {
   // charms are always collected immediately
   Object.keys(roll.charms).forEach(c => { ROUND.charms[c] += roll.charms[c]; });
   flashReward("＋ charms");
-  if (roll.bonus) {
-    ROUND.pending = roll.bonus;   // becomes a "?" to reveal
-  }
+  if (roll.key) grantKey();            // key unlocks a shelf (flashes its own message)
+  if (roll.bonus) ROUND.pending = roll.bonus;   // becomes a "?" to reveal
   refreshPop();
+}
+function grantKey() {
+  const locked = D.SHELF_ORDER.filter(s => !ROUND.unlocked.includes(s));
+  if (locked.length) {
+    const s = R.pick(locked);
+    ROUND.unlocked.push(s);
+    flashReward(`🔑 ${D.SHELVES[s].name} unlocked!`);
+  } else {
+    const c = R.pick(D.CHARM_TYPES); ROUND.charms[c] += 2;
+    flashReward("🔑 → ＋2 charms");
+  }
 }
 
 function revealPending() {
@@ -284,6 +295,9 @@ function refreshPop() {
   renderQueue();
   syncHud("pop");
   const cb = $(".charms"); if (cb) cb.outerHTML = charmsBar();
+  const ul = $("#unlocked-line");
+  if (ul) ul.innerHTML = "🔓 Shelves open: " + ROUND.unlocked.map(s => D.SHELVES[s].name.replace(" Shelf", "")).join(", ") +
+    (ROUND.unlocked.length < 4 ? ` · <span style="opacity:.7">pop 🔑 keys to open more</span>` : "");
   const bb = $("#big-bubble"), hint = $("#pop-hint");
   if (ROUND.pending) {
     if (bb) { bb.textContent = "❓"; bb.style.opacity = "1"; }
@@ -305,8 +319,8 @@ function refreshPop() {
 /* ======================================================================= */
 function renderShop() {
   if (ROUND._shopTimer) clearInterval(ROUND._shopTimer);
-  ROUND.shelves = ENGINE.populateShelves(ROUND.wish);
-  ROUND.currentShelf = 0;
+  ROUND.currentShelf = D.SHELF_ORDER.indexOf(ROUND.startShelf); // land on an open shelf
+  if (ROUND.currentShelf < 0) ROUND.currentShelf = 0;
   ROUND.bagOpen = false;
   ROUND.shopStart = Date.now();
   paintShop();
@@ -314,13 +328,19 @@ function renderShop() {
   ROUND._shopTimer = setInterval(paintReveal, 500);
 }
 function shelfName() { return D.SHELF_ORDER[ROUND.currentShelf]; }
+function isUnlocked(shelf) { return ROUND.unlocked.includes(shelf); }
 
 function paintShop() {
   const shelf = shelfName();
   const info = D.SHELVES[shelf];
-  const cards = ROUND.shelves[shelf].map(id => shopCard(id)).join("") ||
-    `<div class="muted" style="grid-column:1/-1;text-align:center;padding:20px">Sold out! Swipe to another shelf.</div>`;
-  const dots = D.SHELF_ORDER.map((s, i) => `<span class="d ${i === ROUND.currentShelf ? "on" : ""}"></span>`).join("");
+  const locked = !isUnlocked(shelf);
+  const cards = locked
+    ? `<div class="locked-shelf"><div class="lk">🔒</div><div class="lkt">${info.name} is locked</div>
+        <div class="muted">Pop a 🔑 shelf key while popping bubbles to open it.</div></div>`
+    : (ROUND.shelves[shelf].map(id => shopCard(id)).join("") ||
+       `<div class="muted" style="grid-column:1/-1;text-align:center;padding:20px">Sold out! Swipe to another shelf.</div>`);
+  const dots = D.SHELF_ORDER.map((s, i) =>
+    `<span class="d ${i === ROUND.currentShelf ? "on" : ""} ${isUnlocked(s) ? "" : "locked"}"></span>`).join("");
   const bagN = ROUND.inventory.length;
   html("shop", `
     ${hud("Shop Phase")}
@@ -328,7 +348,7 @@ function paintShop() {
     ${charmsBar()}
     <div class="shelf-bar">
       <div class="shelf-arrow" id="shelf-prev">‹</div>
-      <div class="shelf-title">${info.name}<small>${info.style}</small></div>
+      <div class="shelf-title">${locked ? "🔒 " : ""}${info.name}<small>${isUnlocked(shelf) ? info.style : "locked — needs a key"}</small></div>
       <div class="shelf-arrow" id="shelf-next">›</div>
     </div>
     <div class="dots">${dots}</div>

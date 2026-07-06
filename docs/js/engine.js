@@ -31,6 +31,7 @@ const BALANCE = {
   BONUS_WEIGHTS: { ingredient: 40, gold: 25, bubble: 15, treat: 12, wild: 8 },
   BONUS_GOLD_MIN: 3, BONUS_GOLD_MAX: 8,
   MAX_BONUS_BUBBLES: 3,                 // cap extra bubbles per round (anti-runaway)
+  KEY_CHANCE: 0.32,                     // per-pop chance to drop a shelf key
 
   // Ingredient slots earned by shopping speed
   SLOTS: { fast: 7, medium: 6, slow: 5 },
@@ -108,13 +109,16 @@ function newRound(state) {
   const payment = BALANCE.PAYMENT[diff];
   const bubbles = Math.max(BALANCE.MIN_BUBBLES, Math.round(payment / 10) + 1);
 
-  // Roll the required charm COLOR per ingredient this round (cost stays fixed)
+  // Roll the required charm COLOR per ingredient this round
   const charmColorFor = {};
   DATA.INGREDIENTS.forEach(i => { charmColorFor[i.id] = R.pick(DATA.CHARM_TYPES); });
 
+  // Shelves + which one starts unlocked (keys open the rest during popping)
+  const { shelves, startShelf } = populateShelves(wish);
+
   return {
     customer, wish, payment, bubblesTotal: bubbles,
-    charmColorFor,
+    charmColorFor, shelves, startShelf, unlocked: [startShelf],
     charms: { Pink: 0, Blue: 0, Gold: 0, Green: 0, Purple: 0 },
     bonusBubblesGained: 0,             // extra bubbles won this round (capped)
     inventory: [],                     // ingredient instances the player owns this round
@@ -170,13 +174,17 @@ function rollPop(round) {
       bonus = { type: "bubble" };
     }
   }
-  return { charms, bonus };
+  // independent shelf-key roll (the UI unlocks a random locked shelf)
+  const key = R.chance(BALANCE.KEY_CHANCE);
+  return { charms, bonus, key };
 }
 
 /* --- Populate the four shelves for a round ------------------------------
- * Each shelf draws up to SHELF_MAX from its eligible ingredients. Guarantees
- * at least 2 ingredients matching the Main Need are stocked somewhere so a
- * round is never impossible to attempt.
+ * Each shelf draws up to SHELF_MAX from its eligible ingredients. Also chooses
+ * the STARTING (unlocked) shelf and guarantees it stocks >=2 ingredients whose
+ * visible main quality is the main need, so the opening shelf is always enough
+ * to attempt the round. Other shelves start locked (opened by keys).
+ * Returns { shelves, startShelf }.
  * ---------------------------------------------------------------------- */
 function populateShelves(wish) {
   const shelves = {};
@@ -184,26 +192,21 @@ function populateShelves(wish) {
     const eligible = DATA.INGREDIENTS.filter(i => i.shelves.includes(shelf));
     shelves[shelf] = R.shuffle(eligible).slice(0, BALANCE.SHELF_MAX).map(i => i.id);
   });
-  // Guarantee >=2 ingredients whose VISIBLE main quality is the main need, so the
-  // player can actually see and buy matches. (Secondaries are hidden.)
   const mainType = wish.needs[0].type;
-  const showsMain = id => { const ing = DATA.INGREDIENT_BY_ID[id]; return !ing.wild && ing.qualities[0] === mainType; };
-  const countMain = () => DATA.SHELF_ORDER.reduce((n, s) => n + shelves[s].filter(showsMain).length, 0);
-  const matching = R.shuffle(DATA.INGREDIENTS.filter(i => !i.wild && i.qualities[0] === mainType));
-  let mi = 0;
-  while (countMain() < 2 && mi < matching.length) {
-    const ing = matching[mi++];
-    if (DATA.SHELF_ORDER.some(s => shelves[s].includes(ing.id))) continue;
-    const shelf = R.pick(ing.shelves);
-    const arr = shelves[shelf];
-    const repl = arr.findIndex(id => {
-      const c = DATA.INGREDIENT_BY_ID[id];
-      return !c.wild && c.qualities[0] !== mainType;
-    });
+  const mainIngs = DATA.INGREDIENTS.filter(i => !i.wild && i.qualities[0] === mainType);
+  // pick a start shelf that can actually hold a main-need ingredient
+  const candidates = DATA.SHELF_ORDER.filter(s => mainIngs.some(i => i.shelves.includes(s)));
+  const startShelf = R.pick(candidates.length ? candidates : DATA.SHELF_ORDER);
+  // stock the start shelf with >=2 visible main-need ingredients
+  const onStart = R.shuffle(mainIngs.filter(i => i.shelves.includes(startShelf)));
+  const arr = shelves[startShelf];
+  onStart.slice(0, 2).forEach(ing => {
+    if (arr.includes(ing.id)) return;
+    const repl = arr.findIndex(id => { const c = DATA.INGREDIENT_BY_ID[id]; return !c.wild && c.qualities[0] !== mainType; });
     if (repl >= 0) arr[repl] = ing.id;
     else if (arr.length < BALANCE.SHELF_MAX) arr.push(ing.id);
-  }
-  return shelves;
+  });
+  return { shelves, startShelf };
 }
 
 /* --- Triple match: 3 identical ingredients -> 1 Potent ------------------ */

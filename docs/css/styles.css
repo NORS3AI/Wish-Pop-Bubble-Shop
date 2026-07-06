@@ -136,6 +136,11 @@ html, body {
 .dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 6px; }
 .dots .d { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
 .dots .d.on { background: var(--pink); }
+.dots .d.locked { background: transparent; box-shadow: inset 0 0 0 1px var(--line); opacity: .6; }
+.locked-shelf { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 8px; padding: 34px 16px; text-align: center; }
+.locked-shelf .lk { font-size: 52px; opacity: .85; }
+.locked-shelf .lkt { font-weight: 800; font-size: 17px; }
 .ing-card.cant { opacity: .45; }
 .ing-card .cost .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: 2px; }
 .bag-btn { background: var(--card); border: 1px solid var(--line); color: var(--ink); border-radius: 12px;

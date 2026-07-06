@@ -36,9 +36,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 - 🍯 **The mixing cauldron is complete (Phase 4).** Add ingredients and watch the
   cauldron fill and glow toward the customer's needs, with live match meters and a
   real "stop now, or risk one more for a tip?" decision. Three of the same
-  ingredient merge into a stronger "potent" one. The whole game is now balanced so
-  it's fun and fair — winnable but not automatic, and never punishing.
-- Next up: Phase 5 adds magic allergies for tougher customers (see `PHASE_PLAN.md`).
+  ingredient merge into a stronger "potent" one.
+- ⚡ **Faster, snappier design (v2).** Each ingredient now shows just its one main
+  magic (with hidden bonuses the cauldron reveals), and everything costs 1 charm of
+  its color — no more comparing three tags against three bars. Bubbles now also
+  drop **shelf keys**: you start with one shelf open and unlock the others by
+  popping keys, so there's a fun "which shelves did I get?" gamble each customer.
+- Next up: magic allergies for tougher customers (see `PHASE_PLAN.md`).
 - Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
   a "rotate to portrait" nudge in landscape.
 
