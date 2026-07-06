@@ -21,13 +21,11 @@ const MAGIC = {
 };
 const MAGIC_TYPES = Object.keys(MAGIC);
 
-/* --- 2. Charm currencies (5) — color is only a currency, not a magic ---- */
+/* --- 2. Charm currencies (3) — color is only a currency, not a magic ---- */
 const CHARMS = {
-  Pink:   "#ff7eb9",
-  Blue:   "#6db8ff",
-  Gold:   "#ffcf5c",
-  Green:  "#7ee08a",
-  Purple: "#c48bff",
+  Pink: "#ff7eb9",
+  Blue: "#6db8ff",
+  Gold: "#ffcf5c",
 };
 const CHARM_TYPES = Object.keys(CHARMS);
 

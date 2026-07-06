@@ -14,7 +14,7 @@ const BALANCE = {
   POTENT_MULT: 2.5,              // tripled -> Potent ingredient multiplier
   WILD_MIN: 3, WILD_MAX: 6,      // wild ingredient random strength per rolled quality
   NEED_WEIGHTS: { 1: [1.0], 2: [0.6, 0.4], 3: [0.4, 0.3, 0.3] }, // Main / Second / Final
-  INGREDIENT_COST: 2,            // every ingredient costs 1 charm of its (random) color
+  INGREDIENT_COST: 3,            // every ingredient costs 1 charm of its (random) color
 
   // Difficulty by how many customers served so far
   //   easy: Main only | medium: +Second | hard: +Final Twist
@@ -169,7 +169,7 @@ function newRound(state) {
   return {
     customer, wish, payment, bubblesTotal: bubbles, scoops, scoopYields,
     charmColorFor, shelves, startShelf, unlocked: [startShelf],
-    charms: { Pink: 0, Blue: 0, Gold: 0, Green: 0, Purple: 0 },
+    charms: DATA.CHARM_TYPES.reduce((o, c) => (o[c] = 0, o), {}),
     bonusBubblesGained: 0,             // extra bubbles won this round (capped)
     inventory: [],                     // ingredient instances the player owns this round
     slots: [],                         // ingredients added to the cauldron
