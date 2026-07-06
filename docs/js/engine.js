@@ -7,7 +7,7 @@
 /* --- BALANCE: every tunable number in one place ------------------------- */
 const BALANCE = {
   // Scoring
-  NEED_TARGET: 10,               // magic points needed to fill one need's bar to 100%
+  NEED_TARGET: 7,                // magic points needed to fill one need's bar to 100%
   POWER_BY_COST: { 1: 4, 2: 4, 3: 3, 5: 3, 7: 3 }, // hidden strength each quality adds
   POTENT_MULT: 2.5,              // tripled -> Potent ingredient multiplier
   WILD_MIN: 2, WILD_MAX: 4,      // wild ingredient random strength per rolled quality
@@ -19,8 +19,8 @@ const BALANCE = {
   PAYMENT:        { easy: 20, medium: 30, hard: 40, veryhard: 50 },
   TIP: 10, TIP_MARGIN: 20,       // exceed required by this much -> tip
 
-  // Scoop / bubbles  (bubbles = max(3, round(payment/10) + 1))
-  MIN_BUBBLES: 3,
+  // Scoop / bubbles  (bubbles = max(4, round(payment/10) + 1))
+  MIN_BUBBLES: 4,
 
   // Bubble-pop rewards (Phase 2)
   CHARM_POP_MIN: 2, CHARM_POP_MAX: 3,   // charms granted per pop (always)
@@ -140,13 +140,11 @@ function weightedPick(weights) {
 
 /* --- Roll one bubble pop: always charms, sometimes a bonus -------------- */
 function rollPop(round) {
-  // charms (always)
+  // charms (always) — stacks in TWO colors per pop: enough to afford ingredients
+  // of a specific color while keeping decent coverage across the five currencies.
   const charms = {};
-  const n = R.int(BALANCE.CHARM_POP_MIN, BALANCE.CHARM_POP_MAX);
-  for (let i = 0; i < n; i++) {
-    const c = R.pick(DATA.CHARM_TYPES);
-    charms[c] = (charms[c] || 0) + 1;
-  }
+  const cols = R.shuffle(DATA.CHARM_TYPES).slice(0, 2);
+  cols.forEach(c => { charms[c] = R.int(BALANCE.CHARM_POP_MIN, BALANCE.CHARM_POP_MAX); });
   // bonus (sometimes)
   let bonus = null;
   if (R.chance(BALANCE.BONUS_CHANCE)) {

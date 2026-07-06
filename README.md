@@ -33,7 +33,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   (Fresh, Royal, Sparkle, Backroom), spend your charms to buy ingredients, and
   watch the customer's wish reveal more needs over time — finish shopping fast for
   bonus mixing slots, or pay gold to reveal a need early.
-- Next up: Phase 4 gives the mixing step its final polish (see `PHASE_PLAN.md`).
+- 🍯 **The mixing cauldron is complete (Phase 4).** Add ingredients and watch the
+  cauldron fill and glow toward the customer's needs, with live match meters and a
+  real "stop now, or risk one more for a tip?" decision. Three of the same
+  ingredient merge into a stronger "potent" one. The whole game is now balanced so
+  it's fun and fair — winnable but not automatic, and never punishing.
+- Next up: Phase 5 adds magic allergies for tougher customers (see `PHASE_PLAN.md`).
 - Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
   a "rotate to portrait" nudge in landscape.
 

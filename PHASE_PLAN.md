@@ -35,10 +35,11 @@ A cute **familiar** (a Toad) helps for the cost of treats. Harder customers add
 
 ---
 
-> **Progress:** ✅ Phases 0–3 are complete. The full round loops end‑to‑end
-> with real scoring, gold economy, glitter‑sifting, bubble‑pop rewards, and the
-> real ingredient shop (four shelves, charm‑spending, reveal timers, speed‑bonus
-> slots). Next: Phase 4 makes the mixing step its final, polished version.
+> **Progress:** ✅ Phases 0–4 are complete — the entire core game is built and
+> balanced: customer → scoop → pop → shop → mix → score → gold. The mixing step
+> has its final cauldron UI, triple‑match celebration, and the win/lose feel.
+> Optimal‑play win rates land ~84% easy / 88% medium / 74% hard (forgiving, with
+> hard clearly hardest). Next: Phase 5 adds the magic‑allergy system.
 
 ## Phase 0 — Foundation & Data (the engine room) — ✅ DONE
 
@@ -125,7 +126,7 @@ works, and the earned slot count carries into mixing.
 
 ---
 
-## Phase 4 — Mixing, Triple‑Match & full scoring
+## Phase 4 — Mixing, Triple‑Match & full scoring — ✅ DONE
 
 **Goal:** The core puzzle decision — "stop now or risk one more?"
 
@@ -277,3 +278,10 @@ aren't specified. These are the decisions we're building on. All numbers are
   (treats / early reveals / ability unlocks / locations), and the difficulty ramp
   (1→2→3 needs, when allergies appear):** default values set now, balanced later.
 - **Leftovers reset each round** (charms, bubbles, ingredients), per spec.
+- **Balance tuning (Phase 4, playtest‑verified via simulation):** per‑need target
+  7 magic points; ingredient strength 3–4 per quality; potent ×2.5. Charms come
+  as two colored stacks (2–3 each) per pop so specific‑color ingredients are
+  affordable; min 4 bubbles/round. Added 6 Strength‑bearing ingredients (library
+  now 38) because no ingredient supplied Strength, which some wishes require.
+  Optimal‑play win rate ≈ 84/88/74% (easy/medium/hard). Numbers live in
+  `BALANCE` in `engine.js` and can be re‑tuned freely.

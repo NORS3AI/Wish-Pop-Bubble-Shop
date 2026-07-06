@@ -41,6 +41,16 @@ function toast(msg) {
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 1600);
 }
 function magicDot(type) { return `<span class="dot" style="background:${D.MAGIC[type]}"></span>`; }
+function shade(hex, amt) {
+  amt = amt == null ? -0.28 : amt;
+  let c = hex.replace("#", "");
+  if (c.length === 3) c = c.split("").map(x => x + x).join("");
+  let r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+  r = Math.max(0, Math.min(255, Math.round(r + 255 * amt)));
+  g = Math.max(0, Math.min(255, Math.round(g + 255 * amt)));
+  b = Math.max(0, Math.min(255, Math.round(b + 255 * amt)));
+  return `rgb(${r},${g},${b})`;
+}
 function hud(title) {
   return `<div class="hud"><span>🐸 <span class="treatcount">${GAME.treats}</span> treats</span>
     <span class="title">${title}</span>
@@ -417,8 +427,20 @@ function doneShopping() {
   ROUND.maxSlots = Math.max(5, Math.min(7, 8 - revealed));
   const merged = applyTripleMatch(ROUND.inventory);
   ROUND.inventory = merged.inventory;
-  if (merged.merged.length) toast(`✨ Triple match! ${merged.merged.length} potent ingredient${merged.merged.length > 1 ? "s" : ""} made.`);
-  renderMix();
+  if (merged.merged.length) showTriple(merged.merged, renderMix);
+  else renderMix();
+}
+function showTriple(mergedIds, cb) {
+  const names = mergedIds.map(id => D.INGREDIENT_BY_ID[id].name);
+  const ov = document.createElement("div");
+  ov.className = "triple-overlay";
+  ov.innerHTML = `<div class="triple-card">
+    <div style="font-size:46px">✨🫙✨</div>
+    <div class="tt">Triple Match!</div>
+    <div class="muted">${names.map(n => `3 ${n} → 1 <b>Potent ${n}</b>`).join("<br>")}</div>
+  </div>`;
+  $("#app").appendChild(ov);
+  setTimeout(() => { ov.remove(); cb(); }, 1500);
 }
 
 /* Lightweight horizontal swipe helper */
@@ -434,18 +456,27 @@ function addSwipe(el, cb) {
 }
 
 /* ======================================================================= */
-/* MIX  (functional minimal: add ingredients, live match, serve)           */
+/* MIX  (Phase 4: cauldron, live meters, 2-row inventory, serve)           */
 /* ======================================================================= */
 function renderMix() {
-  // needs are all revealed at the making phase
-  ROUND.wish.needs.forEach(n => n.revealed = true);
+  ROUND.wish.needs.forEach(n => n.revealed = true); // all needs shown at making
   ROUND.slots = [];
+  // Triple-match celebration already applied in doneShopping; if any potent
+  // instances exist, flag a one-time note.
   paintMix();
   show("mix");
 }
 function paintMix() {
   const w = ROUND.wish;
   const score = scoreMix(ROUND.slots, w);
+  const req = w.requiredMatch;
+  const meetsReq = score.weighted >= req;
+
+  // cauldron liquid: height = weighted match, color = the currently best-matched need
+  let bestNeed = w.needs[0];
+  score.perNeed.forEach((n, i) => { if (n.pct >= (score.perNeed[w.needs.indexOf(bestNeed)] || {}).pct) bestNeed = w.needs[i]; });
+  const liquidColor = D.MAGIC[bestNeed.type];
+
   const slotCells = [];
   for (let i = 0; i < ROUND.maxSlots; i++) {
     const inst = ROUND.slots[i];
@@ -458,42 +489,79 @@ function paintMix() {
       <div class="lbl"><span>${magicDot(n.type)} ${n.type} <span class="muted">(${n.label})</span></span><span>${pct}%</span></div>
       <div class="meter"><i style="width:${pct}%;background:${D.MAGIC[n.type]}"></i></div></div>`;
   }).join("");
-  const req = w.requiredMatch;
-  const meetsReq = score.weighted >= req;
+
+  const hint = ROUND.slots.length === 0
+    ? "Tap ingredients below to add them to the cauldron."
+    : meetsReq
+      ? "✅ Wish met! Serve now, or risk one more for a bigger tip."
+      : `Keep mixing to reach ${req}% — do you stop, or risk one more?`;
+
   html("mix", `
     ${hud("Making Phase")}
-    <div class="card" style="margin-bottom:8px">
-      <div class="stat-line"><span>${ROUND.customer.emoji} ${ROUND.customer.name}</span>
+    <div class="card" style="margin-bottom:6px;padding:12px">
+      <div class="stat-line" style="padding:0 0 4px"><span>${ROUND.customer.emoji} ${ROUND.customer.name}</span>
         <span>Match <b style="color:${meetsReq ? "var(--good)" : "var(--ink)"}">${score.weighted}%</b> / need ${req}%</span></div>
       ${meters}
     </div>
-    <div class="slots" style="margin:6px 0 4px">${slotCells.join("")}</div>
-    <div class="muted" style="text-align:center;margin-bottom:6px">Tap an ingredient to add it. You can't take it out once added.</div>
-    <div class="inv grow">
-      ${ROUND.inventory.map((inst, idx) => ingCardMini(inst, idx)).join("") || '<div class="muted">Inventory empty.</div>'}
+    <div class="cauldron-wrap grow">
+      <div class="cauldron" id="cauldron">
+        <div class="liquid" style="height:${Math.max(6, score.weighted)}%;background:linear-gradient(180deg, ${liquidColor}, ${shade(liquidColor)})"></div>
+        <div class="bub b1"></div><div class="bub b2"></div><div class="bub b3"></div>
+        <div class="pct">${score.weighted}%</div>
+      </div>
+      <div class="slots">${slotCells.join("")}</div>
+      <div class="mix-hint muted">${hint}</div>
     </div>
     <button class="btn good" id="serve-btn" ${ROUND.slots.length === 0 ? "disabled" : ""}>✨ Serve the Wish</button>
+    <div class="inv-2row" id="inv-row">
+      ${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("") || '<div class="muted" style="padding:14px">Bag empty — you\'ll do your best with what\'s in the pot!</div>'}
+    </div>
     ${familiarToken()}
   `);
   ROUND.inventory.forEach((inst, idx) => {
-    on(`#inv-${idx}`, "click", () => addToSlot(idx));
+    const tile = document.getElementById("invt-" + idx);
+    if (tile) tile.addEventListener("click", () => addToSlot(idx, tile));
   });
   on("#serve-btn", "click", serve);
   wireFamiliar("mix");
 }
-function addToSlot(idx) {
+function invTile(inst, idx) {
+  const ing = D.INGREDIENT_BY_ID[inst.id];
+  const quals = ing.wild ? "???" : ing.qualities.join(", ");
+  return `<div class="inv-tile ${ing.wild ? "wild" : ""} ${inst.potent ? "potent" : ""}" id="invt-${idx}">
+    <div class="emoji">${ing.emoji}</div>
+    <div class="nm">${inst.potent ? "✨" : ""}${ing.name}</div>
+    <div class="q">${quals}</div>
+  </div>`;
+}
+function addToSlot(idx, fromEl) {
   if (ROUND.slots.length >= ROUND.maxSlots) { toast("All slots are full!"); return; }
   const inst = ROUND.inventory.splice(idx, 1)[0];
-  // resolve wild ingredient on add (hidden until now)
   const ing = D.INGREDIENT_BY_ID[inst.id];
-  if (ing.wild && !inst.wildQualities) {
+  if (ing.wild && !inst.wildQualities) { // resolve wild on add (hidden until now)
     inst.wildQualities = R.shuffle(D.MAGIC_TYPES).slice(0, R.int(1, 2));
     inst.wildStrength = R.int(BALANCE.WILD_MIN, BALANCE.WILD_MAX);
   }
+  // fly animation from the tapped tile to the cauldron
+  const cauldron = document.getElementById("cauldron");
+  if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), ing.emoji);
   ROUND.slots.push(inst);
+  sAdd();
   paintMix();
-  if (ROUND.slots.length >= ROUND.maxSlots) setTimeout(() => { if (screen("mix").classList.contains("active")) serve(); }, 500);
+  const c2 = document.getElementById("cauldron"); if (c2) { c2.classList.remove("splash"); void c2.offsetWidth; c2.classList.add("splash"); }
+  if (ROUND.slots.length >= ROUND.maxSlots) setTimeout(() => { if (screen("mix").classList.contains("active")) serve(); }, 650);
 }
+function flyEmoji(from, to, emoji) {
+  const f = document.createElement("div");
+  f.textContent = emoji;
+  f.style.cssText = `position:fixed;left:${from.left + from.width/2 - 14}px;top:${from.top}px;font-size:28px;z-index:40;pointer-events:none;transition:transform .35s cubic-bezier(.5,-0.2,.5,1.2),opacity .35s`;
+  document.body.appendChild(f);
+  const dx = (to.left + to.width/2) - (from.left + from.width/2);
+  const dy = (to.top + to.height*0.5) - from.top;
+  requestAnimationFrame(() => { f.style.transform = `translate(${dx}px,${dy}px) scale(.5)`; f.style.opacity = "0.15"; });
+  setTimeout(() => f.remove(), 380);
+}
+function sAdd() {} // sound hook (audio added in Phase 9)
 
 /* ======================================================================= */
 /* RESULT                                                                  */
@@ -509,17 +577,24 @@ function serve() {
 function renderResult(res) {
   const win = res.success;
   const c = ROUND.customer;
+  const tip = res.gold - ROUND.payment; // >0 when a tip was earned
+  const tipLine = (win && tip > 0)
+    ? `<div class="stat-line"><span>Tip! 🎉</span><span class="gold">🪙 +${tip}</span></div>` : "";
+  const emoji = win ? (tip > 0 ? "🤩" : "😊") : "😅";
   html("result", `
     ${hud("Result")}
     <div class="grow center" style="gap:14px">
-      <div class="ph big">${win ? "😊" : "😅"}</div>
+      <div class="ph big" id="react">${emoji}</div>
       <div class="result-title ${win ? "win" : "lose"}">${res.type.title}</div>
       <div class="card" style="width:100%;max-width:320px">
-        <div class="stat-line"><span>Your Match</span><span>${res.weighted}%</span></div>
+        <div class="stat-line"><span>Your Match</span><span><b>${res.weighted}%</b></span></div>
         <div class="stat-line"><span>Needed</span><span>${res.required}%</span></div>
-        <div class="stat-line"><span>Gold Earned</span><span class="gold">🪙 ${res.gold}</span></div>
+        <div class="stat-line"><span>${win ? "Payment" : "Gold Earned"}</span><span class="gold">🪙 ${win ? ROUND.payment : 0}</span></div>
+        ${tipLine}
       </div>
-      <p class="muted">${win ? "Wonderful work — " + c.name + " is delighted!" : "No worries — " + c.name + " will be back. Try a stronger mix!"}</p>
+      <p class="muted" style="max-width:300px">${win
+        ? (tip > 0 ? c.name + " is overjoyed — you nailed the wish and earned a tip!" : c.name + " is happy with their wish!")
+        : c.name + " will be back. Gather a few more matching ingredients next time!"}</p>
     </div>
     <button class="btn" id="next-btn">Next Customer  →</button>
   `);

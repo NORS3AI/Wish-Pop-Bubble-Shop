@@ -82,10 +82,18 @@ const INGREDIENTS = [
   { id: "nightshade",   name: "Nightshade",    cost: 5, qualities: ["Sleep", "Mischief", "Protection"], emoji: "🍇", shelves: ["Backroom"] },
   { id: "dragon_pepper",name: "Dragon Pepper", cost: 5, qualities: ["Courage", "Energy", "Mischief"], emoji: "🌶️", shelves: ["Backroom"] },
   { id: "mystery_crumb",name: "Mystery Crumb", cost: 7, qualities: [], wild: true,                 emoji: "❓", shelves: ["Backroom"] },
+  // Strength-bearing ingredients (spread across all shelves so every Strength
+  // wish is fulfillable). Brings the library toward the 40-ingredient target.
+  { id: "iron_oats",    name: "Iron Oats",     cost: 3, qualities: ["Strength", "Growth"],         emoji: "🌰", shelves: ["Fresh"] },
+  { id: "giant_bean",   name: "Giant Bean",    cost: 3, qualities: ["Strength", "Energy"],         emoji: "🫘", shelves: ["Fresh", "Backroom"] },
+  { id: "stone_sugar",  name: "Stone Sugar",   cost: 3, qualities: ["Strength", "Beauty"],         emoji: "🪨", shelves: ["Royal"] },
+  { id: "thunder_root", name: "Thunder Root",  cost: 5, qualities: ["Strength", "Energy", "Light"], emoji: "⚡", shelves: ["Sparkle"] },
+  { id: "bull_horn",    name: "Bull Horn",     cost: 3, qualities: ["Strength", "Courage"],        emoji: "🐂", shelves: ["Backroom"] },
+  { id: "ogre_stew",    name: "Ogre Stew",     cost: 5, qualities: ["Strength", "Protection", "Calm"], emoji: "🍲", shelves: ["Backroom", "Royal"] },
 ];
 const INGREDIENT_BY_ID = {};
 INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
-// NOTE: doc targets a 40-ingredient library; 32 are specified. More can be added later.
+// 38 ingredients (32 from the doc + 6 Strength-bearing). A couple more can round to 40.
 
 /* --- 5. Wish types: need pools + the customer line that fits them -------- */
 const WISH_TYPES = {

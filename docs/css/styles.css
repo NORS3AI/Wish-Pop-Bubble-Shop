@@ -144,14 +144,51 @@ html, body {
 .slots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .slot { width: 44px; height: 44px; border-radius: 12px; border: 1px dashed var(--line);
   display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--card2); }
-.slot.filled { border-style: solid; background: var(--card); }
+.slot.filled { border-style: solid; background: var(--card); animation: pop .25s ease; }
 .slot.potent { box-shadow: 0 0 10px var(--gold); }
+@keyframes pop { from { transform: scale(0.3); } to { transform: scale(1); } }
 .meter { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.14); overflow: hidden; }
-.meter > i { display: block; height: 100%; border-radius: 6px; transition: width .3s ease; }
-.need-meter { margin: 6px 0; }
+.meter > i { display: block; height: 100%; border-radius: 6px; transition: width .35s ease; }
+.need-meter { margin: 5px 0; }
 .need-meter .lbl { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; }
-.inv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; overflow-y: auto; }
-.inv .ing-card { padding: 8px 4px; }
+
+/* Cauldron */
+.cauldron-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.cauldron { position: relative; width: 150px; height: 130px; overflow: hidden;
+  border: 3px solid rgba(255,255,255,0.22); border-top-width: 5px;
+  border-radius: 22px 22px 70px 70px / 22px 22px 55px 55px;
+  background: rgba(255,255,255,0.05); box-shadow: inset 0 -8px 20px rgba(0,0,0,0.25); }
+.cauldron .liquid { position: absolute; left: 0; right: 0; bottom: 0; transition: height .4s ease, background .4s;
+  border-radius: 0 0 55px 55px; opacity: .85; }
+.cauldron .pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 26px; text-shadow: 0 2px 6px rgba(0,0,0,0.55); }
+.cauldron .bub { position: absolute; bottom: 10%; width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.5); animation: rise 2.4s infinite ease-in; opacity: 0; }
+.cauldron .b1 { left: 30%; animation-delay: .2s; } .cauldron .b2 { left: 52%; animation-delay: 1s; }
+.cauldron .b3 { left: 70%; animation-delay: 1.7s; }
+@keyframes rise { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: .7; } 100% { transform: translateY(-70px); opacity: 0; } }
+.cauldron.splash { animation: splash .4s ease; }
+@keyframes splash { 0%,100% { transform: none; } 40% { transform: translateY(3px) scaleX(1.05); } }
+.mix-hint { text-align: center; font-size: 13px; max-width: 300px; }
+
+/* 2-row swipeable inventory */
+.inv-2row { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, 1fr); grid-auto-columns: 74px;
+  gap: 8px; overflow-x: auto; padding: 8px 2px 4px; scroll-snap-type: x proximity; }
+.inv-tile { scroll-snap-align: start; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 6px 4px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.inv-tile:active { transform: scale(0.94); }
+.inv-tile .emoji { font-size: 24px; }
+.inv-tile .nm { font-size: 11px; font-weight: 800; line-height: 1.1; }
+.inv-tile .q { font-size: 9px; color: var(--ink-dim); line-height: 1.05; }
+.inv-tile.wild { border-style: dashed; }
+.inv-tile.potent { box-shadow: 0 0 8px var(--gold); border-color: var(--gold); }
+
+/* Triple-match celebration */
+.triple-overlay { position: absolute; inset: 0; z-index: 45; display: flex; align-items: center; justify-content: center;
+  background: rgba(10,4,22,0.6); animation: fade .2s ease; }
+.triple-card { text-align: center; background: var(--card); border: 1px solid var(--gold); border-radius: 22px;
+  padding: 24px 28px; box-shadow: 0 0 30px rgba(255,216,107,0.4); animation: pop .35s ease; }
+.triple-card .tt { font-size: 26px; font-weight: 900; color: var(--gold); margin: 6px 0; }
 
 /* --- Result --- */
 .result-title { font-size: 30px; font-weight: 900; }
