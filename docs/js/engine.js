@@ -26,6 +26,11 @@ const BALANCE = {
   CONSOLATION_FRACTION: 0.35,    // partial-credit gold on a miss (scaled to match)
   FAMILIAR_KEY_CHANCE: 0.5,      // chance the Toad finds a key (if shelves locked)
 
+  // Magic allergy (Phase 5) — only on hard+ customers, after basics are learned
+  ALLERGY_CHANCE: 0.55,          // chance a hard customer has an allergy (veryhard: always)
+  ALLERGY_YELLOW_AT: 7,          // allergy points -> Yellow zone (75% pay)
+  ALLERGY_RED_AT: 13,            // allergy points -> Red zone (50% pay)
+
   // Scoop / bubbles — each scoop rolls its OWN random yield and they sum, so
   // more scoops (higher pay) really means more bubbles, and every reveal varies.
   BUBBLES_PER_SCOOP_MIN: 1,
@@ -99,13 +104,44 @@ function generateWish(customer, diff) {
     type, label: labels[i], target: BALANCE.NEED_TARGET,
     revealed: i === 0,                 // only Main visible at first
   }));
+  // Magic allergy: hard+ customers only. Prefer the customer's themed allergy,
+  // never one of their own needs.
+  let allergy = null;
+  if (diff === "hard" || diff === "veryhard") {
+    const roll = diff === "veryhard" ? true : R.chance(BALANCE.ALLERGY_CHANCE);
+    if (roll) {
+      const forbidden = chosen.slice();
+      let a = DATA.ALLERGY_IDEAS[customer.id];
+      if (!a || forbidden.includes(a)) {
+        const pool = DATA.MAGIC_TYPES.filter(m => !forbidden.includes(m));
+        a = R.pick(pool);
+      }
+      allergy = a;
+    }
+  }
   return {
     needs,
     requiredMatch: BALANCE.REQUIRED_MATCH[diff],
     difficulty: diff,
     weights: BALANCE.NEED_WEIGHTS[count],
-    allergy: null,                     // Phase 5
+    allergy,
   };
+}
+
+/* --- Allergy meter: points of the allergy magic in the current mix -------- */
+function allergyStatus(slots, allergyType) {
+  if (!allergyType) return null;
+  let points = 0;
+  slots.forEach(inst => {
+    const ing = DATA.INGREDIENT_BY_ID[inst.id];
+    let p = 0;
+    if (ing.wild) { if ((inst.wildQualities || []).includes(allergyType)) p = inst.wildStrength || BALANCE.WILD_MIN; }
+    else p = ingredientPointsFor(ing, allergyType);
+    if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
+    points += p;
+  });
+  const zone = points >= BALANCE.ALLERGY_RED_AT ? "red" : points >= BALANCE.ALLERGY_YELLOW_AT ? "yellow" : "green";
+  return { type: allergyType, points, zone };
 }
 
 /* --- Round setup -------------------------------------------------------- */
@@ -264,12 +300,12 @@ function scoreMix(slots, wish) {
   let weighted = 0;
   perNeed.forEach((n, i) => { weighted += n.pct * (w[i] || 0); });
   weighted = Math.round(weighted);
-  return { perNeed, weighted };
+  return { perNeed, weighted, allergy: allergyStatus(slots, wish.allergy) };
 }
 
 /* --- Result: compare weighted match to required (allergy added Phase 5) - */
 function scoreResult(round) {
-  const { weighted } = scoreMix(round.slots, round.wish);
+  const { weighted, allergy } = scoreMix(round.slots, round.wish);
   const required = round.wish.requiredMatch;
   const success = weighted >= required;
   let type, gold;
@@ -277,12 +313,18 @@ function scoreResult(round) {
     // partial credit — a few coins scaled to how close you got (never zero effort)
     type = DATA.RESULT_TYPES.fail;
     gold = Math.max(1, Math.round(round.payment * (weighted / 100) * BALANCE.CONSOLATION_FRACTION));
+  } else if (allergy && allergy.zone === "red") {
+    type = DATA.RESULT_TYPES.red;
+    gold = Math.round(round.payment * DATA.RESULT_TYPES.red.payoutPct);
+  } else if (allergy && allergy.zone === "yellow") {
+    type = DATA.RESULT_TYPES.yellow;
+    gold = Math.round(round.payment * DATA.RESULT_TYPES.yellow.payoutPct);
   } else {
     type = DATA.RESULT_TYPES.full;
     gold = round.payment;
     if (weighted >= required + BALANCE.TIP_MARGIN) gold += BALANCE.TIP;
   }
-  return { type, gold, weighted, required, success, partial: !success && gold > 0 };
+  return { type, gold, weighted, required, success, allergy, partial: !success && gold > 0 };
 }
 
 /* --- Reroll a shelf's stock (one free reroll per shelf per round) -------- */
@@ -315,4 +357,5 @@ const ENGINE = {
   BALANCE, R, ingredientPointsFor, difficultyFor, needCountFor,
   generateWish, newRound, applyTripleMatch, scoreMix, scoreResult,
   scoopSplit, weightedPick, rollPop, populateShelves, rerollShelf, ensureMainVisible,
+  allergyStatus,
 };

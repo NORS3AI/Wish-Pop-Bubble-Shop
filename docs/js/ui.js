@@ -112,7 +112,7 @@ function renderCustomer() {
         <div class="stat-line"><span>Payment</span><span class="gold">🪙 ${ROUND.payment}</span></div>
         <div class="stat-line"><span>Required Match</span><span>${w.requiredMatch}%</span></div>
         <div class="stat-line"><span>Scoops of glitter</span><span>${Math.max(1, Math.round(ROUND.payment/10))}</span></div>
-        <div class="stat-line"><span>Allergy</span><span>${w.allergy || "None"}</span></div>
+        <div class="stat-line"><span>Allergy</span><span>${w.allergy ? `<span style="color:var(--bad)">⚠️ ${magicDot(w.allergy)} ${w.allergy}</span>` : "None"}</span></div>
       </div>
     </div>
     <button class="btn" id="scoop-btn">Start Scoop  ✨</button>
@@ -482,7 +482,8 @@ function paintReveal() {
   el.innerHTML = `
     <div style="font-weight:800;font-size:14px;margin-bottom:6px">${ROUND.customer.emoji} “${ROUND.customer.line}”</div>
     <div class="needs-row">${chips}</div>
-    <div class="reveal-slots">Finish now → <b>${slots} mixing slots</b> · Required match ${w.requiredMatch}%</div>`;
+    <div class="reveal-slots">Finish now → <b>${slots} mixing slots</b> · Required match ${w.requiredMatch}%</div>
+    ${w.allergy ? `<div class="reveal-slots" style="color:var(--bad)">⚠️ Allergic to ${magicDot(w.allergy)} ${w.allergy} — go easy on it in the mix!</div>` : ""}`;
   // pay-to-reveal handlers
   w.needs.forEach((n, i) => {
     if (!n.revealed) on(`#reveal-${i}`, "click", () => payReveal(i));
@@ -578,6 +579,7 @@ function paintMix() {
       <div class="stat-line" style="padding:0 0 4px"><span>${ROUND.customer.emoji} ${ROUND.customer.name}</span>
         <span>Match <b style="color:${meetsReq ? "var(--good)" : "var(--ink)"}">${score.weighted}%</b> / need ${req}%</span></div>
       ${meters}
+      ${score.allergy ? allergyMeter(score.allergy) : ""}
     </div>
     <div class="cauldron-wrap grow">
       <div class="cauldron" id="cauldron">
@@ -589,9 +591,9 @@ function paintMix() {
       <div class="mix-hint muted">${hint}</div>
     </div>
     <button class="btn good" id="serve-btn" ${ROUND.slots.length === 0 ? "disabled" : ""}>✨ Serve the Wish</button>
-    <div class="inv-2row" id="inv-row">
-      ${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("") || '<div class="muted" style="padding:14px">Bag empty — you\'ll do your best with what\'s in the pot!</div>'}
-    </div>
+    ${ROUND.inventory.length
+      ? `<div class="inv-2row" id="inv-row">${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("")}</div>`
+      : `<div class="muted" style="text-align:center;padding:12px">Bag empty — do your best with what's in the pot!</div>`}
     ${familiarToken()}
   `);
   ROUND.inventory.forEach((inst, idx) => {
@@ -600,6 +602,14 @@ function paintMix() {
   });
   on("#serve-btn", "click", serve);
   wireFamiliar("mix");
+}
+function allergyMeter(a) {
+  const pct = Math.min(100, Math.round(a.points / BALANCE.ALLERGY_RED_AT * 100));
+  const col = a.zone === "red" ? "var(--bad)" : a.zone === "yellow" ? "var(--gold)" : "var(--good)";
+  return `<div class="need-meter" style="margin-top:8px">
+    <div class="lbl"><span>⚠️ Allergy: ${magicDot(a.type)} ${a.type}</span>
+      <span style="color:${col};font-weight:800">${a.zone.toUpperCase()}</span></div>
+    <div class="meter" style="background:rgba(255,90,90,0.12)"><i style="width:${pct}%;background:${col}"></i></div></div>`;
 }
 function invTile(inst, idx) {
   const ing = D.INGREDIENT_BY_ID[inst.id];
@@ -654,11 +664,21 @@ function serve() {
 function renderResult(res) {
   const win = res.success;
   const c = ROUND.customer;
-  const tip = res.gold - ROUND.payment; // >0 when a tip was earned
-  const tipLine = (win && tip > 0)
+  const zone = res.allergy && res.allergy.zone;
+  const tip = res.gold - ROUND.payment; // >0 only on a clean (green) success
+  const tipLine = (win && zone !== "yellow" && zone !== "red" && tip > 0)
     ? `<div class="stat-line"><span>Tip! 🎉</span><span class="gold">🪙 +${tip}</span></div>` : "";
-  const emoji = win ? (tip > 0 ? "🤩" : "😊") : "🙂";
+  const allergyLine = (win && (zone === "yellow" || zone === "red"))
+    ? `<div class="stat-line"><span>⚠️ Allergy (${zone})</span><span style="color:var(--bad)">${zone === "red" ? "−50%" : "−25%"} pay</span></div>` : "";
+  const emoji = !win ? "🙂" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (tip > 0 ? "🤩" : "😊");
   const title = win ? res.type.title : "So Close!";
+  const blurb = !win
+    ? c.name + " couldn't get the full wish, but liked the effort and left you a few coins."
+    : zone === "red"
+      ? "The wish worked… but " + c.name + " had a big reaction to the " + res.allergy.type + " magic! Half pay."
+      : zone === "yellow"
+        ? c.name + " got their wish, but a little " + res.allergy.type + " magic left them itchy. Reduced pay."
+        : (tip > 0 ? c.name + " is overjoyed — you nailed it and left a tip!" : c.name + " is happy with their wish!");
   html("result", `
     ${hud("Result")}
     <div class="grow center" style="gap:14px">
@@ -667,12 +687,11 @@ function renderResult(res) {
       <div class="card" style="width:100%;max-width:320px">
         <div class="stat-line"><span>Your Match</span><span><b>${res.weighted}%</b></span></div>
         <div class="stat-line"><span>Needed</span><span>${res.required}%</span></div>
-        <div class="stat-line"><span>${win ? "Payment" : "Coins for trying"}</span><span class="gold">🪙 ${win ? ROUND.payment : res.gold}</span></div>
+        ${allergyLine}
+        <div class="stat-line"><span>${win ? "Earned" : "Coins for trying"}</span><span class="gold">🪙 ${res.gold}</span></div>
         ${tipLine}
       </div>
-      <p class="muted" style="max-width:300px">${win
-        ? (tip > 0 ? c.name + " is overjoyed — you nailed the wish and earned a tip!" : c.name + " is happy with their wish!")
-        : c.name + " couldn't get the full wish, but liked the effort and left you a few coins."}</p>
+      <p class="muted" style="max-width:300px">${blurb}</p>
     </div>
     <button class="btn" id="next-btn">Next Customer  →</button>
   `);

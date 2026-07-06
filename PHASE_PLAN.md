@@ -170,7 +170,15 @@ homework. This revision keeps the depth but cuts the mental math.
   clear locked state per shelf. Simulated win rate ≈ **98/80/63%** easy/med/hard
   — easy stays forgiving, hard genuinely depends on unlocking shelves.
 
-## Phase 5 — Magic Allergy system
+## Phase 5 — Magic Allergy system — ✅ DONE
+Hard customers may be **allergic** to a magic type (never one of their needs;
+themed per customer where defined). A live **allergy meter** in the cauldron
+rises as that magic accumulates — including from ingredients' *hidden* secondaries,
+so a "safe-looking" ingredient can secretly push it up. Zones: Green (full pay) →
+Yellow (75%) → Red (50%). The customer screen and shop reveal both warn of the
+allergy. Win/lose is unchanged (allergy only affects payout on a success), so the
+difficulty curve holds. Thresholds/chance live in `BALANCE`.
+
 
 **Goal:** Add risk/depth for harder customers (introduced *after* the basics).
 

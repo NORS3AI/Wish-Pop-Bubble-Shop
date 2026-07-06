@@ -42,7 +42,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   its color — no more comparing three tags against three bars. Bubbles now also
   drop **shelf keys**: you start with one shelf open and unlock the others by
   popping keys, so there's a fun "which shelves did I get?" gamble each customer.
-- Next up: magic allergies for tougher customers (see `PHASE_PLAN.md`).
+- 🤧 **Magic allergies (Phase 5).** Tougher customers can be allergic to a magic
+  type — use too much of it and they react, paying less (or a lot less). A live
+  allergy meter warns you as you mix, and since ingredients have hidden effects, a
+  "safe" ingredient can secretly nudge it up — real risk/reward. It only affects
+  how much you're paid on a win, never whether you win.
+- Next up: the full familiar upgrades & progression (see `PHASE_PLAN.md`).
 - Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
   a "rotate to portrait" nudge in landscape.
 
