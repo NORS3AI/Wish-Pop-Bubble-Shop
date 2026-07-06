@@ -52,7 +52,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   Scoop** (more bubbles), **Bonus Gift** (bonus bubbles also give an ingredient),
   and **Undo** (remove your last ingredient in the cauldron). There's now a
   **very‑hard** tier for seasoned players, too.
-- Charms trimmed to **3 colors** to keep buying simple.
+- 🌀 **Big redesign — the Cauldron is the game now.** The shop is gone. You **pop
+  bubbles to get your ingredients** (with duplicates), plus surprise **special
+  charms** — 🧹 Cleanse, 🔍 Insight, ✨ Potent, ⏭️ Peek, 🌈 Wild — that you play in
+  the cauldron. The customer's other needs now **reveal on a timer while you mix**,
+  and serving early with a matching potion earns a **quick‑service tip**. Fewer,
+  more memorable ingredients (20). Faster, and every round is a real decision.
 - Next up: the art‑upload tool and final polish + sound (see `PHASE_PLAN.md`).
 - Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
   a "rotate to portrait" nudge in landscape.

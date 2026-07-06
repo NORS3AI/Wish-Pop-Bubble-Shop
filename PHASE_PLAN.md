@@ -174,7 +174,16 @@ homework. This revision keeps the depth but cuts the mental math.
   clear locked state per shelf. Simulated win rate ≈ **98/80/63%** easy/med/hard
   — easy stays forgiving, hard genuinely depends on unlocking shelves.
 
-## Design revision v3 — Cauldron‑First pivot (⏳ NEXT, supersedes the shop)
+## Design revision v3 — Cauldron‑First pivot (✅ BUILT, supersedes the shop)
+
+> **Status:** live. Shop & charms removed; pops draft a hand of ingredients (+
+> special charms); the cauldron holds the reveal timer, quick‑service tip, and the
+> charm tray. Ingredient library trimmed to 20. Smart‑player win rate ≈
+> **100 / 87 / 55 / 43%** (easy/medium/hard/veryhard) — forgiving early, a real
+> puzzle later, cushioned by partial credit + charms. Quick‑service tip = serve
+> before the needs finish revealing **and** hit the match → gold tip (+8/hidden
+> need). Only C4 leftover is cosmetic dead‑code cleanup (old shop CSS/div).
+
 
 **Why.** Playtesting showed the shop isn't a real decision: you're told the need,
 you grab matching ingredients, done. The genuinely good moments live in the
