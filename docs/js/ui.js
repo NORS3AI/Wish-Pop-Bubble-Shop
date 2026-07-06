@@ -125,8 +125,8 @@ function renderCustomer() {
 /* SCOOP  (Phase 2: sift each scoop of glitter to reveal Wish Bubbles)      */
 /* ======================================================================= */
 function renderScoop() {
-  const scoops = Math.max(1, Math.round(ROUND.payment / 10));
-  const split = ENGINE.scoopSplit(ROUND.bubblesTotal, scoops);
+  const scoops = ROUND.scoops;
+  const split = ROUND.scoopYields;   // each scoop's own randomized yield
   let idx = 0, revealed = 0;
 
   html("scoop", `

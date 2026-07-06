@@ -309,5 +309,10 @@ aren't specified. These are the decisions we're building on. All numbers are
   as two colored stacks (2–3 each) per pop so specific‑color ingredients are
   affordable; min 4 bubbles/round. Added 6 Strength‑bearing ingredients (library
   now 38) because no ingredient supplied Strength, which some wishes require.
-  Optimal‑play win rate ≈ 84/88/74% (easy/medium/hard). Numbers live in
-  `BALANCE` in `engine.js` and can be re‑tuned freely.
+  Numbers live in `BALANCE` in `engine.js` and can be re‑tuned freely.
+- **Randomized bubbles (playtest fix):** each scoop now rolls its OWN yield
+  (1–4 bubbles) and they sum, so more scoops (higher pay) genuinely means more
+  bubbles and every reveal varies — no more a flat ~5. Bubble totals ≈ easy 3–8,
+  medium 3–12, hard 5–16. Per‑pop charm (1–2) and key chance (0.15) were lowered
+  to keep the economy balanced given the extra pops. Sim win rate ≈ **97/87/60%**
+  (easy/medium/hard) with ~1.8–2.4 of 4 shelves unlocked (key tension intact).

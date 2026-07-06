@@ -22,16 +22,19 @@ const BALANCE = {
   PAYMENT:        { easy: 20, medium: 30, hard: 40, veryhard: 50 },
   TIP: 10, TIP_MARGIN: 20,       // exceed required by this much -> tip
 
-  // Scoop / bubbles  (bubbles = max(4, round(payment/10) + 1))
-  MIN_BUBBLES: 4,
+  // Scoop / bubbles — each scoop rolls its OWN random yield and they sum, so
+  // more scoops (higher pay) really means more bubbles, and every reveal varies.
+  BUBBLES_PER_SCOOP_MIN: 1,
+  BUBBLES_PER_SCOOP_MAX: 4,
+  MIN_BUBBLES: 3,               // floor so a cheap 1-scoop round is never a dud
 
   // Bubble-pop rewards (Phase 2)
-  CHARM_POP_MIN: 2, CHARM_POP_MAX: 3,   // charms granted per pop (always)
+  CHARM_POP_MIN: 1, CHARM_POP_MAX: 2,   // charms granted per pop (always)
   BONUS_CHANCE: 0.5,                    // chance a pop also gives a bonus reward
   BONUS_WEIGHTS: { ingredient: 40, gold: 25, bubble: 15, treat: 12, wild: 8 },
   BONUS_GOLD_MIN: 3, BONUS_GOLD_MAX: 8,
   MAX_BONUS_BUBBLES: 3,                 // cap extra bubbles per round (anti-runaway)
-  KEY_CHANCE: 0.32,                     // per-pop chance to drop a shelf key
+  KEY_CHANCE: 0.15,                     // per-pop chance to drop a shelf key
 
   // Ingredient slots earned by shopping speed
   SLOTS: { fast: 7, medium: 6, slow: 5 },
@@ -107,7 +110,12 @@ function newRound(state) {
   const diff = difficultyFor(state.servedTotal);
   const wish = generateWish(customer, diff);
   const payment = BALANCE.PAYMENT[diff];
-  const bubbles = Math.max(BALANCE.MIN_BUBBLES, Math.round(payment / 10) + 1);
+  // scoops from payment; each scoop rolls its own bubble yield (randomized)
+  const scoops = Math.max(1, Math.round(payment / 10));
+  const scoopYields = [];
+  for (let i = 0; i < scoops; i++) scoopYields.push(R.int(BALANCE.BUBBLES_PER_SCOOP_MIN, BALANCE.BUBBLES_PER_SCOOP_MAX));
+  let bubbles = scoopYields.reduce((a, b) => a + b, 0);
+  if (bubbles < BALANCE.MIN_BUBBLES) { scoopYields[0] += BALANCE.MIN_BUBBLES - bubbles; bubbles = BALANCE.MIN_BUBBLES; }
 
   // Roll the required charm COLOR per ingredient this round
   const charmColorFor = {};
@@ -117,7 +125,7 @@ function newRound(state) {
   const { shelves, startShelf } = populateShelves(wish);
 
   return {
-    customer, wish, payment, bubblesTotal: bubbles,
+    customer, wish, payment, bubblesTotal: bubbles, scoops, scoopYields,
     charmColorFor, shelves, startShelf, unlocked: [startShelf],
     charms: { Pink: 0, Blue: 0, Gold: 0, Green: 0, Purple: 0 },
     bonusBubblesGained: 0,             // extra bubbles won this round (capped)
