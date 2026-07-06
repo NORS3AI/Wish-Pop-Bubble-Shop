@@ -19,8 +19,16 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
-- 🎉 First playable version! Full game with fairytale customers, bubble & charm mixing, combos, patience timers, day progression, hearts, sound, and a best-score board.
-- Built for portrait phones: fills the screen, locks scrolling/zoom, respects notches, and shows a "rotate to portrait" nudge in landscape.
+- 🧱 **The real game is taking shape (Phases 0 & 1 done).** Rebuilt on the full
+  design: a complete round now runs end‑to‑end — a fairytale customer arrives with
+  a wish → scoop glitter for Wish Bubbles → pop them for charms → gather
+  ingredients → mix to match the wish → get scored → earn gold → next customer.
+- Built on the real game data (12 magic types, 5 charms, the ingredient library,
+  wish types & customers) with a scoring engine and a kid‑simple gold economy.
+- The scoop, pop, and shop steps are simple placeholders for now — the fully
+  interactive versions arrive in the next phases (see `PHASE_PLAN.md`).
+- Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
+  a "rotate to portrait" nudge in landscape.
 
 ---
 *Built and maintained with Claude Code.*

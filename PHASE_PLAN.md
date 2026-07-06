@@ -35,7 +35,11 @@ A cute **familiar** (a Toad) helps for the cost of treats. Harder customers add
 
 ---
 
-## Phase 0 — Foundation & Data (the engine room)
+> **Progress:** ✅ Phase 0 and ✅ Phase 1 are complete — the full round loops
+> end‑to‑end with real scoring and the gold economy. Scoop/Pop/Shop are still
+> placeholders (Phases 2–3 make them fully interactive).
+
+## Phase 0 — Foundation & Data (the engine room) — ✅ DONE
 
 **Goal:** Set up the architecture and all the game data so later phases just plug in.
 
@@ -63,7 +67,7 @@ sample inputs, and you can walk the empty screen flow start→finish.
 
 ---
 
-## Phase 1 — Core loop skeleton (clickable end‑to‑end)
+## Phase 1 — Core loop skeleton (clickable end‑to‑end) — ✅ DONE
 
 **Goal:** A player can complete a whole round with placeholder screens.
 
@@ -249,8 +253,15 @@ aren't specified. These are the decisions we're building on. All numbers are
   lowers the score. Allergies are the only downside risk in the mix. (Chosen for a
   simple, kid‑friendly, non‑punishing feel.)
 - **Match % model:** each need gets its own 0–100% bar from the relevant magic
-  accumulated vs. a per‑need target; the shown "Match %" is a weighted blend with
-  the **Main Need weighted highest**, then Second, then Final Twist.
+  accumulated vs. a per‑need target; the shown "Match %" is a weighted blend.
+  **Weights: 3 needs → Main 40% / Second 30% / Final 30%; 2 needs → 60% / 40%;
+  1 need → 100%.** Second and Final still swing the outcome heavily.
+- **Gold economy (kid‑simple, patterned, scarce):** clean round numbers on a
+  ladder (10 / 25 / 50 / 100 / 250 / 500 / 1000). Payments are modest (20–50 by
+  difficulty, +10 tip) so gold accrues slowly and big sinks are a real dump.
+  **Treats stay affordable (10 each)**; early reveals 25 (Second) / 50 (Twist);
+  familiar ability unlocks 100 / 250 / 500; locations ~1000 (later). Daily grant
+  150 so a broke player always recovers.
 - **No time‑pressure fail:** the 30s/60s timers only *reveal needs* and grant
   speed‑bonus slots — letting them run out never fails the round.
 - **Ingredient strengths & Potent multiplier:** assigned per ingredient (hidden);
