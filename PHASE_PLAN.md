@@ -235,3 +235,33 @@ tested, and it's live at the play URL.
 **Recommendation:** Phases 0→4 deliver the complete, genuinely fun core game.
 5→9 add depth, helpers, progression, and polish. We can stop and playtest after
 any phase since the loop stays playable throughout.
+
+---
+
+## Design decisions & assumptions (source of truth)
+
+The design doc intentionally hides "backend stats," so several formulas/numbers
+aren't specified. These are the decisions we're building on. All numbers are
+**starting defaults to be tuned in playtesting** unless noted.
+
+- **Scoring — "Harmless" mixing (decided):** only the magic types the customer
+  asked for count toward the match. Off‑target/extra magic is wasted but never
+  lowers the score. Allergies are the only downside risk in the mix. (Chosen for a
+  simple, kid‑friendly, non‑punishing feel.)
+- **Match % model:** each need gets its own 0–100% bar from the relevant magic
+  accumulated vs. a per‑need target; the shown "Match %" is a weighted blend with
+  the **Main Need weighted highest**, then Second, then Final Twist.
+- **No time‑pressure fail:** the 30s/60s timers only *reveal needs* and grant
+  speed‑bonus slots — letting them run out never fails the round.
+- **Ingredient strengths & Potent multiplier:** assigned per ingredient (hidden);
+  a tripled → Potent ingredient counts notably stronger. Tuned later.
+- **Allergy meter:** each allergy‑matching ingredient raises the meter; Green/
+  Yellow/Red thresholds and the 100/75/50/0% payouts tuned later.
+- **Charm economy:** bubble pops grant charms (count/colors tuned) so a normal
+  round can afford a viable mix without being free; guardrails prevent impossible
+  or trivial rounds (e.g., cheap single‑scoop rounds still give ≥3 bubbles and a
+  lower required match).
+- **Bubble drop rates, scoops→bubbles curve, required‑match ranges, gold prices
+  (treats / early reveals / ability unlocks / locations), and the difficulty ramp
+  (1→2→3 needs, when allergies appear):** default values set now, balanced later.
+- **Leftovers reset each round** (charms, bubbles, ingredients), per spec.
