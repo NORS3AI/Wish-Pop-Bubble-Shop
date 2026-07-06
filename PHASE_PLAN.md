@@ -310,6 +310,17 @@ aren't specified. These are the decisions we're building on. All numbers are
   affordable; min 4 bubbles/round. Added 6 Strength‑bearing ingredients (library
   now 38) because no ingredient supplied Strength, which some wishes require.
   Numbers live in `BALANCE` in `engine.js` and can be re‑tuned freely.
+- **Anti‑helpless recovery kit (playtest fix):** a no‑key round used to be a
+  near‑guaranteed, un‑preventable loss (hard: ~8% win, ~19% of rounds). Added
+  three player‑agency tools so bad luck is recoverable, not a wall:
+  1. **Shelf reroll** — one free restock per shelf per round.
+  2. **Toad familiar (shop):** spend 1 treat to grab an ingredient here, or — if
+     shelves are still locked — a 50% chance to **find a key** and open one. Turns
+     the treats you earned into the keys you lacked. Lifts hard no‑key win rate
+     from ~8% to ~47% when used.
+  3. **Partial credit** — a miss still pays a few coins scaled to how close you
+     got (`CONSOLATION_FRACTION`), so no round is ever a flat zero. Result reads
+     "So Close!" instead of a hard fail.
 - **Budget & shop tuning (playtest fix):** ingredients cost **2 charms** (flat,
   still uniform) so you can afford only ~half the shelf and must choose — you can
   afford *everything* in only ~4–12% of rounds now (was 41–54%). The shop only

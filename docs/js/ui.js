@@ -321,6 +321,7 @@ function renderShop() {
   if (ROUND._shopTimer) clearInterval(ROUND._shopTimer);
   ROUND.currentShelf = 0;              // index into the OPEN shelves only
   ROUND.bagOpen = false;
+  ROUND.rerolled = ROUND.rerolled || {}; // one free reroll per shelf per round
   ROUND.shopStart = Date.now();
   paintShop();
   show("shop");
@@ -349,19 +350,24 @@ function paintShop() {
       <div class="shelf-title">${info.name}<small>${info.style}${lockedCount ? ` · 🔒 ${lockedCount} ${lockedCount > 1 ? "shelves" : "shelf"} stayed locked` : ""}</small></div>
       <div class="shelf-arrow" id="shelf-next" style="${multi ? "" : "visibility:hidden"}">›</div>
     </div>
-    ${multi ? `<div class="dots">${dots}</div>` : `<div style="height:6px"></div>`}
+    <div class="shelf-tools">
+      ${multi ? `<div class="dots">${dots}</div>` : `<span></span>`}
+      <button class="reroll-btn" id="reroll-btn" ${ROUND.rerolled[shelf] ? "disabled" : ""}>
+        ${ROUND.rerolled[shelf] ? "↻ rerolled" : "↻ Reroll shelf"}</button>
+    </div>
     <div class="ing-grid grow" id="shelf-grid">${cards}</div>
     ${ROUND.bagOpen ? `<div class="bag-drawer inv">${ROUND.inventory.map(inst => ingCardMini(inst)).join("") || '<div class="muted">Empty — buy or win ingredients.</div>'}</div>` : ""}
     <div class="row" style="margin-top:8px">
       <button class="bag-btn" id="bag-btn">🎒 Bag (${bagN})</button>
       <button class="btn" id="done-shop" style="flex:1">Done Shopping  →</button>
     </div>
-    ${familiarToken()}
+    ${familiarToken("shop")}
   `);
   paintReveal();
   // shelf navigation
   on("#shelf-prev", "click", () => changeShelf(-1));
   on("#shelf-next", "click", () => changeShelf(1));
+  on("#reroll-btn", "click", rerollCurrentShelf);
   on("#bag-btn", "click", () => { ROUND.bagOpen = !ROUND.bagOpen; paintShop(); });
   on("#done-shop", "click", doneShopping);
   // buy via delegation
@@ -406,6 +412,54 @@ function changeShelf(dir) {
   if (n <= 1) return;
   ROUND.currentShelf = (ROUND.currentShelf + dir + n) % n;
   paintShop();
+}
+function rerollCurrentShelf() {
+  const shelf = shelfName();
+  if (ROUND.rerolled[shelf]) { toast("This shelf was already rerolled."); return; }
+  ROUND.rerolled[shelf] = true;
+  ENGINE.rerollShelf(ROUND, shelf);
+  sPop();
+  paintShop();
+  toast("↻ " + D.SHELVES[shelf].name + " restocked!");
+}
+
+/* Familiar (Toad) shop ability: spend 1 treat to grab an ingredient here — or,
+ * if shelves are still locked, a chance to find a KEY and open one instead. */
+function familiarShopAbility() {
+  if (GAME.treats <= 0) { toast("No treats left! Buy more with gold."); return; }
+  if (ROUND.treatsUsed >= BALANCE.MAX_TREATS_PER_ROUND) { toast("Toad's had enough (5 per round)."); return; }
+  const locked = D.SHELF_ORDER.filter(s => !isUnlocked(s));
+  const hint = locked.length ? " (might find a 🔑 key!)" : "";
+  confirmDialog(`Feed Toad 1 treat?${hint}`, () => {
+    GAME.treats--; ROUND.treatsUsed++; save();
+    if (locked.length && R.chance(BALANCE.FAMILIAR_KEY_CHANCE)) {
+      const s = R.pick(locked); ROUND.unlocked.push(s);
+      toast(`🔑 Toad found a key — ${D.SHELVES[s].name} unlocked!`);
+    } else {
+      const shelf = shelfName(); const arr = ROUND.shelves[shelf];
+      if (arr.length) {
+        const id = R.pick(arr); arr.splice(arr.indexOf(id), 1);
+        ROUND.inventory.push({ id, potent: false });
+        toast(`🐸 Toad grabbed ${D.INGREDIENT_BY_ID[id].name}!`);
+      } else toast("🐸 Nothing to grab here!");
+    }
+    paintShop();
+  });
+}
+
+/* Lightweight yes/no confirm overlay */
+function confirmDialog(msg, onYes) {
+  const ov = document.createElement("div");
+  ov.className = "confirm-overlay";
+  ov.innerHTML = `<div class="confirm-card">
+    <div class="confirm-msg">${msg}</div>
+    <div class="row" style="justify-content:center">
+      <button class="btn secondary small" id="cf-no">No</button>
+      <button class="btn good small" id="cf-yes">Yes</button>
+    </div></div>`;
+  $("#app").appendChild(ov);
+  ov.querySelector("#cf-no").addEventListener("click", () => ov.remove());
+  ov.querySelector("#cf-yes").addEventListener("click", () => { ov.remove(); onYes(); });
 }
 
 /* Reveal panel — auto-reveals needs on the timer; tap a hidden need to pay. */
@@ -583,7 +637,8 @@ function flyEmoji(from, to, emoji) {
   requestAnimationFrame(() => { f.style.transform = `translate(${dx}px,${dy}px) scale(.5)`; f.style.opacity = "0.15"; });
   setTimeout(() => f.remove(), 380);
 }
-function sAdd() {} // sound hook (audio added in Phase 9)
+function sAdd() {} // sound hooks (audio added in Phase 9)
+function sPop() {}
 
 /* ======================================================================= */
 /* RESULT                                                                  */
@@ -602,21 +657,22 @@ function renderResult(res) {
   const tip = res.gold - ROUND.payment; // >0 when a tip was earned
   const tipLine = (win && tip > 0)
     ? `<div class="stat-line"><span>Tip! 🎉</span><span class="gold">🪙 +${tip}</span></div>` : "";
-  const emoji = win ? (tip > 0 ? "🤩" : "😊") : "😅";
+  const emoji = win ? (tip > 0 ? "🤩" : "😊") : "🙂";
+  const title = win ? res.type.title : "So Close!";
   html("result", `
     ${hud("Result")}
     <div class="grow center" style="gap:14px">
       <div class="ph big" id="react">${emoji}</div>
-      <div class="result-title ${win ? "win" : "lose"}">${res.type.title}</div>
+      <div class="result-title ${win ? "win" : "lose"}">${title}</div>
       <div class="card" style="width:100%;max-width:320px">
         <div class="stat-line"><span>Your Match</span><span><b>${res.weighted}%</b></span></div>
         <div class="stat-line"><span>Needed</span><span>${res.required}%</span></div>
-        <div class="stat-line"><span>${win ? "Payment" : "Gold Earned"}</span><span class="gold">🪙 ${win ? ROUND.payment : 0}</span></div>
+        <div class="stat-line"><span>${win ? "Payment" : "Coins for trying"}</span><span class="gold">🪙 ${win ? ROUND.payment : res.gold}</span></div>
         ${tipLine}
       </div>
       <p class="muted" style="max-width:300px">${win
         ? (tip > 0 ? c.name + " is overjoyed — you nailed the wish and earned a tip!" : c.name + " is happy with their wish!")
-        : c.name + " will be back. Gather a few more matching ingredients next time!"}</p>
+        : c.name + " couldn't get the full wish, but liked the effort and left you a few coins."}</p>
     </div>
     <button class="btn" id="next-btn">Next Customer  →</button>
   `);
@@ -638,9 +694,18 @@ function ingCardMini(inst, idx) {
     <div class="q">${quals}</div>
   </div>`;
 }
-function familiarToken() { return `<div class="familiar" id="familiar">${D.FAMILIAR.emoji}</div>`; }
-function wireFamiliar() {
-  on("#familiar", "click", () => toast("The Toad familiar joins in Phase 6!"));
+function familiarToken(phase) {
+  const badge = phase === "shop" ? `<span class="fam-badge">🐸</span>` : "";
+  return `<div class="familiar" id="familiar">${D.FAMILIAR.emoji}${badge}</div>`;
+}
+function wireFamiliar(phase) {
+  // scope to this screen's token (#familiar exists on several screens)
+  const el = document.querySelector("#screen-" + phase + " #familiar");
+  if (!el) return;
+  el.addEventListener("click", () => {
+    if (phase === "shop") familiarShopAbility();
+    else toast("🐸 Tap the Toad in the shop to spend a treat!");
+  });
 }
 
 /* boot */

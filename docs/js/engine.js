@@ -21,6 +21,8 @@ const BALANCE = {
   REQUIRED_MATCH: { easy: 50, medium: 60, hard: 70, veryhard: 80 },
   PAYMENT:        { easy: 20, medium: 30, hard: 40, veryhard: 50 },
   TIP: 10, TIP_MARGIN: 20,       // exceed required by this much -> tip
+  CONSOLATION_FRACTION: 0.35,    // partial-credit gold on a miss (scaled to match)
+  FAMILIAR_KEY_CHANCE: 0.5,      // chance the Toad finds a key (if shelves locked)
 
   // Scoop / bubbles — each scoop rolls its OWN random yield and they sum, so
   // more scoops (higher pay) really means more bubbles, and every reveal varies.
@@ -268,18 +270,45 @@ function scoreResult(round) {
   const success = weighted >= required;
   let type, gold;
   if (!success) {
-    type = DATA.RESULT_TYPES.fail; gold = 0;
+    // partial credit — a few coins scaled to how close you got (never zero effort)
+    type = DATA.RESULT_TYPES.fail;
+    gold = Math.max(1, Math.round(round.payment * (weighted / 100) * BALANCE.CONSOLATION_FRACTION));
   } else {
     type = DATA.RESULT_TYPES.full;
     gold = round.payment;
     if (weighted >= required + BALANCE.TIP_MARGIN) gold += BALANCE.TIP;
   }
-  return { type, gold, weighted, required, success };
+  return { type, gold, weighted, required, success, partial: !success && gold > 0 };
+}
+
+/* --- Reroll a shelf's stock (one free reroll per shelf per round) -------- */
+function rerollShelf(round, shelf) {
+  const eligible = DATA.INGREDIENTS.filter(i => i.shelves.includes(shelf));
+  round.shelves[shelf] = R.shuffle(eligible).slice(0, BALANCE.SHELF_MAX).map(i => i.id);
+  ensureMainVisible(round);
+}
+/* Make sure the main need stays buyable on some unlocked shelf (safety after
+ * a reroll, so a player can't accidentally reroll away their only match). */
+function ensureMainVisible(round) {
+  const mainType = round.wish.needs[0].type;
+  const shows = round.unlocked.some(s => round.shelves[s].some(id => {
+    const ing = DATA.INGREDIENT_BY_ID[id]; return !ing.wild && ing.qualities[0] === mainType;
+  }));
+  if (shows) return;
+  const mainIngs = R.shuffle(DATA.INGREDIENTS.filter(i => !i.wild && i.qualities[0] === mainType));
+  for (const s of round.unlocked) {
+    const ing = mainIngs.find(i => i.shelves.includes(s));
+    if (!ing) continue;
+    const arr = round.shelves[s];
+    const repl = arr.findIndex(id => { const c = DATA.INGREDIENT_BY_ID[id]; return !c.wild && c.qualities[0] !== mainType; });
+    if (repl >= 0) arr[repl] = ing.id; else if (arr.length < BALANCE.SHELF_MAX) arr.push(ing.id);
+    return;
+  }
 }
 
 /* Expose */
 const ENGINE = {
   BALANCE, R, ingredientPointsFor, difficultyFor, needCountFor,
   generateWish, newRound, applyTripleMatch, scoreMix, scoreResult,
-  scoopSplit, weightedPick, rollPop, populateShelves,
+  scoopSplit, weightedPick, rollPop, populateShelves, rerollShelf, ensureMainVisible,
 };

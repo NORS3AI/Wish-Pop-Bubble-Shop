@@ -141,6 +141,19 @@ html, body {
   justify-content: center; gap: 8px; padding: 34px 16px; text-align: center; }
 .locked-shelf .lk { font-size: 52px; opacity: .85; }
 .locked-shelf .lkt { font-weight: 800; font-size: 17px; }
+.shelf-tools { display: flex; align-items: center; justify-content: space-between; min-height: 26px; margin-bottom: 4px; }
+.shelf-tools .dots { margin: 0; }
+.reroll-btn { margin-left: auto; background: var(--card2); border: 1px solid var(--line); color: var(--ink);
+  border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.reroll-btn:active { transform: scale(0.95); }
+.reroll-btn[disabled] { opacity: .4; pointer-events: none; }
+.fam-badge { position: absolute; top: -4px; right: -4px; font-size: 13px;
+  background: var(--gold); border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+.confirm-overlay { position: absolute; inset: 0; z-index: 46; display: flex; align-items: center; justify-content: center;
+  background: rgba(10,4,22,0.6); animation: fade .15s ease; }
+.confirm-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px;
+  text-align: center; max-width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.confirm-msg { font-weight: 800; font-size: 17px; margin-bottom: 16px; }
 .ing-card.cant { opacity: .45; }
 .ing-card .cost .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: 2px; }
 .bag-btn { background: var(--card); border: 1px solid var(--line); color: var(--ink); border-radius: 12px;
