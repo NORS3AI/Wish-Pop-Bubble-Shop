@@ -14,7 +14,7 @@ const BALANCE = {
   POTENT_MULT: 2.5,              // tripled -> Potent ingredient multiplier
   WILD_MIN: 3, WILD_MAX: 6,      // wild ingredient random strength per rolled quality
   NEED_WEIGHTS: { 1: [1.0], 2: [0.6, 0.4], 3: [0.4, 0.3, 0.3] }, // Main / Second / Final
-  INGREDIENT_COST: 1,            // every ingredient costs 1 charm of its (random) color
+  INGREDIENT_COST: 2,            // every ingredient costs 1 charm of its (random) color
 
   // Difficulty by how many customers served so far
   //   easy: Main only | medium: +Second | hard: +Final Twist

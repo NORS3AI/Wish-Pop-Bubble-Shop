@@ -310,6 +310,11 @@ aren't specified. These are the decisions we're building on. All numbers are
   affordable; min 4 bubbles/round. Added 6 Strength‑bearing ingredients (library
   now 38) because no ingredient supplied Strength, which some wishes require.
   Numbers live in `BALANCE` in `engine.js` and can be re‑tuned freely.
+- **Budget & shop tuning (playtest fix):** ingredients cost **2 charms** (flat,
+  still uniform) so you can afford only ~half the shelf and must choose — you can
+  afford *everything* in only ~4–12% of rounds now (was 41–54%). The shop only
+  shows **unlocked** shelves (locked ones are hidden, with a "N shelves stayed
+  locked" note) so you don't waste time paging past them.
 - **Randomized bubbles (playtest fix):** each scoop now rolls its OWN yield
   (1–4 bubbles) and they sum, so more scoops (higher pay) genuinely means more
   bubbles and every reveal varies — no more a flat ~5. Bubble totals ≈ easy 3–8,

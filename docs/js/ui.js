@@ -319,39 +319,37 @@ function refreshPop() {
 /* ======================================================================= */
 function renderShop() {
   if (ROUND._shopTimer) clearInterval(ROUND._shopTimer);
-  ROUND.currentShelf = D.SHELF_ORDER.indexOf(ROUND.startShelf); // land on an open shelf
-  if (ROUND.currentShelf < 0) ROUND.currentShelf = 0;
+  ROUND.currentShelf = 0;              // index into the OPEN shelves only
   ROUND.bagOpen = false;
   ROUND.shopStart = Date.now();
   paintShop();
   show("shop");
   ROUND._shopTimer = setInterval(paintReveal, 500);
 }
-function shelfName() { return D.SHELF_ORDER[ROUND.currentShelf]; }
 function isUnlocked(shelf) { return ROUND.unlocked.includes(shelf); }
+function openShelves() { return D.SHELF_ORDER.filter(isUnlocked); }
+function shelfName() { const o = openShelves(); return o[Math.min(ROUND.currentShelf, o.length - 1)]; }
 
 function paintShop() {
+  const open = openShelves();
   const shelf = shelfName();
   const info = D.SHELVES[shelf];
-  const locked = !isUnlocked(shelf);
-  const cards = locked
-    ? `<div class="locked-shelf"><div class="lk">🔒</div><div class="lkt">${info.name} is locked</div>
-        <div class="muted">Pop a 🔑 shelf key while popping bubbles to open it.</div></div>`
-    : (ROUND.shelves[shelf].map(id => shopCard(id)).join("") ||
-       `<div class="muted" style="grid-column:1/-1;text-align:center;padding:20px">Sold out! Swipe to another shelf.</div>`);
-  const dots = D.SHELF_ORDER.map((s, i) =>
-    `<span class="d ${i === ROUND.currentShelf ? "on" : ""} ${isUnlocked(s) ? "" : "locked"}"></span>`).join("");
+  const multi = open.length > 1;
+  const lockedCount = D.SHELF_ORDER.length - open.length;
+  const cards = ROUND.shelves[shelf].map(id => shopCard(id)).join("") ||
+    `<div class="muted" style="grid-column:1/-1;text-align:center;padding:20px">Sold out here — ${multi ? "swipe to another shelf." : "check your bag!"}</div>`;
+  const dots = open.map((s, i) => `<span class="d ${i === ROUND.currentShelf ? "on" : ""}"></span>`).join("");
   const bagN = ROUND.inventory.length;
   html("shop", `
     ${hud("Shop Phase")}
     <div class="card reveal-panel" id="reveal-panel"></div>
     ${charmsBar()}
     <div class="shelf-bar">
-      <div class="shelf-arrow" id="shelf-prev">‹</div>
-      <div class="shelf-title">${locked ? "🔒 " : ""}${info.name}<small>${isUnlocked(shelf) ? info.style : "locked — needs a key"}</small></div>
-      <div class="shelf-arrow" id="shelf-next">›</div>
+      <div class="shelf-arrow" id="shelf-prev" style="${multi ? "" : "visibility:hidden"}">‹</div>
+      <div class="shelf-title">${info.name}<small>${info.style}${lockedCount ? ` · 🔒 ${lockedCount} ${lockedCount > 1 ? "shelves" : "shelf"} stayed locked` : ""}</small></div>
+      <div class="shelf-arrow" id="shelf-next" style="${multi ? "" : "visibility:hidden"}">›</div>
     </div>
-    <div class="dots">${dots}</div>
+    ${multi ? `<div class="dots">${dots}</div>` : `<div style="height:6px"></div>`}
     <div class="ing-grid grow" id="shelf-grid">${cards}</div>
     ${ROUND.bagOpen ? `<div class="bag-drawer inv">${ROUND.inventory.map(inst => ingCardMini(inst)).join("") || '<div class="muted">Empty — buy or win ingredients.</div>'}</div>` : ""}
     <div class="row" style="margin-top:8px">
@@ -404,7 +402,9 @@ function buy(id) {
 }
 
 function changeShelf(dir) {
-  ROUND.currentShelf = (ROUND.currentShelf + dir + D.SHELF_ORDER.length) % D.SHELF_ORDER.length;
+  const n = openShelves().length;
+  if (n <= 1) return;
+  ROUND.currentShelf = (ROUND.currentShelf + dir + n) % n;
   paintShop();
 }
 
