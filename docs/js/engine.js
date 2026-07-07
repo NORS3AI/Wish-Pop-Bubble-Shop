@@ -211,6 +211,7 @@ function newRound(state) {
     maxSlots: BALANCE.MIX_SLOTS,
     bonusSpawned: 0,         // running count of bonus-spawned bubbles (hard-capped)
     bonusFrenzy,             // rare rounds get a runaway chain
+    stats: { scooped: bubbles, popped: 0, ingredients: 0, charms: 0, gold: 0, treats: 0, triples: 0 },
 
     treatsUsed: 0, potentNext: false, allergyOffset: 0, insight: false,
     result: null,
@@ -313,13 +314,14 @@ function scoreResult(round) {
   if (!success) {
     type = DATA.RESULT_TYPES.fail;
     gold = Math.max(1, Math.round(round.payment * (weighted / 100) * BALANCE.CONSOLATION_FRACTION));
+  } else if (worst === "red") {
+    type = DATA.RESULT_TYPES.red; gold = Math.round(round.payment * DATA.RESULT_TYPES.red.payoutPct); // no tips — they reacted!
+  } else if (worst === "yellow") {
+    type = DATA.RESULT_TYPES.yellow; gold = Math.round(round.payment * DATA.RESULT_TYPES.yellow.payoutPct);
   } else {
-    if (worst === "red") { type = DATA.RESULT_TYPES.red; gold = Math.round(round.payment * DATA.RESULT_TYPES.red.payoutPct); }
-    else if (worst === "yellow") { type = DATA.RESULT_TYPES.yellow; gold = Math.round(round.payment * DATA.RESULT_TYPES.yellow.payoutPct); }
-    else { type = DATA.RESULT_TYPES.full; gold = round.payment; }
-    // quick-service tip: served with needs still secret
+    type = DATA.RESULT_TYPES.full; gold = round.payment;
+    // tips only on a clean win (no allergy reaction)
     if (hiddenAtServe > 0) quickTip = hiddenAtServe * BALANCE.QUICK_TIP_PER_HIDDEN;
-    // perfect-potion tip: match greatly exceeds what was required
     if (weighted >= Math.min(100, required + BALANCE.QUALITY_MARGIN)) qualityTip = BALANCE.QUALITY_TIP;
     tip = quickTip + qualityTip; gold += tip;
   }

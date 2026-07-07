@@ -70,6 +70,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   each with its own rising note** so you can *hear* how many you found. If you have
   another scoop, the spoon **dives back into the glitter** and pulls up a fresh one
   to shake. There's a "✨ Shake for me" button if you'd rather not swipe.
+- 📋 **Round Recap + fixes.** The result screen now shows a **recap** of your round:
+  bubbles scooped, bubbles popped (including bonus), ingredients found, charms found,
+  gold/treats gained, and triples made. Also: an allergic reaction now correctly costs
+  you pay (**no tips on a reaction**), and **Pop‑them‑all** cleanly sweeps every
+  ingredient and charm into your bag/tray.
 - 🔪 **The Knife (new tool) + bonus frenzies.** A new **Knife** charm can pop from
   bubbles: play it in the cauldron and tap an ingredient to **cut it into its
   separate magics** — one pure single‑magic "essence" per quality, for precise

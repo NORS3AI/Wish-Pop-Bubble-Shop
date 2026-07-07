@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v19"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v20"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -259,7 +259,7 @@ function renderScoop() {
     if (jackpot) {
       SFX.charm(); // fanfare
       jackCharm = ENGINE.pickCappedCharm(ROUND.charms);
-      ROUND.charms.push(jackCharm); // awarded straight into the tray — no need to catch it
+      ROUND.charms.push(jackCharm); if (ROUND.stats) ROUND.stats.charms++; // awarded straight into the tray
     }
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
       ? `🌈 <b>Jackpot!</b> ${found} bubbles + ${CHARM(jackCharm).emoji} ${CHARM(jackCharm).name} charm!`
@@ -417,6 +417,13 @@ function popAt(i, el, fromCascade, power) {
   if (item.kind === "gold") { GAME.gold += item.amt; save(); }
   else if (item.kind === "treat") { GAME.treats += 1; save(); }
   ROUND.popIndex++;
+  const st = ROUND.stats;
+  if (st) { st.popped++;
+    if (item.kind === "ingredient") st.ingredients++;
+    else if (item.kind === "charm") st.charms++;
+    else if (item.kind === "gold") st.gold += item.amt;
+    else if (item.kind === "treat") st.treats++;
+  }
 
   const info = itemInfo(item), flavor = POP_FLAVOR[info.kind];
   const now = Date.now();
@@ -529,15 +536,7 @@ function collectIngredient(id, tok, silent) {
   refreshPop();
 }
 // safety net: sweep up anything still floating when you move on
-function collectAndContinue() {
-  document.querySelectorAll("#catch-layer .charm-token").forEach(tok => {
-    if (!tok.classList.contains("caught")) { ROUND.charms.push(tok.dataset.charm); tok.remove(); }
-  });
-  document.querySelectorAll("#catch-layer .ing-token").forEach(tok => {
-    if (!tok._caught) { clearTimeout(tok._timer); ROUND.inventory.push({ id: tok.dataset.ing, potent: false }); tok.remove(); }
-  });
-  renderMix();
-}
+function collectAndContinue() { collectAllFloating(); renderMix(); }
 function ringAt(x, y) {
   const layer = $("#burst-layer"); if (!layer) return;
   const ring = document.createElement("div"); ring.className = "ring";
@@ -552,12 +551,21 @@ function popCascade() {
   const step = () => {
     // re-scan each tick so bonus bubbles spawned mid-cascade get popped too
     const el = document.querySelector("#bubble-field .pbubble:not(.popped)");
-    if (!el) { cascadeOn = false; refreshPop(); return; }
+    if (!el) { cascadeOn = false; collectAllFloating(); refreshPop(); return; } // sweep everything into the bag/tray
     popAt(+el.dataset.i, el, true);
     refreshPop();
     setTimeout(step, 135); // rhythmic cascade, not an instant skip
   };
   step();
+}
+// Collect every floating charm + ingredient token into the tray/bag (Pop-them-all & Continue).
+function collectAllFloating() {
+  document.querySelectorAll("#catch-layer .charm-token").forEach(tok => {
+    if (!tok.classList.contains("caught")) { ROUND.charms.push(tok.dataset.charm); tok.remove(); }
+  });
+  document.querySelectorAll("#catch-layer .ing-token").forEach(tok => {
+    if (!tok._caught) { tok._caught = true; clearTimeout(tok._timer); ROUND.inventory.push({ id: tok.dataset.ing, potent: false }); tok.remove(); }
+  });
 }
 
 // --- juice: particle burst, floating reward label, screen flash ---------
@@ -619,6 +627,7 @@ function refreshPop() {
 function renderMix() {
   const rawCount = ROUND.inventory.length;                 // how abundant this round was
   const merged = applyTripleMatch(ROUND.inventory); ROUND.inventory = merged.inventory;
+  if (ROUND.stats) ROUND.stats.triples = merged.merged.length;
   ROUND.slots = []; ROUND.mixStart = Date.now();
   ROUND.potentNext = false; ROUND.allergyOffset = 0; ROUND.insight = false;
   paintMix(); show("mix");
@@ -825,11 +834,24 @@ function renderResult(res) {
         ${quickLine}${qualLine}
       </div>
       <p class="muted" style="max-width:300px">${blurb}</p>
+      ${roundRecap()}
     </div>
     <button class="btn" id="next-btn">Next Customer  →</button>
   `);
   on("#next-btn", "click", startRound);
   show("result");
+}
+function roundRecap() {
+  const s = ROUND.stats; if (!s) return "";
+  return `<div class="card" style="width:100%;max-width:320px">
+    <div style="font-weight:800;text-align:center;margin-bottom:6px">📋 Round Recap</div>
+    <div class="stat-line"><span>🥄 Bubbles scooped</span><span><b>${s.scooped}</b></span></div>
+    <div class="stat-line"><span>🫧 Bubbles popped <span class="muted" style="font-size:11px">(incl. bonus)</span></span><span><b>${s.popped}</b></span></div>
+    <div class="stat-line"><span>🎒 Ingredients found</span><span><b>${s.ingredients}</b></span></div>
+    <div class="stat-line"><span>✨ Charms found</span><span><b>${s.charms}</b></span></div>
+    <div class="stat-line"><span>🪙 Gold · 🐸 Treats gained</span><span><b>${s.gold}</b> · <b>${s.treats}</b></span></div>
+    <div class="stat-line"><span>🔺 Triples made</span><span><b>${s.triples}</b></span></div>
+  </div>`;
 }
 
 /* ======================================================================= */
