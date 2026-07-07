@@ -64,9 +64,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   the main need is shown; the other two are **mystery bars you discover** as your
   ingredients move them. This is the real puzzle the game was missing.
 - 🎉 **More pop-phase delight.** Bubbles now **drift and wander** around the screen
-  (you chase them a little). Popping a **bonus bubble** bursts into *more* bubbles
-  with its own sparkly sound, and landing a **charm** triggers a big spinning
-  celebration with golden rays and a special fanfare. Even more slot-machine joy.
+  (you chase them a little). **Bonus bubbles** are now a distinct **golden, glowing**
+  bubble you can spot on sight — pop one for a big shockwave burst that bursts into
+  *more* bubbles. And **charms now float out and you catch them**: pop the bubble, a
+  charm drifts up like a bubble, and you **tap to gather it** — landing it triggers a
+  big spinning celebration with golden rays and a fanfare. More clicks, more noises,
+  more delight.
 - 🔊 **Pop phase goes ASMR (new direction).** The heart of the game is the scoop
   and the pop — so popping is now a cluster of squishy, floating bubbles you burst
   one by one, each with a real **pop sound**, a spray of particles, the reward

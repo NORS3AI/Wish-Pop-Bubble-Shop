@@ -164,6 +164,46 @@ html, body {
 }
 @keyframes rayspin { 0% { transform: scale(.4) rotate(0deg); opacity: 0; } 40% { opacity: .9; } 100% { transform: scale(1.1) rotate(120deg); opacity: 0; } }
 
+/* Bonus bubbles look distinct (golden) so you can spot them */
+.pbubble.bonus {
+  background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.98), rgba(255,214,120,.6) 48%, rgba(255,150,60,.42) 100%);
+  border-color: rgba(255,235,160,.95);
+  box-shadow: 0 6px 16px rgba(0,0,0,.28), inset 0 -6px 10px rgba(180,110,30,.4), 0 0 0 rgba(255,220,130,.6);
+  animation: bfloat var(--dur,6s) ease-in-out infinite, bonusglow 1.4s ease-in-out infinite; }
+@keyframes bonusglow {
+  0%,100% { box-shadow: 0 6px 16px rgba(0,0,0,.28), inset 0 -6px 10px rgba(180,110,30,.4), 0 0 6px 1px rgba(255,220,130,.5); }
+  50% { box-shadow: 0 6px 16px rgba(0,0,0,.28), inset 0 -6px 10px rgba(180,110,30,.4), 0 0 20px 5px rgba(255,220,130,.95); }
+}
+.pbubble.bonus.popped { animation: bpopbig .5s cubic-bezier(.3,1.4,.5,1) forwards; }
+@keyframes bpopbig {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.7); box-shadow: 0 0 40px 10px rgba(255,220,130,.95); filter: brightness(1.7); }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* shockwave ring (bonus burst) */
+.ring { position: fixed; border-radius: 50%; border: 3px solid rgba(255,220,130,.9); transform: translate(-50%,-50%);
+  pointer-events: none; z-index: 59; animation: ringout .6s ease-out forwards; }
+@keyframes ringout { 0% { width: 18px; height: 18px; opacity: .95; } 100% { width: 230px; height: 230px; opacity: 0; border-width: 1px; } }
+
+/* a charm that pops out and floats — tap to catch it */
+.catch-layer { position: fixed; inset: 0; pointer-events: none; z-index: 61; overflow: hidden; }
+.charm-token { position: fixed; width: 64px; height: 64px; transform: translate(-50%,-50%); pointer-events: auto; cursor: pointer;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.98), rgba(255,215,120,.55) 52%, rgba(200,120,255,.42));
+  border: 2px solid rgba(255,235,160,.95); box-shadow: 0 0 20px rgba(255,220,130,.85);
+  animation: tokenin .42s cubic-bezier(.2,1.6,.4,1) both, ctfloat var(--tdur,2.8s) ease-in-out .42s infinite; }
+.charm-token .lbl { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  font-size: 11px; font-weight: 800; color: #ffe38a; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.charm-token.caught { animation: tokencatch .3s ease-in forwards; }
+@keyframes tokenin { 0% { transform: translate(-50%,-50%) scale(0); } 100% { transform: translate(-50%,-50%) scale(1); } }
+@keyframes ctfloat {
+  0%,100% { margin: 0 0; }
+  33% { margin: calc(var(--ty1,-30px)) 0 0 var(--tx1,26px); }
+  66% { margin: var(--ty2,20px) 0 0 var(--tx2,-24px); }
+}
+@keyframes tokencatch { 0% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1.8); opacity: 0; } }
+
 .burst-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
 .particle { position: fixed; border-radius: 50%; transform: translate(-50%, -50%);
   animation: fly .68s ease-out forwards; }

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v9"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v10"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -248,18 +248,20 @@ const POP_FLAVOR = {
 };
 let popCombo = 0, lastPopAt = 0, cascadeOn = false;
 
-// one floating bubble button, with a randomized wander path so each drifts differently
-function bubbleHTML(i) {
+// one floating bubble button, with a randomized wander path so each drifts differently.
+// Bonus bubbles get a golden look so you can spot them; other rewards stay a surprise.
+function bubbleHTML(i, kind) {
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const dur = (5.5 + Math.random() * 3).toFixed(1), del = (Math.random() * 4).toFixed(1);
-  return `<button class="pbubble" data-i="${i}" style="--dur:${dur}s;--del:-${del}s;` +
+  const cls = kind === "bubble" ? "pbubble bonus" : "pbubble";
+  return `<button class="${cls}" data-i="${i}" style="--dur:${dur}s;--del:-${del}s;` +
     `--ax:${rnd(-46, 46)}px;--ay:${rnd(-34, 34)}px;--bx:${rnd(-46, 46)}px;--by:${rnd(-30, 34)}px;` +
     `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span>🫧</button>`;
 }
 
 function renderPop() {
   ROUND.popIndex = 0; popCombo = 0; lastPopAt = 0; cascadeOn = false;
-  const bubbles = ROUND.haul.map((_, i) => bubbleHTML(i)).join("");
+  const bubbles = ROUND.haul.map((it, i) => bubbleHTML(i, it.kind)).join("");
   html("pop", `
     ${hud("Pop Phase")}
     <button class="mute-btn" id="mute-btn" title="Sound on/off">${SFX.isMuted() ? "🔇" : "🔊"}</button>
@@ -271,13 +273,14 @@ function renderPop() {
       <button class="btn" id="pop-continue" disabled>Continue</button>
     </div>
     <div class="burst-layer" id="burst-layer"></div>
+    <div class="catch-layer" id="catch-layer"></div>
     ${familiarToken("pop")}
   `);
   refreshPop();
   document.querySelectorAll("#bubble-field .pbubble").forEach(el =>
     el.addEventListener("click", () => popAt(+el.dataset.i, el)));
   on("#pop-all", "click", popCascade);
-  on("#pop-continue", "click", renderMix);
+  on("#pop-continue", "click", collectAndContinue);
   on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
   wireFamiliar("pop");
   show("pop");
@@ -295,46 +298,89 @@ function popAt(i, el, fromCascade) {
   if (!el || el.classList.contains("popped")) return;
   SFX.unlock();
   const item = ROUND.haul[i];
+  // charms are NOT collected here — they pop out and float; you catch them.
   if (item.kind === "ingredient") ROUND.inventory.push({ id: item.id, potent: false });
-  else if (item.kind === "charm") ROUND.charms.push(item.id);
   else if (item.kind === "gold") { GAME.gold += item.amt; save(); }
   else if (item.kind === "treat") { GAME.treats += 1; save(); }
   ROUND.popIndex++;
 
   const info = itemInfo(item), flavor = POP_FLAVOR[info.kind];
-  // combo builds if you keep popping quickly
   const now = Date.now();
   popCombo = (now - lastPopAt < 700) ? popCombo + 1 : 0; lastPopAt = now;
   const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
 
-  // special reveals get their own sound + celebration
-  if (item.kind === "charm") { SFX.pop(popCombo); SFX.charm(); charmCelebrate(info.emoji); flashScreen(); }
-  else if (item.kind === "bubble") { SFX.pop(popCombo); SFX.bonus(); }
-  else { SFX.pop(popCombo); SFX.reveal(info.kind, popCombo); }
+  if (item.kind === "charm") {
+    SFX.pop(popCombo); SFX.reveal("ingredient", popCombo); // soft glint on reveal
+    spawnFloatingCharm(item.id, cx, cy);                    // real fanfare happens on catch
+  } else if (item.kind === "bubble") {
+    SFX.pop(popCombo); SFX.bonus(); flashScreen();
+    ringAt(cx, cy); burstAt(cx, cy, flavor); burstAt(cx, cy, flavor); // extra-big burst
+    floatReward(cx, cy, info, true);
+  } else {
+    SFX.pop(popCombo); SFX.reveal(info.kind, popCombo);
+    burstAt(cx, cy, flavor); floatReward(cx, cy, info, flavor.rare);
+  }
   if (navigator.vibrate) navigator.vibrate(flavor.rare ? [10, 22, 14] : 12);
 
-  burstAt(cx, cy, flavor);
-  floatReward(cx, cy, info, flavor.rare);
-
   el.classList.add("popped");
-  if (item.kind === "bubble") spawnBonusBubbles();
+  if (item.kind === "bubble") spawnBonusBubbles(cx, cy);
   if (!fromCascade) refreshPop();
 }
 
-// A bonus bubble bursts into more bubbles that drop into the field.
-function spawnBonusBubbles() {
+// A bonus bubble bursts into more bubbles that fly out into the field.
+function spawnBonusBubbles(cx, cy) {
   const field = $("#bubble-field"); if (!field) return;
   const n = R.int(BALANCE.BONUS_SPAWN_MIN, BALANCE.BONUS_SPAWN_MAX);
   const items = ENGINE.bonusBubbleItems(ROUND.wish, n);
-  items.forEach(it => {
+  items.forEach((it, k) => {
     const idx = ROUND.haul.length; ROUND.haul.push(it);
-    const holder = document.createElement("div"); holder.innerHTML = bubbleHTML(idx);
+    const holder = document.createElement("div"); holder.innerHTML = bubbleHTML(idx, it.kind);
     const nb = holder.firstElementChild; nb.classList.add("spawning");
     nb.addEventListener("click", () => popAt(+nb.dataset.i, nb));
     field.appendChild(nb);
     setTimeout(() => nb.classList.remove("spawning"), 480);
   });
   refreshPop();
+}
+
+// Charm floats out of the popped bubble; tap it to gather it (with the fanfare).
+function spawnFloatingCharm(id, x, y) {
+  const layer = $("#catch-layer"); if (!layer) { ROUND.charms.push(id); return; }
+  const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
+  const tok = document.createElement("div");
+  tok.className = "charm-token"; tok.dataset.charm = id;
+  tok.style.left = x + "px"; tok.style.top = y + "px";
+  tok.style.setProperty("--tdur", (2.4 + Math.random()) .toFixed(1) + "s");
+  tok.style.setProperty("--tx1", rnd(14, 34) + "px"); tok.style.setProperty("--ty1", rnd(-40, -20) + "px");
+  tok.style.setProperty("--tx2", rnd(-34, -14) + "px"); tok.style.setProperty("--ty2", rnd(16, 34) + "px");
+  tok.innerHTML = `${CHARM(id).emoji}<span class="lbl">tap to catch!</span>`;
+  tok.addEventListener("click", () => collectCharm(id, tok));
+  layer.appendChild(tok);
+}
+function collectCharm(id, tok) {
+  if (!tok || tok.classList.contains("caught")) return;
+  SFX.unlock(); SFX.charm();
+  ROUND.charms.push(id);
+  const r = tok.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  charmCelebrate(CHARM(id).emoji); flashScreen();
+  burstAt(cx, cy, POP_FLAVOR.charm);
+  floatReward(cx, cy, { emoji: CHARM(id).emoji, label: CHARM(id).name + " charm!" }, true);
+  if (navigator.vibrate) navigator.vibrate([10, 22, 14]);
+  tok.classList.add("caught"); setTimeout(() => tok.remove(), 320);
+  refreshPop();
+}
+// safety net: sweep up any charm still floating when you move on
+function collectAndContinue() {
+  document.querySelectorAll("#catch-layer .charm-token").forEach(tok => {
+    if (!tok.classList.contains("caught")) { ROUND.charms.push(tok.dataset.charm); tok.remove(); }
+  });
+  renderMix();
+}
+function ringAt(x, y) {
+  const layer = $("#burst-layer"); if (!layer) return;
+  const ring = document.createElement("div"); ring.className = "ring";
+  ring.style.left = x + "px"; ring.style.top = y + "px";
+  layer.appendChild(ring); setTimeout(() => ring.remove(), 620);
 }
 
 function popCascade() {
