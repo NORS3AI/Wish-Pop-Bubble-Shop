@@ -7,16 +7,33 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v25"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v26"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
 const GAME = loadGame();
 function loadGame() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && typeof s.gold === "number") return s; } catch (e) {}
-  return { gold: BALANCE.START_GOLD, treats: 3, unlocked: {} };
+  let g = null;
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && typeof s.gold === "number") g = s; } catch (e) {}
+  if (!g) g = { gold: BALANCE.START_GOLD, treats: 3, unlocked: {} };
+  return normalizeGame(g);
+}
+// backfill cosmetic fields for older saves (so new features never crash on load)
+function normalizeGame(g) {
+  if (typeof g.stardust !== "number") g.stardust = 0;
+  if (!g.owned || typeof g.owned !== "object") g.owned = {};
+  if (!g.equipped || typeof g.equipped !== "object") g.equipped = {};
+  Object.keys(D.COSMETICS).forEach(kind => {
+    D.COSMETICS[kind].forEach(c => { if (c.default) g.owned[c.id] = true; });
+    const def = D.COSMETICS[kind].find(c => c.default) || D.COSMETICS[kind][0];
+    if (!g.equipped[kind] || !D.COSMETIC_BY_ID[g.equipped[kind]]) g.equipped[kind] = def.id;
+  });
+  return g;
 }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(GAME)); } catch (e) {} }
+// currently-equipped cosmetics
+function equippedCauldronClass() { return "skin-" + (GAME.equipped.cauldron || "cauldron_classic"); }
+function equippedFamiliarChip() { const c = D.COSMETIC_BY_ID[GAME.equipped.familiar]; return c ? c.chip : D.FAMILIAR.emoji; }
 
 let ROUND = null;
 let servedTotal = +(localStorage.getItem("wishpop_served") || 0);
@@ -106,6 +123,10 @@ function renderMenu() {
         <div style="font-weight:800">🎁 Daily Gift</div>
         <button class="btn ${canDaily ? "" : "secondary"}" id="daily-btn" ${canDaily ? "" : "disabled"} style="max-width:240px">${canDaily ? "Claim 🪙 " + BALANCE.DAILY_GRANT : "Come back tomorrow!"}</button>
       </div>
+      <div class="row" style="margin-bottom:10px;gap:10px">
+        <button class="btn" id="well-btn" style="flex:1">🌟 Wishing Well</button>
+        <button class="btn secondary" id="wardrobe-btn" style="flex:1">🎨 My Skins</button>
+      </div>
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:8px">🐸 Treats <span class="muted" style="font-weight:500;font-size:13px">· ${GAME.treats} owned · 🪙${BALANCE.PRICES.treat} each</span></div>
         <div class="row" style="align-items:center;justify-content:center">
@@ -130,6 +151,8 @@ function renderMenu() {
   on("#tr-buy", "click", () => buyTreats(qty));
   ["scoop", "charm", "undo"].forEach(k => on("#unlock-" + k, "click", () => unlockAbility(k)));
   on("#daily-btn", "click", claimDaily);
+  on("#well-btn", "click", renderWell);
+  on("#wardrobe-btn", "click", renderWardrobe);
   on("#menu-back", "click", renderStart);
   show("menu");
 }
@@ -150,6 +173,173 @@ function claimDaily() {
   if (!dailyAvailable()) { toast("Already claimed today."); return; }
   GAME.gold += BALANCE.DAILY_GRANT; GAME.lastDaily = todayStr(); save();
   toast(`🎁 +${BALANCE.DAILY_GRANT} gold!`); renderMenu();
+}
+
+/* ======================================================================= */
+/* WISHING WELL — spend gold, gamble for cosmetics (always get something)   */
+/* ======================================================================= */
+function ownedCount(kind) { return D.COSMETICS[kind].filter(c => GAME.owned[c.id]).length; }
+function allSkins() { return [].concat(D.COSMETICS.cauldron, D.COSMETICS.familiar); }
+function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id]); }
+// Roll a prize from the weighted tiers. Always returns a prize object.
+function rollWellPrize() {
+  const rndInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
+  const tiers = BALANCE.WELL_TIERS, total = tiers.reduce((s, t) => s + t.weight, 0);
+  let r = Math.random() * total, tier = tiers[tiers.length - 1];
+  for (const t of tiers) { if (r < t.weight) { tier = t; break; } r -= t.weight; }
+  if (tier.id === "gold" || tier.id === "fizzle") return { kind: "gold", amt: rndInt(tier.gold[0], tier.gold[1]) };
+  if (tier.id === "treats")   return { kind: "treats", amt: rndInt(tier.treats[0], tier.treats[1]) };
+  if (tier.id === "stardust") return { kind: "stardust", amt: rndInt(tier.dust[0], tier.dust[1]) };
+  // skin tier: award a random unowned skin, or Stardust if you already own them all
+  const pool = unownedSkins();
+  if (!pool.length) return { kind: "stardust", amt: tier.dustIfOwnAll, wasSkin: true };
+  return { kind: "skin", cosmetic: pool[Math.floor(Math.random() * pool.length)] };
+}
+// Apply a prize to the save (returns a short human label for the reveal).
+function grantWellPrize(p) {
+  if (p.kind === "gold") { GAME.gold += p.amt; save(); return { emoji: "🪙", label: `+${p.amt} gold back`, sub: "A little something — try again!" }; }
+  if (p.kind === "treats") { GAME.treats += p.amt; save(); return { emoji: "🐸", label: `+${p.amt} treats`, sub: "Toad is pleased." }; }
+  if (p.kind === "stardust") { GAME.stardust += p.amt; save(); return { emoji: "✨", label: `+${p.amt} Stardust`, sub: p.wasSkin ? "You own every skin — extra Stardust!" : "Save it to buy any skin you like." }; }
+  // skin
+  GAME.owned[p.cosmetic.id] = true; save();
+  return { emoji: p.cosmetic.chip, label: `New skin: ${p.cosmetic.name}!`, sub: "Equip it in 🎨 My Skins.", jackpot: true };
+}
+function renderWell() {
+  const cost = BALANCE.WELL_COST, canAfford = GAME.gold >= cost;
+  const totalSkins = allSkins().length, ownedSkins = allSkins().filter(c => GAME.owned[c.id]).length;
+  html("well", `
+    ${hud("Wishing Well")}
+    <div class="grow center" style="gap:14px;overflow-y:auto">
+      <div class="well-visual" id="well-visual"><div class="well-emoji">🌟</div><div class="well-ripple"></div></div>
+      <div class="rb-total">✨ <b id="well-dust">${GAME.stardust}</b> Stardust · 🎁 <b>${ownedSkins}/${totalSkins}</b> skins</div>
+      <div id="well-stage" class="well-stage muted">Toss a coin in and pop a bubble to see what floats up!</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div style="font-weight:800;text-align:center;margin-bottom:6px">What might rise up?</div>
+        <div class="stat-line"><span>🪙 A little gold back</span><span class="muted">common</span></div>
+        <div class="stat-line"><span>🐸 A handful of treats</span><span class="muted">common</span></div>
+        <div class="stat-line"><span>✨ Stardust (buys any skin)</span><span class="muted">uncommon</span></div>
+        <div class="stat-line"><span>🎁 A brand-new skin!</span><span style="color:var(--gold);font-weight:800">rare</span></div>
+      </div>
+      <p class="muted" style="font-size:12px;max-width:280px">You always get something — the fun is <i>how big</i>. Duplicate skins turn into Stardust.</p>
+    </div>
+    <div class="row">
+      <button class="btn good" id="well-toss" ${canAfford ? "" : "disabled"}>Toss 🪙${cost}</button>
+      <button class="btn secondary" id="well-back">←  Back</button>
+    </div>
+  `);
+  on("#well-toss", "click", wellToss);
+  on("#well-back", "click", renderMenu);
+  show("well");
+}
+let wellBusy = false;
+function wellToss() {
+  if (wellBusy) return;
+  const cost = BALANCE.WELL_COST;
+  if (GAME.gold < cost) { toast("Not enough gold."); return; }
+  SFX.unlock();
+  wellBusy = true;
+  GAME.gold -= cost; save(); syncHud("well");
+  const prize = rollWellPrize();
+  const stage = $("#well-stage"); if (!stage) { wellBusy = false; return; }
+  // three mystery bubbles rise; pop any one to reveal the (already-rolled) prize
+  stage.classList.remove("muted");
+  stage.innerHTML = `<div class="well-bubbles" id="well-bubbles">
+    ${[0, 1, 2].map(i => `<button class="wbub" data-i="${i}">🫧</button>`).join("")}
+  </div><div class="muted" style="font-size:12px;margin-top:6px">Pop one!</div>`;
+  const toss = $("#well-toss"); if (toss) toss.disabled = true;
+  let revealed = false;
+  stage.querySelectorAll(".wbub").forEach(b => b.addEventListener("click", () => {
+    if (revealed) return; revealed = true;
+    SFX.pop(2);
+    const others = [...stage.querySelectorAll(".wbub")];
+    others.forEach(o => { if (o !== b) { o.classList.add("fizz"); } });
+    b.classList.add("chosen");
+    setTimeout(() => wellReveal(prize), 260);
+  }));
+}
+function wellReveal(prize) {
+  const info = grantWellPrize(prize);
+  const stage = $("#well-stage"); if (!stage) { wellBusy = false; return; }
+  stage.innerHTML = `<div class="well-prize ${info.jackpot ? "jackpot" : ""}">
+    <div class="wp-emoji">${info.emoji}</div>
+    <div class="wp-label">${info.label}</div>
+    <div class="muted" style="font-size:12px">${info.sub}</div>
+  </div>`;
+  syncHud("well");
+  const dust = $("#well-dust"); if (dust) dust.textContent = GAME.stardust;
+  if (info.jackpot) { SFX.perfect(); wellConfetti(); }
+  else if (prize.kind === "stardust") SFX.charm();
+  else SFX.coin(0);
+  // re-enable tossing (unless you can no longer afford it)
+  const toss = $("#well-toss"); if (toss) toss.disabled = GAME.gold < BALANCE.WELL_COST;
+  wellBusy = false;
+}
+function wellConfetti() {
+  const sc = screen("well"); if (!sc) return;
+  const layer = document.createElement("div"); layer.className = "confetti-layer";
+  const cols = ["#ffd76a", "#ff6ea8", "#4fc96a", "#6a7bd6", "#ffe98a", "#e07be0", "#8fe9ff", "#c48bff"];
+  for (let i = 0; i < 48; i++) {
+    const p = document.createElement("i"); p.className = "confetti";
+    p.style.left = (3 + (i * 37) % 94) + "%"; p.style.background = cols[i % cols.length];
+    p.style.setProperty("--dx", (((i * 53) % 80) - 40) + "px");
+    p.style.setProperty("--rot", ((i * 47) % 360) + "deg");
+    p.style.animationDelay = ((i % 12) * 0.05).toFixed(2) + "s";
+    p.style.animationDuration = (1.7 + (i % 5) * 0.22).toFixed(2) + "s";
+    layer.appendChild(p);
+  }
+  sc.appendChild(layer); setTimeout(() => layer.remove(), 2600);
+}
+
+/* ======================================================================= */
+/* WARDROBE — equip owned skins, or buy a specific one with Stardust        */
+/* ======================================================================= */
+function renderWardrobe() {
+  const dustCost = BALANCE.STARDUST_SKIN_COST;
+  const section = (kind, title) => {
+    const tiles = D.COSMETICS[kind].map(c => {
+      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id;
+      const canBuy = !owned && GAME.stardust >= dustCost;
+      const btn = equipped
+        ? `<span class="skin-tag equipped">✓ On</span>`
+        : owned
+          ? `<button class="btn small good skin-equip" data-kind="${kind}" data-id="${c.id}">Wear</button>`
+          : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
+      return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"}">
+        <div class="skin-chip">${owned ? c.chip : "❔"}</div>
+        <div class="skin-name">${owned ? c.name : "???"}</div>
+        ${btn}</div>`;
+    }).join("");
+    return `<div class="card" style="margin-bottom:10px">
+      <div style="font-weight:800;margin-bottom:8px">${title}</div>
+      <div class="skin-grid">${tiles}</div></div>`;
+  };
+  html("wardrobe", `
+    ${hud("My Skins")}
+    <div class="rb-total" style="text-align:center;margin:2px 0 8px">✨ <b>${GAME.stardust}</b> Stardust <span class="muted" style="font-size:12px">· spend it to buy any skin</span></div>
+    <div class="grow" style="overflow-y:auto">
+      ${section("cauldron", "🫕 Cauldron Skins")}
+      ${section("familiar", "🐸 Buddy Skins")}
+    </div>
+    <button class="btn secondary" id="ward-back">←  Back</button>
+  `);
+  $("#screen-wardrobe").querySelectorAll(".skin-equip").forEach(b => b.addEventListener("click", () => equipSkin(b.dataset.kind, b.dataset.id)));
+  $("#screen-wardrobe").querySelectorAll(".skin-buy").forEach(b => b.addEventListener("click", () => buySkin(b.dataset.id)));
+  on("#ward-back", "click", renderMenu);
+  show("wardrobe");
+}
+function equipSkin(kind, id) {
+  if (!GAME.owned[id]) return;
+  GAME.equipped[kind] = id; save();
+  const c = D.COSMETIC_BY_ID[id]; toast(`${c.chip} ${c.name} equipped!`);
+  renderWardrobe();
+}
+function buySkin(id) {
+  if (GAME.owned[id]) return;
+  const cost = BALANCE.STARDUST_SKIN_COST;
+  if (GAME.stardust < cost) { toast("Not enough Stardust."); return; }
+  GAME.stardust -= cost; GAME.owned[id] = true; save();
+  const c = D.COSMETIC_BY_ID[id]; toast(`✨ Bought ${c.name}!`);
+  renderWardrobe();
 }
 
 /* ======================================================================= */
@@ -751,7 +941,7 @@ function paintMix() {
     ${hud("Cauldron")}
     <div class="card" id="mix-top" style="margin-bottom:6px;padding:12px"></div>
     <div class="cauldron-wrap grow">
-      <div class="cauldron" id="cauldron">
+      <div class="cauldron ${equippedCauldronClass()}" id="cauldron">
         <div class="liquid" style="height:${Math.max(6, score.weighted)}%;background:linear-gradient(180deg, ${liquid}, ${shade(liquid)})"></div>
         <div class="bub b1"></div><div class="bub b2"></div><div class="bub b3"></div>
         <div class="pct">${score.weighted}%</div>
@@ -1056,7 +1246,7 @@ function confirmDialog(msg, onYes) {
 }
 function familiarToken(phase) {
   const active = phase === "mix" && GAME.unlocked.undo;
-  return `<div class="familiar" id="familiar">${D.FAMILIAR.emoji}${active ? `<span class="fam-badge">🐸</span>` : ""}</div>`;
+  return `<div class="familiar" id="familiar">${equippedFamiliarChip()}${active ? `<span class="fam-badge">🐸</span>` : ""}</div>`;
 }
 function wireFamiliar(phase) {
   const el = document.querySelector("#screen-" + phase + " #familiar"); if (!el) return;
@@ -1081,7 +1271,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize };
 }
 window.addEventListener("load", renderStart);
 

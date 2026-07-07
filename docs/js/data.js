@@ -126,9 +126,37 @@ const RESULT_TYPES = {
   fail:    { id: "fail",    title: "Oops!",                payoutPct: 0.00 },
 };
 
+/* --- 9. Cosmetics — purely visual prizes from the Wishing Well ----------
+ * No gameplay effect. `default: true` items are owned/equipped from the start.
+ * Cauldron skins map to a `.skin-<id>` CSS class on the pot; familiar skins
+ * simply swap the corner buddy's emoji. ------------------------------------ */
+const COSMETICS = {
+  cauldron: [
+    { id: "cauldron_classic",  name: "Classic Cauldron", chip: "🫧", default: true },
+    { id: "cauldron_rose",     name: "Rose Gold",        chip: "🌸" },
+    { id: "cauldron_emerald",  name: "Emerald",          chip: "💚" },
+    { id: "cauldron_sapphire", name: "Sapphire",         chip: "💙" },
+    { id: "cauldron_amethyst", name: "Amethyst",         chip: "💜" },
+    { id: "cauldron_gold",     name: "Golden",           chip: "💛" },
+    { id: "cauldron_rainbow",  name: "Rainbow",          chip: "🌈" },
+  ],
+  familiar: [
+    { id: "toad_classic", name: "Toad",    chip: "🐸", default: true },
+    { id: "toad_dragon",  name: "Dragon",  chip: "🐲" },
+    { id: "toad_cat",     name: "Cat",     chip: "🐱" },
+    { id: "toad_owl",     name: "Owl",     chip: "🦉" },
+    { id: "toad_fox",     name: "Fox",     chip: "🦊" },
+    { id: "toad_unicorn", name: "Unicorn", chip: "🦄" },
+    { id: "toad_bunny",   name: "Bunny",   chip: "🐰" },
+  ],
+};
+// flat lookup by id, plus which kind each belongs to
+const COSMETIC_BY_ID = {};
+Object.keys(COSMETICS).forEach(kind => COSMETICS[kind].forEach(c => { COSMETIC_BY_ID[c.id] = Object.assign({ kind }, c); }));
+
 /* Expose as a single namespace */
 const DATA = {
   MAGIC, MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS,
-  FAMILIAR, RESULT_TYPES,
+  FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID,
 };

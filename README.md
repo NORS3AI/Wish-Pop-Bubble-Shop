@@ -19,6 +19,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🌟 **The Wishing Well — spend your gold on prizes!** A new spot in Shop &
+  Upgrades where you **toss gold in and pop a bubble** to see what floats up. You
+  **always get something** — usually a little gold or treats back, sometimes
+  **Stardust**, and rarely a **brand‑new skin** with confetti. Win a skin you
+  already own and it turns into Stardust instead, which you can spend in the new
+  **🎨 My Skins** wardrobe to **buy any skin you want** — so there's always
+  something to chase. First cosmetics: **6 cauldron skins** (recolor your pot) and
+  **6 buddy skins** (dress up the Toad as a dragon, cat, fox, unicorn & more).
+  Purely for looks — never changes the game.
 - ⏭️ **Skip the scoop visuals.** In the scoop phase, **“✨ Shake for me”** now turns
   into a **“⏭️ Skip”** button once you tap it — press again to jump straight to
   popping. Any jackpot charms from scoops you skipped are still handed to you, so
