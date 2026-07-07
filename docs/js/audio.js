@@ -145,6 +145,13 @@ const SFX = (() => {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
     noiseBurst(t, 0.3, { freq: 500, q: 0.4, peak: 0.14, type: "bandpass" });
   }
+  // A cartoony "achoo!" — a nasal inhale then a wet burst.
+  function sneeze() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    tone(300, t, 0.22, { type: "sawtooth", peak: 0.14, glideTo: 560 });          // "ahh" (rising)
+    noiseBurst(t + 0.24, 0.26, { freq: 1100, q: 0.6, peak: 0.32, type: "bandpass" }); // "choo!" burst
+    tone(430, t + 0.24, 0.3, { type: "sawtooth", peak: 0.2, glideTo: 130 });      // falling honk
+  }
 
-  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, whoosh };
+  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, sneeze, whoosh };
 })();

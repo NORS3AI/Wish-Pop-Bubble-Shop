@@ -70,6 +70,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   each with its own rising note** so you can *hear* how many you found. If you have
   another scoop, the spoon **dives back into the glitter** and pulls up a fresh one
   to shake. There's a "✨ Shake for me" button if you'd rather not swipe.
+- 🤧 **The over-abundance sneeze.** If you rake in a huge pile of ingredients, the
+  round would be too easy — so when you reach the cauldron the customer **sneezes**
+  (screen shake + an "achoo!") and develops **a second allergy**, keeping big rounds
+  honest. It never picks a magic your ingredients already rely on. Ingredients you
+  pop now also **stay on-screen** (they gently bob instead of floating away) so you
+  can always catch them.
 - 🌈🎵 **Even more play in scoop & pop.** Every so often you get a **rainbow jackpot
   scoop** — extra-full, with a **guaranteed charm** inside. Bubbles can now be
   **squeezed and held** — press to swell one up, release for a bigger, deeper pop.

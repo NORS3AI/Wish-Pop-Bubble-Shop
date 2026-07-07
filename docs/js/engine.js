@@ -25,6 +25,7 @@ const BALANCE = {
   // Magic allergy (hard+ only)
   ALLERGY_CHANCE: 0.55, ALLERGY_YELLOW_AT: 2, ALLERGY_RED_AT: 4, ALLERGY_CLEANSE: 3,
   ALLERGY_BAIT_CHANCE: 0.42,     // chance a filler ingredient carries the allergy magic (keeps it a live risk)
+  SNEEZE_AT: 15,                 // >this many ingredients into the cauldron → the customer sneezes up a new allergy
 
   // Scoop / bubbles — each scoop rolls its own yield; each bubble = one haul item.
   BUBBLES_PER_SCOOP_MIN: 2, BUBBLES_PER_SCOOP_MAX: 4, MIN_BUBBLES: 8,
@@ -94,7 +95,7 @@ function generateWish(customer, diff) {
       allergy = a;
     }
   }
-  return { needs, requiredMatch: BALANCE.REQUIRED_MATCH[diff], difficulty: diff, weights: BALANCE.NEED_WEIGHTS[count], allergy };
+  return { needs, requiredMatch: BALANCE.REQUIRED_MATCH[diff], difficulty: diff, weights: BALANCE.NEED_WEIGHTS[count], allergy, allergy2: null };
 }
 
 /* --- Haul: the hand of items popped from bubbles ------------------------
@@ -253,22 +254,41 @@ function scoreMix(slots, wish, allergyOffset) {
   let weighted = 0;
   perNeed.forEach((n, i) => { weighted += n.pct * (w[i] || 0); });
   weighted = Math.round(weighted);
-  return { perNeed, weighted, band, allergy: allergyStatus(slots, wish.allergy, allergyOffset) };
+  const allergies = [wish.allergy, wish.allergy2].filter(Boolean)
+    .map(tp => allergyStatus(slots, tp, allergyOffset)).filter(Boolean);
+  return { perNeed, weighted, band, allergies, allergy: allergies[0] || null };
+}
+/* pick a NEW allergy magic for the "over-abundant round" sneeze: not a need, not an
+ * existing allergy, and not a MAIN quality of any held ingredient (so it doesn't
+ * overlap with what you're already holding). Returns the added type, or null. */
+function addSneezeAllergy(wish, heldIds) {
+  const forbidden = new Set(wish.needs.map(n => n.type));
+  if (wish.allergy) forbidden.add(wish.allergy);
+  if (wish.allergy2) forbidden.add(wish.allergy2);
+  (heldIds || []).forEach(id => { const ing = DATA.INGREDIENT_BY_ID[id]; if (ing) forbidden.add(ing.qualities[0]); });
+  const options = DATA.MAGIC_TYPES.filter(m => !forbidden.has(m));
+  if (!options.length) return null;
+  const pick = R.pick(options);
+  if (!wish.allergy) wish.allergy = pick; else wish.allergy2 = pick;
+  return pick;
 }
 
 /* --- Result: match vs required, allergy payout, quick-service tip -------- */
 function scoreResult(round) {
-  const { weighted, allergy } = scoreMix(round.slots, round.wish, round.allergyOffset);
+  const { weighted, allergies } = scoreMix(round.slots, round.wish, round.allergyOffset);
   const required = round.wish.requiredMatch;
   const success = weighted >= required;
   const hiddenAtServe = round.wish.needs.filter(n => !n.revealed).length;
+  // worst zone across all allergies drives the payout; note which magic reacted
+  const worst = allergies.reduce((acc, a) => a.zone === "red" ? "red" : (a.zone === "yellow" && acc !== "red" ? "yellow" : acc), "green");
+  const reacting = allergies.find(a => a.zone === worst && worst !== "green") || allergies[0] || null;
   let type, gold, tip = 0, quickTip = 0, qualityTip = 0;
   if (!success) {
     type = DATA.RESULT_TYPES.fail;
     gold = Math.max(1, Math.round(round.payment * (weighted / 100) * BALANCE.CONSOLATION_FRACTION));
   } else {
-    if (allergy && allergy.zone === "red") { type = DATA.RESULT_TYPES.red; gold = Math.round(round.payment * DATA.RESULT_TYPES.red.payoutPct); }
-    else if (allergy && allergy.zone === "yellow") { type = DATA.RESULT_TYPES.yellow; gold = Math.round(round.payment * DATA.RESULT_TYPES.yellow.payoutPct); }
+    if (worst === "red") { type = DATA.RESULT_TYPES.red; gold = Math.round(round.payment * DATA.RESULT_TYPES.red.payoutPct); }
+    else if (worst === "yellow") { type = DATA.RESULT_TYPES.yellow; gold = Math.round(round.payment * DATA.RESULT_TYPES.yellow.payoutPct); }
     else { type = DATA.RESULT_TYPES.full; gold = round.payment; }
     // quick-service tip: served with needs still secret
     if (hiddenAtServe > 0) quickTip = hiddenAtServe * BALANCE.QUICK_TIP_PER_HIDDEN;
@@ -276,11 +296,11 @@ function scoreResult(round) {
     if (weighted >= Math.min(100, required + BALANCE.QUALITY_MARGIN)) qualityTip = BALANCE.QUALITY_TIP;
     tip = quickTip + qualityTip; gold += tip;
   }
-  return { type, gold, tip, quickTip, qualityTip, weighted, required, success, allergy, hiddenAtServe, partial: !success && gold > 0 };
+  return { type, gold, tip, quickTip, qualityTip, weighted, required, success, allergy: reacting, allergies, hiddenAtServe, partial: !success && gold > 0 };
 }
 
 /* Expose */
 const ENGINE = {
   BALANCE, R, ingredientPointsFor, difficultyFor, needCountFor,
-  generateWish, generateHaul, bonusBubbleItems, newRound, applyTripleMatch, scoreMix, scoreResult, allergyStatus,
+  generateWish, generateHaul, bonusBubbleItems, addSneezeAllergy, newRound, applyTripleMatch, scoreMix, scoreResult, allergyStatus,
 };

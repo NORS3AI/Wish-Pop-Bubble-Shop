@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v15"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v16"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -487,15 +487,19 @@ function collectCharm(id, tok) {
 function spawnFloatingIngredient(id, x, y) {
   const layer = $("#catch-layer"); if (!layer) { ROUND.inventory.push({ id, potent: false }); return; }
   const ing = D.INGREDIENT_BY_ID[id];
+  const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const tok = document.createElement("div");
   tok.className = "ing-token"; tok.dataset.ing = id;
-  tok.style.left = x + "px"; tok.style.top = y + "px";
-  tok.style.setProperty("--tdur", (2.2 + Math.random() * 0.8).toFixed(2) + "s");
-  tok.style.setProperty("--tdx", (Math.round(Math.random() * 60 - 30)) + "px");
+  // clamp on-screen (and above the bottom buttons) so it never drifts away uncatchable
+  const vw = window.innerWidth, vh = window.innerHeight;
+  tok.style.left = Math.max(42, Math.min(vw - 42, x)) + "px";
+  tok.style.top = Math.max(96, Math.min(vh - 170, y)) + "px";
+  tok.style.setProperty("--tdur", (2.6 + Math.random() * 1.6).toFixed(2) + "s");
+  tok.style.setProperty("--bx1", rnd(-28, 28) + "px"); tok.style.setProperty("--by1", rnd(-24, -6) + "px");
+  tok.style.setProperty("--bx2", rnd(-28, 28) + "px"); tok.style.setProperty("--by2", rnd(6, 24) + "px");
   tok.innerHTML = ing.emoji;
   tok.addEventListener("pointerdown", e => { e.stopPropagation(); collectIngredient(id, tok, false); });
-  tok._timer = setTimeout(() => collectIngredient(id, tok, true), 2600); // drifted off → auto-bank
-  layer.appendChild(tok);
+  layer.appendChild(tok); // stays and bobs until caught, or swept up on Continue
 }
 function collectIngredient(id, tok, silent) {
   if (!tok || tok._caught) return; tok._caught = true; clearTimeout(tok._timer);
@@ -598,13 +602,32 @@ function refreshPop() {
 /* CAULDRON (making phase) — the whole puzzle                              */
 /* ======================================================================= */
 function renderMix() {
+  const rawCount = ROUND.inventory.length;                 // how abundant this round was
   const merged = applyTripleMatch(ROUND.inventory); ROUND.inventory = merged.inventory;
   ROUND.slots = []; ROUND.mixStart = Date.now();
   ROUND.potentNext = false; ROUND.allergyOffset = 0; ROUND.insight = false;
   paintMix(); show("mix");
   if (ROUND._mixTimer) clearInterval(ROUND._mixTimer);
   ROUND._mixTimer = setInterval(paintMixTop, 500);
-  if (merged.merged.length) showTriple(merged.merged, () => {});
+  const afterTriples = () => { if (rawCount > BALANCE.SNEEZE_AT) setTimeout(sneezeAllergy, 250); };
+  if (merged.merged.length) showTriple(merged.merged, afterTriples);
+  else setTimeout(afterTriples, 350);
+}
+// Over-abundant round → the customer sneezes up a fresh allergy (self-balancing).
+function sneezeAllergy() {
+  const heldIds = ROUND.inventory.map(x => x.id).filter(Boolean);
+  const added = ENGINE.addSneezeAllergy(ROUND.wish, heldIds);
+  if (!added) return; // no non-overlapping magic available — skip quietly
+  SFX.unlock(); SFX.sneeze();
+  shakeScreen("mix");
+  if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+  toast(`🤧 Achoo! ${ROUND.customer.name} is now allergic to ${magicDot(added)} ${added} too!`);
+  paintMixTop();
+}
+function shakeScreen(id) {
+  const sc = screen(id); if (!sc) return;
+  sc.classList.remove("shake"); void sc.offsetWidth; sc.classList.add("shake");
+  setTimeout(() => sc.classList.remove("shake"), 620);
 }
 function paintMixTop() {
   const el = $("#mix-top"); if (!el) return;
@@ -644,7 +667,7 @@ function paintMixTop() {
     <div class="stat-line" style="padding:0 0 4px"><span>${ROUND.customer.emoji} ${ROUND.customer.name}</span>
       <span>Match <b style="color:${meets ? "var(--good)" : "var(--ink)"}">${score.weighted}%</b> / need ${req}%</span></div>
     ${meters}
-    ${score.allergy ? allergyMeter(score.allergy) : ""}
+    ${(score.allergies || []).map(allergyMeter).join("")}
     ${tipLine}`;
 }
 function paintMix() {
@@ -819,7 +842,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, popAt, spawnBonusBubbles, charmCelebrate };
+  window.__wp = { get ROUND() { return ROUND; }, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue };
 }
 window.addEventListener("load", renderStart);
 
