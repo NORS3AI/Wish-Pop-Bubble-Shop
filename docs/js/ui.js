@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v23"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v24"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -884,53 +884,68 @@ function renderResult(res) {
   if (isPerfect) setTimeout(celebratePerfect, 260);
 }
 // --- Result-screen reward bubbles: a BIG bubble holding the base gold, plus one
-// LITTLE bubble per tip coin. Pop the big one first and it auto-pops the little
-// ones; or pop the little ones yourself and save the big one for last. -------
+// LITTLE bubble per tip coin. They FLOAT freely all over the result screen
+// (drifting up/down/side to side); tap them wherever they wander. Pop the big one
+// first and it auto-pops the little ones; or pop the little ones and save it. ---
 function rewardBubblesMarkup(res) {
-  const base = Math.max(0, res.gold - res.tip), tips = Math.max(0, res.tip);
-  let littles = "";
-  for (let i = 0; i < tips; i++) littles += `<button class="rbub little" data-amt="1" data-i="${i}" aria-label="tip coin">🪙</button>`;
+  const tips = Math.max(0, res.tip);
   return `<div class="reward-bubbles" id="reward-bubbles">
     <div class="rb-total">Collected <span class="gold">🪙 <b id="rb-count">0</b></span></div>
-    <div class="rb-field" id="rb-field">
-      <button class="rbub big" data-amt="${base}" data-big="1" aria-label="gold reward"><span class="rb-amt">🪙 ${base}</span></button>
-      ${littles}
-    </div>
-    <div class="rb-hint muted" id="rb-hint">${tips > 0 ? "Pop the coins to collect them! 🫧" : "Pop your reward! 🫧"}</div>
+    <div class="rb-hint muted" id="rb-hint">${tips > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧"}</div>
   </div>`;
 }
 function wireRewardBubbles(res) {
-  const field = document.querySelector("#screen-result #rb-field"); if (!field) return;
+  const sc = screen("result"); if (!sc) return;
   const countEl = document.querySelector("#screen-result #rb-count");
   const hintEl = document.querySelector("#screen-result #rb-hint");
+  const base = Math.max(0, res.gold - res.tip), tips = Math.max(0, res.tip);
+  const layer = document.createElement("div"); layer.className = "rb-float-layer";
+  sc.appendChild(layer);
   let collected = 0, littleStep = 0;
+  const rnd = (a, b) => a + Math.random() * (b - a);
   const bump = amt => {
     collected += amt;
     if (countEl) { countEl.textContent = collected; countEl.classList.remove("bumped"); void countEl.offsetWidth; countEl.classList.add("bumped"); }
   };
-  const popBub = el => {
-    if (!el || el.classList.contains("popped")) return;
-    el.classList.add("popped");
-    const amt = +el.dataset.amt || 0, big = el.dataset.big;
-    const r = el.getBoundingClientRect();
+  // build one drifting bubble; the wrap wanders (translate), the button pops (scale)
+  const makeBubble = (cls, amt, big) => {
+    const wrap = document.createElement("div"); wrap.className = "rbub-wrap";
+    wrap.style.left = rnd(6, big ? 58 : 78) + "%";
+    wrap.style.top = rnd(14, 72) + "%";
+    for (let k = 1; k <= 3; k++) { wrap.style.setProperty("--dx" + k, rnd(-46, 46).toFixed(0) + "px"); wrap.style.setProperty("--dy" + k, rnd(-46, 46).toFixed(0) + "px"); }
+    wrap.style.animationDuration = rnd(5, 9).toFixed(2) + "s";
+    wrap.style.animationDelay = "-" + rnd(0, 5).toFixed(2) + "s"; // desync so they don't move in lockstep
+    const btn = document.createElement("button");
+    btn.className = "rbub " + cls; btn.dataset.amt = amt; if (big) btn.dataset.big = "1";
+    btn.setAttribute("aria-label", big ? "gold reward" : "tip coin");
+    btn.innerHTML = big ? `<span class="rb-amt">🪙 ${amt}</span>` : "🪙";
+    wrap.appendChild(btn); layer.appendChild(wrap);
+    return btn;
+  };
+  const popBub = btn => {
+    if (!btn || btn.classList.contains("popped")) return;
+    btn.classList.add("popped");
+    const amt = +btn.dataset.amt || 0, big = btn.dataset.big;
+    const r = btn.getBoundingClientRect();
     resultBurst(r.left + r.width / 2, r.top + r.height / 2, big ? "gold" : "coin");
     bump(amt);
     if (big) SFX.bigCoin(); else SFX.coin(littleStep++);
-    setTimeout(() => { el.style.visibility = "hidden"; }, 220);
+    const wrap = btn.parentElement;
+    setTimeout(() => { if (wrap) wrap.remove(); }, 240);
     checkDone();
   };
   const checkDone = () => setTimeout(() => {
-    if (!field.querySelector(".rbub:not(.popped)") && hintEl) hintEl.textContent = `All collected! 🪙 ${res.gold}`;
+    if (!layer.querySelector(".rbub:not(.popped)") && hintEl) hintEl.textContent = `All collected! 🪙 ${res.gold}`;
   }, 260);
-  field.querySelectorAll(".rbub").forEach(el => el.addEventListener("click", () => {
-    SFX.unlock();
-    if (el.dataset.big) {
-      popBub(el);
-      // popping the big bubble first cascades all remaining tip bubbles
-      const rest = [...field.querySelectorAll(".rbub.little:not(.popped)")];
-      rest.forEach((b, i) => setTimeout(() => popBub(b), 90 * (i + 1)));
-    } else popBub(el);
-  }));
+  const bigBtn = makeBubble("big", base, true);
+  const littleBtns = [];
+  for (let i = 0; i < tips; i++) littleBtns.push(makeBubble("little", 1, false));
+  bigBtn.addEventListener("click", () => {
+    SFX.unlock(); popBub(bigBtn);
+    // popping the big bubble first cascades all remaining tip bubbles
+    [...layer.querySelectorAll(".rbub.little:not(.popped)")].forEach((b, i) => setTimeout(() => popBub(b), 90 * (i + 1)));
+  });
+  littleBtns.forEach(b => b.addEventListener("click", () => { SFX.unlock(); popBub(b); }));
 }
 // A confetti/sparkle burst for a 100% "Perfect!" win, drawn over the result screen.
 function celebratePerfect() {

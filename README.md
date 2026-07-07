@@ -20,8 +20,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 ## What's new
 
 - 🎉 **Reward bubbles + a Perfect celebration.** When you succeed, your pay now
-  arrives as **poppable bubbles** on the result screen — one **big golden bubble**
-  holding your base gold, plus a **little coin bubble for every tip** you earned.
+  arrives as **poppable bubbles that float around the result screen** — one **big
+  golden bubble** holding your base gold, plus a **little coin bubble for every
+  tip** you earned, all drifting up, down, and side to side for you to catch.
   Pop the big one first and it happily bursts all the little ones for you, or pop
   the little ones yourself and save the big one for last — each with its own coin
   sound. And landing a flawless **100% potion** (with no allergy slip‑up) now sets
