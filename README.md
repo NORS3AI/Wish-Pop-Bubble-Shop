@@ -70,6 +70,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   each with its own rising note** so you can *hear* how many you found. If you have
   another scoop, the spoon **dives back into the glitter** and pulls up a fresh one
   to shake. There's a "✨ Shake for me" button if you'd rather not swipe.
+- 🌈🎵 **Even more play in scoop & pop.** Every so often you get a **rainbow jackpot
+  scoop** — extra-full, with a **guaranteed charm** inside. Bubbles can now be
+  **squeezed and held** — press to swell one up, release for a bigger, deeper pop.
+  Pop pitches now **snap to a musical scale**, so popping fast plays a little tune.
+  And **ingredients pop out and float up to be caught**, just like charms (miss one
+  and it's still auto-collected, so you never lose it) — the whole phase is a
+  catch-fest now.
 - 🎉 **More pop-phase delight.** Bubbles now **drift and wander** around the screen
   (you chase them a little). **Bonus bubbles** are now a distinct **golden, glowing**
   bubble you can spot on sight — pop one for a big shockwave burst that bursts into

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v14"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v15"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -215,11 +215,13 @@ function renderScoop() {
     ${familiarToken("scoop")}
   `);
 
+  const isJackpot = i => !!(ROUND.scoopJackpots && ROUND.scoopJackpots[i]);
   function loadScoop() {
-    const found = split[idx];
+    const found = split[idx], jackpot = isJackpot(idx);
     const bubs = $("#scoop-bubbles"); if (bubs) { bubs.innerHTML = "";
       for (let i = 0; i < found; i++) { const s = document.createElement("span"); s.className = "sbub"; s.textContent = "🫧"; bubs.appendChild(s); } }
     const cover = $("#glitter-cover"); if (cover) {
+      cover.className = "glitter-cover" + (jackpot ? " rainbow" : "");
       cover.innerHTML = '<div class="glitter-film" id="glitter-film"></div>'; // opaque cover that hides the bubbles
       for (let i = 0; i < GLITTER; i++) { const g = document.createElement("i"); g.className = "gspeck";
         g.style.left = rnd(2, 92) + "%"; g.style.top = rnd(4, 88) + "%";
@@ -228,7 +230,9 @@ function renderScoop() {
         g.style.animationDelay = (-Math.random() * 1.2).toFixed(2) + "s"; cover.appendChild(g); } }
     state = "shaking"; shakeDist = 0;
     const st = $("#scoop-step"); if (st) st.textContent = `Scoop ${idx + 1} of ${scoops}`;
-    const tx = $("#scoop-text"); if (tx) tx.innerHTML = "✋ Swipe side to side to shake off the glitter!";
+    const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
+      ? "🌈 A <b>rainbow scoop</b> — shake for the jackpot!"
+      : "✋ Swipe side to side to shake off the glitter!";
   }
 
   function shakeTick(intensity) {
@@ -249,9 +253,12 @@ function renderScoop() {
 
   function reveal() {
     if (state !== "shaking") return; state = "revealing";
-    const found = split[idx]; revealed += found;
+    const found = split[idx], jackpot = isJackpot(idx); revealed += found;
     const film = $("#glitter-film"); if (film) film.style.opacity = "0";
-    const tx = $("#scoop-text"); if (tx) tx.innerHTML = `✨ <b>${found}</b> bubble${found === 1 ? "" : "s"}!`;
+    if (jackpot) SFX.charm(); // fanfare; regular scoops get the per-bubble count pips below
+    const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
+      ? `🌈 <b>Jackpot!</b> ${found} bubbles + a charm!`
+      : `✨ <b>${found}</b> bubble${found === 1 ? "" : "s"}!`;
     const rs = $("#scoop-result"); if (rs) rs.textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
     const bubs = $("#scoop-bubbles"); const kids = bubs ? [...bubs.children] : [];
     // bubbles float up ONE AT A TIME, each with its own rising pip so you can hear the count
@@ -328,7 +335,26 @@ const POP_FLAVOR = {
   bubble:     { parts: ["#8fe9ff", "#c9f6ff", "#ffffff", "#ffe38a"], rare: 1 },
   charm:      { parts: ["#e6a3ff", "#a97bff", "#ffd76a", "#7ee08a"], rare: 2 },
 };
-let popCombo = 0, lastPopAt = 0, cascadeOn = false;
+let popCombo = 0, lastPopAt = 0, cascadeOn = false, squeezeEl = null, squeezeStart = 0;
+
+// squeeze-and-hold: press to swell a bubble, release for a bigger/deeper pop
+function wireBubble(el) {
+  el.addEventListener("pointerdown", e => {
+    if (el.classList.contains("popped") || squeezeEl) return;
+    squeezeEl = el; squeezeStart = Date.now(); el.classList.add("squeezing");
+    SFX.unlock(); SFX.holdStart();
+    try { el.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  const release = () => {
+    if (squeezeEl !== el) return;
+    const held = Date.now() - squeezeStart;
+    const power = Math.max(0, Math.min(1, (held - 90) / 800)); // <90ms = a tap (normal pop)
+    SFX.holdStop(); el.classList.remove("squeezing"); squeezeEl = null;
+    popAt(+el.dataset.i, el, false, power);
+  };
+  el.addEventListener("pointerup", release);
+  el.addEventListener("pointercancel", release);
+}
 
 // one floating bubble button, with a randomized wander path so each drifts differently.
 // Original bubbles all look the same (their contents are a surprise). Only the extra
@@ -360,8 +386,7 @@ function renderPop() {
     ${familiarToken("pop")}
   `);
   refreshPop();
-  document.querySelectorAll("#bubble-field .pbubble").forEach(el =>
-    el.addEventListener("click", () => popAt(+el.dataset.i, el)));
+  document.querySelectorAll("#bubble-field .pbubble").forEach(wireBubble);
   on("#pop-all", "click", popCascade);
   on("#pop-continue", "click", collectAndContinue);
   on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
@@ -377,14 +402,14 @@ function itemInfo(item) {
   return { emoji: "🐸", label: "+1 treat", kind: "treat" };
 }
 
-function popAt(i, el, fromCascade) {
+function popAt(i, el, fromCascade, power) {
   if (!el || el.classList.contains("popped")) return;
-  SFX.unlock();
+  SFX.unlock(); power = power || 0;
   const item = ROUND.haul[i];
-  // charms are NOT collected here — they pop out and float; you catch them.
-  if (item.kind === "ingredient") ROUND.inventory.push({ id: item.id, potent: false });
-  else if (item.kind === "gold") { GAME.gold += item.amt; save(); }
+  // gold/treat bank instantly; ingredients & charms pop out to be CAUGHT (cascade auto-banks ingredients)
+  if (item.kind === "gold") { GAME.gold += item.amt; save(); }
   else if (item.kind === "treat") { GAME.treats += 1; save(); }
+  else if (item.kind === "ingredient" && fromCascade) ROUND.inventory.push({ id: item.id, potent: false });
   ROUND.popIndex++;
 
   const info = itemInfo(item), flavor = POP_FLAVOR[info.kind];
@@ -393,18 +418,22 @@ function popAt(i, el, fromCascade) {
   const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
 
   if (item.kind === "charm") {
-    SFX.pop(popCombo); SFX.reveal("ingredient", popCombo); // soft glint on reveal
-    spawnFloatingCharm(item.id, cx, cy);                    // real fanfare happens on catch
+    SFX.pop(popCombo, power); SFX.reveal("ingredient", popCombo);
+    spawnFloatingCharm(item.id, cx, cy);                    // fanfare happens on catch
   } else if (item.kind === "bubble") {
-    SFX.pop(popCombo); SFX.bonus(); flashScreen();
-    ringAt(cx, cy); burstAt(cx, cy, flavor); burstAt(cx, cy, flavor); // extra-big burst
+    SFX.pop(popCombo, power); SFX.bonus(); flashScreen();
+    ringAt(cx, cy); burstAt(cx, cy, flavor, 1); burstAt(cx, cy, flavor, power);
     floatReward(cx, cy, info, true);
-    el.classList.add("big"); // trigger bubble pops bigger even though it looks normal
+    el.classList.add("big");
+  } else if (item.kind === "ingredient") {
+    SFX.pop(popCombo, power); burstAt(cx, cy, flavor, power);
+    if (fromCascade) floatReward(cx, cy, info, false);      // auto-banked; just show it
+    else spawnFloatingIngredient(item.id, cx, cy);          // catch it!
   } else {
-    SFX.pop(popCombo); SFX.reveal(info.kind, popCombo);
-    burstAt(cx, cy, flavor); floatReward(cx, cy, info, flavor.rare);
+    SFX.pop(popCombo, power); SFX.reveal(info.kind, popCombo);
+    burstAt(cx, cy, flavor, power); floatReward(cx, cy, info, flavor.rare);
   }
-  if (navigator.vibrate) navigator.vibrate(flavor.rare ? [10, 22, 14] : 12);
+  if (navigator.vibrate) navigator.vibrate(flavor.rare ? [10, 22, 14] : (power > 0.5 ? [8, 12, 18] : 12));
 
   el.classList.add("popped");
   if (item.kind === "bubble") spawnBonusBubbles(cx, cy);
@@ -420,7 +449,7 @@ function spawnBonusBubbles(cx, cy) {
     const idx = ROUND.haul.length; ROUND.haul.push(it);
     const holder = document.createElement("div"); holder.innerHTML = bubbleHTML(idx, true);
     const nb = holder.firstElementChild; nb.classList.add("spawning");
-    nb.addEventListener("click", () => popAt(+nb.dataset.i, nb));
+    wireBubble(nb);
     field.appendChild(nb);
     setTimeout(() => nb.classList.remove("spawning"), 480);
   });
@@ -453,10 +482,40 @@ function collectCharm(id, tok) {
   tok.classList.add("caught"); setTimeout(() => tok.remove(), 320);
   refreshPop();
 }
-// safety net: sweep up any charm still floating when you move on
+// Ingredient floats out of the popped bubble; tap to catch it (or it drifts up and
+// auto-banks, so you never lose it). Catching just feels good.
+function spawnFloatingIngredient(id, x, y) {
+  const layer = $("#catch-layer"); if (!layer) { ROUND.inventory.push({ id, potent: false }); return; }
+  const ing = D.INGREDIENT_BY_ID[id];
+  const tok = document.createElement("div");
+  tok.className = "ing-token"; tok.dataset.ing = id;
+  tok.style.left = x + "px"; tok.style.top = y + "px";
+  tok.style.setProperty("--tdur", (2.2 + Math.random() * 0.8).toFixed(2) + "s");
+  tok.style.setProperty("--tdx", (Math.round(Math.random() * 60 - 30)) + "px");
+  tok.innerHTML = ing.emoji;
+  tok.addEventListener("pointerdown", e => { e.stopPropagation(); collectIngredient(id, tok, false); });
+  tok._timer = setTimeout(() => collectIngredient(id, tok, true), 2600); // drifted off → auto-bank
+  layer.appendChild(tok);
+}
+function collectIngredient(id, tok, silent) {
+  if (!tok || tok._caught) return; tok._caught = true; clearTimeout(tok._timer);
+  ROUND.inventory.push({ id, potent: false });
+  if (!silent) {
+    SFX.unlock(); SFX.reveal("ingredient", 0);
+    const r = tok.getBoundingClientRect();
+    burstAt(r.left + r.width / 2, r.top + r.height / 2, POP_FLAVOR.ingredient, 0.2);
+    if (navigator.vibrate) navigator.vibrate(8);
+    tok.classList.add("caught"); setTimeout(() => tok.remove(), 240);
+  } else if (tok.parentNode) tok.remove();
+  refreshPop();
+}
+// safety net: sweep up anything still floating when you move on
 function collectAndContinue() {
   document.querySelectorAll("#catch-layer .charm-token").forEach(tok => {
     if (!tok.classList.contains("caught")) { ROUND.charms.push(tok.dataset.charm); tok.remove(); }
+  });
+  document.querySelectorAll("#catch-layer .ing-token").forEach(tok => {
+    if (!tok._caught) { clearTimeout(tok._timer); ROUND.inventory.push({ id: tok.dataset.ing, potent: false }); tok.remove(); }
   });
   renderMix();
 }
@@ -483,17 +542,18 @@ function popCascade() {
 }
 
 // --- juice: particle burst, floating reward label, screen flash ---------
-function burstAt(x, y, flavor) {
+function burstAt(x, y, flavor, power) {
+  power = power || 0;
   const layer = $("#burst-layer"); if (!layer) return;
-  const n = 8 + flavor.rare * 5;
+  const n = 8 + flavor.rare * 5 + Math.round(power * 10);
   for (let i = 0; i < n; i++) {
     const p = document.createElement("i"); p.className = "particle";
-    const ang = (Math.PI * 2 * i) / n + (i % 2) * 0.4, dist = 34 + (i % 4) * 16 + flavor.rare * 14;
+    const ang = (Math.PI * 2 * i) / n + (i % 2) * 0.4, dist = (34 + (i % 4) * 16 + flavor.rare * 14) * (1 + power * 0.7);
     p.style.left = x + "px"; p.style.top = y + "px";
     p.style.setProperty("--dx", Math.cos(ang) * dist + "px");
     p.style.setProperty("--dy", (Math.sin(ang) * dist - 10) + "px");
     p.style.background = flavor.parts[i % flavor.parts.length];
-    p.style.width = p.style.height = (5 + (i % 3) * 3) + "px";
+    p.style.width = p.style.height = (5 + (i % 3) * 3 + power * 3) + "px";
     layer.appendChild(p);
     setTimeout(() => p.remove(), 700);
   }

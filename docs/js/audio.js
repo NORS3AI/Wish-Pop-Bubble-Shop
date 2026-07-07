@@ -60,11 +60,33 @@ const SFX = (() => {
   // --- game sounds -------------------------------------------------------
   // Bubble pop: a round "bloop" that climbs in pitch as your combo builds,
   // like popping bubble wrap faster and faster. step = combo index.
-  function pop(step = 0) {
+  // Pitches snap to a C-major pentatonic scale so a fast run always sounds musical.
+  const PENTA = [0, 2, 4, 7, 9];
+  function noteFreq(step) {
+    const oct = Math.floor(step / PENTA.length);
+    return 261.63 * Math.pow(2, (PENTA[((step % PENTA.length) + PENTA.length) % PENTA.length] + oct * 12) / 12);
+  }
+  // power 0..1 = how long you squeezed before release: deeper, bigger, longer.
+  function pop(step = 0, power = 0) {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
-    const base = 260 + (step % 14) * 42;
-    tone(base, t, 0.14, { type: "sine", peak: 0.32, glideTo: base * 2.6, attack: 0.005 });
-    noiseBurst(t, 0.05, { freq: 900 + step * 60, q: 0.8, peak: 0.16 }); // membrane snap
+    const base = noteFreq(step % 15) * (1 - power * 0.4);
+    const dur = 0.14 + power * 0.24, peak = 0.3 + power * 0.24;
+    tone(base, t, dur, { type: "sine", peak, glideTo: base * (2.5 - power * 1.1), attack: 0.005 });
+    noiseBurst(t, 0.05 + power * 0.06, { freq: 880 + step * 40, q: 0.8, peak: 0.16 + power * 0.1 }); // membrane snap
+  }
+  // rising hum while you squeeze-and-hold a bubble
+  let holdOsc = null, holdGain = null;
+  function holdStart() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    holdOsc = c.createOscillator(); holdGain = c.createGain(); holdOsc.type = "sine";
+    holdOsc.frequency.setValueAtTime(200, t); holdOsc.frequency.linearRampToValueAtTime(720, t + 1.1);
+    holdGain.gain.setValueAtTime(0.0001, t); holdGain.gain.exponentialRampToValueAtTime(0.12, t + 0.08);
+    holdOsc.connect(holdGain).connect(master); holdOsc.start();
+  }
+  function holdStop() {
+    if (!holdOsc || !ctx) return; const t = ctx.currentTime;
+    try { holdGain.gain.setTargetAtTime(0.0001, t, 0.03); holdOsc.stop(t + 0.12); } catch (_) {}
+    holdOsc = null; holdGain = null;
   }
   // Reveal chime, flavored by what popped out.
   function reveal(kind, step = 0) {
@@ -110,8 +132,8 @@ const SFX = (() => {
   // One pip per bubble as it floats up — rises in pitch so you can hear the count.
   function count(step = 0) {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
-    const f = 520 + step * 70;
-    tone(f, t, 0.16, { type: "triangle", peak: 0.26, glideTo: f * 1.5, attack: 0.004 });
+    const f = noteFreq((step % 10) + 5); // ascends the pentatonic scale, one note per bubble
+    tone(f, t, 0.18, { type: "triangle", peak: 0.26, glideTo: f * 1.4, attack: 0.004 });
   }
   // Scoop diving into the glitter — a granular whoosh with a low body.
   function scoop() {
@@ -124,5 +146,5 @@ const SFX = (() => {
     noiseBurst(t, 0.3, { freq: 500, q: 0.4, peak: 0.14, type: "bandpass" });
   }
 
-  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, whoosh };
+  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, whoosh };
 })();

@@ -28,6 +28,7 @@ const BALANCE = {
 
   // Scoop / bubbles — each scoop rolls its own yield; each bubble = one haul item.
   BUBBLES_PER_SCOOP_MIN: 2, BUBBLES_PER_SCOOP_MAX: 4, MIN_BUBBLES: 8,
+  JACKPOT_CHANCE: 0.10,        // a rainbow scoop: extra-full + a guaranteed charm (~1 in 3 rounds)
 
   // Haul composition — mostly ingredients now (fatter hand)
   CHARM_DROP_CHANCE: 0.10, CHARM_DROP_CHANCE_FINDER: 0.20, // with "Charm Finder" upgrade
@@ -167,9 +168,20 @@ function newRound(state) {
   for (let i = 0; i < scoops; i++) scoopYields.push(R.int(BALANCE.BUBBLES_PER_SCOOP_MIN, smax));
   let bubbles = scoopYields.reduce((a, b) => a + b, 0);
   if (bubbles < BALANCE.MIN_BUBBLES) { scoopYields[0] += BALANCE.MIN_BUBBLES - bubbles; bubbles = BALANCE.MIN_BUBBLES; }
-  const haul = generateHaul(wish, bubbles, !!state.charmFinder);
+  // Jackpot scoops: rainbow glitter, extra-full (+2 bubbles) and a guaranteed charm.
+  const scoopJackpots = scoopYields.map(() => R.chance(BALANCE.JACKPOT_CHANCE));
+  const jackCount = scoopJackpots.filter(Boolean).length;
+  scoopJackpots.forEach((j, i) => { if (j) scoopYields[i] += 2; });
+  bubbles = scoopYields.reduce((a, b) => a + b, 0);
+  const haul = generateHaul(wish, bubbles - jackCount, !!state.charmFinder);
+  for (let i = 0; i < jackCount; i++) {
+    const have = haul.some(it => it.kind === "charm" && it.id === "insight");
+    const pool = have ? DATA.SPECIAL_CHARM_IDS.filter(id => id !== "insight") : DATA.SPECIAL_CHARM_IDS;
+    haul.push({ kind: "charm", id: R.pick(pool) });
+  }
+  R.shuffle(haul);
   return {
-    customer, wish, payment, bubblesTotal: bubbles, scoops, scoopYields, haul,
+    customer, wish, payment, bubblesTotal: bubbles, scoops, scoopYields, scoopJackpots, haul,
     inventory: [],           // ingredient instances drafted from popping
     charms: [],              // special charms held, ready to play in the cauldron
     slots: [],               // ingredients (and played Wild charms) in the cauldron
