@@ -27,9 +27,12 @@ const BALANCE = {
   ALLERGY_BAIT_CHANCE: 0.42,     // chance a filler ingredient carries the allergy magic (keeps it a live risk)
   SNEEZE_AT: 15,                 // >this many ingredients into the cauldron → the customer sneezes up a new allergy
   BOSS_EVERY: 5,                 // every Nth customer is a picky VIP "boss"
-  BOSS_REQUIRED_BONUS: 8,        // boss needs a higher match
-  BOSS_BAND_TIGHT: 0.68,         // boss green zones are this fraction as wide (pickier)
-  BOSS_PAYMENT_MULT: 1.7,        // boss pays more → more scoops/bubbles + bigger reward
+  BOSS_REQUIRED_BONUS: 12,       // boss needs a much higher match
+  BOSS_BAND_TIGHT: 0.5,          // boss green zones are this fraction as wide (very picky — potent overshoots!)
+  BOSS_SHRINK_MULT: 2.2,         // boss green zones shrink this much faster as you add — punishes over-mixing
+  BOSS_PAYMENT_MULT: 1.7,        // boss pays more (bigger reward)
+  BOSS_SCOOP_MIN_BONUS: 2, BOSS_SCOOP_MAX_BONUS: 4, // boss has a BIGGER scoop (more bubbles per scoop), not more scoops
+  BOSS_SLOTS: 4,                 // boss cauldron has FEWER slots — abundance can't trivialize the tight band
 
   // Scoop / bubbles — each scoop rolls its own yield; each bubble = one haul item.
   BUBBLES_PER_SCOOP_MIN: 2, BUBBLES_PER_SCOOP_MAX: 4, MIN_BUBBLES: 8,
@@ -110,7 +113,8 @@ function generateWish(customer, diff, isBoss) {
   }
   const requiredMatch = BALANCE.REQUIRED_MATCH[diff] + (isBoss ? BALANCE.BOSS_REQUIRED_BONUS : 0);
   return { needs, requiredMatch, difficulty: diff, weights: BALANCE.NEED_WEIGHTS[count], allergy, allergy2,
-    boss: !!isBoss, bandTight: isBoss ? BALANCE.BOSS_BAND_TIGHT : 1 };
+    boss: !!isBoss, bandTight: isBoss ? BALANCE.BOSS_BAND_TIGHT : 1,
+    bandShrink: BALANCE.BAND_SHRINK_PER_ADD * (isBoss ? BALANCE.BOSS_SHRINK_MULT : 1) };
 }
 
 /* --- Haul: the hand of items popped from bubbles ------------------------
@@ -192,11 +196,13 @@ function newRound(state) {
   const wish = generateWish(customer, diff, isBoss);
   const [pmin, pmax] = BALANCE.PAYMENT_RANGE[diff];
   let payment = R.int(pmin / 10, pmax / 10) * 10;
-  if (isBoss) payment = Math.round(payment * BALANCE.BOSS_PAYMENT_MULT / 10) * 10; // more scoops + reward
-  const scoops = Math.max(1, Math.round(payment / 10));
-  const smax = BALANCE.BUBBLES_PER_SCOOP_MAX + (state.betterScoop ? 1 : 0);
+  const scoops = Math.max(1, Math.round(payment / 10));   // scoop COUNT from base payment (boss keeps a normal count)
+  if (isBoss) payment = Math.round(payment * BALANCE.BOSS_PAYMENT_MULT / 10) * 10; // boss reward boosted after
+  // boss has a BIGGER scoop (more bubbles per scoop), not more scoops
+  const smin = BALANCE.BUBBLES_PER_SCOOP_MIN + (isBoss ? BALANCE.BOSS_SCOOP_MIN_BONUS : 0);
+  const smax = BALANCE.BUBBLES_PER_SCOOP_MAX + (state.betterScoop ? 1 : 0) + (isBoss ? BALANCE.BOSS_SCOOP_MAX_BONUS : 0);
   const scoopYields = [];
-  for (let i = 0; i < scoops; i++) scoopYields.push(R.int(BALANCE.BUBBLES_PER_SCOOP_MIN, smax));
+  for (let i = 0; i < scoops; i++) scoopYields.push(R.int(smin, smax));
   let bubbles = scoopYields.reduce((a, b) => a + b, 0);
   if (bubbles < BALANCE.MIN_BUBBLES) { scoopYields[0] += BALANCE.MIN_BUBBLES - bubbles; bubbles = BALANCE.MIN_BUBBLES; }
   // Jackpot scoops: rainbow glitter, extra-full (+2 bubbles). The guaranteed charm
@@ -219,7 +225,7 @@ function newRound(state) {
     inventory: [],           // ingredient instances drafted from popping
     charms: [],              // special charms held, ready to play in the cauldron
     slots: [],               // ingredients (and played Wild charms) in the cauldron
-    maxSlots: BALANCE.MIX_SLOTS,
+    maxSlots: isBoss ? BALANCE.BOSS_SLOTS : BALANCE.MIX_SLOTS,
     bonusSpawned: 0,         // running count of bonus-spawned bubbles (hard-capped)
     bonusFrenzy,             // rare rounds get a runaway chain
     stats: { scooped: bubbles, popped: 0, ingredients: 0, charms: 0, gold: 0, treats: 0, triples: 0 },
@@ -262,8 +268,8 @@ function allergyStatus(slots, allergyType, offset) {
 
 /* Current green-band edges given how many ingredients are in the pot (it narrows
  * as you add more — reward for an efficient, few-ingredient mix). */
-function bandFor(slotsUsed, tight) {
-  let half = Math.max(BALANCE.BAND_HALF_MIN, BALANCE.BAND_HALF_BASE - BALANCE.BAND_SHRINK_PER_ADD * slotsUsed);
+function bandFor(slotsUsed, tight, shrink) {
+  let half = Math.max(BALANCE.BAND_HALF_MIN, BALANCE.BAND_HALF_BASE - (shrink || BALANCE.BAND_SHRINK_PER_ADD) * slotsUsed);
   half *= (tight || 1); // boss customers get narrower green zones
   return { low: BALANCE.NEED_TARGET - half, high: BALANCE.NEED_TARGET + half };
 }
@@ -281,7 +287,7 @@ function pointsForNeed(slots, type) {
 }
 /* --- Scoring: SWEET SPOT — land each need in its green band ------------- */
 function scoreMix(slots, wish, allergyOffset) {
-  const band = bandFor(slots.length, wish.bandTight);
+  const band = bandFor(slots.length, wish.bandTight, wish.bandShrink);
   const perNeed = wish.needs.map(need => {
     const points = pointsForNeed(slots, need.type);
     let pct;
@@ -309,7 +315,7 @@ function addSneezeAllergy(wish, heldIds) {
   const options = DATA.MAGIC_TYPES.filter(m => !forbidden.has(m));
   if (!options.length) return null;
   const pick = R.pick(options);
-  if (!wish.allergy) wish.allergy = pick; else wish.allergy2 = pick;
+  if (!wish.allergy) wish.allergy = pick; else if (!wish.allergy2) wish.allergy2 = pick; else return null; // never overwrite
   return pick;
 }
 

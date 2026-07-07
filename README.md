@@ -70,10 +70,14 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   each with its own rising note** so you can *hear* how many you found. If you have
   another scoop, the spoon **dives back into the glitter** and pulls up a fresh one
   to shake. There's a "✨ Shake for me" button if you'd rather not swipe.
-- 👑 **Boss customers.** Every 5th customer is now a **picky VIP**: more scoops and
-  bubbles, all three needs, **tighter green zones**, a higher required match, and
-  **two allergies** — for a bigger reward. A nice challenge spike between the snappy
-  regular rounds.
+- 👑 **Boss customers (now actually hard).** Every 5th customer is a **picky VIP**:
+  a **bigger scoop** (more bubbles per scoop), all three needs, **tiny green zones**
+  that shrink fast, a much higher required match, **two fixed allergies** (they don't
+  sneeze up more), and — crucially — **only 4 cauldron slots**, so all those extra
+  ingredients can't trivialize it. You have to pick the perfect few. Bigger reward to
+  match. Your **Knife** and new **Transmute** charm shine here.
+- 🔀 **Transmute charm (new).** Change a whole ingredient into a **random one you
+  actually need** (keeps Potent) — great for salvaging a wrong potent ingredient.
 - ⚡ **Quick‑service tip fixed & rescaled.** The speed tip now rewards serving with
   **few ingredients** (≤ needs + 1), and it **scales with the number of needs** — so
   three‑need customers can actually earn it now (they couldn't before).

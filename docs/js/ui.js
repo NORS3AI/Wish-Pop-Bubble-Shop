@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v21"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v22"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -169,7 +169,7 @@ function renderCustomer() {
   const allergyTxt = allergyList.length
     ? `<span style="color:var(--bad)">${allergyList.map(a => `⚠️ ${magicDot(a)} ${a}`).join(" ")}</span>` : "None";
   const bossBanner = w.boss
-    ? `<div class="boss-banner">👑 VIP Customer — extra picky! Wants all three, tighter green zones, two allergies.</div>` : "";
+    ? `<div class="boss-banner">👑 VIP Customer — extra picky! All three needs, tiny green zones, only ${BALANCE.BOSS_SLOTS} cauldron slots, two allergies.</div>` : "";
   html("customer", `
     ${hud(c.location)}
     ${bossBanner}
@@ -644,7 +644,7 @@ function renderMix() {
   paintMix(); show("mix");
   if (ROUND._mixTimer) clearInterval(ROUND._mixTimer);
   ROUND._mixTimer = setInterval(paintMixTop, 500);
-  const afterTriples = () => { if (rawCount > BALANCE.SNEEZE_AT) setTimeout(sneezeAllergy, 250); };
+  const afterTriples = () => { if (rawCount > BALANCE.SNEEZE_AT && !ROUND.wish.boss) setTimeout(sneezeAllergy, 250); }; // bosses don't sneeze
   if (merged.merged.length) showTriple(merged.merged, afterTriples);
   else setTimeout(afterTriples, 350);
 }
@@ -735,7 +735,7 @@ function paintMix() {
     </div>
     <button class="btn good" id="serve-btn" ${ROUND.slots.length === 0 ? "disabled" : ""}>✨ Serve the Wish</button>
     ${ROUND.inventory.length
-      ? `<div class="inv-2row ${ROUND.cutMode ? "cutting" : ""}" id="inv-row">${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("")}</div>`
+      ? `<div class="inv-2row ${ROUND.toolMode ? "cutting" : ""}" id="inv-row">${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("")}</div>`
       : `<div class="muted" style="text-align:center;padding:12px">Bag empty — serve what's in the pot!</div>`}
     ${familiarToken("mix")}
   `);
@@ -752,7 +752,7 @@ function invTile(inst, idx) {
       <div class="nm">${inst.magic} Essence</div><div class="q">${magicDot(inst.magic)} pure ${inst.magic}</div></div>`;
   }
   const ing = D.INGREDIENT_BY_ID[inst.id];
-  const cuttable = ROUND.cutMode ? " cuttable" : "";
+  const cuttable = ROUND.toolMode ? " cuttable" : "";
   const quals = ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0];
   return `<div class="inv-tile ${inst.potent ? "potent" : ""}${cuttable}" id="invt-${idx}">
     <div class="emoji">${ing.emoji}</div><div class="nm">${inst.potent ? "✨" : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
@@ -765,7 +765,8 @@ function allergyMeter(a) {
     <div class="meter" style="background:rgba(255,90,90,0.12)"><i style="width:${pct}%;background:${col}"></i></div></div>`;
 }
 function addToSlot(idx, fromEl) {
-  if (ROUND.cutMode) { cutIngredient(idx, fromEl); return; }
+  if (ROUND.toolMode === "cut") { cutIngredient(idx, fromEl); return; }
+  if (ROUND.toolMode === "transmute") { transmuteIngredient(idx, fromEl); return; }
   if (ROUND.slots.length >= ROUND.maxSlots) { toast("The cauldron is full!"); return; }
   const inst = ROUND.inventory.splice(idx, 1)[0];
   if (ROUND.potentNext) { inst.potent = true; ROUND.potentNext = false; toast("✨ Potent!"); }
@@ -784,10 +785,26 @@ function cutIngredient(idx, fromEl) {
   ROUND.inventory.splice(idx, 1);
   ing.qualities.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: false }));
   const ki = ROUND.charms.indexOf("knife"); if (ki >= 0) ROUND.charms.splice(ki, 1);
-  ROUND.cutMode = false;
+  ROUND.toolMode = null;
   SFX.unlock(); SFX.chop();
   if (navigator.vibrate) navigator.vibrate([8, 30, 8]);
   toast(`🔪 Cut ${ing.name} into ${ing.qualities.length} pure magics!`);
+  paintMix();
+}
+// Transmute: change a whole ingredient into a random NEEDED one (keeps potent).
+function transmuteIngredient(idx, fromEl) {
+  const inst = ROUND.inventory[idx];
+  if (!inst || !inst.id || inst.essence) { toast("Pick a whole ingredient to transmute."); return; }
+  const needs = ROUND.wish.needs.map(n => n.type);
+  let pool = D.INGREDIENTS.filter(i => needs.includes(i.qualities[0]) && i.id !== inst.id);
+  if (!pool.length) pool = D.INGREDIENTS.filter(i => i.id !== inst.id);
+  const ing = R.pick(pool), oldName = D.INGREDIENT_BY_ID[inst.id].name;
+  ROUND.inventory[idx] = { id: ing.id, potent: inst.potent };
+  const ti = ROUND.charms.indexOf("transmute"); if (ti >= 0) ROUND.charms.splice(ti, 1);
+  ROUND.toolMode = null;
+  SFX.unlock(); SFX.reveal("charm", 0);
+  if (navigator.vibrate) navigator.vibrate([8, 20, 8]);
+  toast(`🔀 ${oldName} → ${inst.potent ? "Potent " : ""}${ing.name}!`);
   paintMix();
 }
 function playCharm(i) {
@@ -799,9 +816,14 @@ function playCharm(i) {
   else if (id === "peek") { const n = w.needs.find(x => !x.revealed); if (!n) { toast("All needs already revealed."); return; } n.revealed = true; toast(`⏭️ Revealed: ${n.type}!`); consume(); }
   else if (id === "wild") { if (ROUND.slots.length >= ROUND.maxSlots) { toast("The cauldron is full!"); return; } const magic = R.pick(w.needs.map(x => x.type)); ROUND.slots.push({ wild: true, magic, strength: BALANCE.WILD_STRENGTH }); toast(`🌈 Wild ${magic} magic added!`); consume(); }
   else if (id === "knife") {
-    if (ROUND.cutMode) { ROUND.cutMode = false; toast("🔪 Knife away."); paintMix(); return; }
+    if (ROUND.toolMode === "cut") { ROUND.toolMode = null; toast("🔪 Knife away."); paintMix(); return; }
     if (!ROUND.inventory.some(x => x.id && !x.essence)) { toast("No whole ingredient to cut!"); return; }
-    ROUND.cutMode = true; toast("🔪 Tap an ingredient to cut it into its magics."); paintMix();
+    ROUND.toolMode = "cut"; toast("🔪 Tap an ingredient to cut it into its magics."); paintMix();
+  }
+  else if (id === "transmute") {
+    if (ROUND.toolMode === "transmute") { ROUND.toolMode = null; toast("🔀 Put away."); paintMix(); return; }
+    if (!ROUND.inventory.some(x => x.id && !x.essence)) { toast("No ingredient to transmute!"); return; }
+    ROUND.toolMode = "transmute"; toast("🔀 Tap an ingredient to transmute it into a needed one."); paintMix();
   }
 }
 
@@ -918,7 +940,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue };
+  window.__wp = { get ROUND() { return ROUND; }, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, playCharm, addToSlot };
 }
 window.addEventListener("load", renderStart);
 
