@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v34"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v35"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1152,9 +1152,9 @@ function paintMix() {
 }
 function invTile(inst, idx) {
   if (inst.essence) {
-    return `<div class="inv-tile essence" id="invt-${idx}">
+    return `<div class="inv-tile essence ${inst.potent ? "potent" : ""}" id="invt-${idx}">
       <div class="emoji"><span class="orb" style="background:${D.MAGIC[inst.magic]}"></span></div>
-      <div class="nm">${inst.magic} Essence</div><div class="q">${magicDot(inst.magic)} pure ${inst.magic}</div></div>`;
+      <div class="nm">${inst.potent ? "✨" : ""}${inst.magic} Essence</div><div class="q">${magicDot(inst.magic)} pure ${inst.magic}</div></div>`;
   }
   const ing = D.INGREDIENT_BY_ID[inst.id];
   const cuttable = ROUND.toolMode ? " cuttable" : "";
@@ -1186,14 +1186,15 @@ function addToSlot(idx, fromEl) {
 function cutIngredient(idx, fromEl) {
   const inst = ROUND.inventory[idx];
   if (!inst || !inst.id || inst.essence) { toast("Pick a whole ingredient to cut."); return; }
-  const ing = D.INGREDIENT_BY_ID[inst.id];
+  const ing = D.INGREDIENT_BY_ID[inst.id], wasPotent = !!inst.potent;
   ROUND.inventory.splice(idx, 1);
-  ing.qualities.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: false }));
+  // a Potent ingredient cuts into Potent essences (potency carries through)
+  ing.qualities.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: wasPotent }));
   const ki = ROUND.charms.indexOf("knife"); if (ki >= 0) ROUND.charms.splice(ki, 1);
   ROUND.toolMode = null;
   SFX.unlock(); SFX.chop();
   if (navigator.vibrate) navigator.vibrate([8, 30, 8]);
-  toast(`🔪 Cut ${ing.name} into ${ing.qualities.length} pure magics!`);
+  toast(`🔪 Cut ${wasPotent ? "Potent " : ""}${ing.name} into ${ing.qualities.length} ${wasPotent ? "Potent " : ""}pure magics!`);
   paintMix();
 }
 // Transmute: change a whole ingredient into a random NEEDED one (keeps potent).
