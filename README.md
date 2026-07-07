@@ -19,6 +19,8 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🔍 **No more accidental zoom.** Tapping bubbles quickly on iPad or a touch
+  laptop no longer double‑tap‑zooms the page — you can pop as fast as you like.
 - 🎨 **Bring your own art!** There's now an **`art` folder** where you can drop in
   your own pictures to replace any emoji — ingredients, charms, customers, the
   Toad buddy skins, the cauldron pots — plus a **full-screen background**. Name each
