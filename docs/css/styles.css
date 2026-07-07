@@ -386,6 +386,44 @@ html, body {
 .result-title { font-size: 30px; font-weight: 900; }
 .result-title.win { color: var(--good); }
 .result-title.lose { color: var(--bad); }
+.result-title.perfect { color: var(--gold);
+  background: linear-gradient(90deg, #ffd76a, #ff9ecf, #c48bff, #8fe9ff, #ffd76a);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: perfectshine 2.2s linear infinite, perfectpop .6s cubic-bezier(.2,1.5,.4,1); }
+@keyframes perfectshine { 0% { background-position: 0% 0; } 100% { background-position: 300% 0; } }
+@keyframes perfectpop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.18); } 100% { transform: scale(1); opacity: 1; } }
+
+/* Result-screen reward bubbles */
+.reward-bubbles { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rb-total { font-weight: 800; font-size: 16px; }
+.rb-total #rb-count { font-size: 20px; display: inline-block; }
+.rb-total #rb-count.bumped { animation: rbbump .3s ease; }
+@keyframes rbbump { 0% { transform: scale(1); } 45% { transform: scale(1.5); color: var(--gold); } 100% { transform: scale(1); } }
+.rb-field { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; min-height: 64px; }
+.rbub { border: none; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 900; color: #4a2e00; box-shadow: inset 0 3px 8px rgba(255,255,255,.6), 0 4px 10px rgba(0,0,0,.35);
+  animation: rbin .4s cubic-bezier(.2,1.4,.4,1) backwards; -webkit-tap-highlight-color: transparent; }
+.rbub.big { width: 76px; height: 76px; font-size: 17px;
+  background: radial-gradient(circle at 38% 30%, #fff3c0, #ffd23f 55%, #ffab2e); }
+.rbub.big .rb-amt { text-shadow: 0 1px 2px rgba(255,255,255,.5); }
+.rbub.little { width: 34px; height: 34px; font-size: 16px;
+  background: radial-gradient(circle at 38% 30%, #fff3c0, #ffd86b 60%, #f0b53c); }
+.rbub:active { transform: scale(.88); }
+.rbub.popped { animation: rbpop .24s ease-out forwards; pointer-events: none; }
+@keyframes rbin { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+@keyframes rbpop { 0% { transform: scale(1); } 45% { transform: scale(1.35); opacity: .85; } 100% { transform: scale(.2); opacity: 0; } }
+.rb-hint { font-size: 12px; }
+
+/* Perfect celebration: confetti + sparkles */
+.confetti-layer { position: absolute; inset: 0; z-index: 59; pointer-events: none; overflow: hidden; }
+.confetti { position: absolute; top: -18px; width: 9px; height: 14px; border-radius: 2px; opacity: 0;
+  animation: conffall 2s linear forwards; }
+@keyframes conffall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) translateX(var(--dx,0)) rotate(calc(var(--rot,180deg) * 4)); opacity: .9; }
+}
+.spk { position: absolute; font-size: 26px; opacity: 0; animation: spktwinkle 1.1s ease-out forwards; }
+@keyframes spktwinkle { 0% { transform: scale(.3) rotate(0deg); opacity: 0; } 40% { transform: scale(1.2) rotate(20deg); opacity: 1; } 100% { transform: scale(.6) rotate(-10deg); opacity: 0; } }
 
 /* Toast */
 #toast { position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%);

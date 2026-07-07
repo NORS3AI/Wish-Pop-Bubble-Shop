@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v22"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v23"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -680,15 +680,18 @@ function paintMixTop() {
   const meters = w.needs.map((n, i) => {
     const s = score.perNeed[i];
     const fillPct = Math.min(100, s.points / MAX * 100);
-    if (!n.revealed) {
-      return `<div class="need-meter"><div class="lbl"><span class="muted">❔ Mystery Need</span><span class="muted">?</span></div>
-        <div class="meter sweet"><i style="width:${fillPct}%;background:rgba(255,255,255,0.28)"></i></div></div>`;
-    }
     const inBand = s.pct === 100, over = s.points > s.bandHigh;
+    const bandLeft = Math.max(0, s.bandLow / MAX * 100), bandW = Math.max(2, (s.bandHigh - s.bandLow) / MAX * 100);
+    if (!n.revealed) {
+      // Mystery need: type/label stay hidden, but SHOW the green target band + a
+      // green glow when it's landed, so a hidden need you happen to hit reads clearly.
+      return `<div class="need-meter"><div class="lbl"><span class="muted">❔ Mystery Need</span>
+        <span class="muted" style="${inBand ? "color:var(--good);font-weight:800" : ""}">${inBand ? "✓ in the green!" : "?"}</span></div>
+        <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${inBand ? "var(--good)" : "rgba(255,255,255,0.28)"}"></i></div></div>`;
+    }
     const fillCol = inBand ? "var(--good)" : over ? "var(--bad)" : D.MAGIC[n.type];
     const status = inBand ? "✓ in the green!" : over ? "overfilled!" : s.pct + "%";
     const statusCol = inBand ? "var(--good)" : over ? "var(--bad)" : "var(--ink-dim)";
-    const bandLeft = Math.max(0, s.bandLow / MAX * 100), bandW = Math.max(2, (s.bandHigh - s.bandLow) / MAX * 100);
     return `<div class="need-meter"><div class="lbl"><span>${magicDot(n.type)} ${n.type}</span>
       <span style="color:${statusCol};font-weight:800">${status}</span></div>
       <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
@@ -846,10 +849,14 @@ function renderResult(res) {
     ? `<div class="stat-line"><span>⚡ Quick‑service tip</span><span class="gold">🪙 +${res.quickTip}</span></div>` : "";
   const qualLine = (win && res.qualityTip > 0)
     ? `<div class="stat-line"><span>✨ Perfect potion!</span><span class="gold">🪙 +${res.qualityTip}</span></div>` : "";
-  const emoji = !win ? "🙂" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (res.tip > 0 ? "🤩" : "😊");
-  const title = win ? res.type.title : "So Close!";
+  // PERFECT = a spotless 100% win with NO allergy reaction. An allergic win is
+  // only "almost perfect", so it does not earn the confetti celebration.
+  const isPerfect = win && res.weighted === 100 && zone !== "yellow" && zone !== "red";
+  const emoji = !win ? "🙂" : isPerfect ? "🥳" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (res.tip > 0 ? "🤩" : "😊");
+  const title = win ? (isPerfect ? "Perfect!" : res.type.title) : "So Close!";
   const blurb = !win
     ? c.name + " couldn't get the full wish, but liked the effort and left you a few coins."
+    : isPerfect ? c.name + " got a flawless potion — 100% perfect! ✨"
     : zone === "red" ? "The wish worked… but " + c.name + " reacted to the " + res.allergy.type + " magic! Half pay."
     : zone === "yellow" ? c.name + " got their wish, but a little " + res.allergy.type + " magic left them itchy."
     : res.qualityTip > 0 ? c.name + " loves it — that potion was practically perfect!" : res.quickTip > 0 ? c.name + " is thrilled with the speedy service!" : c.name + " is happy with their wish!";
@@ -857,7 +864,8 @@ function renderResult(res) {
     ${hud("Result")}
     <div class="grow center" style="gap:14px">
       <div class="ph big">${emoji}</div>
-      <div class="result-title ${win ? "win" : "lose"}">${title}</div>
+      <div class="result-title ${win ? "win" : "lose"} ${isPerfect ? "perfect" : ""}">${title}</div>
+      ${win ? rewardBubblesMarkup(res) : ""}
       <div class="card" style="width:100%;max-width:320px">
         <div class="stat-line"><span>Your Match</span><span><b>${res.weighted}%</b></span></div>
         <div class="stat-line"><span>Needed</span><span>${res.required}%</span></div>
@@ -872,6 +880,101 @@ function renderResult(res) {
   `);
   on("#next-btn", "click", startRound);
   show("result");
+  if (win) wireRewardBubbles(res);
+  if (isPerfect) setTimeout(celebratePerfect, 260);
+}
+// --- Result-screen reward bubbles: a BIG bubble holding the base gold, plus one
+// LITTLE bubble per tip coin. Pop the big one first and it auto-pops the little
+// ones; or pop the little ones yourself and save the big one for last. -------
+function rewardBubblesMarkup(res) {
+  const base = Math.max(0, res.gold - res.tip), tips = Math.max(0, res.tip);
+  let littles = "";
+  for (let i = 0; i < tips; i++) littles += `<button class="rbub little" data-amt="1" data-i="${i}" aria-label="tip coin">🪙</button>`;
+  return `<div class="reward-bubbles" id="reward-bubbles">
+    <div class="rb-total">Collected <span class="gold">🪙 <b id="rb-count">0</b></span></div>
+    <div class="rb-field" id="rb-field">
+      <button class="rbub big" data-amt="${base}" data-big="1" aria-label="gold reward"><span class="rb-amt">🪙 ${base}</span></button>
+      ${littles}
+    </div>
+    <div class="rb-hint muted" id="rb-hint">${tips > 0 ? "Pop the coins to collect them! 🫧" : "Pop your reward! 🫧"}</div>
+  </div>`;
+}
+function wireRewardBubbles(res) {
+  const field = document.querySelector("#screen-result #rb-field"); if (!field) return;
+  const countEl = document.querySelector("#screen-result #rb-count");
+  const hintEl = document.querySelector("#screen-result #rb-hint");
+  let collected = 0, littleStep = 0;
+  const bump = amt => {
+    collected += amt;
+    if (countEl) { countEl.textContent = collected; countEl.classList.remove("bumped"); void countEl.offsetWidth; countEl.classList.add("bumped"); }
+  };
+  const popBub = el => {
+    if (!el || el.classList.contains("popped")) return;
+    el.classList.add("popped");
+    const amt = +el.dataset.amt || 0, big = el.dataset.big;
+    const r = el.getBoundingClientRect();
+    resultBurst(r.left + r.width / 2, r.top + r.height / 2, big ? "gold" : "coin");
+    bump(amt);
+    if (big) SFX.bigCoin(); else SFX.coin(littleStep++);
+    setTimeout(() => { el.style.visibility = "hidden"; }, 220);
+    checkDone();
+  };
+  const checkDone = () => setTimeout(() => {
+    if (!field.querySelector(".rbub:not(.popped)") && hintEl) hintEl.textContent = `All collected! 🪙 ${res.gold}`;
+  }, 260);
+  field.querySelectorAll(".rbub").forEach(el => el.addEventListener("click", () => {
+    SFX.unlock();
+    if (el.dataset.big) {
+      popBub(el);
+      // popping the big bubble first cascades all remaining tip bubbles
+      const rest = [...field.querySelectorAll(".rbub.little:not(.popped)")];
+      rest.forEach((b, i) => setTimeout(() => popBub(b), 90 * (i + 1)));
+    } else popBub(el);
+  }));
+}
+// A confetti/sparkle burst for a 100% "Perfect!" win, drawn over the result screen.
+function celebratePerfect() {
+  const sc = screen("result"); if (!sc) return;
+  SFX.perfect();
+  const layer = document.createElement("div"); layer.className = "confetti-layer";
+  const cols = ["#ffd76a", "#ff6ea8", "#4fc96a", "#6a7bd6", "#ffe98a", "#e07be0", "#8fe9ff", "#c48bff"];
+  for (let i = 0; i < 54; i++) {
+    const p = document.createElement("i"); p.className = "confetti";
+    p.style.left = (3 + (i * 37) % 94) + "%";
+    p.style.background = cols[i % cols.length];
+    p.style.setProperty("--dx", (((i * 53) % 80) - 40) + "px");
+    p.style.setProperty("--rot", ((i * 47) % 360) + "deg");
+    p.style.animationDelay = ((i % 12) * 0.05).toFixed(2) + "s";
+    p.style.animationDuration = (1.7 + (i % 5) * 0.22).toFixed(2) + "s";
+    layer.appendChild(p);
+  }
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement("span"); s.className = "spk"; s.textContent = "✨";
+    s.style.left = (12 + (i * 41) % 76) + "%";
+    s.style.top = (18 + (i * 29) % 46) + "%";
+    s.style.animationDelay = ((i % 6) * 0.11).toFixed(2) + "s";
+    layer.appendChild(s);
+  }
+  sc.appendChild(layer);
+  setTimeout(() => layer.remove(), 2800);
+}
+// Self-contained particle burst for the result screen (its own layer).
+function resultBurst(x, y, flavor) {
+  const sc = screen("result"); if (!sc) return;
+  const parts = flavor === "gold" ? POP_FLAVOR.gold.parts : POP_FLAVOR.bubble.parts;
+  const n = flavor === "gold" ? 16 : 9;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement("i"); p.className = "particle";
+    const ang = (Math.PI * 2 * i) / n + (i % 2) * 0.4, dist = flavor === "gold" ? 46 + (i % 4) * 16 : 30 + (i % 3) * 12;
+    p.style.left = x + "px"; p.style.top = y + "px";
+    p.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+    p.style.setProperty("--dy", (Math.sin(ang) * dist - 8) + "px");
+    p.style.background = parts[i % parts.length];
+    p.style.width = p.style.height = (flavor === "gold" ? 7 : 5) + (i % 3) * 3 + "px";
+    p.style.zIndex = "60";
+    sc.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
 }
 function roundRecap() {
   const s = ROUND.stats; if (!s) return "";
@@ -940,7 +1043,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, playCharm, addToSlot };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult };
 }
 window.addEventListener("load", renderStart);
 

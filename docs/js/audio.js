@@ -158,6 +158,31 @@ const SFX = (() => {
     noiseBurst(t + 0.24, 0.26, { freq: 1100, q: 0.6, peak: 0.32, type: "bandpass" }); // "choo!" burst
     tone(430, t + 0.24, 0.3, { type: "sawtooth", peak: 0.2, glideTo: 130 });      // falling honk
   }
+  // Coin pop on the result screen — a bright bubble-pop + a little coin "ching".
+  // step climbs the scale so popping the tip bubbles fast plays a rising run.
+  function coin(step = 0) {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    const base = noteFreq((step % 8) + 3);
+    tone(base, t, 0.12, { type: "sine", peak: 0.24, glideTo: base * 2.2, attack: 0.004 }); // pop
+    tone(base * 3, t + 0.02, 0.14, { type: "triangle", peak: 0.16 });                       // coin ching
+    noiseBurst(t, 0.04, { freq: 2600, q: 0.9, peak: 0.1, type: "highpass" });
+  }
+  // Big-bubble pop — a fuller, deeper "plunk" for the gold bubble.
+  function bigCoin() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    tone(196, t, 0.3, { type: "sine", peak: 0.34, glideTo: 520, attack: 0.006 });
+    tone(660, t + 0.03, 0.24, { type: "triangle", peak: 0.22 });
+    tone(990, t + 0.09, 0.28, { type: "triangle", peak: 0.18 });
+    noiseBurst(t, 0.09, { freq: 1400, q: 0.7, peak: 0.16, type: "bandpass" });
+  }
+  // Perfect! — a triumphant fanfare with a shimmer sweep for the 100% celebration.
+  function perfect() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, t + i * 0.09, 0.4, { type: "triangle", peak: 0.26 }));
+    tone(2093, t + 0.6, 0.6, { type: "sine", peak: 0.22 });        // high final sparkle
+    tone(1047, t + 0.6, 0.7, { type: "sine", peak: 0.16 });
+    noiseBurst(t, 1.0, { freq: 7000, q: 0.4, peak: 0.07, type: "highpass" }); // confetti shimmer
+  }
 
-  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, sneeze, chop, whoosh };
+  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, sneeze, chop, whoosh, coin, bigCoin, perfect };
 })();

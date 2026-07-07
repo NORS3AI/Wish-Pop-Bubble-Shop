@@ -19,6 +19,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎉 **Reward bubbles + a Perfect celebration.** When you succeed, your pay now
+  arrives as **poppable bubbles** on the result screen — one **big golden bubble**
+  holding your base gold, plus a **little coin bubble for every tip** you earned.
+  Pop the big one first and it happily bursts all the little ones for you, or pop
+  the little ones yourself and save the big one for last — each with its own coin
+  sound. And landing a flawless **100% potion** (with no allergy slip‑up) now sets
+  off a **“Perfect!” celebration** with **confetti and sparkles**. A mystery need
+  you happen to hit also shows its **green target band** now, so you can see it
+  land even before you've discovered what it is.
 - 🧱 **The real game is taking shape (Phases 0 & 1 done).** Rebuilt on the full
   design: a complete round now runs end‑to‑end — a fairytale customer arrives with
   a wish → scoop glitter for Wish Bubbles → pop them for charms → gather
