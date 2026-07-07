@@ -121,6 +121,18 @@ buttons under the spoon. Tap them to make your spoon image bigger or smaller unt
 it looks right; the game remembers your choice. (I can also set an exact size for
 you once you've uploaded it — just ask.)
 
+### Trash (8) — junk a disgruntled customer throws when you fail their wish
+| File name | Replaces |
+|---|---|
+| `trash_banana.png` | 🍌 Banana Peel |
+| `trash_fishbones.png` | 🐟 Fishy Bones |
+| `trash_lint.png` | 🧶 Pocket Lint |
+| `trash_rock.png` | 🪨 Old Rock |
+| `trash_boot.png` | 🥾 Soggy Boot |
+| `trash_can.png` | 🥫 Rusty Can |
+| `trash_core.png` | 🍎 Apple Core |
+| `trash_bone.png` | 🦴 Old Bone |
+
 ### Little icons (optional)
 | File name | Replaces |
 |---|---|

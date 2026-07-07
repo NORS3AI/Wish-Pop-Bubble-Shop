@@ -154,9 +154,25 @@ const COSMETICS = {
 const COSMETIC_BY_ID = {};
 Object.keys(COSMETICS).forEach(kind => COSMETICS[kind].forEach(c => { COSMETIC_BY_ID[c.id] = Object.assign({ kind }, c); }));
 
+/* --- 10. Trash — what a disgruntled customer throws at you when you FAIL their
+ * wish. Collected into a limited bin, then recycled for coins or Stardust.
+ * `coins` = recycle value. ------------------------------------------------ */
+const TRASH = [
+  { id: "banana",    name: "Banana Peel",  emoji: "🍌", coins: 6 },
+  { id: "fishbones", name: "Fishy Bones",  emoji: "🐟", coins: 8 },
+  { id: "lint",      name: "Pocket Lint",  emoji: "🧶", coins: 3 },
+  { id: "rock",      name: "Old Rock",     emoji: "🪨", coins: 4 },
+  { id: "boot",      name: "Soggy Boot",   emoji: "🥾", coins: 12 },
+  { id: "can",       name: "Rusty Can",    emoji: "🥫", coins: 7 },
+  { id: "core",      name: "Apple Core",   emoji: "🍎", coins: 5 },
+  { id: "bone",      name: "Old Bone",     emoji: "🦴", coins: 9 },
+];
+const TRASH_BY_ID = {};
+TRASH.forEach(t => TRASH_BY_ID[t.id] = t);
+
 /* Expose as a single namespace */
 const DATA = {
   MAGIC, MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS,
-  FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID,
+  FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
 };

@@ -72,6 +72,12 @@ const BALANCE = {
     { id: "stardust",weight: 22, dust:   [25, 45]   }, // Stardust toward a guaranteed skin
     { id: "skin",    weight: 15, dustIfOwnAll: 80    }, // a NEW random skin (or big Stardust if you own them all)
   ],
+
+  // Trash (failure consolation): a FAILED wish pays NO coins — instead the
+  // disgruntled customer throws junk you collect and later recycle.
+  TRASH_BIN_MAX: 30,            // collection capacity
+  TRASH_MIN: 2, TRASH_MAX: 4,  // pieces thrown per failed wish
+  TRASH_DUST_DIVISOR: 6,       // Stardust value = round(coins / this)
 };
 
 const R = {
@@ -341,10 +347,12 @@ function scoreResult(round) {
   // worst zone across all allergies drives the payout; note which magic reacted
   const worst = allergies.reduce((acc, a) => a.zone === "red" ? "red" : (a.zone === "yellow" && acc !== "red" ? "yellow" : acc), "green");
   const reacting = allergies.find(a => a.zone === worst && worst !== "green") || allergies[0] || null;
-  let type, gold, tip = 0, quickTip = 0, qualityTip = 0;
+  let type, gold, tip = 0, quickTip = 0, qualityTip = 0, trash = [];
   if (!success) {
-    type = DATA.RESULT_TYPES.fail;
-    gold = Math.max(1, Math.round(round.payment * (weighted / 100) * BALANCE.CONSOLATION_FRACTION));
+    // FAIL: no coins at all — the disgruntled customer throws trash instead.
+    type = DATA.RESULT_TYPES.fail; gold = 0;
+    const n = R.int(BALANCE.TRASH_MIN, BALANCE.TRASH_MAX);
+    for (let i = 0; i < n; i++) trash.push(R.pick(DATA.TRASH).id);
   } else if (worst === "red") {
     type = DATA.RESULT_TYPES.red; gold = Math.round(round.payment * DATA.RESULT_TYPES.red.payoutPct); // no tips — they reacted!
   } else if (worst === "yellow") {
@@ -356,7 +364,7 @@ function scoreResult(round) {
     if (weighted >= Math.min(100, required + BALANCE.QUALITY_MARGIN)) qualityTip = BALANCE.QUALITY_TIP;
     tip = quickTip + qualityTip; gold += tip;
   }
-  return { type, gold, tip, quickTip, qualityTip, weighted, required, success, allergy: reacting, allergies, hiddenAtServe, partial: !success && gold > 0 };
+  return { type, gold, tip, quickTip, qualityTip, trash, weighted, required, success, allergy: reacting, allergies, hiddenAtServe, partial: false };
 }
 
 /* Expose */

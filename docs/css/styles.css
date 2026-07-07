@@ -554,3 +554,19 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   display: inline-block; width: 26px; height: 26px; background-image: var(--bubble-img);
   background-size: contain; background-position: center; background-repeat: no-repeat; }
 .scoop-bubbles.has-bubble-art .sbub .bglyph { display: none; }
+
+/* ==========================================================================
+ * TRASH & RECYCLE
+ * ======================================================================== */
+/* trash "bubble" on the result screen (reuses the drifting .rbub-wrap layer) */
+.rbub.tbub { background: radial-gradient(circle at 38% 30%, #d9c9a8, #b09a72 60%, #7d6a4a);
+  color: #3a2e18; width: 46px; height: 46px; font-size: 22px; }
+.rbub.tbub .art-emoji, .rbub.tbub img.art { max-width: 1.1em; }
+
+/* recycle grid */
+.trash-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.trash-slot { aspect-ratio: 1 / 1; border-radius: 12px; background: var(--card2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.trash-slot.filled { cursor: pointer; background: rgba(180,150,100,.14); border-color: rgba(200,170,110,.4); }
+.trash-slot.filled:active { transform: scale(.9); }
+.trash-slot img.art.trash-face { max-width: 1.1em; }

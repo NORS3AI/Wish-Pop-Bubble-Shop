@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v29"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v30"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -21,6 +21,7 @@ function loadGame() {
 // backfill cosmetic fields for older saves (so new features never crash on load)
 function normalizeGame(g) {
   if (typeof g.stardust !== "number") g.stardust = 0;
+  if (!Array.isArray(g.trash)) g.trash = [];
   if (!g.owned || typeof g.owned !== "object") g.owned = {};
   if (!g.equipped || typeof g.equipped !== "object") g.equipped = {};
   Object.keys(D.COSMETICS).forEach(kind => {
@@ -41,6 +42,10 @@ function ingArt(id, cls)  { const ing = D.INGREDIENT_BY_ID[id]; return ART.tag("
 function charmArt(id, cls) { const ch = D.SPECIAL_CHARMS[id]; return ART.tag("charm_" + id, ch ? ch.emoji : "❔", cls || "charm-art"); }
 function custArt(c, cls)  { return ART.tag("customer_" + c.id, c.emoji, cls || "cust-art"); }
 function buddyArt(id, cls) { const c = D.COSMETIC_BY_ID[id]; return ART.tag("buddy_" + id, c ? c.chip : D.FAMILIAR.emoji, cls || ""); }
+function trashArt(id, cls) { const t = D.TRASH_BY_ID[id]; return ART.tag("trash_" + id, t ? t.emoji : "🗑️", cls || "trash-art"); }
+// recycle values for a piece of trash
+function trashCoins(id) { const t = D.TRASH_BY_ID[id]; return t ? t.coins : 0; }
+function trashDust(id)  { const t = D.TRASH_BY_ID[id]; return t ? Math.max(1, Math.round(t.coins / BALANCE.TRASH_DUST_DIVISOR)) : 0; }
 // apply an optional custom background image to the whole app (once, at boot)
 function applyCustomBackground() {
   ART.ensure("background", u => { const app = document.getElementById("app"); if (app) { app.style.backgroundImage = "url(" + u + ")"; app.classList.add("has-bg"); } });
@@ -154,6 +159,7 @@ function renderMenu() {
         <button class="btn" id="well-btn" style="flex:1">🌟 Wishing Well</button>
         <button class="btn secondary" id="wardrobe-btn" style="flex:1">🎨 My Skins</button>
       </div>
+      <button class="btn secondary" id="recycle-btn" style="margin-bottom:10px">🗑️ Trash &amp; Recycle <span class="muted" style="font-weight:500;font-size:12px">· ${GAME.trash.length}/${BALANCE.TRASH_BIN_MAX}</span></button>
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:8px">🐸 Treats <span class="muted" style="font-weight:500;font-size:13px">· ${GAME.treats} owned · 🪙${BALANCE.PRICES.treat} each</span></div>
         <div class="row" style="align-items:center;justify-content:center">
@@ -180,6 +186,7 @@ function renderMenu() {
   on("#daily-btn", "click", claimDaily);
   on("#well-btn", "click", renderWell);
   on("#wardrobe-btn", "click", renderWardrobe);
+  on("#recycle-btn", "click", () => renderRecycle("coins"));
   on("#menu-back", "click", renderStart);
   show("menu");
 }
@@ -370,6 +377,59 @@ function buySkin(id) {
   GAME.stardust -= cost; GAME.owned[id] = true; save();
   const c = D.COSMETIC_BY_ID[id]; toast(`✨ Bought ${c.name}!`);
   renderWardrobe();
+}
+
+/* ======================================================================= */
+/* RECYCLE — turn collected trash into coins or Stardust                    */
+/* ======================================================================= */
+function recycleTotal(mode) { return GAME.trash.reduce((s, id) => s + (mode === "dust" ? trashDust(id) : trashCoins(id)), 0); }
+function renderRecycle(mode) {
+  mode = mode === "dust" ? "dust" : "coins";
+  const cap = BALANCE.TRASH_BIN_MAX, bin = GAME.trash;
+  const slots = [];
+  for (let i = 0; i < cap; i++) {
+    const id = bin[i];
+    if (id) { const t = D.TRASH_BY_ID[id], val = mode === "dust" ? trashDust(id) : trashCoins(id);
+      slots.push(`<button class="trash-slot filled" data-i="${i}" title="${t.name} — recycle for ${mode === "dust" ? "✨" : "🪙"}${val}">${trashArt(id, "trash-face")}</button>`);
+    } else slots.push(`<div class="trash-slot"></div>`);
+  }
+  const total = recycleTotal(mode), cur = mode === "dust" ? `✨ ${total}` : `🪙 ${total}`;
+  html("recycle", `
+    ${hud("Recycle")}
+    <div class="rb-total" style="text-align:center;margin:2px 0 6px">🗑️ Bin <b>${bin.length}/${cap}</b> · worth <b>${cur}</b></div>
+    <div class="row" style="justify-content:center;gap:8px;margin-bottom:6px">
+      <button class="btn small ${mode === "coins" ? "good" : "secondary"}" id="rc-coins">🪙 Coins</button>
+      <button class="btn small ${mode === "dust" ? "good" : "secondary"}" id="rc-dust">✨ Stardust</button>
+    </div>
+    <div class="muted" style="text-align:center;font-size:12px;margin-bottom:8px">Tap a piece to recycle just it, or recycle everything below.</div>
+    <div class="grow" style="overflow-y:auto">${bin.length ? `<div class="trash-grid">${slots.join("")}</div>` : `<div class="muted center" style="height:100%">Your bin is empty!<br>Trash comes from customers whose wish you miss.</div>`}</div>
+    <button class="btn good" id="rc-all" ${bin.length ? "" : "disabled"}>♻️ Recycle all → ${cur}</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="rc-back">←  Back</button>
+  `);
+  $("#screen-recycle").querySelectorAll(".trash-slot.filled").forEach(b => b.addEventListener("click", () => recycleOne(+b.dataset.i, mode)));
+  on("#rc-coins", "click", () => renderRecycle("coins"));
+  on("#rc-dust", "click", () => renderRecycle("dust"));
+  on("#rc-all", "click", () => recycleAll(mode));
+  on("#rc-back", "click", renderMenu);
+  show("recycle");
+}
+function recycleOne(index, mode) {
+  const id = GAME.trash[index]; if (id == null) return;
+  const val = mode === "dust" ? trashDust(id) : trashCoins(id);
+  if (mode === "dust") GAME.stardust += val; else GAME.gold += val;
+  GAME.trash.splice(index, 1); save();
+  SFX.coin(0);
+  renderRecycle(mode);
+}
+function recycleAll(mode) {
+  if (!GAME.trash.length) { toast("No trash to recycle."); return; }
+  const val = recycleTotal(mode);
+  if (mode === "dust") GAME.stardust += val; else GAME.gold += val;
+  GAME.trash = []; save();
+  SFX.charm();
+  toast(mode === "dust" ? `♻️ +${val} Stardust!` : `♻️ +${val} gold!`);
+  renderRecycle(mode);
 }
 
 /* ======================================================================= */
@@ -1106,26 +1166,30 @@ function renderResult(res) {
   // PERFECT = a spotless 100% win with NO allergy reaction. An allergic win is
   // only "almost perfect", so it does not earn the confetti celebration.
   const isPerfect = win && res.weighted === 100 && zone !== "yellow" && zone !== "red";
-  const emoji = !win ? "🙂" : isPerfect ? "🥳" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (res.tip > 0 ? "🤩" : "😊");
-  const title = win ? (isPerfect ? "Perfect!" : res.type.title) : "So Close!";
+  const trashN = (res.trash || []).length;
+  const emoji = !win ? "😤" : isPerfect ? "🥳" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (res.tip > 0 ? "🤩" : "😊");
+  const title = win ? (isPerfect ? "Perfect!" : res.type.title) : "Wish Failed!";
   const blurb = !win
-    ? c.name + " couldn't get the full wish, but liked the effort and left you a few coins."
+    ? c.name + " storms off in a huff — and hurls their trash at you! Catch it: junk recycles into coins or Stardust."
     : isPerfect ? c.name + " got a flawless potion — 100% perfect! ✨"
     : zone === "red" ? "The wish worked… but " + c.name + " reacted to the " + res.allergy.type + " magic! Half pay."
     : zone === "yellow" ? c.name + " got their wish, but a little " + res.allergy.type + " magic left them itchy."
     : res.qualityTip > 0 ? c.name + " loves it — that potion was practically perfect!" : res.quickTip > 0 ? c.name + " is thrilled with the speedy service!" : c.name + " is happy with their wish!";
+  const earnedRow = win
+    ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}`
+    : `<div class="stat-line"><span>Earned</span><span class="muted">no coins</span></div>
+       <div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${trashN}</b> piece${trashN === 1 ? "" : "s"}</span></div>`;
   html("result", `
     ${hud("Result")}
     <div class="grow center" style="gap:14px">
       <div class="ph big">${emoji}</div>
       <div class="result-title ${win ? "win" : "lose"} ${isPerfect ? "perfect" : ""}">${title}</div>
-      ${win ? rewardBubblesMarkup(res) : ""}
+      ${win ? rewardBubblesMarkup(res) : (trashN ? trashInfoMarkup(res) : "")}
       <div class="card" style="width:100%;max-width:320px">
         <div class="stat-line"><span>Your Match</span><span><b>${res.weighted}%</b></span></div>
         <div class="stat-line"><span>Needed</span><span>${res.required}%</span></div>
         ${allergyLine}
-        <div class="stat-line"><span>${win ? "Earned" : "Coins for trying"}</span><span class="gold">🪙 ${res.gold}</span></div>
-        ${quickLine}${qualLine}
+        ${earnedRow}
       </div>
       <p class="muted" style="max-width:300px">${blurb}</p>
       ${roundRecap()}
@@ -1135,7 +1199,52 @@ function renderResult(res) {
   on("#next-btn", "click", startRound);
   show("result");
   if (win) wireRewardBubbles(res);
+  else if (trashN) wireTrashBubbles(res);
   if (isPerfect) setTimeout(celebratePerfect, 260);
+}
+// --- Loss: disgruntled customer throws trash. It floats around the result
+// screen like the reward coins; pop each piece to collect it into your bin
+// (capped at TRASH_BIN_MAX). Recycle it later for coins or Stardust. ---------
+function trashInfoMarkup(res) {
+  const n = (res.trash || []).length;
+  return `<div class="reward-bubbles" id="trash-info">
+    <div class="rb-total">🗑️ Caught <span><b id="trash-count">0</b>/${n}</span></div>
+    <div class="rb-hint muted" id="trash-hint">Catch the junk they threw — recycle it for coins later! 🍌</div>
+  </div>`;
+}
+function wireTrashBubbles(res) {
+  const sc = screen("result"); if (!sc) return;
+  const items = (res.trash || []).slice(); if (!items.length) return;
+  const countEl = document.querySelector("#screen-result #trash-count");
+  const hintEl = document.querySelector("#screen-result #trash-hint");
+  const layer = document.createElement("div"); layer.className = "rb-float-layer";
+  sc.appendChild(layer);
+  const cap = BALANCE.TRASH_BIN_MAX;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  let caught = 0, anyOverflow = false;
+  items.forEach(id => {
+    const t = D.TRASH_BY_ID[id]; if (!t) return;
+    const wrap = document.createElement("div"); wrap.className = "rbub-wrap";
+    wrap.style.left = rnd(8, 78) + "%"; wrap.style.top = rnd(14, 72) + "%";
+    for (let k = 1; k <= 3; k++) { wrap.style.setProperty("--dx" + k, rnd(-46, 46).toFixed(0) + "px"); wrap.style.setProperty("--dy" + k, rnd(-46, 46).toFixed(0) + "px"); }
+    wrap.style.animationDuration = rnd(5, 9).toFixed(2) + "s";
+    wrap.style.animationDelay = "-" + rnd(0, 5).toFixed(2) + "s";
+    const btn = document.createElement("button"); btn.className = "rbub tbub"; btn.setAttribute("aria-label", t.name);
+    btn.innerHTML = trashArt(id, "tbub-face");
+    wrap.appendChild(btn); layer.appendChild(wrap);
+    btn.addEventListener("click", () => {
+      if (btn.classList.contains("popped")) return; btn.classList.add("popped");
+      SFX.unlock(); SFX.pop(1);
+      const r = btn.getBoundingClientRect();
+      resultBurst(r.left + r.width / 2, r.top + r.height / 2, "coin");
+      let stored = false;
+      if (GAME.trash.length < cap) { GAME.trash.push(id); save(); stored = true; } else anyOverflow = true;
+      if (stored) caught++;
+      if (countEl) { countEl.textContent = caught; countEl.classList.remove("bumped"); void countEl.offsetWidth; countEl.classList.add("bumped"); }
+      if (anyOverflow && hintEl) hintEl.textContent = "🗑️ Bin full — recycle some to make room!";
+      const w = btn.parentElement; setTimeout(() => { if (w) w.remove(); }, 240);
+    });
+  });
 }
 // --- Result-screen reward bubbles: a BIG bubble holding the base gold, plus one
 // LITTLE bubble per tip coin. They FLOAT freely all over the result screen
@@ -1312,7 +1421,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu };
 }
 window.addEventListener("load", () => { applyCustomBackground(); renderStart(); });
 
