@@ -145,6 +145,7 @@ function claimDaily() {
 /* CUSTOMER                                                                */
 /* ======================================================================= */
 function startRound() {
+  SFX.unlock();
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
   renderCustomer();
 }
@@ -198,6 +199,7 @@ function renderScoop() {
   `);
   function siftOne() {
     if (idx >= scoops) return;
+    SFX.unlock(); SFX.sift(0.28, 0.6);
     const found = split[idx]; revealed += found; idx++;
     const g = $("#glitter"); if (g) { g.textContent = "🫧"; g.style.transition = "opacity .3s"; g.style.opacity = "0"; }
     const face = $("#scoop-face"); if (face) face.textContent = "🫧";
@@ -225,58 +227,134 @@ function renderScoop() {
 /* POP — each bubble reveals a haul item into your hand                    */
 /* ======================================================================= */
 const CHARM = id => D.SPECIAL_CHARMS[id];
+// visual flavor per reward kind: bubble tint + burst particle colors + rarity
+const POP_FLAVOR = {
+  ingredient: { tint: "rgba(150,200,255,", parts: ["#8fd3ff", "#bfe3ff", "#ffffff"], rare: 0 },
+  treat:      { tint: "rgba(150,235,170,", parts: ["#7ee08a", "#b6f5c4", "#ffffff"], rare: 0 },
+  gold:       { tint: "rgba(255,210,110,", parts: ["#ffd76a", "#ffb43c", "#fff3c0"], rare: 1 },
+  charm:      { tint: "rgba(220,150,255,", parts: ["#e6a3ff", "#a97bff", "#ffd76a", "#7ee08a"], rare: 2 },
+};
+let popCombo = 0, lastPopAt = 0, cascadeOn = false;
+
 function renderPop() {
-  ROUND.popIndex = 0;
+  ROUND.popIndex = 0; popCombo = 0; lastPopAt = 0; cascadeOn = false;
+  const bubbles = ROUND.haul.map((_, i) =>
+    `<button class="pbubble" data-i="${i}" style="--d:${(i % 7) * 0.28}s;--x:${((i * 53) % 60) - 30}px"><span class="sheen"></span>🫧</button>`
+  ).join("");
   html("pop", `
     ${hud("Pop Phase")}
-    <div class="hud" style="background:none;padding:2px 4px">
-      <div class="bubble-queue" id="queue"></div>
-      <span class="muted" id="left-count"></span>
-    </div>
-    <div class="grow center" style="gap:14px">
-      <div class="big-bubble" id="big-bubble">🫧</div>
-      <div class="muted" id="pop-hint">Tap the bubble to pop it — everything inside goes in your bag!</div>
-      <div id="reward-flash" style="font-size:20px;font-weight:800;min-height:26px"></div>
-      <div id="hand-line" class="muted" style="font-size:13px"></div>
-    </div>
+    <button class="mute-btn" id="mute-btn" title="Sound on/off">${SFX.isMuted() ? "🔇" : "🔊"}</button>
+    <div class="pop-sub muted" id="pop-hint">Tap each bubble to pop it — everything inside goes in your bag!</div>
+    <div class="bubble-field" id="bubble-field">${bubbles}</div>
+    <div id="hand-line" class="muted" style="font-size:13px;text-align:center;min-height:20px"></div>
     <div class="row">
-      <button class="btn secondary" id="pop-all">Pop All</button>
+      <button class="btn secondary" id="pop-all">Pop them all ✨</button>
       <button class="btn" id="pop-continue" disabled>Continue</button>
     </div>
+    <div class="burst-layer" id="burst-layer"></div>
     ${familiarToken("pop")}
   `);
   refreshPop();
-  on("#big-bubble", "click", () => popOne());
-  on("#pop-all", "click", () => { while (ROUND.popIndex < ROUND.haul.length) popOne(true); refreshPop(); });
+  document.querySelectorAll("#bubble-field .pbubble").forEach(el =>
+    el.addEventListener("click", () => popAt(+el.dataset.i, el)));
+  on("#pop-all", "click", popCascade);
   on("#pop-continue", "click", renderMix);
+  on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
   wireFamiliar("pop");
   show("pop");
 }
-function popOne(silent) {
-  if (ROUND.popIndex >= ROUND.haul.length) return;
-  const item = ROUND.haul[ROUND.popIndex++];
-  let msg = "";
-  if (item.kind === "ingredient") { ROUND.inventory.push({ id: item.id, potent: false }); const ing = D.INGREDIENT_BY_ID[item.id]; msg = `${ing.emoji} ${ing.name}`; }
-  else if (item.kind === "charm") { ROUND.charms.push(item.id); const ch = CHARM(item.id); msg = `${ch.emoji} ${ch.name} charm!`; }
-  else if (item.kind === "gold") { GAME.gold += item.amt; save(); msg = `🪙 +${item.amt} gold`; }
-  else if (item.kind === "treat") { GAME.treats += 1; save(); msg = `🐸 +1 treat`; }
-  if (!silent) flashReward(msg);
-  refreshPop();
+
+function itemInfo(item) {
+  if (item.kind === "ingredient") { const ing = D.INGREDIENT_BY_ID[item.id]; return { emoji: ing.emoji, label: ing.name, kind: "ingredient" }; }
+  if (item.kind === "charm") { const ch = CHARM(item.id); return { emoji: ch.emoji, label: ch.name + " charm!", kind: "charm" }; }
+  if (item.kind === "gold") return { emoji: "🪙", label: "+" + item.amt + " gold", kind: "gold" };
+  return { emoji: "🐸", label: "+1 treat", kind: "treat" };
 }
-let flashT = null;
-function flashReward(msg) { const el = $("#reward-flash"); if (!el) return; el.textContent = msg; el.style.opacity = "1"; clearTimeout(flashT); flashT = setTimeout(() => { if (el) { el.style.transition = "opacity .4s"; el.style.opacity = "0"; } }, 850); }
+
+function popAt(i, el, fromCascade) {
+  if (!el || el.classList.contains("popped")) return;
+  SFX.unlock();
+  const item = ROUND.haul[i];
+  if (item.kind === "ingredient") ROUND.inventory.push({ id: item.id, potent: false });
+  else if (item.kind === "charm") ROUND.charms.push(item.id);
+  else if (item.kind === "gold") { GAME.gold += item.amt; save(); }
+  else if (item.kind === "treat") { GAME.treats += 1; save(); }
+  ROUND.popIndex++;
+
+  const info = itemInfo(item), flavor = POP_FLAVOR[info.kind];
+  // combo builds if you keep popping quickly
+  const now = Date.now();
+  popCombo = (now - lastPopAt < 700) ? popCombo + 1 : 0; lastPopAt = now;
+  SFX.pop(popCombo); SFX.reveal(info.kind, popCombo);
+  if (navigator.vibrate) navigator.vibrate(flavor.rare ? [10, 20, 12] : 12);
+
+  const r = el.getBoundingClientRect();
+  burstAt(r.left + r.width / 2, r.top + r.height / 2, flavor);
+  floatReward(r.left + r.width / 2, r.top + r.height / 2, info, flavor.rare);
+  if (flavor.rare >= 2) flashScreen();
+
+  el.classList.add("popped");
+  if (!fromCascade) refreshPop();
+}
+
+function popCascade() {
+  if (cascadeOn) return; cascadeOn = true;
+  SFX.unlock();
+  const pa = $("#pop-all"); if (pa) pa.disabled = true;
+  const remaining = [...document.querySelectorAll("#bubble-field .pbubble")].filter(el => !el.classList.contains("popped"));
+  let k = 0;
+  const step = () => {
+    if (k >= remaining.length) { cascadeOn = false; refreshPop(); return; }
+    const el = remaining[k++];
+    popAt(+el.dataset.i, el, true);
+    refreshPop();
+    setTimeout(step, 135); // rhythmic cascade, not an instant skip
+  };
+  step();
+}
+
+// --- juice: particle burst, floating reward label, screen flash ---------
+function burstAt(x, y, flavor) {
+  const layer = $("#burst-layer"); if (!layer) return;
+  const n = 8 + flavor.rare * 5;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement("i"); p.className = "particle";
+    const ang = (Math.PI * 2 * i) / n + (i % 2) * 0.4, dist = 34 + (i % 4) * 16 + flavor.rare * 14;
+    p.style.left = x + "px"; p.style.top = y + "px";
+    p.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+    p.style.setProperty("--dy", (Math.sin(ang) * dist - 10) + "px");
+    p.style.background = flavor.parts[i % flavor.parts.length];
+    p.style.width = p.style.height = (5 + (i % 3) * 3) + "px";
+    layer.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
+}
+function floatReward(x, y, info, rare) {
+  const layer = $("#burst-layer"); if (!layer) return;
+  const el = document.createElement("div");
+  el.className = "reward-pop" + (rare ? " rare" : "");
+  el.innerHTML = `<span class="e">${info.emoji}</span> ${info.label}`;
+  el.style.left = x + "px"; el.style.top = y + "px";
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+let flashEl = null;
+function flashScreen() {
+  const sc = screen("pop"); if (!sc) return;
+  if (!flashEl) { flashEl = document.createElement("div"); flashEl.className = "screen-flash"; }
+  sc.appendChild(flashEl); flashEl.classList.remove("go"); void flashEl.offsetWidth; flashEl.classList.add("go");
+}
+
 function refreshPop() {
   const total = ROUND.haul.length, left = total - ROUND.popIndex;
-  let q = ""; for (let i = 0; i < total; i++) q += `<span class="b ${i < ROUND.popIndex ? "popped" : ""}"></span>`;
-  const el = $("#queue"); if (el) el.innerHTML = q;
-  const lc = $("#left-count"); if (lc) lc.textContent = left + " left";
   syncHud("pop");
-  const hl = $("#hand-line"); if (hl) hl.innerHTML = `🎒 ${ROUND.inventory.length} ingredient${ROUND.inventory.length === 1 ? "" : "s"}` + (ROUND.charms.length ? ` · ${ROUND.charms.map(c => CHARM(c).emoji).join(" ")}` : "");
-  const bb = $("#big-bubble"), hint = $("#pop-hint");
-  if (left > 0) { if (bb) { bb.textContent = "🫧"; bb.style.opacity = "1"; } if (hint) hint.textContent = "Tap the bubble to pop it — everything inside goes in your bag!"; }
-  else { if (bb) { bb.textContent = "✓"; bb.style.opacity = ".35"; } if (hint) hint.textContent = "All popped! Off to the cauldron."; }
+  const hl = $("#hand-line");
+  if (hl) hl.innerHTML = left > 0
+    ? `🎒 ${ROUND.inventory.length} ingredient${ROUND.inventory.length === 1 ? "" : "s"}` + (ROUND.charms.length ? ` · ${ROUND.charms.map(c => CHARM(c).emoji).join(" ")}` : "") + ` &nbsp;·&nbsp; <b>${left}</b> bubble${left === 1 ? "" : "s"} left`
+    : `All popped! 🎒 ${ROUND.inventory.length} ingredient${ROUND.inventory.length === 1 ? "" : "s"}` + (ROUND.charms.length ? ` · ${ROUND.charms.map(c => CHARM(c).emoji).join(" ")}` : "");
+  const hint = $("#pop-hint"); if (hint && left <= 0) hint.textContent = "Nice — off to the cauldron!";
   const cont = $("#pop-continue"); if (cont) cont.disabled = left > 0;
-  const pa = $("#pop-all"); if (pa) pa.disabled = left <= 0;
+  const pa = $("#pop-all"); if (pa) pa.disabled = left <= 0 || cascadeOn;
 }
 
 /* ======================================================================= */

@@ -63,6 +63,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   **shrink as you add**, so a tidy few‑ingredient mix beats dumping everything. Only
   the main need is shown; the other two are **mystery bars you discover** as your
   ingredients move them. This is the real puzzle the game was missing.
+- 🔊 **Pop phase goes ASMR (new direction).** The heart of the game is the scoop
+  and the pop — so popping is now a cluster of squishy, floating bubbles you burst
+  one by one, each with a real **pop sound**, a spray of particles, the reward
+  drifting up, a little **phone buzz**, and a rising “bubble‑wrap” pitch as you pop
+  faster. Rare finds get a bigger celebration. Even **“Pop them all”** is a
+  satisfying cascade now, not an instant skip. All sound is generated in the browser
+  (no downloads), with a 🔊 mute toggle. Scooping and a deeper collection are next.
 - ⚖️ **The green matters now.** Falling *just short* of a green zone used to still
   score high — so three near‑misses could sneak a win. Now missing the green drops
   that bar's score fast, and **every need counts equally** (no more coasting on the
