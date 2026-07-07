@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎨 **Bring your own art!** There's now an **`art` folder** where you can drop in
+  your own pictures to replace any emoji — ingredients, charms, customers, the
+  Toad buddy skins, the cauldron pots — plus a **full-screen background**. Name each
+  file exactly as listed in **`docs/art/README.md`** (e.g. `ing_honey.png`,
+  `customer_wolf.png`, `background.png`) and it appears automatically. Anything you
+  haven't replaced simply keeps its emoji, so you can add art a few at a time.
 - 🌟 **The Wishing Well — spend your gold on prizes!** A new spot in Shop &
   Upgrades where you **toss gold in and pop a bubble** to see what floats up. You
   **always get something** — usually a little gold or treats back, sometimes

@@ -508,3 +508,24 @@ html, body {
 .skin-tag { font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 10px; }
 .skin-tag.equipped { color: var(--good); }
 .skin-tile .btn.small { padding: 5px 10px; font-size: 12px; }
+
+/* ==========================================================================
+ * CUSTOM ART OVERRIDES (images dropped into /docs/art/ replace the emoji)
+ * Images scale to wherever the emoji was, matching the surrounding font-size.
+ * ======================================================================== */
+img.art { height: 1em; width: auto; max-width: 1.3em; object-fit: contain;
+  vertical-align: -0.16em; -webkit-user-drag: none; user-select: none; }
+img.art.cust-big { max-width: none; width: auto; }               /* big character portrait */
+.inv-tile .emoji img.art, .slot img.art { max-width: 1.15em; }
+.skin-chip img.art.skin-art { height: 34px; width: 34px; max-width: 34px; }
+.well-emoji img.art { height: 1em; width: auto; max-width: none; filter: drop-shadow(0 0 14px rgba(255,216,107,.6)); }
+
+/* custom cauldron-pot image (optional) — replaces the color skin frame */
+.cauldron.has-art { border: none !important; background-color: transparent !important;
+  background-repeat: no-repeat; background-position: center; background-size: contain; box-shadow: none !important; }
+
+/* custom full-screen background image (optional) */
+#app.has-bg { background-size: cover; background-position: center; background-repeat: no-repeat; }
+#app.has-bg::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(20,10,40,.35), rgba(20,10,40,.55)); }
+#app.has-bg > .screen { position: relative; z-index: 1; }

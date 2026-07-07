@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v26"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v27"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -33,7 +33,23 @@ function normalizeGame(g) {
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(GAME)); } catch (e) {} }
 // currently-equipped cosmetics
 function equippedCauldronClass() { return "skin-" + (GAME.equipped.cauldron || "cauldron_classic"); }
-function equippedFamiliarChip() { const c = D.COSMETIC_BY_ID[GAME.equipped.familiar]; return c ? c.chip : D.FAMILIAR.emoji; }
+function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar); }
+
+/* --- custom art helpers: use an uploaded image if present, else the emoji ---
+ * (see art.js + /docs/art/README.md). Each returns an inline HTML string. */
+function ingArt(id, cls)  { const ing = D.INGREDIENT_BY_ID[id]; return ART.tag("ing_" + id, ing ? ing.emoji : "❔", cls || "ing-art"); }
+function charmArt(id, cls) { const ch = D.SPECIAL_CHARMS[id]; return ART.tag("charm_" + id, ch ? ch.emoji : "❔", cls || "charm-art"); }
+function custArt(c, cls)  { return ART.tag("customer_" + c.id, c.emoji, cls || "cust-art"); }
+function buddyArt(id, cls) { const c = D.COSMETIC_BY_ID[id]; return ART.tag("buddy_" + id, c ? c.chip : D.FAMILIAR.emoji, cls || ""); }
+// apply an optional custom background image to the whole app (once, at boot)
+function applyCustomBackground() {
+  ART.ensure("background", u => { const app = document.getElementById("app"); if (app) { app.style.backgroundImage = "url(" + u + ")"; app.classList.add("has-bg"); } });
+}
+// apply an optional custom cauldron-pot image over the color skin
+function applyCauldronArt() {
+  const key = "cauldron_" + (GAME.equipped.cauldron || "cauldron_classic");
+  ART.ensure(key, u => { const el = document.getElementById("cauldron"); if (el) { el.style.backgroundImage = "url(" + u + ")"; el.classList.add("has-art"); } });
+}
 
 let ROUND = null;
 let servedTotal = +(localStorage.getItem("wishpop_served") || 0);
@@ -210,7 +226,7 @@ function renderWell() {
   html("well", `
     ${hud("Wishing Well")}
     <div class="grow center" style="gap:14px;overflow-y:auto">
-      <div class="well-visual" id="well-visual"><div class="well-emoji">🌟</div><div class="well-ripple"></div></div>
+      <div class="well-visual" id="well-visual"><div class="well-emoji">${ART.tag("well_star", "🌟")}</div><div class="well-ripple"></div></div>
       <div class="rb-total">✨ <b id="well-dust">${GAME.stardust}</b> Stardust · 🎁 <b>${ownedSkins}/${totalSkins}</b> skins</div>
       <div id="well-stage" class="well-stage muted">Toss a coin in and pop a bubble to see what floats up!</div>
       <div class="card" style="width:100%;max-width:320px">
@@ -304,8 +320,11 @@ function renderWardrobe() {
         : owned
           ? `<button class="btn small good skin-equip" data-kind="${kind}" data-id="${c.id}">Wear</button>`
           : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
+      const chip = !owned ? "❔"
+        : kind === "familiar" ? buddyArt(c.id, "skin-art")
+        : ART.tag("cauldron_" + c.id, c.chip, "skin-art");
       return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"}">
-        <div class="skin-chip">${owned ? c.chip : "❔"}</div>
+        <div class="skin-chip">${chip}</div>
         <div class="skin-name">${owned ? c.name : "???"}</div>
         ${btn}</div>`;
     }).join("");
@@ -364,7 +383,7 @@ function renderCustomer() {
     ${hud(c.location)}
     ${bossBanner}
     <div class="grow center" style="gap:16px">
-      <div class="ph big ${w.boss ? "boss-emoji" : ""}">${c.emoji}</div>
+      <div class="ph big ${w.boss ? "boss-emoji" : ""}">${custArt(c, "cust-big")}</div>
       <div style="font-weight:800;font-size:20px">${w.boss ? "👑 " : ""}${c.name}</div>
       <div class="speech">“${c.line}”</div>
       <div class="needs-row">${needChips}</div>
@@ -622,11 +641,11 @@ function renderPop() {
 }
 
 function itemInfo(item) {
-  if (item.kind === "ingredient") { const ing = D.INGREDIENT_BY_ID[item.id]; return { emoji: ing.emoji, label: ing.name, kind: "ingredient" }; }
-  if (item.kind === "charm") { const ch = CHARM(item.id); return { emoji: ch.emoji, label: ch.name + " charm!", kind: "charm" }; }
-  if (item.kind === "gold") return { emoji: "🪙", label: "+" + item.amt + " gold", kind: "gold" };
+  if (item.kind === "ingredient") { const ing = D.INGREDIENT_BY_ID[item.id]; return { emoji: ingArt(item.id), label: ing.name, kind: "ingredient" }; }
+  if (item.kind === "charm") { const ch = CHARM(item.id); return { emoji: charmArt(item.id), label: ch.name + " charm!", kind: "charm" }; }
+  if (item.kind === "gold") return { emoji: ART.tag("icon_gold", "🪙"), label: "+" + item.amt + " gold", kind: "gold" };
   if (item.kind === "bubble") return { emoji: "🫧", label: "Bonus bubbles!", kind: "bubble" };
-  return { emoji: "🐸", label: "+1 treat", kind: "treat" };
+  return { emoji: ART.tag("icon_treat", "🐸"), label: "+1 treat", kind: "treat" };
 }
 
 function popAt(i, el, fromCascade, power) {
@@ -711,7 +730,7 @@ function spawnFloatingCharm(id, x, y) {
   tok.style.setProperty("--tdur", (2.4 + Math.random()) .toFixed(1) + "s");
   tok.style.setProperty("--tx1", rnd(14, 34) + "px"); tok.style.setProperty("--ty1", rnd(-40, -20) + "px");
   tok.style.setProperty("--tx2", rnd(-34, -14) + "px"); tok.style.setProperty("--ty2", rnd(16, 34) + "px");
-  tok.innerHTML = `${CHARM(id).emoji}<span class="lbl">tap to catch!</span>`;
+  tok.innerHTML = `${charmArt(id)}<span class="lbl">tap to catch!</span>`;
   tok.addEventListener("click", () => collectCharm(id, tok));
   layer.appendChild(tok);
 }
@@ -720,9 +739,9 @@ function collectCharm(id, tok) {
   SFX.unlock(); SFX.charm();
   ROUND.charms.push(id);
   const r = tok.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-  charmCelebrate(CHARM(id).emoji); flashScreen();
+  charmCelebrate(charmArt(id, "ch-art")); flashScreen();
   burstAt(cx, cy, POP_FLAVOR.charm);
-  floatReward(cx, cy, { emoji: CHARM(id).emoji, label: CHARM(id).name + " charm!" }, true);
+  floatReward(cx, cy, { emoji: charmArt(id), label: CHARM(id).name + " charm!" }, true);
   if (navigator.vibrate) navigator.vibrate([10, 22, 14]);
   tok.classList.add("caught"); setTimeout(() => tok.remove(), 320);
   refreshPop();
@@ -742,7 +761,7 @@ function spawnFloatingIngredient(id, x, y, autoMs) {
   tok.style.setProperty("--tdur", (2.6 + Math.random() * 1.6).toFixed(2) + "s");
   tok.style.setProperty("--bx1", rnd(-28, 28) + "px"); tok.style.setProperty("--by1", rnd(-24, -6) + "px");
   tok.style.setProperty("--bx2", rnd(-28, 28) + "px"); tok.style.setProperty("--by2", rnd(6, 24) + "px");
-  tok.innerHTML = ing.emoji;
+  tok.innerHTML = ingArt(id);
   tok.addEventListener("pointerdown", e => { e.stopPropagation(); collectIngredient(id, tok, false); });
   layer.appendChild(tok); // bobs until caught, swept on Continue, or auto-collected (Pop-them-all)
   if (autoMs) tok._timer = setTimeout(() => collectIngredient(id, tok, true), autoMs);
@@ -914,7 +933,7 @@ function paintMixTop() {
     ? `<div class="mix-hint" style="color:var(--gold)">⚡ Serve with <b>≤${effLimit} ingredient${effLimit > 1 ? "s" : ""}</b> → <b>+${tipAmt} speed tip!</b></div>`
     : `<div class="mix-hint muted">Land each bar in its <b style="color:var(--good)">green zone</b> — don't overfill! The zones shrink as you add.</div>`;
   el.innerHTML = `
-    <div class="stat-line" style="padding:0 0 4px"><span>${ROUND.customer.emoji} ${ROUND.customer.name}</span>
+    <div class="stat-line" style="padding:0 0 4px"><span>${custArt(ROUND.customer)} ${ROUND.customer.name}</span>
       <span>Match <b style="color:${meets ? "var(--good)" : "var(--ink)"}">${score.weighted}%</b> / need ${req}%</span></div>
     ${meters}
     ${(score.allergies || []).map(allergyMeter).join("")}
@@ -931,11 +950,11 @@ function paintMix() {
     const inst = ROUND.slots[i];
     const face = !inst ? "" : inst.wild ? "🌈"
       : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>`
-      : D.INGREDIENT_BY_ID[inst.id].emoji;
+      : ingArt(inst.id);
     slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""}">${face}</div>`);
   }
   const tray = ROUND.charms.length
-    ? `<div class="charm-tray">${ROUND.charms.map((c, i) => `<button class="charm-chip" data-charm="${i}" title="${CHARM(c).desc}">${CHARM(c).emoji} <span>${CHARM(c).name}</span></button>`).join("")}</div>`
+    ? `<div class="charm-tray">${ROUND.charms.map((c, i) => `<button class="charm-chip" data-charm="${i}" title="${CHARM(c).desc}">${charmArt(c)} <span>${CHARM(c).name}</span></button>`).join("")}</div>`
     : "";
   html("mix", `
     ${hud("Cauldron")}
@@ -956,6 +975,7 @@ function paintMix() {
     ${familiarToken("mix")}
   `);
   paintMixTop();
+  applyCauldronArt();
   ROUND.inventory.forEach((inst, idx) => { const t = document.getElementById("invt-" + idx); if (t) t.addEventListener("click", () => addToSlot(idx, t)); });
   ROUND.charms.forEach((c, i) => { const b = document.querySelector(`[data-charm="${i}"]`); if (b) b.addEventListener("click", () => playCharm(i)); });
   on("#serve-btn", "click", serve);
@@ -971,7 +991,7 @@ function invTile(inst, idx) {
   const cuttable = ROUND.toolMode ? " cuttable" : "";
   const quals = ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0];
   return `<div class="inv-tile ${inst.potent ? "potent" : ""}${cuttable}" id="invt-${idx}">
-    <div class="emoji">${ing.emoji}</div><div class="nm">${inst.potent ? "✨" : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
+    <div class="emoji">${ingArt(inst.id)}</div><div class="nm">${inst.potent ? "✨" : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
 }
 function allergyMeter(a) {
   const pct = Math.min(100, Math.round(a.points / BALANCE.ALLERGY_RED_AT * 100));
@@ -1273,6 +1293,6 @@ function familiarUndo() {
 if (localStorage.getItem("wishpop_test") === "1") {
   window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize };
 }
-window.addEventListener("load", renderStart);
+window.addEventListener("load", () => { applyCustomBackground(); renderStart(); });
 
 })();
