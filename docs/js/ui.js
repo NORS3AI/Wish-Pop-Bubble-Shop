@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v27"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v28"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -49,6 +49,17 @@ function applyCustomBackground() {
 function applyCauldronArt() {
   const key = "cauldron_" + (GAME.equipped.cauldron || "cauldron_classic");
   ART.ensure(key, u => { const el = document.getElementById("cauldron"); if (el) { el.style.backgroundImage = "url(" + u + ")"; el.classList.add("has-art"); } });
+}
+// apply optional custom bubble images to a bubble container (pop field or scoop).
+// Setting the class on the CONTAINER covers current AND future bubbles (bonus
+// spawns, refills) with no rewiring. bubble.png = normal, bubble_bonus.png = golden.
+function applyBubbleArt(container) {
+  if (!container) return;
+  // NOTE: url() inside a CSS custom property resolves relative to the STYLESHEET,
+  // not the page — so make it absolute or it becomes css/art/... (404).
+  const abs = u => "url('" + new URL(u, document.baseURI).href + "')";
+  ART.ensure("bubble", u => { container.style.setProperty("--bubble-img", abs(u)); container.classList.add("has-bubble-art"); });
+  ART.ensure("bubble_bonus", u => { container.style.setProperty("--bubble-bonus-img", abs(u)); container.classList.add("has-bonus-art"); });
 }
 
 let ROUND = null;
@@ -420,11 +431,12 @@ function renderScoop() {
     <div class="scoop-stage" id="scoop-stage">
       <div class="scoop-craft" id="scoop-craft">
         <div class="scoop-bubbles" id="scoop-bubbles"></div>
-        <div class="scoop-bowl">🥄</div>
+        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(120 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}</div>
         <div class="glitter-cover" id="glitter-cover"></div>
       </div>
       <div class="glitter-pile"></div>
     </div>
+    <div class="spoon-size" id="spoon-size"><button class="sz-btn" id="spoon-smaller">−</button><span class="muted">spoon size</span><button class="sz-btn" id="spoon-bigger">+</button></div>
     <div class="scoop-result muted" id="scoop-result"></div>
     <div class="row">
       <button class="btn secondary" id="auto-sift">✨ Shake for me</button>
@@ -437,7 +449,8 @@ function renderScoop() {
   function loadScoop() {
     const found = split[idx], jackpot = isJackpot(idx);
     const bubs = $("#scoop-bubbles"); if (bubs) { bubs.innerHTML = "";
-      for (let i = 0; i < found; i++) { const s = document.createElement("span"); s.className = "sbub"; s.textContent = "🫧"; bubs.appendChild(s); } }
+      for (let i = 0; i < found; i++) { const s = document.createElement("span"); s.className = "sbub"; s.innerHTML = `<span class="bglyph">🫧</span>`; bubs.appendChild(s); }
+      applyBubbleArt(bubs); }
     const cover = $("#glitter-cover"); if (cover) {
       cover.className = "glitter-cover" + (jackpot ? " rainbow" : "");
       cover.innerHTML = '<div class="glitter-film" id="glitter-film"></div>'; // opaque cover that hides the bubbles
@@ -561,6 +574,13 @@ function renderScoop() {
   });
   on("#scoop-continue", "click", () => { if (autoIv) clearInterval(autoIv); renderPop(); });
   on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
+  const resizeSpoon = delta => {
+    const s = Math.max(0.4, Math.min(2.2, +(ART.getScale("scoop_spoon") + delta).toFixed(2)));
+    ART.setScale("scoop_spoon", s);
+    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.fontSize = Math.round(120 * s) + "px";
+  };
+  on("#spoon-smaller", "click", () => resizeSpoon(-0.1));
+  on("#spoon-bigger", "click", () => resizeSpoon(0.1));
 
   loadScoop();
   wireFamiliar("scoop");
@@ -611,7 +631,7 @@ function bubbleHTML(i, golden) {
   const cls = golden ? "pbubble bonus" : "pbubble";
   return `<button class="${cls}" data-i="${i}" style="--dur:${dur}s;--del:-${del}s;` +
     `--ax:${rnd(-46, 46)}px;--ay:${rnd(-34, 34)}px;--bx:${rnd(-46, 46)}px;--by:${rnd(-30, 34)}px;` +
-    `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span>🫧</button>`;
+    `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span><span class="bglyph">🫧</span></button>`;
 }
 
 function renderPop() {
@@ -632,6 +652,7 @@ function renderPop() {
     ${familiarToken("pop")}
   `);
   refreshPop();
+  applyBubbleArt($("#bubble-field"));
   document.querySelectorAll("#bubble-field .pbubble").forEach(wireBubble);
   on("#pop-all", "click", popCascade);
   on("#pop-continue", "click", collectAndContinue);

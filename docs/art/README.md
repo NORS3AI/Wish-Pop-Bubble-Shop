@@ -109,6 +109,18 @@ pots stay as they are.
 | `cauldron_gold.png` | Golden |
 | `cauldron_rainbow.png` | Rainbow |
 
+### Scoop & bubbles
+| File name | Replaces |
+|---|---|
+| `scoop_spoon.png` | 🥄 The scoop/spoon in the Scoop phase |
+| `bubble.png` | 🫧 The floating bubbles you pop (and the scoop bubbles) |
+| `bubble_bonus.png` | The golden **bonus** bubble (optional — leave it out to keep the glowing gold look) |
+
+**Resizing the scoop spoon:** in the Scoop phase there are small **−  spoon size  +**
+buttons under the spoon. Tap them to make your spoon image bigger or smaller until
+it looks right; the game remembers your choice. (I can also set an exact size for
+you once you've uploaded it — just ask.)
+
 ### Little icons (optional)
 | File name | Replaces |
 |---|---|

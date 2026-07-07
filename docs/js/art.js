@@ -52,5 +52,14 @@ const ART = (() => {
     probe(key);
   }
   function isReady(key) { return state[key] === "ok"; }
-  return { tag, ensure, isReady, url, DIR, EXT };
+
+  // --- per-image size preferences (so an uploaded spoon/etc. can be resized in
+  // the game without editing code). Saved separately from the game save. -----
+  const SCALE_KEY = "wishpop_artscale";
+  let scales = {};
+  try { scales = JSON.parse(localStorage.getItem(SCALE_KEY)) || {}; } catch (e) { scales = {}; }
+  function getScale(key) { return scales[key] || 1; }
+  function setScale(key, v) { scales[key] = v; try { localStorage.setItem(SCALE_KEY, JSON.stringify(scales)); } catch (e) {} }
+
+  return { tag, ensure, isReady, url, DIR, EXT, getScale, setScale };
 })();
