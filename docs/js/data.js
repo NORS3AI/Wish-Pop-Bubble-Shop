@@ -63,6 +63,7 @@ const SPECIAL_CHARMS = {
   wild:    { id: "wild",    name: "Wild",    emoji: "🌈", desc: "Add a burst of random magic." },
   knife:   { id: "knife",   name: "Knife",   emoji: "🔪", desc: "Cut an ingredient into its separate magics." },
   transmute:{ id: "transmute", name: "Transmute", emoji: "🔀", desc: "Change an ingredient into a random needed one." },
+  pinch:   { id: "pinch",   name: "Pinch",   emoji: "🤏", desc: "Use just a pinch — halve an ingredient's magic." },
 };
 const SPECIAL_CHARM_IDS = Object.keys(SPECIAL_CHARMS);
 

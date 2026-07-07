@@ -8,7 +8,7 @@ const BALANCE = {
   // Scoring — SWEET SPOT: each need wants magic in a green target BAND around a
   // center, not "as much as possible". Small chunks so amount is controllable.
   NEED_TARGET: 6,               // center of the green band (magic points) — reachable for all 3 needs in 6 slots
-  MAIN_POWER: 2, SECONDARY_POWER: 1, POTENT_MULT: 2.5, // small chunks (granularity)
+  MAIN_POWER: 2, SECONDARY_POWER: 1, POTENT_MULT: 2.5, PINCH_MULT: 0.5, // small chunks (granularity); Pinch halves a contribution
   BAND_HALF_BASE: 2.5,          // green band half-width with 0 ingredients
   BAND_SHRINK_PER_ADD: 0.18,    // band narrows this much per ingredient in the pot
   BAND_HALF_MIN: 1.5,           // never narrower than this
@@ -273,11 +273,13 @@ function allergyStatus(slots, allergyType, offset) {
   if (!allergyType) return null;
   let points = 0;
   slots.forEach(inst => {
-    if (inst.wild) { if (inst.magic === allergyType) points += inst.strength; return; }
-    if (inst.essence) { if (inst.magic === allergyType) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1); return; }
+    const pinch = inst.shrunk ? BALANCE.PINCH_MULT : 1;
+    if (inst.wild) { if (inst.magic === allergyType) points += inst.strength * pinch; return; }
+    if (inst.essence) { if (inst.magic === allergyType) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; }
     const ing = DATA.INGREDIENT_BY_ID[inst.id];
     let p = ingredientPointsFor(ing, allergyType);
     if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
+    if (p && inst.shrunk) p = Math.round(p * BALANCE.PINCH_MULT);
     points += p;
   });
   points = Math.max(0, points - (offset || 0));
@@ -295,11 +297,13 @@ function bandFor(slotsUsed, tight, shrink) {
 function pointsForNeed(slots, type) {
   let points = 0;
   slots.forEach(inst => {
-    if (inst.wild) { if (inst.magic === type) points += inst.strength; return; }
-    if (inst.essence) { if (inst.magic === type) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1); return; }
+    const pinch = inst.shrunk ? BALANCE.PINCH_MULT : 1;
+    if (inst.wild) { if (inst.magic === type) points += inst.strength * pinch; return; }
+    if (inst.essence) { if (inst.magic === type) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; }
     const ing = DATA.INGREDIENT_BY_ID[inst.id];
     let p = ingredientPointsFor(ing, type);
     if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT * 10) / 10;
+    if (p && inst.shrunk) p = Math.round(p * BALANCE.PINCH_MULT * 10) / 10;
     points += p;
   });
   return points;

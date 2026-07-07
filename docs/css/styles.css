@@ -600,3 +600,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   border: 1px solid var(--line); background: rgba(255,255,255,.14); color: var(--ink);
   font-size: 16px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; }
 .hud-menu:active { transform: scale(.9); filter: brightness(1.15); }
+
+/* --- Pinch charm: a "shrunk" (half-magic) ingredient --- */
+.inv-tile.shrunk { opacity: .82; }
+.inv-tile.shrunk .emoji { position: relative; }
+.inv-tile.shrunk .emoji > :first-child { transform: scale(.72); display: inline-block; }
+.pinch-badge { position: absolute; bottom: -2px; right: -2px; font-size: 13px; line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.slot.shrunk { position: relative; }
+.slot.shrunk > :first-child { transform: scale(.74); }
+.slot .pinch-badge { bottom: 0; right: 0; font-size: 12px; }

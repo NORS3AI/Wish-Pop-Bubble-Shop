@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🤏 **New charm: Pinch** — the opposite of Potent. Play it and tap an ingredient to
+  use *just a pinch*, **halving its magic** so you can trim a bar that's about to
+  overfill and land right in the green (it softens that ingredient's allergy a bit
+  too). Great for the tiny boss zones. Stacks with Potent (a Potent‑Pinch lands in
+  between). Also fixed the **Knife** so cutting a **Potent** ingredient now gives
+  **Potent** essences (it was dropping the potency before).
 - 🏠 **A menu button on every screen.** The top bar now has a **☰** button on every
   screen, so you can hop back to the home menu any time — no more getting stuck in
   the play loop. (Mid‑round it asks first, since that round won't be saved.)

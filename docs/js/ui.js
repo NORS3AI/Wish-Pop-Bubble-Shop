@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v35"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v36"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1120,7 +1120,7 @@ function paintMix() {
     const face = !inst ? "" : inst.wild ? "🌈"
       : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>`
       : ingArt(inst.id);
-    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""}">${face}</div>`);
+    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""}">${face}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
   }
   const tray = ROUND.charms.length
     ? `<div class="charm-tray">${ROUND.charms.map((c, i) => `<button class="charm-chip" data-charm="${i}" title="${CHARM(c).desc}">${charmArt(c)} <span>${CHARM(c).name}</span></button>`).join("")}</div>`
@@ -1152,15 +1152,15 @@ function paintMix() {
 }
 function invTile(inst, idx) {
   if (inst.essence) {
-    return `<div class="inv-tile essence ${inst.potent ? "potent" : ""}" id="invt-${idx}">
-      <div class="emoji"><span class="orb" style="background:${D.MAGIC[inst.magic]}"></span></div>
-      <div class="nm">${inst.potent ? "✨" : ""}${inst.magic} Essence</div><div class="q">${magicDot(inst.magic)} pure ${inst.magic}</div></div>`;
+    return `<div class="inv-tile essence ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}" id="invt-${idx}">
+      <div class="emoji"><span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>
+      <div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${inst.magic} Essence</div><div class="q">${magicDot(inst.magic)} pure ${inst.magic}</div></div>`;
   }
   const ing = D.INGREDIENT_BY_ID[inst.id];
   const cuttable = ROUND.toolMode ? " cuttable" : "";
   const quals = ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0];
-  return `<div class="inv-tile ${inst.potent ? "potent" : ""}${cuttable}" id="invt-${idx}">
-    <div class="emoji">${ingArt(inst.id)}</div><div class="nm">${inst.potent ? "✨" : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
+  return `<div class="inv-tile ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}${cuttable}" id="invt-${idx}">
+    <div class="emoji">${ingArt(inst.id)}${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div><div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
 }
 function allergyMeter(a) {
   const pct = Math.min(100, Math.round(a.points / BALANCE.ALLERGY_RED_AT * 100));
@@ -1172,6 +1172,7 @@ function allergyMeter(a) {
 function addToSlot(idx, fromEl) {
   if (ROUND.toolMode === "cut") { cutIngredient(idx, fromEl); return; }
   if (ROUND.toolMode === "transmute") { transmuteIngredient(idx, fromEl); return; }
+  if (ROUND.toolMode === "pinch") { pinchIngredient(idx, fromEl); return; }
   if (ROUND.slots.length >= ROUND.maxSlots) { toast("The cauldron is full!"); return; }
   const inst = ROUND.inventory.splice(idx, 1)[0];
   if (ROUND.potentNext) { inst.potent = true; ROUND.potentNext = false; toast("✨ Potent!"); }
@@ -1213,6 +1214,21 @@ function transmuteIngredient(idx, fromEl) {
   toast(`🔀 ${oldName} → ${inst.potent ? "Potent " : ""}${ing.name}!`);
   paintMix();
 }
+// Pinch: use just a pinch — halve an ingredient's magic (works on any ingredient
+// or essence). Also softens its allergy contribution. A precise anti-overshoot tool.
+function pinchIngredient(idx, fromEl) {
+  const inst = ROUND.inventory[idx];
+  if (!inst || (!inst.id && !inst.essence)) { toast("Pick an ingredient to pinch."); return; }
+  if (inst.shrunk) { toast("Already pinched — that's as small as it gets!"); return; }
+  inst.shrunk = true;
+  const pi = ROUND.charms.indexOf("pinch"); if (pi >= 0) ROUND.charms.splice(pi, 1);
+  ROUND.toolMode = null;
+  SFX.unlock(); SFX.reveal("treat", 0);
+  if (navigator.vibrate) navigator.vibrate(12);
+  const nm = inst.essence ? inst.magic + " Essence" : D.INGREDIENT_BY_ID[inst.id].name;
+  toast(`🤏 Just a pinch — ${nm}'s magic is halved.`);
+  paintMix();
+}
 function playCharm(i) {
   const id = ROUND.charms[i]; if (!id) return; const w = ROUND.wish;
   const consume = () => { ROUND.charms.splice(i, 1); paintMix(); };
@@ -1230,6 +1246,11 @@ function playCharm(i) {
     if (ROUND.toolMode === "transmute") { ROUND.toolMode = null; toast("🔀 Put away."); paintMix(); return; }
     if (!ROUND.inventory.some(x => x.id && !x.essence)) { toast("No ingredient to transmute!"); return; }
     ROUND.toolMode = "transmute"; toast("🔀 Tap an ingredient to transmute it into a needed one."); paintMix();
+  }
+  else if (id === "pinch") {
+    if (ROUND.toolMode === "pinch") { ROUND.toolMode = null; toast("🤏 Put away."); paintMix(); return; }
+    if (!ROUND.inventory.some(x => (x.id || x.essence) && !x.shrunk)) { toast("Nothing left to pinch!"); return; }
+    ROUND.toolMode = "pinch"; toast("🤏 Tap an ingredient to use just a pinch (half magic)."); paintMix();
   }
 }
 

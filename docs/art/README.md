@@ -70,6 +70,7 @@ minute for it to update, then refresh).
 | `charm_wild.png` | 🌈 Wild |
 | `charm_knife.png` | 🔪 Knife |
 | `charm_transmute.png` | 🔀 Transmute |
+| `charm_pinch.png` | 🤏 Pinch |
 
 ### Customers (8)
 | File name | Replaces |
