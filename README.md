@@ -19,13 +19,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
-- 🗑️ **Trash & Recycle — losing finally pays off.** Missing a customer's wish no
-  longer gives any coins… instead the **disgruntled customer hurls their trash at
-  you** — banana peels, fishy bones, soggy boots, old rocks and more — which float
-  around the result screen for you to **catch**. Your junk lands in a **30‑slot
-  Trash bin** (in Shop & Upgrades → **🗑️ Trash & Recycle**), where you **recycle it
-  for coins *or* Stardust** — a whole new little side activity, so a loss still
-  hands you something worth keeping.
+- 🗑️ **Trash & Recycle (+ trophies!).** Miss a customer's wish and — instead of
+  coins — they **storm off in a huff and pelt you with their trash**: banana peels,
+  fishy bones, soggy boots, old rocks and more, which float around the result
+  screen for you to **catch**. It lands in a **30‑slot bin** (Shop & Upgrades →
+  **🗑️ Trash & Recycle**) where you **recycle it for coins *or* Stardust**. And it
+  builds toward two **secret trophies**: recycle **500** junk to unlock the **Trash
+  Can cauldron** 🗑️, and **1000** to unlock the **Trash Bandit** raccoon buddy 🦝.
+  A losing round still hands you something worth keeping — without ever out‑paying
+  a real win.
 - 🔍 **No more accidental zoom.** Tapping bubbles quickly on iPad or a touch
   laptop no longer double‑tap‑zooms the page — you can pop as fast as you like.
 - 🎨 **Bring your own art!** There's now an **`art` folder** where you can drop in

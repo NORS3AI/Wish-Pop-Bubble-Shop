@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v30"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v31"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -21,6 +21,7 @@ function loadGame() {
 // backfill cosmetic fields for older saves (so new features never crash on load)
 function normalizeGame(g) {
   if (typeof g.stardust !== "number") g.stardust = 0;
+  if (typeof g.recycled !== "number") g.recycled = 0; // lifetime junk recycled (drives achievements)
   if (!Array.isArray(g.trash)) g.trash = [];
   if (!g.owned || typeof g.owned !== "object") g.owned = {};
   if (!g.equipped || typeof g.equipped !== "object") g.equipped = {};
@@ -214,7 +215,8 @@ function claimDaily() {
 /* ======================================================================= */
 function ownedCount(kind) { return D.COSMETICS[kind].filter(c => GAME.owned[c.id]).length; }
 function allSkins() { return [].concat(D.COSMETICS.cauldron, D.COSMETICS.familiar); }
-function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id]); }
+// the Well only awards buyable skins — achievement-only skins are earned, never rolled
+function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement); }
 // Roll a prize from the weighted tiers. Always returns a prize object.
 function rollWellPrize() {
   const rndInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -331,19 +333,23 @@ function renderWardrobe() {
   const dustCost = BALANCE.STARDUST_SKIN_COST;
   const section = (kind, title) => {
     const tiles = D.COSMETICS[kind].map(c => {
-      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id;
-      const canBuy = !owned && GAME.stardust >= dustCost;
+      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement;
+      const canBuy = !owned && !ach && GAME.stardust >= dustCost;
       const btn = equipped
         ? `<span class="skin-tag equipped">✓ On</span>`
         : owned
           ? `<button class="btn small good skin-equip" data-kind="${kind}" data-id="${c.id}">Wear</button>`
-          : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
-      const chip = !owned ? "❔"
-        : kind === "familiar" ? buddyArt(c.id, "skin-art")
-        : ART.tag("cauldron_" + c.id, c.chip, "skin-art");
-      return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"}">
+          : ach
+            ? `<span class="skin-tag muted">🏆 ${Math.min(GAME.recycled, ach.need)}/${ach.need}</span>`
+            : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
+      // achievement skins reveal their look + goal (to chase); other unowned stay a mystery
+      const chip = owned
+        ? (kind === "familiar" ? buddyArt(c.id, "skin-art") : ART.tag("cauldron_" + c.id, c.chip, "skin-art"))
+        : ach ? c.chip : "❔";
+      const nameShown = owned || ach ? c.name : "???";
+      return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${ach && !owned ? "ach" : ""}">
         <div class="skin-chip">${chip}</div>
-        <div class="skin-name">${owned ? c.name : "???"}</div>
+        <div class="skin-name">${nameShown}${ach && !owned ? `<div class="muted" style="font-size:10px;font-weight:600">${ach.desc}</div>` : ""}</div>
         ${btn}</div>`;
     }).join("");
     return `<div class="card" style="margin-bottom:10px">
@@ -372,6 +378,7 @@ function equipSkin(kind, id) {
 }
 function buySkin(id) {
   if (GAME.owned[id]) return;
+  const cz = D.COSMETIC_BY_ID[id]; if (cz && cz.achievement) { toast(`🏆 Earn this one: ${cz.achievement.desc}!`); return; }
   const cost = BALANCE.STARDUST_SKIN_COST;
   if (GAME.stardust < cost) { toast("Not enough Stardust."); return; }
   GAME.stardust -= cost; GAME.owned[id] = true; save();
@@ -394,10 +401,16 @@ function renderRecycle(mode) {
     } else slots.push(`<div class="trash-slot"></div>`);
   }
   const total = recycleTotal(mode), cur = mode === "dust" ? `✨ ${total}` : `🪙 ${total}`;
+  const nextAch = nextTrashAchievement();
+  const achLine = nextAch
+    ? `<div class="ach-bar"><div class="ach-top"><span>🏆 ${nextAch.chip} ${nextAch.name}</span><span class="muted">${Math.min(GAME.recycled, nextAch.achievement.need)}/${nextAch.achievement.need}</span></div>
+        <div class="ach-track"><i style="width:${Math.min(100, GAME.recycled / nextAch.achievement.need * 100)}%"></i></div></div>`
+    : `<div class="ach-bar muted" style="text-align:center">🏆 All recycling trophies earned — nice!</div>`;
   html("recycle", `
     ${hud("Recycle")}
-    <div class="rb-total" style="text-align:center;margin:2px 0 6px">🗑️ Bin <b>${bin.length}/${cap}</b> · worth <b>${cur}</b></div>
-    <div class="row" style="justify-content:center;gap:8px;margin-bottom:6px">
+    <div class="rb-total" style="text-align:center;margin:2px 0 6px">🗑️ Bin <b>${bin.length}/${cap}</b> · worth <b>${cur}</b> <span class="muted" style="font-size:12px">· ${GAME.recycled} recycled all‑time</span></div>
+    ${achLine}
+    <div class="row" style="justify-content:center;gap:8px;margin:8px 0 6px">
       <button class="btn small ${mode === "coins" ? "good" : "secondary"}" id="rc-coins">🪙 Coins</button>
       <button class="btn small ${mode === "dust" ? "good" : "secondary"}" id="rc-dust">✨ Stardust</button>
     </div>
@@ -418,18 +431,60 @@ function recycleOne(index, mode) {
   const id = GAME.trash[index]; if (id == null) return;
   const val = mode === "dust" ? trashDust(id) : trashCoins(id);
   if (mode === "dust") GAME.stardust += val; else GAME.gold += val;
-  GAME.trash.splice(index, 1); save();
+  GAME.trash.splice(index, 1); GAME.recycled += 1; save();
   SFX.coin(0);
-  renderRecycle(mode);
+  if (!checkTrashAchievements()) renderRecycle(mode);
 }
 function recycleAll(mode) {
   if (!GAME.trash.length) { toast("No trash to recycle."); return; }
-  const val = recycleTotal(mode);
+  const val = recycleTotal(mode), count = GAME.trash.length;
   if (mode === "dust") GAME.stardust += val; else GAME.gold += val;
-  GAME.trash = []; save();
+  GAME.trash = []; GAME.recycled += count; save();
   SFX.charm();
   toast(mode === "dust" ? `♻️ +${val} Stardust!` : `♻️ +${val} gold!`);
-  renderRecycle(mode);
+  if (!checkTrashAchievements()) renderRecycle(mode);
+}
+// achievement cosmetics unlocked by lifetime recycling
+function trashAchievements() { return allSkins().filter(c => c.achievement && c.achievement.stat === "recycled"); }
+function nextTrashAchievement() {
+  return trashAchievements().filter(c => !GAME.owned[c.id]).sort((a, b) => a.achievement.need - b.achievement.need)[0] || null;
+}
+// unlock any newly-earned achievements; returns true if one popped (it re-renders)
+function checkTrashAchievements() {
+  const earned = trashAchievements().filter(c => !GAME.owned[c.id] && GAME.recycled >= c.achievement.need);
+  if (!earned.length) return false;
+  earned.forEach(c => GAME.owned[c.id] = true); save();
+  achievementPopup(earned[0]); // celebrate the first; any second waits for next visit
+  return true;
+}
+function achievementPopup(c) {
+  const app = $("#app"); if (!app) return;
+  SFX.perfect(); confettiOver(app);
+  const chip = c.kind === "familiar" ? buddyArt(c.id, "ach-chip") : ART.tag("cauldron_" + c.id, c.chip, "ach-chip");
+  const ov = document.createElement("div"); ov.className = "confirm-overlay";
+  ov.innerHTML = `<div class="confirm-card center" style="gap:10px">
+    <div style="font-weight:900;font-size:14px;letter-spacing:1px;color:var(--gold)">🏆 ACHIEVEMENT UNLOCKED</div>
+    <div class="ach-big">${chip}</div>
+    <div style="font-weight:900;font-size:20px">${c.name}</div>
+    <div class="muted">You recycled <b>${c.achievement.need}</b> pieces of junk! Equip it in 🎨 My Skins.</div>
+    <button class="btn good small" id="ach-ok">Sweet!</button>
+  </div>`;
+  app.appendChild(ov);
+  ov.querySelector("#ach-ok").addEventListener("click", () => { ov.remove(); renderRecycle("coins"); });
+}
+function confettiOver(host) {
+  const layer = document.createElement("div"); layer.className = "confetti-layer";
+  const cols = ["#ffd76a", "#ff6ea8", "#4fc96a", "#6a7bd6", "#ffe98a", "#e07be0", "#8fe9ff", "#c48bff"];
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement("i"); p.className = "confetti";
+    p.style.left = (3 + (i * 37) % 94) + "%"; p.style.background = cols[i % cols.length];
+    p.style.setProperty("--dx", (((i * 53) % 80) - 40) + "px");
+    p.style.setProperty("--rot", ((i * 47) % 360) + "deg");
+    p.style.animationDelay = ((i % 12) * 0.05).toFixed(2) + "s";
+    p.style.animationDuration = (1.7 + (i % 5) * 0.22).toFixed(2) + "s";
+    layer.appendChild(p);
+  }
+  host.appendChild(layer); setTimeout(() => layer.remove(), 2800);
 }
 
 /* ======================================================================= */
@@ -1170,14 +1225,14 @@ function renderResult(res) {
   const emoji = !win ? "😤" : isPerfect ? "🥳" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (res.tip > 0 ? "🤩" : "😊");
   const title = win ? (isPerfect ? "Perfect!" : res.type.title) : "Wish Failed!";
   const blurb = !win
-    ? c.name + " storms off in a huff — and hurls their trash at you! Catch it: junk recycles into coins or Stardust."
+    ? c.name + " storms off in a huff — and pelts you with their trash on the way out! Grab it: junk recycles into coins or Stardust."
     : isPerfect ? c.name + " got a flawless potion — 100% perfect! ✨"
     : zone === "red" ? "The wish worked… but " + c.name + " reacted to the " + res.allergy.type + " magic! Half pay."
     : zone === "yellow" ? c.name + " got their wish, but a little " + res.allergy.type + " magic left them itchy."
     : res.qualityTip > 0 ? c.name + " loves it — that potion was practically perfect!" : res.quickTip > 0 ? c.name + " is thrilled with the speedy service!" : c.name + " is happy with their wish!";
   const earnedRow = win
     ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}`
-    : `<div class="stat-line"><span>Earned</span><span class="muted">no coins</span></div>
+    : `<div class="stat-line"><span>Earned</span><span class="muted">no coins — just trash!</span></div>
        <div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${trashN}</b> piece${trashN === 1 ? "" : "s"}</span></div>`;
   html("result", `
     ${hud("Result")}
@@ -1209,7 +1264,7 @@ function trashInfoMarkup(res) {
   const n = (res.trash || []).length;
   return `<div class="reward-bubbles" id="trash-info">
     <div class="rb-total">🗑️ Caught <span><b id="trash-count">0</b>/${n}</span></div>
-    <div class="rb-hint muted" id="trash-hint">Catch the junk they threw — recycle it for coins later! 🍌</div>
+    <div class="rb-hint muted" id="trash-hint">Catch the junk they hurled — recycle it for coins or Stardust later! 🍌</div>
   </div>`;
 }
 function wireTrashBubbles(res) {

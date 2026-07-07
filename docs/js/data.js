@@ -139,6 +139,8 @@ const COSMETICS = {
     { id: "cauldron_amethyst", name: "Amethyst",         chip: "💜" },
     { id: "cauldron_gold",     name: "Golden",           chip: "💛" },
     { id: "cauldron_rainbow",  name: "Rainbow",          chip: "🌈" },
+    // achievement-only: earned by recycling junk (not buyable / not in the Well)
+    { id: "cauldron_trashcan", name: "Trash Can",        chip: "🗑️", achievement: { stat: "recycled", need: 500, desc: "Recycle 500 junk" } },
   ],
   familiar: [
     { id: "toad_classic", name: "Toad",    chip: "🐸", default: true },
@@ -148,6 +150,8 @@ const COSMETICS = {
     { id: "toad_fox",     name: "Fox",     chip: "🦊" },
     { id: "toad_unicorn", name: "Unicorn", chip: "🦄" },
     { id: "toad_bunny",   name: "Bunny",   chip: "🐰" },
+    // achievement-only: the "Trash Bandit"
+    { id: "toad_raccoon", name: "Trash Bandit", chip: "🦝", achievement: { stat: "recycled", need: 1000, desc: "Recycle 1000 junk" } },
   ],
 };
 // flat lookup by id, plus which kind each belongs to

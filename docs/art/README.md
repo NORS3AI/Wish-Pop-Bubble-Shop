@@ -94,6 +94,7 @@ These are the little friend in the corner and in the "My Skins" wardrobe.
 | `buddy_toad_fox.png` | 🦊 Fox |
 | `buddy_toad_unicorn.png` | 🦄 Unicorn |
 | `buddy_toad_bunny.png` | 🐰 Bunny |
+| `buddy_toad_raccoon.png` | 🦝 Trash Bandit (🏆 earned by recycling 1000 junk) |
 
 ### Cauldron (pot) skins (7)
 Optional — a picture of the pot itself. Best with a **transparent middle** so the
@@ -108,6 +109,7 @@ pots stay as they are.
 | `cauldron_amethyst.png` | Amethyst |
 | `cauldron_gold.png` | Golden |
 | `cauldron_rainbow.png` | Rainbow |
+| `cauldron_trashcan.png` | Trash Can (🏆 earned by recycling 500 junk) |
 
 ### Scoop & bubbles
 | File name | Replaces |

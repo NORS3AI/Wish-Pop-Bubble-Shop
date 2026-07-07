@@ -570,3 +570,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .trash-slot.filled { cursor: pointer; background: rgba(180,150,100,.14); border-color: rgba(200,170,110,.4); }
 .trash-slot.filled:active { transform: scale(.9); }
 .trash-slot img.art.trash-face { max-width: 1.1em; }
+
+/* --- recycling achievements --- */
+.ach-bar { max-width: 340px; margin: 0 auto; width: 100%; }
+.ach-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+.ach-track { height: 10px; border-radius: 6px; background: var(--card2); border: 1px solid var(--line); overflow: hidden; }
+.ach-track > i { display: block; height: 100%; background: linear-gradient(90deg, #ffd76a, #ff9ecf); border-radius: 6px; transition: width .3s ease; }
+.skin-tile.ach { border-color: rgba(255,215,106,.5); }
+.skin-tile.ach .skin-chip { filter: grayscale(.3) opacity(.85); }
+.ach-big { font-size: 60px; line-height: 1; animation: charmpop 1s cubic-bezier(.2,1.4,.4,1); }
+.ach-big img.art { height: 1em; width: auto; max-width: none; }
