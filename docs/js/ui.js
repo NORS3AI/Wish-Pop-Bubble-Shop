@@ -7,6 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
+const BUILD = "v8"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -67,10 +68,20 @@ function renderStart() {
     <button class="btn secondary" id="menu-btn">🛍️  Shop &amp; Upgrades</button>
     <div style="height:8px"></div>
     <button class="btn secondary small" id="admin-btn" style="align-self:center">⚙️ Admin (art upload — coming soon)</button>
+    <div class="row" style="justify-content:center;gap:10px;margin-top:8px;align-items:center">
+      <button class="btn good small" id="sound-test" style="max-width:210px">🔊 Tap to test sound</button>
+      <span class="muted" style="font-size:12px">Build ${BUILD}</span>
+    </div>
   `);
   on("#play-btn", "click", startRound);
   on("#menu-btn", "click", renderMenu);
   on("#admin-btn", "click", () => toast("Art uploader arrives in a later phase."));
+  on("#sound-test", "click", () => {
+    SFX.unlock();
+    [0, 1, 2, 3].forEach((s, i) => setTimeout(() => { SFX.pop(s); SFX.reveal(i === 3 ? "charm" : "ingredient", s); }, i * 160));
+    if (navigator.vibrate) navigator.vibrate(20);
+    toast(SFX.isMuted() ? "Sound is muted — tap 🔇 to unmute" : "Hear that? 🔊");
+  });
   show("start");
 }
 
