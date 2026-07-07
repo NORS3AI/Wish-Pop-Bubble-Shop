@@ -138,6 +138,9 @@ html, body {
 .meter.sweet > i { position: relative; z-index: 2; }
 .meter.sweet .band { position: absolute; top: -2px; bottom: -2px; z-index: 1; border-radius: 5px;
   background: rgba(126,224,138,0.30); box-shadow: inset 0 0 0 1.5px var(--good); transition: left .35s ease, width .35s ease; }
+.meter.sweet.hit { box-shadow: 0 0 10px var(--good); }
+.meter.sweet.hit .band { background: rgba(126,224,138,0.5); animation: hitpulse .5s ease; }
+@keyframes hitpulse { 0% { transform: scaleY(1); } 40% { transform: scaleY(1.5); } 100% { transform: scaleY(1); } }
 .need-meter { margin: 5px 0; }
 .need-meter .lbl { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; }
 

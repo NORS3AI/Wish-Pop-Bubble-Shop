@@ -293,29 +293,32 @@ function renderMix() {
 }
 function paintMixTop() {
   const el = $("#mix-top"); if (!el) return;
-  const w = ROUND.wish, elapsed = Date.now() - ROUND.mixStart;
-  if (w.needs[1] && !w.needs[1].revealed && elapsed >= BALANCE.REVEAL_SECOND_MS) w.needs[1].revealed = true;
-  if (w.needs[2] && !w.needs[2].revealed && elapsed >= BALANCE.REVEAL_TWIST_MS) w.needs[2].revealed = true;
+  const w = ROUND.wish;
   const score = scoreMix(ROUND.slots, w, ROUND.allergyOffset);
-  // DISCOVERY: feeding a hidden need reveals it
-  w.needs.forEach((n, i) => { if (!n.revealed && score.perNeed[i].points > 0) { n.revealed = true; n._discovered = true; } });
+  // DISCOVERY: a mystery need reveals when you play an ingredient whose MAIN
+  // quality (or a Wild charm's magic) is that need. No timers.
+  w.needs.forEach(n => {
+    if (n.revealed) return;
+    const found = ROUND.slots.some(inst => inst.wild ? inst.magic === n.type : D.INGREDIENT_BY_ID[inst.id].qualities[0] === n.type);
+    if (found) n.revealed = true;
+  });
   const req = w.requiredMatch, meets = score.weighted >= req;
   const MAX = BALANCE.BAR_MAX;
   const meters = w.needs.map((n, i) => {
     const s = score.perNeed[i];
-    if (!n.revealed) {
-      const at = i === 1 ? BALANCE.REVEAL_SECOND_MS : BALANCE.REVEAL_TWIST_MS;
-      const secs = Math.max(0, Math.ceil((at - elapsed) / 1000));
-      return `<div class="need-meter"><div class="lbl"><span class="muted">❔ Mystery Need</span><span class="muted">or in ${secs}s</span></div>
-        <div class="meter sweet"><i style="width:0%"></i></div></div>`;
-    }
     const fillPct = Math.min(100, s.points / MAX * 100);
-    const over = s.points > s.bandHigh;
-    const fillCol = over ? "var(--bad)" : D.MAGIC[n.type];
+    if (!n.revealed) {
+      return `<div class="need-meter"><div class="lbl"><span class="muted">❔ Mystery Need</span><span class="muted">?</span></div>
+        <div class="meter sweet"><i style="width:${fillPct}%;background:rgba(255,255,255,0.28)"></i></div></div>`;
+    }
+    const inBand = s.pct === 100, over = s.points > s.bandHigh;
+    const fillCol = inBand ? "var(--good)" : over ? "var(--bad)" : D.MAGIC[n.type];
+    const status = inBand ? "✓ in the green!" : over ? "overfilled!" : s.pct + "%";
+    const statusCol = inBand ? "var(--good)" : over ? "var(--bad)" : "var(--ink-dim)";
     const bandLeft = Math.max(0, s.bandLow / MAX * 100), bandW = Math.max(2, (s.bandHigh - s.bandLow) / MAX * 100);
     return `<div class="need-meter"><div class="lbl"><span>${magicDot(n.type)} ${n.type}</span>
-      <span style="color:${s.pct === 100 ? "var(--good)" : over ? "var(--bad)" : "var(--ink)"}">${s.pct === 100 ? "✓ perfect" : over ? "over!" : s.pct + "%"}</span></div>
-      <div class="meter sweet"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
+      <span style="color:${statusCol};font-weight:800">${status}</span></div>
+      <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
   }).join("");
   const hidden = w.needs.filter(n => !n.revealed).length;
   const tip = hidden * BALANCE.QUICK_TIP_PER_HIDDEN;
@@ -416,15 +419,17 @@ function renderResult(res) {
   const win = res.success, c = ROUND.customer, zone = res.allergy && res.allergy.zone;
   const allergyLine = (win && (zone === "yellow" || zone === "red"))
     ? `<div class="stat-line"><span>⚠️ Allergy (${zone})</span><span style="color:var(--bad)">${zone === "red" ? "−50%" : "−25%"} pay</span></div>` : "";
-  const tipLine = (win && res.tip > 0)
-    ? `<div class="stat-line"><span>⚡ Quick‑service tip!</span><span class="gold">🪙 +${res.tip}</span></div>` : "";
+  const quickLine = (win && res.quickTip > 0)
+    ? `<div class="stat-line"><span>⚡ Quick‑service tip</span><span class="gold">🪙 +${res.quickTip}</span></div>` : "";
+  const qualLine = (win && res.qualityTip > 0)
+    ? `<div class="stat-line"><span>✨ Perfect potion!</span><span class="gold">🪙 +${res.qualityTip}</span></div>` : "";
   const emoji = !win ? "🙂" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (res.tip > 0 ? "🤩" : "😊");
   const title = win ? res.type.title : "So Close!";
   const blurb = !win
     ? c.name + " couldn't get the full wish, but liked the effort and left you a few coins."
     : zone === "red" ? "The wish worked… but " + c.name + " reacted to the " + res.allergy.type + " magic! Half pay."
     : zone === "yellow" ? c.name + " got their wish, but a little " + res.allergy.type + " magic left them itchy."
-    : res.tip > 0 ? c.name + " is overjoyed you were so quick — enjoy the tip!" : c.name + " is happy with their wish!";
+    : res.qualityTip > 0 ? c.name + " loves it — that potion was practically perfect!" : res.quickTip > 0 ? c.name + " is thrilled with the speedy service!" : c.name + " is happy with their wish!";
   html("result", `
     ${hud("Result")}
     <div class="grow center" style="gap:14px">
@@ -435,7 +440,7 @@ function renderResult(res) {
         <div class="stat-line"><span>Needed</span><span>${res.required}%</span></div>
         ${allergyLine}
         <div class="stat-line"><span>${win ? "Earned" : "Coins for trying"}</span><span class="gold">🪙 ${res.gold}</span></div>
-        ${tipLine}
+        ${quickLine}${qualLine}
       </div>
       <p class="muted" style="max-width:300px">${blurb}</p>
     </div>

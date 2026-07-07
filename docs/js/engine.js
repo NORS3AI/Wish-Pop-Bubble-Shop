@@ -25,20 +25,19 @@ const BALANCE = {
   ALLERGY_CHANCE: 0.55, ALLERGY_YELLOW_AT: 3, ALLERGY_RED_AT: 6, ALLERGY_CLEANSE: 3,
 
   // Scoop / bubbles — each scoop rolls its own yield; each bubble = one haul item.
-  BUBBLES_PER_SCOOP_MIN: 2, BUBBLES_PER_SCOOP_MAX: 4, MIN_BUBBLES: 7,
+  BUBBLES_PER_SCOOP_MIN: 2, BUBBLES_PER_SCOOP_MAX: 4, MIN_BUBBLES: 8,
 
   // Haul composition — mostly ingredients now (fatter hand)
-  CHARM_DROP_CHANCE: 0.12, CHARM_DROP_CHANCE_FINDER: 0.22, // with "Charm Finder" upgrade
-  GOLD_DROP_CHANCE: 0.08, TREAT_DROP_CHANCE: 0.05,
+  CHARM_DROP_CHANCE: 0.10, CHARM_DROP_CHANCE_FINDER: 0.20, // with "Charm Finder" upgrade
+  GOLD_DROP_CHANCE: 0.06, TREAT_DROP_CHANCE: 0.04,
   GOLD_MIN: 3, GOLD_MAX: 8,
-  NEED_BIAS: 0.4,               // chance a filler ingredient matches a need
+  NEED_BIAS: 0.38,               // chance a filler ingredient matches a need
   WILD_STRENGTH: 3,             // magic points the Wild charm adds
 
   // Cauldron
-  MIX_SLOTS: 8,
-  REVEAL_SECOND_MS: 12000,      // second need reveals 12s into the cauldron
-  REVEAL_TWIST_MS: 24000,       // final twist at 24s
-  QUICK_TIP_PER_HIDDEN: 8,      // gold tip per still-hidden need if you serve early AND succeed
+  MIX_SLOTS: 6,
+  QUICK_TIP_PER_HIDDEN: 8,      // gold tip per still-secret need if you serve AND succeed
+  QUALITY_TIP: 10, QUALITY_MARGIN: 20, // "perfect potion" tip: exceed required by this much
 
   // Gold / progression
   PRICES: { treat: 10 },
@@ -102,9 +101,9 @@ function generateHaul(wish, count, charmFinder) {
   const mainSources = DATA.INGREDIENTS.filter(i => i.qualities[0] === needs[0]);
   const ingItem = ing => ({ kind: "ingredient", id: ing.id });
   const items = [];
-  // guarantee ONE main-need ingredient (always attemptable). Everything else —
-  // even fully covering the main need — comes from the biased draw, so you must
-  // build each need up and often can't max them all: real prioritisation.
+  // guarantee 2 main-need ingredients (attemptable + enough to build the main
+  // toward its band). Secondary/twist coverage comes from the biased draw.
+  items.push(ingItem(R.pick(mainSources)));
   items.push(ingItem(R.pick(mainSources)));
   const charmChance = charmFinder ? BALANCE.CHARM_DROP_CHANCE_FINDER : BALANCE.CHARM_DROP_CHANCE;
   while (items.length < count) {
@@ -218,7 +217,7 @@ function scoreResult(round) {
   const required = round.wish.requiredMatch;
   const success = weighted >= required;
   const hiddenAtServe = round.wish.needs.filter(n => !n.revealed).length;
-  let type, gold, tip = 0;
+  let type, gold, tip = 0, quickTip = 0, qualityTip = 0;
   if (!success) {
     type = DATA.RESULT_TYPES.fail;
     gold = Math.max(1, Math.round(round.payment * (weighted / 100) * BALANCE.CONSOLATION_FRACTION));
@@ -226,9 +225,13 @@ function scoreResult(round) {
     if (allergy && allergy.zone === "red") { type = DATA.RESULT_TYPES.red; gold = Math.round(round.payment * DATA.RESULT_TYPES.red.payoutPct); }
     else if (allergy && allergy.zone === "yellow") { type = DATA.RESULT_TYPES.yellow; gold = Math.round(round.payment * DATA.RESULT_TYPES.yellow.payoutPct); }
     else { type = DATA.RESULT_TYPES.full; gold = round.payment; }
-    if (hiddenAtServe > 0) { tip = hiddenAtServe * BALANCE.QUICK_TIP_PER_HIDDEN; gold += tip; } // quick-service tip
+    // quick-service tip: served with needs still secret
+    if (hiddenAtServe > 0) quickTip = hiddenAtServe * BALANCE.QUICK_TIP_PER_HIDDEN;
+    // perfect-potion tip: match greatly exceeds what was required
+    if (weighted >= Math.min(100, required + BALANCE.QUALITY_MARGIN)) qualityTip = BALANCE.QUALITY_TIP;
+    tip = quickTip + qualityTip; gold += tip;
   }
-  return { type, gold, tip, weighted, required, success, allergy, hiddenAtServe, partial: !success && gold > 0 };
+  return { type, gold, tip, quickTip, qualityTip, weighted, required, success, allergy, hiddenAtServe, partial: !success && gold > 0 };
 }
 
 /* Expose */

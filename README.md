@@ -63,6 +63,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   **shrink as you add**, so a tidy few‑ingredient mix beats dumping everything. Only
   the main need is shown; the other two are **mystery bars you discover** as your
   ingredients move them. This is the real puzzle the game was missing.
+- ✨ **Clearer & fairer (latest tweaks).** Bars now say **“✓ in the green!”** and
+  glow when you nail a zone, so it's obvious you've hit it. Mystery needs stay secret
+  until you **play an ingredient whose main magic matches** them (no more countdown
+  timers). Bubbles drop **more ingredients** and the cauldron holds a tidier set of
+  slots, so you're never stuck short. And a **“Perfect potion!” bonus tip** now rewards
+  you when your mix comfortably beats what the customer needed.
 - Next up: the art‑upload tool and final polish + sound (see `PHASE_PLAN.md`).
 - Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
   a "rotate to portrait" nudge in landscape.

@@ -268,6 +268,24 @@ shallow, and the round was too fast. Fix = give the mix a real decision:
   phase still feels passive after this. Rejected the crystal‑ball probe (hands you
   the answer) and per‑ingredient pour QTEs (realism zoo, not worth it).
 
+### v4.1 — playtest polish (✅ BUILT)
+Direct fixes from the next playtest:
+- **Removed the reveal timers.** A Mystery bar now stays secret until you **play an
+  ingredient whose *main* magic is that hidden need** (a Wild charm's magic counts).
+  No more "wait and it appears" — discovery is an action, not a clock.
+- **In‑green clarity.** A bar that lands in its band shows **“✓ in the green!”**, a
+  green fill, and a glow/pulse (`.meter.sweet.hit`) so hitting the zone is obvious;
+  overfilled bars read **“overfilled!”** in red.
+- **Fewer slots, fatter hand:** cauldron slots 8 → **6**; every haul now guarantees
+  **2 main‑need ingredients** and drops more overall (avg hand ≈ 5.6 / 6.8 / 8.4 /
+  10.1), so you're never stuck short of the right magic.
+- **Perfect‑potion tip:** beating the required match by ≥ `QUALITY_MARGIN` (20) pays
+  a **+10 “Perfect potion!”** bonus on top of the quick‑service tip — fixes the
+  "100% mix, 80% needed, no reward" complaint.
+- Balance (smart stop‑at‑band player): win ≈ **100 / 98 / 69 / 59%**
+  (easy/medium/hard/veryhard). Easy/medium are intentionally winnable tutorial
+  tiers; the shrinking band + hidden needs make hard/very‑hard the real puzzle.
+
 ---
 
 ## Phase 5 — Magic Allergy system — ✅ DONE
