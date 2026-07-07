@@ -109,7 +109,12 @@ function generateHaul(wish, count, charmFinder) {
   const charmChance = charmFinder ? BALANCE.CHARM_DROP_CHANCE_FINDER : BALANCE.CHARM_DROP_CHANCE;
   while (items.length < count) {
     const r = Math.random();
-    if (r < charmChance) items.push({ kind: "charm", id: R.pick(DATA.SPECIAL_CHARM_IDS) });
+    if (r < charmChance) {
+      // Insight is a one-time reveal — a second does nothing, so never draft two.
+      const haveInsight = items.some(it => it.kind === "charm" && it.id === "insight");
+      const pool = haveInsight ? DATA.SPECIAL_CHARM_IDS.filter(id => id !== "insight") : DATA.SPECIAL_CHARM_IDS;
+      items.push({ kind: "charm", id: R.pick(pool) });
+    }
     else if (r < charmChance + BALANCE.GOLD_DROP_CHANCE) items.push({ kind: "gold", amt: R.int(BALANCE.GOLD_MIN, BALANCE.GOLD_MAX) });
     else if (r < charmChance + BALANCE.GOLD_DROP_CHANCE + BALANCE.TREAT_DROP_CHANCE) items.push({ kind: "treat" });
     else {

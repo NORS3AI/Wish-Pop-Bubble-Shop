@@ -95,7 +95,7 @@ html, body {
   border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 14px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: 0; }
 .need-chip .dot { width: 12px; height: 12px; }
-.inv-tile .q .dot { width: 9px; height: 9px; margin-right: 1px; }
+.inv-tile .q .dot { width: 10px; height: 10px; margin-right: 2px; }
 .need-chip.hidden-need { color: var(--ink-dim); font-style: italic; }
 .stat-line { display: flex; justify-content: space-between; font-size: 15px; padding: 4px 2px; }
 .stat-line span:last-child { font-weight: 800; }
@@ -178,7 +178,7 @@ html, body {
 .inv-tile:active { transform: scale(0.94); }
 .inv-tile .emoji { font-size: 24px; }
 .inv-tile .nm { font-size: 11px; font-weight: 800; line-height: 1.1; }
-.inv-tile .q { font-size: 9px; color: var(--ink-dim); line-height: 1.05; }
+.inv-tile .q { font-size: 12px; color: var(--ink-dim); line-height: 1.15; }
 .inv-tile.wild { border-style: dashed; }
 .inv-tile.potent { box-shadow: 0 0 8px var(--gold); border-color: var(--gold); }
 
