@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v17"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v18"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -343,20 +343,22 @@ const POP_FLAVOR = {
 let popCombo = 0, lastPopAt = 0, cascadeOn = false, squeezeEl = null, squeezeStart = 0;
 
 // squeeze-and-hold: press to swell a bubble, release for a bigger/deeper pop
+const SQUEEZE_MAX_MS = 950; // hold this long → bubble is at max size and pops on its own
 function wireBubble(el) {
+  const doPop = power => {
+    if (squeezeEl !== el) return;
+    clearTimeout(el._sqTimer);
+    SFX.holdStop(); el.classList.remove("squeezing"); squeezeEl = null;
+    popAt(+el.dataset.i, el, false, power);
+  };
   el.addEventListener("pointerdown", e => {
     if (el.classList.contains("popped") || squeezeEl) return;
     squeezeEl = el; squeezeStart = Date.now(); el.classList.add("squeezing");
     SFX.unlock(); SFX.holdStart();
     try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    el._sqTimer = setTimeout(() => doPop(1), SQUEEZE_MAX_MS); // auto-pop at full size
   });
-  const release = () => {
-    if (squeezeEl !== el) return;
-    const held = Date.now() - squeezeStart;
-    const power = Math.max(0, Math.min(1, (held - 90) / 800)); // <90ms = a tap (normal pop)
-    SFX.holdStop(); el.classList.remove("squeezing"); squeezeEl = null;
-    popAt(+el.dataset.i, el, false, power);
-  };
+  const release = () => { if (squeezeEl !== el) return; doPop(Math.max(0, Math.min(1, (Date.now() - squeezeStart - 90) / 800))); };
   el.addEventListener("pointerup", release);
   el.addEventListener("pointercancel", release);
 }
@@ -411,10 +413,9 @@ function popAt(i, el, fromCascade, power) {
   if (!el || el.classList.contains("popped")) return;
   SFX.unlock(); power = power || 0;
   const item = ROUND.haul[i];
-  // gold/treat bank instantly; ingredients & charms pop out to be CAUGHT (cascade auto-banks ingredients)
+  // gold/treat bank instantly; ingredients & charms pop OUT of the bubble to be caught
   if (item.kind === "gold") { GAME.gold += item.amt; save(); }
   else if (item.kind === "treat") { GAME.treats += 1; save(); }
-  else if (item.kind === "ingredient" && fromCascade) ROUND.inventory.push({ id: item.id, potent: false });
   ROUND.popIndex++;
 
   const info = itemInfo(item), flavor = POP_FLAVOR[info.kind];
@@ -432,8 +433,9 @@ function popAt(i, el, fromCascade, power) {
     el.classList.add("big");
   } else if (item.kind === "ingredient") {
     SFX.pop(popCombo, power); burstAt(cx, cy, flavor, power);
-    if (fromCascade) floatReward(cx, cy, info, false);      // auto-banked; just show it
-    else spawnFloatingIngredient(item.id, cx, cy);          // catch it!
+    // always float OUT of the bubble so you see it pop; during Pop-them-all it
+    // auto-collects shortly (a satisfying shower), otherwise you tap to catch it.
+    spawnFloatingIngredient(item.id, cx, cy, fromCascade ? 850 : 0);
   } else {
     SFX.pop(popCombo, power); SFX.reveal(info.kind, popCombo);
     burstAt(cx, cy, flavor, power); floatReward(cx, cy, info, flavor.rare);
@@ -494,7 +496,7 @@ function collectCharm(id, tok) {
 }
 // Ingredient floats out of the popped bubble; tap to catch it (or it drifts up and
 // auto-banks, so you never lose it). Catching just feels good.
-function spawnFloatingIngredient(id, x, y) {
+function spawnFloatingIngredient(id, x, y, autoMs) {
   const layer = $("#catch-layer"); if (!layer) { ROUND.inventory.push({ id, potent: false }); return; }
   const ing = D.INGREDIENT_BY_ID[id];
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
@@ -509,7 +511,8 @@ function spawnFloatingIngredient(id, x, y) {
   tok.style.setProperty("--bx2", rnd(-28, 28) + "px"); tok.style.setProperty("--by2", rnd(6, 24) + "px");
   tok.innerHTML = ing.emoji;
   tok.addEventListener("pointerdown", e => { e.stopPropagation(); collectIngredient(id, tok, false); });
-  layer.appendChild(tok); // stays and bobs until caught, or swept up on Continue
+  layer.appendChild(tok); // bobs until caught, swept on Continue, or auto-collected (Pop-them-all)
+  if (autoMs) tok._timer = setTimeout(() => collectIngredient(id, tok, true), autoMs);
 }
 function collectIngredient(id, tok, silent) {
   if (!tok || tok._caught) return; tok._caught = true; clearTimeout(tok._timer);

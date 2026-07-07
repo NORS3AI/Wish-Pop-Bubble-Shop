@@ -70,6 +70,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   each with its own rising note** so you can *hear* how many you found. If you have
   another scoop, the spoon **dives back into the glitter** and pulls up a fresh one
   to shake. There's a "✨ Shake for me" button if you'd rather not swipe.
+- 🫧 **Snappier popping.** Ingredients now visibly **pop out of their bubble** even
+  during **Pop-them-all** (a little shower that auto-collects), so you always see and
+  hear them. And you can now **press-and-hold a bubble until it's full and it pops on
+  its own** — no need to release.
 - ⚖️ **Economy tune-up.** Bonus-bubble chains are now hard-capped so they can't run
   away into dozens of ingredients, treats drop less often, and charms are capped per
   round (max one Cleanse, one Insight, two Peek). Jackpot scoops are now genuinely
