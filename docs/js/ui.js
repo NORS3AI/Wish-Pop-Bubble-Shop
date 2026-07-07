@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v20"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v21"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -165,22 +165,29 @@ function renderCustomer() {
   const needChips = w.needs.map(n => n.revealed
     ? `<div class="need-chip">${magicDot(n.type)} ${n.type}</div>`
     : `<div class="need-chip hidden-need">❔ ${n.label}</div>`).join("");
+  const allergyList = [w.allergy, w.allergy2].filter(Boolean);
+  const allergyTxt = allergyList.length
+    ? `<span style="color:var(--bad)">${allergyList.map(a => `⚠️ ${magicDot(a)} ${a}`).join(" ")}</span>` : "None";
+  const bossBanner = w.boss
+    ? `<div class="boss-banner">👑 VIP Customer — extra picky! Wants all three, tighter green zones, two allergies.</div>` : "";
   html("customer", `
     ${hud(c.location)}
+    ${bossBanner}
     <div class="grow center" style="gap:16px">
-      <div class="ph big">${c.emoji}</div>
-      <div style="font-weight:800;font-size:20px">${c.name}</div>
+      <div class="ph big ${w.boss ? "boss-emoji" : ""}">${c.emoji}</div>
+      <div style="font-weight:800;font-size:20px">${w.boss ? "👑 " : ""}${c.name}</div>
       <div class="speech">“${c.line}”</div>
       <div class="needs-row">${needChips}</div>
       <div class="card" style="width:100%;max-width:340px">
         <div class="stat-line"><span>Payment</span><span class="gold">🪙 ${ROUND.payment}</span></div>
         <div class="stat-line"><span>Required Match</span><span>${w.requiredMatch}%</span></div>
         <div class="stat-line"><span>Scoops of glitter</span><span>${ROUND.scoops}</span></div>
-        <div class="stat-line"><span>Allergy</span><span>${w.allergy ? `<span style="color:var(--bad)">⚠️ ${magicDot(w.allergy)} ${w.allergy}</span>` : "None"}</span></div>
+        <div class="stat-line"><span>Allerg${allergyList.length > 1 ? "ies" : "y"}</span><span>${allergyTxt}</span></div>
       </div>
     </div>
-    <button class="btn" id="scoop-btn">Start Scoop  ✨</button>
+    <button class="btn ${w.boss ? "good" : ""}" id="scoop-btn">Start Scoop  ✨</button>
   `);
+  if (w.boss) { SFX.unlock(); SFX.charm(); }
   on("#scoop-btn", "click", renderScoop);
   show("customer");
 }
@@ -461,7 +468,11 @@ function spawnBonusBubbles(cx, cy) {
   const frenzy = ROUND.bonusFrenzy;
   const cap = frenzy ? BALANCE.BONUS_MAX_FRENZY : BALANCE.BONUS_MAX_SPAWN;
   const remaining = cap - (ROUND.bonusSpawned || 0);
-  if (remaining <= 0) return;
+  if (remaining <= 0) { // at the cap — don't dud; hand over one ingredient directly
+    const it = ENGINE.bonusBubbleItems(ROUND.wish, 1, 0)[0];
+    if (it && it.kind === "ingredient") { if (ROUND.stats) ROUND.stats.ingredients++; spawnFloatingIngredient(it.id, cx, cy, 850); }
+    return;
+  }
   const n = Math.min(R.int(BALANCE.BONUS_SPAWN_MIN, BALANCE.BONUS_SPAWN_MAX), remaining);
   ROUND.bonusSpawned = (ROUND.bonusSpawned || 0) + n;
   const chainChance = ROUND.bonusSpawned < cap ? (frenzy ? BALANCE.BONUS_CHAIN_FRENZY : BALANCE.BONUS_CHAIN_CHANCE) : 0;
@@ -682,10 +693,9 @@ function paintMixTop() {
       <span style="color:${statusCol};font-weight:800">${status}</span></div>
       <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
   }).join("");
-  const hidden = w.needs.filter(n => !n.revealed).length;
-  const tip = hidden * BALANCE.QUICK_TIP_PER_HIDDEN;
-  const tipLine = hidden > 0
-    ? `<div class="mix-hint" style="color:var(--gold)">⚡ Serve now → <b>+${tip} tip</b> if it works! (${hidden} need${hidden > 1 ? "s" : ""} still secret)</div>`
+  const needCount = w.needs.length, effLimit = needCount + 1, tipAmt = needCount * BALANCE.QUICK_TIP_PER_HIDDEN;
+  const tipLine = ROUND.slots.length <= effLimit
+    ? `<div class="mix-hint" style="color:var(--gold)">⚡ Serve with <b>≤${effLimit} ingredient${effLimit > 1 ? "s" : ""}</b> → <b>+${tipAmt} speed tip!</b></div>`
     : `<div class="mix-hint muted">Land each bar in its <b style="color:var(--good)">green zone</b> — don't overfill! The zones shrink as you add.</div>`;
   el.innerHTML = `
     <div class="stat-line" style="padding:0 0 4px"><span>${ROUND.customer.emoji} ${ROUND.customer.name}</span>

@@ -30,6 +30,12 @@ html, body {
 /* Screens */
 .screen { display: none; flex: 1; min-height: 0; flex-direction: column; padding: 8px 0 12px; }
 .screen.active { display: flex; animation: fade .25s ease; }
+.boss-banner { margin: 4px 10px 0; padding: 8px 12px; text-align: center; font-weight: 800; font-size: 13px; border-radius: 12px;
+  color: #2a1a4a; background: linear-gradient(90deg, #ffd76a, #ff9de0, #b98cff, #ffd76a); background-size: 300% 100%;
+  animation: bossshine 3s linear infinite; box-shadow: 0 0 16px rgba(255,180,120,.5); }
+@keyframes bossshine { 0% { background-position: 0% 0; } 100% { background-position: 300% 0; } }
+.boss-emoji { animation: bossbob 1.4s ease-in-out infinite; filter: drop-shadow(0 0 14px rgba(255,200,120,.9)); }
+@keyframes bossbob { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.06); } }
 .screen.shake { animation: scrshake .58s cubic-bezier(.36,.07,.19,.97); }
 @keyframes scrshake {
   10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(4px); }

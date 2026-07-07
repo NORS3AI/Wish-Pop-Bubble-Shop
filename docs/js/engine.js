@@ -26,6 +26,10 @@ const BALANCE = {
   ALLERGY_CHANCE: 0.55, ALLERGY_YELLOW_AT: 2, ALLERGY_RED_AT: 4, ALLERGY_CLEANSE: 3,
   ALLERGY_BAIT_CHANCE: 0.42,     // chance a filler ingredient carries the allergy magic (keeps it a live risk)
   SNEEZE_AT: 15,                 // >this many ingredients into the cauldron → the customer sneezes up a new allergy
+  BOSS_EVERY: 5,                 // every Nth customer is a picky VIP "boss"
+  BOSS_REQUIRED_BONUS: 8,        // boss needs a higher match
+  BOSS_BAND_TIGHT: 0.68,         // boss green zones are this fraction as wide (pickier)
+  BOSS_PAYMENT_MULT: 1.7,        // boss pays more → more scoops/bubbles + bigger reward
 
   // Scoop / bubbles — each scoop rolls its own yield; each bubble = one haul item.
   BUBBLES_PER_SCOOP_MIN: 2, BUBBLES_PER_SCOOP_MAX: 4, MIN_BUBBLES: 8,
@@ -80,9 +84,9 @@ function difficultyFor(servedTotal) {
 function needCountFor(diff) { return diff === "easy" ? 1 : diff === "medium" ? 2 : 3; }
 
 /* --- Wish generation ---------------------------------------------------- */
-function generateWish(customer, diff) {
+function generateWish(customer, diff, isBoss) {
   const wt = DATA.WISH_TYPES[customer.wishType];
-  const count = needCountFor(diff);
+  const count = isBoss ? 3 : needCountFor(diff);       // boss always wants all three
   const pools = [wt.main, wt.second, wt.twist];
   const chosen = [];
   for (let i = 0; i < count; i++) {
@@ -91,17 +95,22 @@ function generateWish(customer, diff) {
   }
   const labels = ["Main Need", "Second Need", "Final Twist"];
   const needs = chosen.map((type, i) => ({ type, label: labels[i], target: BALANCE.NEED_TARGET, revealed: i === 0 }));
-  let allergy = null;
-  if (diff === "hard" || diff === "veryhard") {
-    const roll = diff === "veryhard" ? true : R.chance(BALANCE.ALLERGY_CHANCE);
-    if (roll) {
-      const forbidden = chosen.slice();
-      let a = DATA.ALLERGY_IDEAS[customer.id];
-      if (!a || forbidden.includes(a)) a = R.pick(DATA.MAGIC_TYPES.filter(m => !forbidden.includes(m)));
-      allergy = a;
-    }
+  const pickAllergy = forbidden => {
+    let a = DATA.ALLERGY_IDEAS[customer.id];
+    if (!a || forbidden.includes(a)) a = R.pick(DATA.MAGIC_TYPES.filter(m => !forbidden.includes(m)));
+    return forbidden.includes(a) ? null : a;
+  };
+  let allergy = null, allergy2 = null;
+  if (isBoss) {
+    // a picky VIP: two allergies from the start
+    allergy = pickAllergy(chosen);
+    allergy2 = pickAllergy(chosen.concat(allergy ? [allergy] : []));
+  } else if (diff === "hard" || diff === "veryhard") {
+    if (diff === "veryhard" || R.chance(BALANCE.ALLERGY_CHANCE)) allergy = pickAllergy(chosen.slice());
   }
-  return { needs, requiredMatch: BALANCE.REQUIRED_MATCH[diff], difficulty: diff, weights: BALANCE.NEED_WEIGHTS[count], allergy, allergy2: null };
+  const requiredMatch = BALANCE.REQUIRED_MATCH[diff] + (isBoss ? BALANCE.BOSS_REQUIRED_BONUS : 0);
+  return { needs, requiredMatch, difficulty: diff, weights: BALANCE.NEED_WEIGHTS[count], allergy, allergy2,
+    boss: !!isBoss, bandTight: isBoss ? BALANCE.BOSS_BAND_TIGHT : 1 };
 }
 
 /* --- Haul: the hand of items popped from bubbles ------------------------
@@ -179,9 +188,11 @@ function bonusBubbleItems(wish, n, chainChance) {
 function newRound(state) {
   const customer = R.pick(DATA.CUSTOMERS);
   const diff = difficultyFor(state.servedTotal);
-  const wish = generateWish(customer, diff);
+  const isBoss = ((state.servedTotal || 0) + 1) % BALANCE.BOSS_EVERY === 0;
+  const wish = generateWish(customer, diff, isBoss);
   const [pmin, pmax] = BALANCE.PAYMENT_RANGE[diff];
-  const payment = R.int(pmin / 10, pmax / 10) * 10;
+  let payment = R.int(pmin / 10, pmax / 10) * 10;
+  if (isBoss) payment = Math.round(payment * BALANCE.BOSS_PAYMENT_MULT / 10) * 10; // more scoops + reward
   const scoops = Math.max(1, Math.round(payment / 10));
   const smax = BALANCE.BUBBLES_PER_SCOOP_MAX + (state.betterScoop ? 1 : 0);
   const scoopYields = [];
@@ -251,8 +262,9 @@ function allergyStatus(slots, allergyType, offset) {
 
 /* Current green-band edges given how many ingredients are in the pot (it narrows
  * as you add more — reward for an efficient, few-ingredient mix). */
-function bandFor(slotsUsed) {
-  const half = Math.max(BALANCE.BAND_HALF_MIN, BALANCE.BAND_HALF_BASE - BALANCE.BAND_SHRINK_PER_ADD * slotsUsed);
+function bandFor(slotsUsed, tight) {
+  let half = Math.max(BALANCE.BAND_HALF_MIN, BALANCE.BAND_HALF_BASE - BALANCE.BAND_SHRINK_PER_ADD * slotsUsed);
+  half *= (tight || 1); // boss customers get narrower green zones
   return { low: BALANCE.NEED_TARGET - half, high: BALANCE.NEED_TARGET + half };
 }
 function pointsForNeed(slots, type) {
@@ -269,7 +281,7 @@ function pointsForNeed(slots, type) {
 }
 /* --- Scoring: SWEET SPOT — land each need in its green band ------------- */
 function scoreMix(slots, wish, allergyOffset) {
-  const band = bandFor(slots.length);
+  const band = bandFor(slots.length, wish.bandTight);
   const perNeed = wish.needs.map(need => {
     const points = pointsForNeed(slots, need.type);
     let pct;
@@ -307,6 +319,8 @@ function scoreResult(round) {
   const required = round.wish.requiredMatch;
   const success = weighted >= required;
   const hiddenAtServe = round.wish.needs.filter(n => !n.revealed).length;
+  const needCount = round.wish.needs.length;
+  const tidy = round.slots.length <= needCount + 1; // efficient serve (scales with needs)
   // worst zone across all allergies drives the payout; note which magic reacted
   const worst = allergies.reduce((acc, a) => a.zone === "red" ? "red" : (a.zone === "yellow" && acc !== "red" ? "yellow" : acc), "green");
   const reacting = allergies.find(a => a.zone === worst && worst !== "green") || allergies[0] || null;
@@ -321,7 +335,7 @@ function scoreResult(round) {
   } else {
     type = DATA.RESULT_TYPES.full; gold = round.payment;
     // tips only on a clean win (no allergy reaction)
-    if (hiddenAtServe > 0) quickTip = hiddenAtServe * BALANCE.QUICK_TIP_PER_HIDDEN;
+    if (tidy) quickTip = needCount * BALANCE.QUICK_TIP_PER_HIDDEN; // efficient serve: bonus scales with needs
     if (weighted >= Math.min(100, required + BALANCE.QUALITY_MARGIN)) qualityTip = BALANCE.QUALITY_TIP;
     tip = quickTip + qualityTip; gold += tip;
   }
