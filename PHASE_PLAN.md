@@ -286,6 +286,23 @@ Direct fixes from the next playtest:
   (easy/medium/hard/veryhard). Easy/medium are intentionally winnable tutorial
   tiers; the shrinking band + hidden needs make hard/very‑hard the real puzzle.
 
+### v4.2 — make the green actually matter (✅ BUILT)
+Playtest: "all three bars *just under* the green still scored 90% (>80% needed),"
+and "the main need in the green propped up two weak ones." Both came from the same
+place — the below‑band score was a straight line from zero, so *almost* in the
+green ≈ in the green. Fixes:
+- **Steep below‑band falloff (`BELOW_BAND_POW` 2.4).** Missing the green now drops
+  a bar fast: ~90% of the way → 78%, ~80% of the way → 59% (was 90 / 80). Landing
+  *in* the green is the only route to full marks; in‑green still scores 100.
+- **Equal need weights (0.34 / 0.33 / 0.33).** Every need counts the same, so one
+  green bar can't carry two laggards (main‑green + two weak → 53%, a clear fail).
+- **Target 6 (was 7)** so all three needs are *reachable* within 6 slots — the
+  harder scoring bites near‑misses without making a good draft impossible.
+- Required match retuned to **50 / 60 / 68 / 80**. Sim (optimistic bot that sees
+  every need): win ≈ **100 / 79 / 54 / 49%**; real play runs a touch harder since
+  needs 2–3 start hidden. Meaningfully tougher than the old 100/98/69/59, and a
+  three‑near‑miss potion now fails a demanding customer instead of sneaking a win.
+
 ---
 
 ## Phase 5 — Magic Allergy system — ✅ DONE

@@ -7,17 +7,18 @@
 const BALANCE = {
   // Scoring — SWEET SPOT: each need wants magic in a green target BAND around a
   // center, not "as much as possible". Small chunks so amount is controllable.
-  NEED_TARGET: 7,               // center of the green band (magic points)
+  NEED_TARGET: 6,               // center of the green band (magic points) — reachable for all 3 needs in 6 slots
   MAIN_POWER: 2, SECONDARY_POWER: 1, POTENT_MULT: 2.5, // small chunks (granularity)
   BAND_HALF_BASE: 2.5,          // green band half-width with 0 ingredients
   BAND_SHRINK_PER_ADD: 0.18,    // band narrows this much per ingredient in the pot
   BAND_HALF_MIN: 1.5,           // never narrower than this
   OVERSHOOT_K: 11,              // % a need loses per magic point past the band
+  BELOW_BAND_POW: 2.4,          // <1 falls off fast: being just under the green is punished
   BAR_MAX: 13,                  // meter display scale (points)
-  NEED_WEIGHTS: { 1: [1.0], 2: [0.6, 0.4], 3: [0.4, 0.3, 0.3] }, // Main / Second / Final
+  NEED_WEIGHTS: { 1: [1.0], 2: [0.5, 0.5], 3: [0.34, 0.33, 0.33] }, // every need weighs the same
 
   // Difficulty by customers served
-  REQUIRED_MATCH: { easy: 50, medium: 60, hard: 70, veryhard: 80 },
+  REQUIRED_MATCH: { easy: 50, medium: 60, hard: 68, veryhard: 80 },
   PAYMENT_RANGE:  { easy: [20, 30], medium: [20, 40], hard: [30, 50], veryhard: [40, 60] },
   CONSOLATION_FRACTION: 0.35,   // partial-credit gold on a miss (scaled to match)
 
@@ -200,7 +201,7 @@ function scoreMix(slots, wish, allergyOffset) {
     const points = pointsForNeed(slots, need.type);
     let pct;
     if (points >= band.low && points <= band.high) pct = 100;      // in the sweet spot
-    else if (points < band.low) pct = Math.round((points / band.low) * 100); // ramp up
+    else if (points < band.low) pct = Math.round(Math.pow(points / band.low, BALANCE.BELOW_BAND_POW) * 100); // ramp up (steep: reward reaching the green)
     else pct = Math.max(0, Math.round(100 - (points - band.high) * BALANCE.OVERSHOOT_K)); // curdled
     return { type: need.type, label: need.label, pct, points, bandLow: band.low, bandHigh: band.high };
   });

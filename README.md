@@ -63,7 +63,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   **shrink as you add**, so a tidy few‑ingredient mix beats dumping everything. Only
   the main need is shown; the other two are **mystery bars you discover** as your
   ingredients move them. This is the real puzzle the game was missing.
-- ✨ **Clearer & fairer (latest tweaks).** Bars now say **“✓ in the green!”** and
+- ⚖️ **The green matters now.** Falling *just short* of a green zone used to still
+  score high — so three near‑misses could sneak a win. Now missing the green drops
+  that bar's score fast, and **every need counts equally** (no more coasting on the
+  main one while two others lag). You have to land all of them. Demanding customers
+  genuinely demand a tidy, on‑target potion.
+- ✨ **Clearer & fairer (earlier tweaks).** Bars now say **“✓ in the green!”** and
   glow when you nail a zone, so it's obvious you've hit it. Mystery needs stay secret
   until you **play an ingredient whose main magic matches** them (no more countdown
   timers). Bubbles drop **more ingredients** and the cauldron holds a tidier set of
