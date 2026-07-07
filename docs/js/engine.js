@@ -31,8 +31,8 @@ const BALANCE = {
   // Haul composition — mostly ingredients now (fatter hand)
   CHARM_DROP_CHANCE: 0.10, CHARM_DROP_CHANCE_FINDER: 0.20, // with "Charm Finder" upgrade
   GOLD_DROP_CHANCE: 0.06, TREAT_DROP_CHANCE: 0.04,
-  BONUS_BUBBLE_CHANCE: 0.08,            // a bubble that pops into MORE bubbles
-  BONUS_SPAWN_MIN: 1, BONUS_SPAWN_MAX: 2, // how many extra bubbles a bonus yields
+  BONUS_BUBBLE_CHANCE: 0.12,            // a bubble that pops into MORE (golden) bubbles
+  BONUS_SPAWN_MIN: 2, BONUS_SPAWN_MAX: 3, // how many extra golden bubbles a bonus yields
   GOLD_MIN: 3, GOLD_MAX: 8,
   NEED_BIAS: 0.38,               // chance a filler ingredient matches a need
   WILD_STRENGTH: 3,             // magic points the Wild charm adds

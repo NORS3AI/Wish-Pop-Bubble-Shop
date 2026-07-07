@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v10"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v11"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -249,11 +249,12 @@ const POP_FLAVOR = {
 let popCombo = 0, lastPopAt = 0, cascadeOn = false;
 
 // one floating bubble button, with a randomized wander path so each drifts differently.
-// Bonus bubbles get a golden look so you can spot them; other rewards stay a surprise.
-function bubbleHTML(i, kind) {
+// Original bubbles all look the same (their contents are a surprise). Only the extra
+// bubbles that a bonus SPAWNS are golden — pass golden=true for those.
+function bubbleHTML(i, golden) {
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const dur = (5.5 + Math.random() * 3).toFixed(1), del = (Math.random() * 4).toFixed(1);
-  const cls = kind === "bubble" ? "pbubble bonus" : "pbubble";
+  const cls = golden ? "pbubble bonus" : "pbubble";
   return `<button class="${cls}" data-i="${i}" style="--dur:${dur}s;--del:-${del}s;` +
     `--ax:${rnd(-46, 46)}px;--ay:${rnd(-34, 34)}px;--bx:${rnd(-46, 46)}px;--by:${rnd(-30, 34)}px;` +
     `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span>🫧</button>`;
@@ -261,7 +262,7 @@ function bubbleHTML(i, kind) {
 
 function renderPop() {
   ROUND.popIndex = 0; popCombo = 0; lastPopAt = 0; cascadeOn = false;
-  const bubbles = ROUND.haul.map((it, i) => bubbleHTML(i, it.kind)).join("");
+  const bubbles = ROUND.haul.map((_, i) => bubbleHTML(i)).join("");
   html("pop", `
     ${hud("Pop Phase")}
     <button class="mute-btn" id="mute-btn" title="Sound on/off">${SFX.isMuted() ? "🔇" : "🔊"}</button>
@@ -316,6 +317,7 @@ function popAt(i, el, fromCascade) {
     SFX.pop(popCombo); SFX.bonus(); flashScreen();
     ringAt(cx, cy); burstAt(cx, cy, flavor); burstAt(cx, cy, flavor); // extra-big burst
     floatReward(cx, cy, info, true);
+    el.classList.add("big"); // trigger bubble pops bigger even though it looks normal
   } else {
     SFX.pop(popCombo); SFX.reveal(info.kind, popCombo);
     burstAt(cx, cy, flavor); floatReward(cx, cy, info, flavor.rare);
@@ -334,7 +336,7 @@ function spawnBonusBubbles(cx, cy) {
   const items = ENGINE.bonusBubbleItems(ROUND.wish, n);
   items.forEach((it, k) => {
     const idx = ROUND.haul.length; ROUND.haul.push(it);
-    const holder = document.createElement("div"); holder.innerHTML = bubbleHTML(idx, it.kind);
+    const holder = document.createElement("div"); holder.innerHTML = bubbleHTML(idx, true);
     const nb = holder.firstElementChild; nb.classList.add("spawning");
     nb.addEventListener("click", () => popAt(+nb.dataset.i, nb));
     field.appendChild(nb);
