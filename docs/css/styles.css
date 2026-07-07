@@ -560,7 +560,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
  * ======================================================================== */
 /* trash "bubble" on the result screen (reuses the drifting .rbub-wrap layer) */
 .rbub.tbub { background: radial-gradient(circle at 38% 30%, #d9c9a8, #b09a72 60%, #7d6a4a);
-  color: #3a2e18; width: 46px; height: 46px; font-size: 22px; }
+  color: #3a2e18; width: 72px; height: 72px; font-size: 36px; }
 .rbub.tbub .art-emoji, .rbub.tbub img.art { max-width: 1.1em; }
 
 /* recycle grid */
