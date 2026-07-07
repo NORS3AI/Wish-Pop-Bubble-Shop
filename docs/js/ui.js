@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v18"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v19"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -450,13 +450,15 @@ function popAt(i, el, fromCascade, power) {
 // A bonus bubble bursts into more bubbles that fly out into the field.
 function spawnBonusBubbles(cx, cy) {
   const field = $("#bubble-field"); if (!field) return;
-  // hard cap total bonus-spawned bubbles per round so chains can't run away
-  const remaining = BALANCE.BONUS_MAX_SPAWN - (ROUND.bonusSpawned || 0);
+  // normal rounds cap low (modest chains); rare "frenzy" rounds go big
+  const frenzy = ROUND.bonusFrenzy;
+  const cap = frenzy ? BALANCE.BONUS_MAX_FRENZY : BALANCE.BONUS_MAX_SPAWN;
+  const remaining = cap - (ROUND.bonusSpawned || 0);
   if (remaining <= 0) return;
   const n = Math.min(R.int(BALANCE.BONUS_SPAWN_MIN, BALANCE.BONUS_SPAWN_MAX), remaining);
   ROUND.bonusSpawned = (ROUND.bonusSpawned || 0) + n;
-  const allowChain = ROUND.bonusSpawned < BALANCE.BONUS_MAX_SPAWN; // near the cap → these can't chain further
-  const items = ENGINE.bonusBubbleItems(ROUND.wish, n, allowChain);
+  const chainChance = ROUND.bonusSpawned < cap ? (frenzy ? BALANCE.BONUS_CHAIN_FRENZY : BALANCE.BONUS_CHAIN_CHANCE) : 0;
+  const items = ENGINE.bonusBubbleItems(ROUND.wish, n, chainChance);
   items.forEach((it, k) => {
     const idx = ROUND.haul.length; ROUND.haul.push(it);
     const holder = document.createElement("div"); holder.innerHTML = bubbleHTML(idx, true);
@@ -650,7 +652,7 @@ function paintMixTop() {
   // quality (or a Wild charm's magic) is that need. No timers.
   w.needs.forEach(n => {
     if (n.revealed) return;
-    const found = ROUND.slots.some(inst => inst.wild ? inst.magic === n.type : D.INGREDIENT_BY_ID[inst.id].qualities[0] === n.type);
+    const found = ROUND.slots.some(inst => (inst.wild || inst.essence) ? inst.magic === n.type : D.INGREDIENT_BY_ID[inst.id].qualities[0] === n.type);
     if (found) n.revealed = true;
   });
   const req = w.requiredMatch, meets = score.weighted >= req;
@@ -692,7 +694,9 @@ function paintMix() {
   const slotCells = [];
   for (let i = 0; i < ROUND.maxSlots; i++) {
     const inst = ROUND.slots[i];
-    const face = inst ? (inst.wild ? "🌈" : D.INGREDIENT_BY_ID[inst.id].emoji) : "";
+    const face = !inst ? "" : inst.wild ? "🌈"
+      : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>`
+      : D.INGREDIENT_BY_ID[inst.id].emoji;
     slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""}">${face}</div>`);
   }
   const tray = ROUND.charms.length
@@ -712,7 +716,7 @@ function paintMix() {
     </div>
     <button class="btn good" id="serve-btn" ${ROUND.slots.length === 0 ? "disabled" : ""}>✨ Serve the Wish</button>
     ${ROUND.inventory.length
-      ? `<div class="inv-2row" id="inv-row">${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("")}</div>`
+      ? `<div class="inv-2row ${ROUND.cutMode ? "cutting" : ""}" id="inv-row">${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("")}</div>`
       : `<div class="muted" style="text-align:center;padding:12px">Bag empty — serve what's in the pot!</div>`}
     ${familiarToken("mix")}
   `);
@@ -723,9 +727,15 @@ function paintMix() {
   wireFamiliar("mix");
 }
 function invTile(inst, idx) {
+  if (inst.essence) {
+    return `<div class="inv-tile essence" id="invt-${idx}">
+      <div class="emoji"><span class="orb" style="background:${D.MAGIC[inst.magic]}"></span></div>
+      <div class="nm">${inst.magic} Essence</div><div class="q">${magicDot(inst.magic)} pure ${inst.magic}</div></div>`;
+  }
   const ing = D.INGREDIENT_BY_ID[inst.id];
+  const cuttable = ROUND.cutMode ? " cuttable" : "";
   const quals = ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0];
-  return `<div class="inv-tile ${inst.potent ? "potent" : ""}" id="invt-${idx}">
+  return `<div class="inv-tile ${inst.potent ? "potent" : ""}${cuttable}" id="invt-${idx}">
     <div class="emoji">${ing.emoji}</div><div class="nm">${inst.potent ? "✨" : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
 }
 function allergyMeter(a) {
@@ -736,14 +746,30 @@ function allergyMeter(a) {
     <div class="meter" style="background:rgba(255,90,90,0.12)"><i style="width:${pct}%;background:${col}"></i></div></div>`;
 }
 function addToSlot(idx, fromEl) {
+  if (ROUND.cutMode) { cutIngredient(idx, fromEl); return; }
   if (ROUND.slots.length >= ROUND.maxSlots) { toast("The cauldron is full!"); return; }
   const inst = ROUND.inventory.splice(idx, 1)[0];
   if (ROUND.potentNext) { inst.potent = true; ROUND.potentNext = false; toast("✨ Potent!"); }
   const cauldron = document.getElementById("cauldron");
-  if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), D.INGREDIENT_BY_ID[inst.id].emoji);
+  const flyChar = inst.essence ? "💧" : D.INGREDIENT_BY_ID[inst.id].emoji;
+  if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), flyChar);
   ROUND.slots.push(inst);
   paintMix();
   const c2 = document.getElementById("cauldron"); if (c2) { c2.classList.remove("splash"); void c2.offsetWidth; c2.classList.add("splash"); }
+}
+// Knife: cut an ingredient into one pure-magic essence per quality.
+function cutIngredient(idx, fromEl) {
+  const inst = ROUND.inventory[idx];
+  if (!inst || !inst.id || inst.essence) { toast("Pick a whole ingredient to cut."); return; }
+  const ing = D.INGREDIENT_BY_ID[inst.id];
+  ROUND.inventory.splice(idx, 1);
+  ing.qualities.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: false }));
+  const ki = ROUND.charms.indexOf("knife"); if (ki >= 0) ROUND.charms.splice(ki, 1);
+  ROUND.cutMode = false;
+  SFX.unlock(); SFX.chop();
+  if (navigator.vibrate) navigator.vibrate([8, 30, 8]);
+  toast(`🔪 Cut ${ing.name} into ${ing.qualities.length} pure magics!`);
+  paintMix();
 }
 function playCharm(i) {
   const id = ROUND.charms[i]; if (!id) return; const w = ROUND.wish;
@@ -753,6 +779,11 @@ function playCharm(i) {
   else if (id === "potent") { if (ROUND.potentNext) { toast("Potent is already primed."); return; } ROUND.potentNext = true; toast("✨ Your next ingredient counts double!"); consume(); }
   else if (id === "peek") { const n = w.needs.find(x => !x.revealed); if (!n) { toast("All needs already revealed."); return; } n.revealed = true; toast(`⏭️ Revealed: ${n.type}!`); consume(); }
   else if (id === "wild") { if (ROUND.slots.length >= ROUND.maxSlots) { toast("The cauldron is full!"); return; } const magic = R.pick(w.needs.map(x => x.type)); ROUND.slots.push({ wild: true, magic, strength: BALANCE.WILD_STRENGTH }); toast(`🌈 Wild ${magic} magic added!`); consume(); }
+  else if (id === "knife") {
+    if (ROUND.cutMode) { ROUND.cutMode = false; toast("🔪 Knife away."); paintMix(); return; }
+    if (!ROUND.inventory.some(x => x.id && !x.essence)) { toast("No whole ingredient to cut!"); return; }
+    ROUND.cutMode = true; toast("🔪 Tap an ingredient to cut it into its magics."); paintMix();
+  }
 }
 
 /* ======================================================================= */

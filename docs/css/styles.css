@@ -361,6 +361,13 @@ html, body {
 .inv-tile .q { font-size: 12px; color: var(--ink-dim); line-height: 1.15; }
 .inv-tile.wild { border-style: dashed; }
 .inv-tile.potent { box-shadow: 0 0 8px var(--gold); border-color: var(--gold); }
+.inv-tile.essence { border-style: dashed; border-color: rgba(255,255,255,.5); }
+.orb { display: inline-block; width: 26px; height: 26px; border-radius: 50%;
+  box-shadow: 0 0 7px rgba(255,255,255,.55), inset 0 -4px 6px rgba(0,0,0,.28); }
+.slot .orb { width: 24px; height: 24px; }
+/* knife cut mode: whole ingredients pulse, inviting a tap */
+.inv-2row.cutting .inv-tile.cuttable { cursor: pointer; outline: 2px solid var(--gold); animation: cutpulse 1s ease-in-out infinite; }
+@keyframes cutpulse { 0%,100% { box-shadow: 0 0 0 rgba(255,215,120,0); } 50% { box-shadow: 0 0 12px rgba(255,215,120,.85); } }
 
 /* Triple-match celebration */
 .triple-overlay { position: absolute; inset: 0; z-index: 45; display: flex; align-items: center; justify-content: center;

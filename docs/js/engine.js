@@ -36,8 +36,12 @@ const BALANCE = {
   CHARM_CAPS: { cleanse: 1, insight: 1, peek: 2 },         // per-round caps (potent/wild uncapped)
   GOLD_DROP_CHANCE: 0.06, TREAT_DROP_CHANCE: 0.025,
   BONUS_BUBBLE_CHANCE: 0.12,            // a bubble that pops into MORE (golden) bubbles
-  BONUS_SPAWN_MIN: 1, BONUS_SPAWN_MAX: 2, // how many extra golden bubbles a bonus yields
-  BONUS_MAX_SPAWN: 8,                   // hard cap on total bonus-spawned bubbles per round (kills runaway chains)
+  BONUS_SPAWN_MIN: 2, BONUS_SPAWN_MAX: 3, // how many extra golden bubbles a bonus yields (feels rewarding)
+  BONUS_MAX_SPAWN: 12,                  // normal per-round cap (chains stay modest, decay fast)
+  BONUS_CHAIN_CHANCE: 0.15,            // normal re-bonus chance (sub-critical → dies down)
+  BONUS_FRENZY_CHANCE: 0.12,           // per-round: a rare "bonus frenzy" with a runaway chain
+  BONUS_MAX_FRENZY: 24,                // frenzy cap (crazy spawns, but bounded)
+  BONUS_CHAIN_FRENZY: 0.5,             // frenzy re-bonus chance (super-critical → explodes to the cap)
   GOLD_MIN: 3, GOLD_MAX: 8,
   NEED_BIAS: 0.38,               // chance a filler ingredient matches a need
   WILD_STRENGTH: 3,             // magic points the Wild charm adds
@@ -157,11 +161,11 @@ function generateHaul(wish, count, charmFinder) {
 }
 /* Contents of a bonus bubble: extra ingredients (biased to the wish's needs),
  * with an occasional treat. No gold/charms — keeps the gold economy in check. */
-function bonusBubbleItems(wish, n, allowChain) {
+function bonusBubbleItems(wish, n, chainChance) {
   const needs = wish.needs.map(nd => nd.type);
   const out = [];
   for (let i = 0; i < n; i++) {
-    if (allowChain && R.chance(0.08)) { out.push({ kind: "bubble" }); continue; } // bonus can beget bonus (rare, hard-capped by caller)
+    if (chainChance && R.chance(chainChance)) { out.push({ kind: "bubble" }); continue; } // bonus can beget bonus (caller controls the rate + cap)
     if (R.chance(0.06)) { out.push({ kind: "treat" }); continue; }
     let ing;
     if (R.chance(0.6)) { const t = R.pick(needs); const s = DATA.INGREDIENTS.filter(x => x.qualities[0] === t); ing = R.pick(s.length ? s : DATA.INGREDIENTS); }
@@ -190,6 +194,15 @@ function newRound(state) {
   scoopJackpots.forEach((j, i) => { if (j) scoopYields[i] += 2; });
   bubbles = scoopYields.reduce((a, b) => a + b, 0);
   const haul = generateHaul(wish, bubbles, !!state.charmFinder);
+  // Rare "bonus frenzy" round: seed a couple of bonus bubbles so the runaway chain
+  // reliably kicks off (otherwise it depends on the haul happening to have one).
+  const bonusFrenzy = R.chance(BALANCE.BONUS_FRENZY_CHANCE);
+  if (bonusFrenzy) {
+    let seeded = 0;
+    for (let i = 0; i < haul.length && seeded < 2; i++) {
+      if (haul[i].kind === "ingredient") { haul[i] = { kind: "bubble" }; seeded++; }
+    }
+  }
   return {
     customer, wish, payment, bubblesTotal: bubbles, scoops, scoopYields, scoopJackpots, haul,
     inventory: [],           // ingredient instances drafted from popping
@@ -197,6 +210,8 @@ function newRound(state) {
     slots: [],               // ingredients (and played Wild charms) in the cauldron
     maxSlots: BALANCE.MIX_SLOTS,
     bonusSpawned: 0,         // running count of bonus-spawned bubbles (hard-capped)
+    bonusFrenzy,             // rare rounds get a runaway chain
+
     treatsUsed: 0, potentNext: false, allergyOffset: 0, insight: false,
     result: null,
   };
@@ -205,9 +220,9 @@ function newRound(state) {
 /* --- Triple match: 3 identical ingredients -> 1 Potent ------------------ */
 function applyTripleMatch(inventory) {
   const counts = {};
-  inventory.forEach(inst => { if (!inst.wild) counts[inst.id] = (counts[inst.id] || 0) + 1; });
+  inventory.forEach(inst => { if (inst.id && !inst.wild && !inst.essence) counts[inst.id] = (counts[inst.id] || 0) + 1; });
   const out = [], merged = [];
-  inventory.filter(i => i.wild).forEach(i => out.push(i));
+  inventory.filter(i => i.wild || i.essence).forEach(i => out.push(i)); // pass wild + essences through untouched
   Object.keys(counts).forEach(id => {
     let n = counts[id];
     while (n >= 3) { out.push({ id, potent: true }); merged.push(id); n -= 3; }
@@ -222,6 +237,7 @@ function allergyStatus(slots, allergyType, offset) {
   let points = 0;
   slots.forEach(inst => {
     if (inst.wild) { if (inst.magic === allergyType) points += inst.strength; return; }
+    if (inst.essence) { if (inst.magic === allergyType) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1); return; }
     const ing = DATA.INGREDIENT_BY_ID[inst.id];
     let p = ingredientPointsFor(ing, allergyType);
     if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
@@ -242,6 +258,7 @@ function pointsForNeed(slots, type) {
   let points = 0;
   slots.forEach(inst => {
     if (inst.wild) { if (inst.magic === type) points += inst.strength; return; }
+    if (inst.essence) { if (inst.magic === type) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1); return; }
     const ing = DATA.INGREDIENT_BY_ID[inst.id];
     let p = ingredientPointsFor(ing, type);
     if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT * 10) / 10;

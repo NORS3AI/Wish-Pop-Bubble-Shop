@@ -145,6 +145,12 @@ const SFX = (() => {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
     noiseBurst(t, 0.3, { freq: 500, q: 0.4, peak: 0.14, type: "bandpass" });
   }
+  // Knife chop — a crisp downward slice.
+  function chop() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    noiseBurst(t, 0.08, { freq: 3500, q: 1.5, peak: 0.28, type: "highpass" });
+    tone(500, t, 0.1, { type: "sawtooth", peak: 0.18, glideTo: 120 });
+  }
   // A cartoony "achoo!" — a nasal inhale then a wet burst.
   function sneeze() {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
@@ -153,5 +159,5 @@ const SFX = (() => {
     tone(430, t + 0.24, 0.3, { type: "sawtooth", peak: 0.2, glideTo: 130 });      // falling honk
   }
 
-  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, sneeze, whoosh };
+  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, sneeze, chop, whoosh };
 })();
