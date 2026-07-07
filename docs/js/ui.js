@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v8"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v9"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -240,18 +240,26 @@ function renderScoop() {
 const CHARM = id => D.SPECIAL_CHARMS[id];
 // visual flavor per reward kind: bubble tint + burst particle colors + rarity
 const POP_FLAVOR = {
-  ingredient: { tint: "rgba(150,200,255,", parts: ["#8fd3ff", "#bfe3ff", "#ffffff"], rare: 0 },
-  treat:      { tint: "rgba(150,235,170,", parts: ["#7ee08a", "#b6f5c4", "#ffffff"], rare: 0 },
-  gold:       { tint: "rgba(255,210,110,", parts: ["#ffd76a", "#ffb43c", "#fff3c0"], rare: 1 },
-  charm:      { tint: "rgba(220,150,255,", parts: ["#e6a3ff", "#a97bff", "#ffd76a", "#7ee08a"], rare: 2 },
+  ingredient: { parts: ["#8fd3ff", "#bfe3ff", "#ffffff"], rare: 0 },
+  treat:      { parts: ["#7ee08a", "#b6f5c4", "#ffffff"], rare: 0 },
+  gold:       { parts: ["#ffd76a", "#ffb43c", "#fff3c0"], rare: 1 },
+  bubble:     { parts: ["#8fe9ff", "#c9f6ff", "#ffffff", "#ffe38a"], rare: 1 },
+  charm:      { parts: ["#e6a3ff", "#a97bff", "#ffd76a", "#7ee08a"], rare: 2 },
 };
 let popCombo = 0, lastPopAt = 0, cascadeOn = false;
 
+// one floating bubble button, with a randomized wander path so each drifts differently
+function bubbleHTML(i) {
+  const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
+  const dur = (5.5 + Math.random() * 3).toFixed(1), del = (Math.random() * 4).toFixed(1);
+  return `<button class="pbubble" data-i="${i}" style="--dur:${dur}s;--del:-${del}s;` +
+    `--ax:${rnd(-46, 46)}px;--ay:${rnd(-34, 34)}px;--bx:${rnd(-46, 46)}px;--by:${rnd(-30, 34)}px;` +
+    `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span>🫧</button>`;
+}
+
 function renderPop() {
   ROUND.popIndex = 0; popCombo = 0; lastPopAt = 0; cascadeOn = false;
-  const bubbles = ROUND.haul.map((_, i) =>
-    `<button class="pbubble" data-i="${i}" style="--d:${(i % 7) * 0.28}s;--x:${((i * 53) % 60) - 30}px"><span class="sheen"></span>🫧</button>`
-  ).join("");
+  const bubbles = ROUND.haul.map((_, i) => bubbleHTML(i)).join("");
   html("pop", `
     ${hud("Pop Phase")}
     <button class="mute-btn" id="mute-btn" title="Sound on/off">${SFX.isMuted() ? "🔇" : "🔊"}</button>
@@ -279,6 +287,7 @@ function itemInfo(item) {
   if (item.kind === "ingredient") { const ing = D.INGREDIENT_BY_ID[item.id]; return { emoji: ing.emoji, label: ing.name, kind: "ingredient" }; }
   if (item.kind === "charm") { const ch = CHARM(item.id); return { emoji: ch.emoji, label: ch.name + " charm!", kind: "charm" }; }
   if (item.kind === "gold") return { emoji: "🪙", label: "+" + item.amt + " gold", kind: "gold" };
+  if (item.kind === "bubble") return { emoji: "🫧", label: "Bonus bubbles!", kind: "bubble" };
   return { emoji: "🐸", label: "+1 treat", kind: "treat" };
 }
 
@@ -296,16 +305,36 @@ function popAt(i, el, fromCascade) {
   // combo builds if you keep popping quickly
   const now = Date.now();
   popCombo = (now - lastPopAt < 700) ? popCombo + 1 : 0; lastPopAt = now;
-  SFX.pop(popCombo); SFX.reveal(info.kind, popCombo);
-  if (navigator.vibrate) navigator.vibrate(flavor.rare ? [10, 20, 12] : 12);
+  const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
 
-  const r = el.getBoundingClientRect();
-  burstAt(r.left + r.width / 2, r.top + r.height / 2, flavor);
-  floatReward(r.left + r.width / 2, r.top + r.height / 2, info, flavor.rare);
-  if (flavor.rare >= 2) flashScreen();
+  // special reveals get their own sound + celebration
+  if (item.kind === "charm") { SFX.pop(popCombo); SFX.charm(); charmCelebrate(info.emoji); flashScreen(); }
+  else if (item.kind === "bubble") { SFX.pop(popCombo); SFX.bonus(); }
+  else { SFX.pop(popCombo); SFX.reveal(info.kind, popCombo); }
+  if (navigator.vibrate) navigator.vibrate(flavor.rare ? [10, 22, 14] : 12);
+
+  burstAt(cx, cy, flavor);
+  floatReward(cx, cy, info, flavor.rare);
 
   el.classList.add("popped");
+  if (item.kind === "bubble") spawnBonusBubbles();
   if (!fromCascade) refreshPop();
+}
+
+// A bonus bubble bursts into more bubbles that drop into the field.
+function spawnBonusBubbles() {
+  const field = $("#bubble-field"); if (!field) return;
+  const n = R.int(BALANCE.BONUS_SPAWN_MIN, BALANCE.BONUS_SPAWN_MAX);
+  const items = ENGINE.bonusBubbleItems(ROUND.wish, n);
+  items.forEach(it => {
+    const idx = ROUND.haul.length; ROUND.haul.push(it);
+    const holder = document.createElement("div"); holder.innerHTML = bubbleHTML(idx);
+    const nb = holder.firstElementChild; nb.classList.add("spawning");
+    nb.addEventListener("click", () => popAt(+nb.dataset.i, nb));
+    field.appendChild(nb);
+    setTimeout(() => nb.classList.remove("spawning"), 480);
+  });
+  refreshPop();
 }
 
 function popCascade() {
@@ -354,6 +383,14 @@ function flashScreen() {
   const sc = screen("pop"); if (!sc) return;
   if (!flashEl) { flashEl = document.createElement("div"); flashEl.className = "screen-flash"; }
   sc.appendChild(flashEl); flashEl.classList.remove("go"); void flashEl.offsetWidth; flashEl.classList.add("go");
+}
+// Charm: a big spinning emoji with golden rays bursts from the center.
+function charmCelebrate(emoji) {
+  const sc = screen("pop"); if (!sc) return;
+  const ov = document.createElement("div"); ov.className = "charm-celebrate";
+  ov.innerHTML = `<span class="rays"></span><span class="ch">${emoji}</span>`;
+  sc.appendChild(ov);
+  setTimeout(() => ov.remove(), 1100);
 }
 
 function refreshPop() {
@@ -591,6 +628,10 @@ function familiarUndo() {
 }
 
 /* boot */
+// test-only hook (enabled with localStorage wishpop_test=1) for automated checks
+if (localStorage.getItem("wishpop_test") === "1") {
+  window.__wp = { get ROUND() { return ROUND; }, popAt, spawnBonusBubbles, charmCelebrate };
+}
 window.addEventListener("load", renderStart);
 
 })();

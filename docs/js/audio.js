@@ -83,6 +83,19 @@ const SFX = (() => {
       tone(n, t, 0.2, { type: "triangle", peak: 0.2 });
     }
   }
+  // Bonus bubble — a bright rising "more bubbles!" flourish (four quick steps up).
+  function bonus() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.06, 0.18, { type: "triangle", peak: 0.26 }));
+    noiseBurst(t + 0.05, 0.4, { freq: 5000, q: 0.5, peak: 0.06, type: "highpass" });
+  }
+  // Charm — a rich sparkly fanfare (rising arpeggio + a shimmer tail + a final ding).
+  function charm() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    [523, 622, 784, 1047, 1319].forEach((f, i) => tone(f, t + i * 0.08, 0.3, { type: "triangle", peak: 0.24 }));
+    tone(1568, t + 0.44, 0.5, { type: "sine", peak: 0.22 }); // final ding
+    noiseBurst(t, 0.7, { freq: 6500, q: 0.4, peak: 0.06, type: "highpass" }); // shimmer
+  }
   // Granular sift (for the scoop phase). intensity 0..1 shapes brightness.
   function sift(dur = 0.25, intensity = 0.5) {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
@@ -93,5 +106,5 @@ const SFX = (() => {
     noiseBurst(t, 0.3, { freq: 500, q: 0.4, peak: 0.14, type: "bandpass" });
   }
 
-  return { unlock, setMuted, isMuted, toggle, pop, reveal, sift, whoosh };
+  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, whoosh };
 })();

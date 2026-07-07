@@ -119,18 +119,50 @@ html, body {
   border-radius: 50%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.9);
   background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.95), rgba(170,150,255,.42) 52%, rgba(120,80,180,.30) 100%);
   border: 1.5px solid rgba(255,255,255,.4); box-shadow: 0 6px 16px rgba(0,0,0,.28), inset 0 -6px 10px rgba(90,50,140,.35);
-  animation: bfloat 3.4s ease-in-out infinite; animation-delay: var(--d, 0s);
-  transition: transform .1s ease; -webkit-tap-highlight-color: transparent; }
+  animation: bfloat var(--dur, 6s) ease-in-out infinite; animation-delay: var(--del, 0s);
+  -webkit-tap-highlight-color: transparent; }
 .pbubble .sheen { position: absolute; top: 12%; left: 20%; width: 34%; height: 26%; border-radius: 50%;
   background: rgba(255,255,255,.7); filter: blur(1px); pointer-events: none; }
-.pbubble:active { transform: scale(1.14); }
 .pbubble.popped { animation: bpop .34s cubic-bezier(.3,1.4,.5,1) forwards; pointer-events: none; }
-@keyframes bfloat { 0%,100% { transform: translateY(0); } 50% { transform: translate(var(--x,0), -9px); } }
+.pbubble.spawning { animation: bspawn .48s cubic-bezier(.2,1.5,.4,1) both; }
+/* gentle wander around a wider area so you chase them a little */
+@keyframes bfloat {
+  0%,100% { transform: translate(0, 0); }
+  25% { transform: translate(var(--ax,0), var(--ay,0)); }
+  50% { transform: translate(var(--bx,0), var(--by,0)); }
+  75% { transform: translate(var(--cx,0), var(--cy,0)); }
+}
 @keyframes bpop {
   0% { transform: scale(1); }
   35% { transform: scale(1.35); box-shadow: 0 0 24px rgba(255,255,255,.85); filter: brightness(1.5); }
   100% { transform: scale(0); opacity: 0; }
 }
+@keyframes bspawn {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 18px rgba(140,233,255,.9); }
+  100% { transform: scale(1); }
+}
+
+/* Charm celebration: a big spinning emoji with golden rays */
+.charm-celebrate { position: absolute; inset: 0; z-index: 58; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.charm-celebrate .ch { font-size: 84px; animation: charmpop 1.05s cubic-bezier(.2,1.4,.4,1) forwards;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,.5)); }
+.charm-celebrate .rays { position: absolute; width: 260px; height: 260px; border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(255,227,138,.55), rgba(255,227,138,0) 22deg, rgba(255,227,138,.55) 45deg,
+    rgba(255,227,138,0) 67deg, rgba(255,227,138,.55) 90deg, rgba(255,227,138,0) 112deg, rgba(255,227,138,.55) 135deg,
+    rgba(255,227,138,0) 157deg, rgba(255,227,138,.55) 180deg, rgba(255,227,138,0) 202deg, rgba(255,227,138,.55) 225deg,
+    rgba(255,227,138,0) 247deg, rgba(255,227,138,.55) 270deg, rgba(255,227,138,0) 292deg, rgba(255,227,138,.55) 315deg,
+    rgba(255,227,138,0) 337deg, rgba(255,227,138,.55) 360deg);
+  -webkit-mask: radial-gradient(circle, transparent 30%, #000 32%, #000 70%, transparent 72%);
+  mask: radial-gradient(circle, transparent 30%, #000 32%, #000 70%, transparent 72%);
+  animation: rayspin 1.05s ease-out forwards; }
+@keyframes charmpop {
+  0% { transform: scale(0) rotate(-90deg); opacity: 0; }
+  45% { transform: scale(1.25) rotate(10deg); opacity: 1; }
+  70% { transform: scale(1.1) rotate(-4deg); }
+  100% { transform: scale(1.35) translateY(-14px); opacity: 0; }
+}
+@keyframes rayspin { 0% { transform: scale(.4) rotate(0deg); opacity: 0; } 40% { opacity: .9; } 100% { transform: scale(1.1) rotate(120deg); opacity: 0; } }
 
 .burst-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
 .particle { position: fixed; border-radius: 50%; transform: translate(-50%, -50%);
