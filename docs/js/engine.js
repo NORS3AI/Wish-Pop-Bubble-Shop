@@ -67,10 +67,10 @@ const BALANCE = {
   WELL_COST: 200,               // gold per toss
   STARDUST_SKIN_COST: 120,      // Stardust to buy any specific skin directly (pity path)
   WELL_TIERS: [
-    { id: "fizzle",  weight: 38, gold:   [40, 90]  }, // a little gold back (a net loss — the sting)
-    { id: "treats",  weight: 25, treats: [3, 6]     }, // a handful of treats
-    { id: "stardust",weight: 22, dust:   [25, 45]   }, // Stardust toward a guaranteed skin
-    { id: "skin",    weight: 15, dustIfOwnAll: 80    }, // a NEW random skin (or big Stardust if you own them all)
+    { id: "fizzle",  weight: 40, gold:   [40, 90]  }, // a little gold back (a net loss — the sting)
+    { id: "treats",  weight: 26, treats: [3, 6]     }, // a handful of treats
+    { id: "stardust",weight: 28, dust:   [25, 45]   }, // Stardust — the reliable path to a guaranteed skin
+    { id: "skin",    weight:  6, dustIfOwnAll: 80    }, // a NEW random skin (rare lucky bonus; else Stardust)
   ],
 
   // Trash (failure consolation): a FAILED wish pays NO coins — instead the

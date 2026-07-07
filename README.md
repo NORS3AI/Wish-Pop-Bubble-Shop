@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🏠 **A menu button on every screen.** The top bar now has a **☰** button on every
+  screen, so you can hop back to the home menu any time — no more getting stuck in
+  the play loop. (Mid‑round it asks first, since that round won't be saved.)
+- 🎯 **Wishing Well skins are properly rare now.** Winning a brand‑new skin straight
+  from the Well was too common — it's now a genuine lucky treat. Saving up
+  **Stardust** to buy the exact skin you want is the reliable path.
 - 🛍️ **Mystery bags in the trash.** Sometimes the junk a customer throws includes a
   **crumpled paper bag** — and you can't recycle it until you **open it** in the bin.
   Usually it's just more junk… but every so often it's a **💍 Gold Ring** you can

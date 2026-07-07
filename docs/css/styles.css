@@ -593,3 +593,10 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   background: radial-gradient(circle at 40% 30%, rgba(255,220,120,.4), rgba(255,180,60,.2));
   box-shadow: 0 0 12px rgba(255,210,100,.55); animation: treasureglow 1.6s ease-in-out infinite; }
 @keyframes treasureglow { 0%,100% { box-shadow: 0 0 10px rgba(255,210,100,.45); } 50% { box-shadow: 0 0 18px rgba(255,220,120,.8); } }
+
+/* --- HUD home/menu button (present on every screen's HUD) --- */
+.hud-left { display: inline-flex; align-items: center; gap: 8px; }
+.hud-menu { width: 30px; height: 30px; border-radius: 9px; padding: 0; cursor: pointer;
+  border: 1px solid var(--line); background: rgba(255,255,255,.14); color: var(--ink);
+  font-size: 16px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.hud-menu:active { transform: scale(.9); filter: brightness(1.15); }

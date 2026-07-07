@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v33"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v34"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -91,9 +91,19 @@ function shade(hex, amt) {
   const cl = v => Math.max(0, Math.min(255, Math.round(v + 255 * amt)));
   return `rgb(${cl(r)},${cl(g)},${cl(b)})`;
 }
-function hud(title) {
-  return `<div class="hud"><span>🐸 <span class="treatcount">${GAME.treats}</span> treats</span>
+function hud(title, opts) {
+  const home = !(opts && opts.noHome);
+  return `<div class="hud"><span class="hud-left">${home ? `<button class="hud-menu" id="hud-menu" aria-label="Menu">☰</button>` : ""}🐸 <span class="treatcount">${GAME.treats}</span></span>
     <span class="title">${title}</span><span class="gold">🪙 ${GAME.gold}</span></div>`;
+}
+// Escape hatch present on every screen's HUD: back to the home screen. If a round
+// is in progress (scoop/pop/cauldron) we confirm first, since it won't be saved.
+function goHome() {
+  const active = document.querySelector(".screen.active");
+  const inRound = active && /screen-(scoop|pop|mix)$/.test(active.id);
+  const leave = () => { if (ROUND && ROUND._mixTimer) { clearInterval(ROUND._mixTimer); ROUND._mixTimer = null; } renderStart(); };
+  if (inRound) confirmDialog("Leave this round and head to the menu? This round won't be saved.", leave);
+  else leave();
 }
 function syncHud(id) {
   const g = document.querySelector("#screen-" + id + " .hud .gold"); if (g) g.textContent = "🪙 " + GAME.gold;
@@ -105,7 +115,7 @@ function syncHud(id) {
 /* ======================================================================= */
 function renderStart() {
   html("start", `
-    ${hud("Bubble Shop")}
+    ${hud("Bubble Shop", { noHome: true })}
     <div class="grow center">
       <div class="bubble-emojis">🫧 ✨ 🫧</div>
       <div class="logo">Wish Pop</div>
@@ -1501,6 +1511,8 @@ function familiarUndo() {
 if (localStorage.getItem("wishpop_test") === "1") {
   window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu };
 }
+// one delegated handler covers the HUD menu button on every screen (no per-render wiring)
+document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
 window.addEventListener("load", () => { applyCustomBackground(); renderStart(); });
 
 })();
