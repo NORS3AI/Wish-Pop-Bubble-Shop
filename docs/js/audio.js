@@ -96,15 +96,27 @@ const SFX = (() => {
     tone(1568, t + 0.44, 0.5, { type: "sine", peak: 0.22 }); // final ding
     noiseBurst(t, 0.7, { freq: 6500, q: 0.4, peak: 0.06, type: "highpass" }); // shimmer
   }
-  // Granular sift (for the scoop phase). intensity 0..1 shapes brightness.
+  // Granular sift (for the scoop phase). intensity 0..1 shapes brightness/loudness.
   function sift(dur = 0.25, intensity = 0.5) {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
-    noiseBurst(t, dur, { freq: 2500 + intensity * 4000, q: 0.5, peak: 0.12, type: "bandpass" });
+    noiseBurst(t, dur, { freq: 2200 + intensity * 4500, q: 0.5, peak: 0.06 + intensity * 0.12, type: "bandpass" });
+  }
+  // Bubbles floating up and off — a soft rising glide.
+  function lift() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    tone(440, t, 0.5, { type: "sine", peak: 0.16, glideTo: 1100, attack: 0.05 });
+    tone(660, t + 0.05, 0.45, { type: "sine", peak: 0.1, glideTo: 1500 });
+  }
+  // Scoop diving into the glitter — a granular whoosh with a low body.
+  function scoop() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    noiseBurst(t, 0.34, { freq: 1600, q: 0.5, peak: 0.16, type: "bandpass" });
+    tone(180, t, 0.3, { type: "sine", peak: 0.16, glideTo: 90 });
   }
   function whoosh() {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
     noiseBurst(t, 0.3, { freq: 500, q: 0.4, peak: 0.14, type: "bandpass" });
   }
 
-  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, whoosh };
+  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, whoosh };
 })();

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v11"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v12"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -190,46 +190,120 @@ function renderCustomer() {
 /* ======================================================================= */
 function renderScoop() {
   const scoops = ROUND.scoops, split = ROUND.scoopYields;
-  let idx = 0, revealed = 0;
+  const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
+  const GLITTER = 18, BATCH = 3;
+  let idx = 0, revealed = 0, state = "idle", shakeDist = 0, lastX = null, dragging = false, autoIv = null;
+
   html("scoop", `
     ${hud("Scoop Phase")}
-    <div class="grow center" style="gap:16px">
-      <div id="scoop-token" class="ph big" style="position:relative">
-        <span id="scoop-face">🥄</span>
-        <span id="glitter" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px">✨✨</span>
+    <button class="mute-btn" id="mute-btn" title="Sound on/off">${SFX.isMuted() ? "🔇" : "🔊"}</button>
+    <div class="scoop-sub muted" id="scoop-step">Scoop 1 of ${scoops}</div>
+    <div class="scoop-instr" id="scoop-text">✋ Swipe side to side to shake off the glitter!</div>
+    <div class="scoop-stage" id="scoop-stage">
+      <div class="scoop-craft" id="scoop-craft">
+        <div class="scoop-bubbles" id="scoop-bubbles"></div>
+        <div class="scoop-bowl">🥄</div>
+        <div class="glitter-cover" id="glitter-cover"></div>
       </div>
-      <div id="scoop-step" class="muted">Scoop 1 of ${scoops}</div>
-      <div id="scoop-text" style="font-size:20px;font-weight:800;min-height:26px">Tap to sift the glitter!</div>
-      <div id="scoop-result" class="muted"></div>
+      <div class="glitter-pile"></div>
     </div>
+    <div class="scoop-result muted" id="scoop-result"></div>
     <div class="row">
-      <button class="btn secondary" id="auto-sift">Auto Sift</button>
+      <button class="btn secondary" id="auto-sift">✨ Shake for me</button>
       <button class="btn" id="scoop-continue" disabled>Continue</button>
     </div>
     ${familiarToken("scoop")}
   `);
-  function siftOne() {
-    if (idx >= scoops) return;
-    SFX.unlock(); SFX.sift(0.28, 0.6);
-    const found = split[idx]; revealed += found; idx++;
-    const g = $("#glitter"); if (g) { g.textContent = "🫧"; g.style.transition = "opacity .3s"; g.style.opacity = "0"; }
-    const face = $("#scoop-face"); if (face) face.textContent = "🫧";
-    $("#scoop-text").innerHTML = `🫧 <b>${found}</b> found!`;
-    $("#scoop-result").textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
-    if (idx < scoops) {
-      $("#scoop-step").textContent = `Scoop ${idx + 1} of ${scoops}`;
-      setTimeout(() => { const g2 = $("#glitter"); if (g2) { g2.textContent = "✨✨"; g2.style.opacity = "1"; } const f2 = $("#scoop-face"); if (f2) f2.textContent = "🥄"; const t = $("#scoop-text"); if (t) t.textContent = "Tap to sift the glitter!"; }, 350);
-    } else finish();
+
+  function loadScoop() {
+    const found = split[idx];
+    const bubs = $("#scoop-bubbles"); if (bubs) { bubs.innerHTML = "";
+      for (let i = 0; i < found; i++) { const s = document.createElement("span"); s.className = "sbub"; s.textContent = "🫧"; bubs.appendChild(s); } }
+    const cover = $("#glitter-cover"); if (cover) { cover.innerHTML = "";
+      for (let i = 0; i < GLITTER; i++) { const g = document.createElement("i"); g.className = "gspeck";
+        g.style.left = rnd(4, 90) + "%"; g.style.top = rnd(6, 86) + "%";
+        g.style.setProperty("--tw", (0.6 + Math.random() * 1.2).toFixed(2) + "s");
+        g.style.animationDelay = (-Math.random() * 1.2).toFixed(2) + "s"; cover.appendChild(g); } }
+    state = "shaking"; shakeDist = 0;
+    const st = $("#scoop-step"); if (st) st.textContent = `Scoop ${idx + 1} of ${scoops}`;
+    const tx = $("#scoop-text"); if (tx) tx.innerHTML = "✋ Swipe side to side to shake off the glitter!";
   }
+
+  function shakeTick(intensity) {
+    if (state !== "shaking") return;
+    const cover = $("#glitter-cover"); if (!cover) return;
+    const left = [...cover.querySelectorAll(".gspeck:not(.gone)")];
+    if (!left.length) { reveal(); return; }
+    SFX.sift(0.16, Math.max(0.3, Math.min(1, intensity)));
+    if (navigator.vibrate) navigator.vibrate(6);
+    const craft = $("#scoop-craft"); if (craft) { craft.classList.remove("jig"); void craft.offsetWidth; craft.classList.add("jig"); }
+    left.slice(0, BATCH).forEach(g => { g.classList.add("gone");
+      g.style.setProperty("--fx", rnd(-46, 46) + "px"); g.style.setProperty("--fy", (44 + rnd(0, 60)) + "px");
+      setTimeout(() => g.remove(), 520); });
+    if (left.length - BATCH <= 0) setTimeout(reveal, 200);
+  }
+
+  function reveal() {
+    if (state !== "shaking") return; state = "revealing";
+    const found = split[idx]; revealed += found;
+    SFX.lift();
+    const tx = $("#scoop-text"); if (tx) tx.innerHTML = `✨ <b>${found}</b> bubble${found === 1 ? "" : "s"}!`;
+    const rs = $("#scoop-result"); if (rs) rs.textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
+    const bubs = $("#scoop-bubbles");
+    if (bubs) [...bubs.children].forEach((b, k) => { b.style.setProperty("--fx", rnd(-40, 40) + "px"); b.style.animationDelay = (k * 0.06).toFixed(2) + "s"; b.classList.add("floatup"); });
+    setTimeout(advance, 850);
+  }
+
+  function advance() {
+    idx++;
+    if (idx >= scoops) { finish(); return; }
+    const craft = $("#scoop-craft"); state = "diving";
+    if (craft) { craft.classList.add("diving"); }
+    SFX.scoop();
+    setTimeout(loadScoop, 300);                                   // refill at the bottom of the dive
+    setTimeout(() => { if (craft) craft.classList.remove("diving"); }, 560);
+  }
+
   function finish() {
-    $("#scoop-step").textContent = "All scooped!";
-    $("#scoop-text").innerHTML = `🫧 <b>${revealed}</b> Wish Bubbles to pop!`;
+    state = "done";
+    const st = $("#scoop-step"); if (st) st.textContent = "All scooped!";
+    const tx = $("#scoop-text"); if (tx) tx.innerHTML = `✨ <b>${revealed}</b> Wish Bubbles ready!`;
+    const rs = $("#scoop-result"); if (rs) rs.textContent = "Tap Continue to go pop them →";
     const cbtn = $("#scoop-continue"); if (cbtn) cbtn.disabled = false;
     const a = $("#auto-sift"); if (a) a.disabled = true;
+    if (autoIv) { clearInterval(autoIv); autoIv = null; }
   }
-  on("#scoop-token", "click", siftOne);
-  on("#auto-sift", "click", () => { while (idx < scoops) siftOne(); });
-  on("#scoop-continue", "click", renderPop);
+
+  // --- drag-to-shake input ---
+  const stage = $("#scoop-stage");
+  const px = e => (e.touches ? e.touches[0].clientX : e.clientX);
+  stage.addEventListener("pointerdown", e => {
+    if (state !== "shaking") return; dragging = true; lastX = px(e); SFX.unlock();
+    try { stage.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  stage.addEventListener("pointermove", e => {
+    if (!dragging || state !== "shaking") return;
+    const x = px(e), dx = x - lastX; lastX = x;
+    const craft = $("#scoop-craft"); if (craft) craft.style.transform = `rotate(${Math.max(-9, Math.min(9, dx * 0.5))}deg)`;
+    shakeDist += Math.abs(dx);
+    if (shakeDist >= 52) { shakeDist = 0; shakeTick(Math.abs(dx) / 40 + 0.4); }
+  });
+  const endDrag = () => { dragging = false; const craft = $("#scoop-craft"); if (craft) { craft.style.transition = "transform .2s"; craft.style.transform = ""; setTimeout(() => { if (craft) craft.style.transition = ""; }, 200); } };
+  stage.addEventListener("pointerup", endDrag);
+  stage.addEventListener("pointercancel", endDrag);
+
+  on("#auto-sift", "click", () => {
+    SFX.unlock(); const a = $("#auto-sift"); if (a) a.disabled = true;
+    if (autoIv) return;
+    autoIv = setInterval(() => {
+      if (state === "done") { clearInterval(autoIv); autoIv = null; return; }
+      if (state === "shaking") shakeTick(0.7);
+    }, 150);
+  });
+  on("#scoop-continue", "click", () => { if (autoIv) clearInterval(autoIv); renderPop(); });
+  on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
+
+  loadScoop();
   wireFamiliar("scoop");
   show("scoop");
 }
