@@ -107,6 +107,12 @@ const SFX = (() => {
     tone(440, t, 0.5, { type: "sine", peak: 0.16, glideTo: 1100, attack: 0.05 });
     tone(660, t + 0.05, 0.45, { type: "sine", peak: 0.1, glideTo: 1500 });
   }
+  // One pip per bubble as it floats up — rises in pitch so you can hear the count.
+  function count(step = 0) {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    const f = 520 + step * 70;
+    tone(f, t, 0.16, { type: "triangle", peak: 0.26, glideTo: f * 1.5, attack: 0.004 });
+  }
   // Scoop diving into the glitter — a granular whoosh with a low body.
   function scoop() {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
@@ -118,5 +124,5 @@ const SFX = (() => {
     noiseBurst(t, 0.3, { freq: 500, q: 0.4, peak: 0.14, type: "bandpass" });
   }
 
-  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, whoosh };
+  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, whoosh };
 })();

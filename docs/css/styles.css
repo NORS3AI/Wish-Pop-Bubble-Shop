@@ -242,11 +242,14 @@ html, body {
 @keyframes sdive { 0% { transform: translateY(0); } 45% { transform: translateY(160px) scale(.82); } 100% { transform: translateY(0); } }
 .scoop-bowl { font-size: 120px; line-height: 1; filter: drop-shadow(0 8px 14px rgba(0,0,0,.4)); z-index: 0; }
 .scoop-bubbles { position: absolute; inset: 22% 12% 30% 12%; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 0 2px; z-index: 1; }
-.sbub { font-size: 22px; }
-.sbub.floatup { animation: sfloat .85s ease-in forwards; }
-@keyframes sfloat { 0% { transform: translate(0,0); opacity: 1; } 20% { opacity: 1; } 100% { transform: translate(var(--fx,0), -72vh); opacity: 0; } }
+.sbub { font-size: 22px; opacity: 0; } /* hidden under the glitter until shaken free */
+.sbub.floatup { animation: sfloat .9s ease-in forwards; }
+@keyframes sfloat { 0% { transform: translate(0,0); opacity: 0; } 12% { opacity: 1; transform: translateY(-6px); } 100% { transform: translate(var(--fx,0), -72vh); opacity: 0; } }
 .glitter-cover { position: absolute; inset: -8%; z-index: 2; pointer-events: none; }
-.gspeck { position: absolute; width: 11px; height: 11px; border-radius: 50%;
+.glitter-film { position: absolute; left: 14%; top: 12%; width: 72%; height: 66%; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255,228,155,.98), rgba(255,205,95,.92) 50%, rgba(255,190,70,.4) 82%, rgba(255,190,70,0) 100%);
+  filter: blur(2px); transition: opacity .25s ease; }
+.gspeck { position: absolute; width: var(--sz,11px); height: var(--sz,11px); border-radius: 50%;
   background: radial-gradient(circle at 40% 35%, #fff, #ffe38a 55%, rgba(255,190,70,.25));
   box-shadow: 0 0 7px rgba(255,220,130,.9); animation: gtwinkle var(--tw,1s) ease-in-out infinite; }
 @keyframes gtwinkle { 0%,100% { opacity: .55; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.2); } }

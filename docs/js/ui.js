@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v12"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v13"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -191,7 +191,7 @@ function renderCustomer() {
 function renderScoop() {
   const scoops = ROUND.scoops, split = ROUND.scoopYields;
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
-  const GLITTER = 18, BATCH = 3;
+  const GLITTER = 30, BATCH = 4;
   let idx = 0, revealed = 0, state = "idle", shakeDist = 0, lastX = null, dragging = false, autoIv = null;
 
   html("scoop", `
@@ -219,9 +219,11 @@ function renderScoop() {
     const found = split[idx];
     const bubs = $("#scoop-bubbles"); if (bubs) { bubs.innerHTML = "";
       for (let i = 0; i < found; i++) { const s = document.createElement("span"); s.className = "sbub"; s.textContent = "🫧"; bubs.appendChild(s); } }
-    const cover = $("#glitter-cover"); if (cover) { cover.innerHTML = "";
+    const cover = $("#glitter-cover"); if (cover) {
+      cover.innerHTML = '<div class="glitter-film" id="glitter-film"></div>'; // opaque cover that hides the bubbles
       for (let i = 0; i < GLITTER; i++) { const g = document.createElement("i"); g.className = "gspeck";
-        g.style.left = rnd(4, 90) + "%"; g.style.top = rnd(6, 86) + "%";
+        g.style.left = rnd(2, 92) + "%"; g.style.top = rnd(4, 88) + "%";
+        g.style.setProperty("--sz", (8 + rnd(0, 6)) + "px");
         g.style.setProperty("--tw", (0.6 + Math.random() * 1.2).toFixed(2) + "s");
         g.style.animationDelay = (-Math.random() * 1.2).toFixed(2) + "s"; cover.appendChild(g); } }
     state = "shaking"; shakeDist = 0;
@@ -240,18 +242,24 @@ function renderScoop() {
     left.slice(0, BATCH).forEach(g => { g.classList.add("gone");
       g.style.setProperty("--fx", rnd(-46, 46) + "px"); g.style.setProperty("--fy", (44 + rnd(0, 60)) + "px");
       setTimeout(() => g.remove(), 520); });
-    if (left.length - BATCH <= 0) setTimeout(reveal, 200);
+    const after = Math.max(0, left.length - BATCH);
+    const film = $("#glitter-film"); if (film) film.style.opacity = (after / GLITTER).toFixed(2); // thin out the cover
+    if (after <= 0) setTimeout(reveal, 200);
   }
 
   function reveal() {
     if (state !== "shaking") return; state = "revealing";
     const found = split[idx]; revealed += found;
-    SFX.lift();
+    const film = $("#glitter-film"); if (film) film.style.opacity = "0";
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = `✨ <b>${found}</b> bubble${found === 1 ? "" : "s"}!`;
     const rs = $("#scoop-result"); if (rs) rs.textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
-    const bubs = $("#scoop-bubbles");
-    if (bubs) [...bubs.children].forEach((b, k) => { b.style.setProperty("--fx", rnd(-40, 40) + "px"); b.style.animationDelay = (k * 0.06).toFixed(2) + "s"; b.classList.add("floatup"); });
-    setTimeout(advance, 850);
+    const bubs = $("#scoop-bubbles"); const kids = bubs ? [...bubs.children] : [];
+    // bubbles float up ONE AT A TIME, each with its own rising pip so you can hear the count
+    kids.forEach((b, k) => setTimeout(() => {
+      b.style.setProperty("--fx", rnd(-40, 40) + "px"); b.classList.add("floatup");
+      SFX.count(k); if (navigator.vibrate) navigator.vibrate(5);
+    }, 130 + k * 175));
+    setTimeout(advance, 130 + found * 175 + 700);
   }
 
   function advance() {

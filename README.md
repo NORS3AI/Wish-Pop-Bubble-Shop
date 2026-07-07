@@ -64,9 +64,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   the main need is shown; the other two are **mystery bars you discover** as your
   ingredients move them. This is the real puzzle the game was missing.
 - 🥄 **Hands-on scooping (ASMR).** The scoop step is now tactile: your scoop comes
-  up caked in **golden glitter**, and you **swipe your finger side to side to shake
-  it off** (with a granular sift sound and buzz). When it's clear, you're told how
-  many bubbles you found and they **float up and off the screen**; if you have
+  up **fully caked in golden glitter** (the bubbles are hidden underneath), and you
+  **swipe your finger side to side to shake it off** (with a granular sift sound and
+  buzz). When it's clear, the bubbles **float up and off the screen one at a time,
+  each with its own rising note** so you can *hear* how many you found. If you have
   another scoop, the spoon **dives back into the glitter** and pulls up a fresh one
   to shake. There's a "✨ Shake for me" button if you'd rather not swipe.
 - 🎉 **More pop-phase delight.** Bubbles now **drift and wander** around the screen

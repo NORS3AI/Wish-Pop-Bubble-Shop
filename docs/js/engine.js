@@ -135,6 +135,7 @@ function bonusBubbleItems(wish, n) {
   const needs = wish.needs.map(nd => nd.type);
   const out = [];
   for (let i = 0; i < n; i++) {
+    if (R.chance(0.18)) { out.push({ kind: "bubble" }); continue; } // bonus can beget bonus (chains, decays fast)
     if (R.chance(0.15)) { out.push({ kind: "treat" }); continue; }
     let ing;
     if (R.chance(0.6)) { const t = R.pick(needs); const s = DATA.INGREDIENTS.filter(x => x.qualities[0] === t); ing = R.pick(s.length ? s : DATA.INGREDIENTS); }
