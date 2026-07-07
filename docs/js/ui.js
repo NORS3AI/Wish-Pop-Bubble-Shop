@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v24"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v25"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -200,6 +200,8 @@ function renderScoop() {
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const GLITTER = 30, BATCH = 4;
   let idx = 0, revealed = 0, state = "idle", shakeDist = 0, lastX = null, dragging = false, autoIv = null;
+  let skipMode = false;                          // after "Shake for me", the button becomes "Skip"
+  const jackDone = new Array(scoops).fill(false); // which scoops have already handed out their jackpot charm
 
   html("scoop", `
     ${hud("Scoop Phase")}
@@ -266,7 +268,7 @@ function renderScoop() {
     if (jackpot) {
       SFX.charm(); // fanfare
       jackCharm = ENGINE.pickCappedCharm(ROUND.charms);
-      ROUND.charms.push(jackCharm); if (ROUND.stats) ROUND.stats.charms++; // awarded straight into the tray
+      ROUND.charms.push(jackCharm); jackDone[idx] = true; if (ROUND.stats) ROUND.stats.charms++; // awarded straight into the tray
     }
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
       ? `🌈 <b>Jackpot!</b> ${found} bubbles + ${CHARM(jackCharm).emoji} ${CHARM(jackCharm).name} charm!`
@@ -282,6 +284,7 @@ function renderScoop() {
   }
 
   function advance() {
+    if (state === "done") return;                // skipped straight to popping
     idx++;
     if (idx >= scoops) { finish(); return; }
     const craft = $("#scoop-craft"); state = "diving";
@@ -297,8 +300,24 @@ function renderScoop() {
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = `✨ <b>${revealed}</b> Wish Bubbles ready!`;
     const rs = $("#scoop-result"); if (rs) rs.textContent = "Tap Continue to go pop them →";
     const cbtn = $("#scoop-continue"); if (cbtn) cbtn.disabled = false;
-    const a = $("#auto-sift"); if (a) a.disabled = true;
+    // keep the Skip button live (it just jumps to popping); only gray the plain "Shake for me"
+    const a = $("#auto-sift"); if (a && !skipMode) a.disabled = true;
     if (autoIv) { clearInterval(autoIv); autoIv = null; }
+  }
+
+  // Skip the remaining scoop visuals and go straight to popping. Still hands out
+  // any jackpot charms from scoops that haven't been revealed yet, so nothing is lost.
+  function skipToPopping() {
+    if (autoIv) { clearInterval(autoIv); autoIv = null; }
+    for (let i = 0; i < scoops; i++) {
+      if (isJackpot(i) && !jackDone[i]) {
+        jackDone[i] = true;
+        const ch = ENGINE.pickCappedCharm(ROUND.charms);
+        ROUND.charms.push(ch); if (ROUND.stats) ROUND.stats.charms++;
+      }
+    }
+    state = "done";
+    renderPop();
   }
 
   // --- drag-to-shake input ---
@@ -320,7 +339,11 @@ function renderScoop() {
   stage.addEventListener("pointercancel", endDrag);
 
   on("#auto-sift", "click", () => {
-    SFX.unlock(); const a = $("#auto-sift"); if (a) a.disabled = true;
+    SFX.unlock();
+    if (skipMode) { skipToPopping(); return; }   // second press: skip straight to popping
+    // first press: auto-shake for me, and turn this button into a live "Skip"
+    skipMode = true;
+    const a = $("#auto-sift"); if (a) { a.textContent = "⏭️ Skip"; a.classList.remove("secondary"); }
     if (autoIv) return;
     autoIv = setInterval(() => {
       if (state === "done") { clearInterval(autoIv); autoIv = null; return; }

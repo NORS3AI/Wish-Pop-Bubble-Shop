@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ⏭️ **Skip the scoop visuals.** In the scoop phase, **“✨ Shake for me”** now turns
+  into a **“⏭️ Skip”** button once you tap it — press again to jump straight to
+  popping. Any jackpot charms from scoops you skipped are still handed to you, so
+  you never miss a reward.
 - 🎉 **Reward bubbles + a Perfect celebration.** When you succeed, your pay now
   arrives as **poppable bubbles that float around the result screen** — one **big
   golden bubble** holding your base gold, plus a **little coin bubble for every
