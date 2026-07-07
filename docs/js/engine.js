@@ -29,13 +29,15 @@ const BALANCE = {
 
   // Scoop / bubbles — each scoop rolls its own yield; each bubble = one haul item.
   BUBBLES_PER_SCOOP_MIN: 2, BUBBLES_PER_SCOOP_MAX: 4, MIN_BUBBLES: 8,
-  JACKPOT_CHANCE: 0.10,        // a rainbow scoop: extra-full + a guaranteed charm (~1 in 3 rounds)
+  JACKPOT_CHANCE: 0.0125,      // a rainbow scoop: extra-full + a guaranteed charm (~1 in 80 scoops)
 
   // Haul composition — mostly ingredients now (fatter hand)
-  CHARM_DROP_CHANCE: 0.10, CHARM_DROP_CHANCE_FINDER: 0.20, // with "Charm Finder" upgrade
-  GOLD_DROP_CHANCE: 0.06, TREAT_DROP_CHANCE: 0.04,
+  CHARM_DROP_CHANCE: 0.08, CHARM_DROP_CHANCE_FINDER: 0.16, // with "Charm Finder" upgrade
+  CHARM_CAPS: { cleanse: 1, insight: 1, peek: 2 },         // per-round caps (potent/wild uncapped)
+  GOLD_DROP_CHANCE: 0.06, TREAT_DROP_CHANCE: 0.025,
   BONUS_BUBBLE_CHANCE: 0.12,            // a bubble that pops into MORE (golden) bubbles
-  BONUS_SPAWN_MIN: 2, BONUS_SPAWN_MAX: 3, // how many extra golden bubbles a bonus yields
+  BONUS_SPAWN_MIN: 1, BONUS_SPAWN_MAX: 2, // how many extra golden bubbles a bonus yields
+  BONUS_MAX_SPAWN: 8,                   // hard cap on total bonus-spawned bubbles per round (kills runaway chains)
   GOLD_MIN: 3, GOLD_MAX: 8,
   NEED_BIAS: 0.38,               // chance a filler ingredient matches a need
   WILD_STRENGTH: 3,             // magic points the Wild charm adds
@@ -102,6 +104,21 @@ function generateWish(customer, diff) {
  * Biased toward the customer's needs (always attemptable), with duplicates,
  * plus occasional special charms / gold / treats. Length === bubbleCount.
  * ---------------------------------------------------------------------- */
+// Pick a charm id that respects the per-round caps (cleanse 1, insight 1, peek 2;
+// potent/wild uncapped). Returns null only if literally nothing is available.
+function drawCharm(items) {
+  const held = {};
+  items.forEach(it => { if (it.kind === "charm") held[it.id] = (held[it.id] || 0) + 1; });
+  const pool = DATA.SPECIAL_CHARM_IDS.filter(id => (held[id] || 0) < (BALANCE.CHARM_CAPS[id] || Infinity));
+  return pool.length ? R.pick(pool) : null;
+}
+// Pick a charm id from a list of already-held charm ids, respecting caps (for the
+// jackpot reward, which is awarded straight into the tray).
+function pickCappedCharm(heldIds) {
+  const held = {}; (heldIds || []).forEach(id => held[id] = (held[id] || 0) + 1);
+  const pool = DATA.SPECIAL_CHARM_IDS.filter(id => (held[id] || 0) < (BALANCE.CHARM_CAPS[id] || Infinity));
+  return pool.length ? R.pick(pool) : "potent"; // potent/wild are uncapped, so always a fallback
+}
 function generateHaul(wish, count, charmFinder) {
   const needs = wish.needs.map(n => n.type);
   const mainSources = DATA.INGREDIENTS.filter(i => i.qualities[0] === needs[0]);
@@ -115,10 +132,8 @@ function generateHaul(wish, count, charmFinder) {
   while (items.length < count) {
     const r = Math.random();
     if (r < charmChance) {
-      // Insight is a one-time reveal — a second does nothing, so never draft two.
-      const haveInsight = items.some(it => it.kind === "charm" && it.id === "insight");
-      const pool = haveInsight ? DATA.SPECIAL_CHARM_IDS.filter(id => id !== "insight") : DATA.SPECIAL_CHARM_IDS;
-      items.push({ kind: "charm", id: R.pick(pool) });
+      const id = drawCharm(items);
+      if (id) items.push({ kind: "charm", id }); else items.push(ingItem(R.pick(mainSources))); // capped out → give an ingredient
     }
     else if (r < charmChance + BALANCE.GOLD_DROP_CHANCE) items.push({ kind: "gold", amt: R.int(BALANCE.GOLD_MIN, BALANCE.GOLD_MAX) });
     else if (r < charmChance + BALANCE.GOLD_DROP_CHANCE + BALANCE.TREAT_DROP_CHANCE) items.push({ kind: "treat" });
@@ -142,12 +157,12 @@ function generateHaul(wish, count, charmFinder) {
 }
 /* Contents of a bonus bubble: extra ingredients (biased to the wish's needs),
  * with an occasional treat. No gold/charms — keeps the gold economy in check. */
-function bonusBubbleItems(wish, n) {
+function bonusBubbleItems(wish, n, allowChain) {
   const needs = wish.needs.map(nd => nd.type);
   const out = [];
   for (let i = 0; i < n; i++) {
-    if (R.chance(0.18)) { out.push({ kind: "bubble" }); continue; } // bonus can beget bonus (chains, decays fast)
-    if (R.chance(0.15)) { out.push({ kind: "treat" }); continue; }
+    if (allowChain && R.chance(0.08)) { out.push({ kind: "bubble" }); continue; } // bonus can beget bonus (rare, hard-capped by caller)
+    if (R.chance(0.06)) { out.push({ kind: "treat" }); continue; }
     let ing;
     if (R.chance(0.6)) { const t = R.pick(needs); const s = DATA.INGREDIENTS.filter(x => x.qualities[0] === t); ing = R.pick(s.length ? s : DATA.INGREDIENTS); }
     else ing = R.pick(DATA.INGREDIENTS);
@@ -169,24 +184,19 @@ function newRound(state) {
   for (let i = 0; i < scoops; i++) scoopYields.push(R.int(BALANCE.BUBBLES_PER_SCOOP_MIN, smax));
   let bubbles = scoopYields.reduce((a, b) => a + b, 0);
   if (bubbles < BALANCE.MIN_BUBBLES) { scoopYields[0] += BALANCE.MIN_BUBBLES - bubbles; bubbles = BALANCE.MIN_BUBBLES; }
-  // Jackpot scoops: rainbow glitter, extra-full (+2 bubbles) and a guaranteed charm.
+  // Jackpot scoops: rainbow glitter, extra-full (+2 bubbles). The guaranteed charm
+  // is awarded directly at the scoop reveal (see UI), not hidden in the haul.
   const scoopJackpots = scoopYields.map(() => R.chance(BALANCE.JACKPOT_CHANCE));
-  const jackCount = scoopJackpots.filter(Boolean).length;
   scoopJackpots.forEach((j, i) => { if (j) scoopYields[i] += 2; });
   bubbles = scoopYields.reduce((a, b) => a + b, 0);
-  const haul = generateHaul(wish, bubbles - jackCount, !!state.charmFinder);
-  for (let i = 0; i < jackCount; i++) {
-    const have = haul.some(it => it.kind === "charm" && it.id === "insight");
-    const pool = have ? DATA.SPECIAL_CHARM_IDS.filter(id => id !== "insight") : DATA.SPECIAL_CHARM_IDS;
-    haul.push({ kind: "charm", id: R.pick(pool) });
-  }
-  R.shuffle(haul);
+  const haul = generateHaul(wish, bubbles, !!state.charmFinder);
   return {
     customer, wish, payment, bubblesTotal: bubbles, scoops, scoopYields, scoopJackpots, haul,
     inventory: [],           // ingredient instances drafted from popping
     charms: [],              // special charms held, ready to play in the cauldron
     slots: [],               // ingredients (and played Wild charms) in the cauldron
     maxSlots: BALANCE.MIX_SLOTS,
+    bonusSpawned: 0,         // running count of bonus-spawned bubbles (hard-capped)
     treatsUsed: 0, potentNext: false, allergyOffset: 0, insight: false,
     result: null,
   };
@@ -302,5 +312,5 @@ function scoreResult(round) {
 /* Expose */
 const ENGINE = {
   BALANCE, R, ingredientPointsFor, difficultyFor, needCountFor,
-  generateWish, generateHaul, bonusBubbleItems, addSneezeAllergy, newRound, applyTripleMatch, scoreMix, scoreResult, allergyStatus,
+  generateWish, generateHaul, bonusBubbleItems, pickCappedCharm, addSneezeAllergy, newRound, applyTripleMatch, scoreMix, scoreResult, allergyStatus,
 };

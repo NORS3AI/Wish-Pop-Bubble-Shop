@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v16"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v17"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -255,9 +255,14 @@ function renderScoop() {
     if (state !== "shaking") return; state = "revealing";
     const found = split[idx], jackpot = isJackpot(idx); revealed += found;
     const film = $("#glitter-film"); if (film) film.style.opacity = "0";
-    if (jackpot) SFX.charm(); // fanfare; regular scoops get the per-bubble count pips below
+    let jackCharm = null;
+    if (jackpot) {
+      SFX.charm(); // fanfare
+      jackCharm = ENGINE.pickCappedCharm(ROUND.charms);
+      ROUND.charms.push(jackCharm); // awarded straight into the tray — no need to catch it
+    }
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
-      ? `🌈 <b>Jackpot!</b> ${found} bubbles + a charm!`
+      ? `🌈 <b>Jackpot!</b> ${found} bubbles + ${CHARM(jackCharm).emoji} ${CHARM(jackCharm).name} charm!`
       : `✨ <b>${found}</b> bubble${found === 1 ? "" : "s"}!`;
     const rs = $("#scoop-result"); if (rs) rs.textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
     const bubs = $("#scoop-bubbles"); const kids = bubs ? [...bubs.children] : [];
@@ -443,8 +448,13 @@ function popAt(i, el, fromCascade, power) {
 // A bonus bubble bursts into more bubbles that fly out into the field.
 function spawnBonusBubbles(cx, cy) {
   const field = $("#bubble-field"); if (!field) return;
-  const n = R.int(BALANCE.BONUS_SPAWN_MIN, BALANCE.BONUS_SPAWN_MAX);
-  const items = ENGINE.bonusBubbleItems(ROUND.wish, n);
+  // hard cap total bonus-spawned bubbles per round so chains can't run away
+  const remaining = BALANCE.BONUS_MAX_SPAWN - (ROUND.bonusSpawned || 0);
+  if (remaining <= 0) return;
+  const n = Math.min(R.int(BALANCE.BONUS_SPAWN_MIN, BALANCE.BONUS_SPAWN_MAX), remaining);
+  ROUND.bonusSpawned = (ROUND.bonusSpawned || 0) + n;
+  const allowChain = ROUND.bonusSpawned < BALANCE.BONUS_MAX_SPAWN; // near the cap → these can't chain further
+  const items = ENGINE.bonusBubbleItems(ROUND.wish, n, allowChain);
   items.forEach((it, k) => {
     const idx = ROUND.haul.length; ROUND.haul.push(it);
     const holder = document.createElement("div"); holder.innerHTML = bubbleHTML(idx, true);

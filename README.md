@@ -70,6 +70,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   each with its own rising note** so you can *hear* how many you found. If you have
   another scoop, the spoon **dives back into the glitter** and pulls up a fresh one
   to shake. There's a "✨ Shake for me" button if you'd rather not swipe.
+- ⚖️ **Economy tune-up.** Bonus-bubble chains are now hard-capped so they can't run
+  away into dozens of ingredients, treats drop less often, and charms are capped per
+  round (max one Cleanse, one Insight, two Peek). Jackpot scoops are now genuinely
+  rare (about 1 in 80 scoops), and their guaranteed charm is handed to you **right
+  at the scoop** (named), instead of being hidden in a bubble you might miss.
 - 🤧 **The over-abundance sneeze.** If you rake in a huge pile of ingredients, the
   round would be too easy — so when you reach the cauldron the customer **sneezes**
   (screen shake + an "achoo!") and develops **a second allergy**, keeping big rounds
