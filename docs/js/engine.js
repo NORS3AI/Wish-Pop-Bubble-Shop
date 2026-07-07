@@ -23,7 +23,8 @@ const BALANCE = {
   CONSOLATION_FRACTION: 0.35,   // partial-credit gold on a miss (scaled to match)
 
   // Magic allergy (hard+ only)
-  ALLERGY_CHANCE: 0.55, ALLERGY_YELLOW_AT: 3, ALLERGY_RED_AT: 6, ALLERGY_CLEANSE: 3,
+  ALLERGY_CHANCE: 0.55, ALLERGY_YELLOW_AT: 2, ALLERGY_RED_AT: 4, ALLERGY_CLEANSE: 3,
+  ALLERGY_BAIT_CHANCE: 0.42,     // chance a filler ingredient carries the allergy magic (keeps it a live risk)
 
   // Scoop / bubbles — each scoop rolls its own yield; each bubble = one haul item.
   BUBBLES_PER_SCOOP_MIN: 2, BUBBLES_PER_SCOOP_MAX: 4, MIN_BUBBLES: 8,
@@ -121,9 +122,17 @@ function generateHaul(wish, count, charmFinder) {
     else if (r < charmChance + BALANCE.GOLD_DROP_CHANCE + BALANCE.TREAT_DROP_CHANCE) items.push({ kind: "treat" });
     else if (r < charmChance + BALANCE.GOLD_DROP_CHANCE + BALANCE.TREAT_DROP_CHANCE + BALANCE.BONUS_BUBBLE_CHANCE) items.push({ kind: "bubble" });
     else {
-      let ing;
-      if (R.chance(BALANCE.NEED_BIAS)) { const t = R.pick(needs); const s = DATA.INGREDIENTS.filter(i => i.qualities[0] === t); ing = R.pick(s.length ? s : DATA.INGREDIENTS); }
-      else ing = R.pick(DATA.INGREDIENTS);
+      let ing = null;
+      // sometimes draft a "tempting but risky" ingredient: it serves a need (so you
+      // want it) yet secretly carries the allergy magic — the real allergy risk.
+      if (wish.allergy && R.chance(BALANCE.ALLERGY_BAIT_CHANCE)) {
+        const s = DATA.INGREDIENTS.filter(i => needs.includes(i.qualities[0]) && i.qualities.includes(wish.allergy));
+        if (s.length) ing = R.pick(s); // main = a need (full value), allergy only a hidden +1 secondary
+      }
+      if (!ing) {
+        if (R.chance(BALANCE.NEED_BIAS)) { const t = R.pick(needs); const s = DATA.INGREDIENTS.filter(i => i.qualities[0] === t); ing = R.pick(s.length ? s : DATA.INGREDIENTS); }
+        else ing = R.pick(DATA.INGREDIENTS);
+      }
       items.push(ingItem(ing));
     }
   }

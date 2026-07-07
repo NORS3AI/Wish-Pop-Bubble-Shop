@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v13"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v14"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -471,11 +471,10 @@ function popCascade() {
   if (cascadeOn) return; cascadeOn = true;
   SFX.unlock();
   const pa = $("#pop-all"); if (pa) pa.disabled = true;
-  const remaining = [...document.querySelectorAll("#bubble-field .pbubble")].filter(el => !el.classList.contains("popped"));
-  let k = 0;
   const step = () => {
-    if (k >= remaining.length) { cascadeOn = false; refreshPop(); return; }
-    const el = remaining[k++];
+    // re-scan each tick so bonus bubbles spawned mid-cascade get popped too
+    const el = document.querySelector("#bubble-field .pbubble:not(.popped)");
+    if (!el) { cascadeOn = false; refreshPop(); return; }
     popAt(+el.dataset.i, el, true);
     refreshPop();
     setTimeout(step, 135); // rhythmic cascade, not an instant skip
