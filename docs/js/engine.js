@@ -5,8 +5,15 @@
  * ======================================================================== */
 
 const BALANCE = {
-  // Scoring — ingredient shows ONE main quality; the rest are hidden secondaries.
-  NEED_TARGET: 12, MAIN_POWER: 6, SECONDARY_POWER: 3, POTENT_MULT: 2.5,
+  // Scoring — SWEET SPOT: each need wants magic in a green target BAND around a
+  // center, not "as much as possible". Small chunks so amount is controllable.
+  NEED_TARGET: 7,               // center of the green band (magic points)
+  MAIN_POWER: 2, SECONDARY_POWER: 1, POTENT_MULT: 2.5, // small chunks (granularity)
+  BAND_HALF_BASE: 2.5,          // green band half-width with 0 ingredients
+  BAND_SHRINK_PER_ADD: 0.18,    // band narrows this much per ingredient in the pot
+  BAND_HALF_MIN: 1.5,           // never narrower than this
+  OVERSHOOT_K: 11,              // % a need loses per magic point past the band
+  BAR_MAX: 13,                  // meter display scale (points)
   NEED_WEIGHTS: { 1: [1.0], 2: [0.6, 0.4], 3: [0.4, 0.3, 0.3] }, // Main / Second / Final
 
   // Difficulty by customers served
@@ -15,20 +22,20 @@ const BALANCE = {
   CONSOLATION_FRACTION: 0.35,   // partial-credit gold on a miss (scaled to match)
 
   // Magic allergy (hard+ only)
-  ALLERGY_CHANCE: 0.55, ALLERGY_YELLOW_AT: 7, ALLERGY_RED_AT: 13, ALLERGY_CLEANSE: 6,
+  ALLERGY_CHANCE: 0.55, ALLERGY_YELLOW_AT: 3, ALLERGY_RED_AT: 6, ALLERGY_CLEANSE: 3,
 
   // Scoop / bubbles — each scoop rolls its own yield; each bubble = one haul item.
-  BUBBLES_PER_SCOOP_MIN: 1, BUBBLES_PER_SCOOP_MAX: 3, MIN_BUBBLES: 5,
+  BUBBLES_PER_SCOOP_MIN: 2, BUBBLES_PER_SCOOP_MAX: 4, MIN_BUBBLES: 7,
 
-  // Haul composition (what popping bubbles yields)
-  CHARM_DROP_CHANCE: 0.16, CHARM_DROP_CHANCE_FINDER: 0.28, // with "Charm Finder" upgrade
-  GOLD_DROP_CHANCE: 0.10, TREAT_DROP_CHANCE: 0.07,
+  // Haul composition — mostly ingredients now (fatter hand)
+  CHARM_DROP_CHANCE: 0.12, CHARM_DROP_CHANCE_FINDER: 0.22, // with "Charm Finder" upgrade
+  GOLD_DROP_CHANCE: 0.08, TREAT_DROP_CHANCE: 0.05,
   GOLD_MIN: 3, GOLD_MAX: 8,
   NEED_BIAS: 0.4,               // chance a filler ingredient matches a need
-  WILD_STRENGTH: 5,             // magic points the Wild charm adds
+  WILD_STRENGTH: 3,             // magic points the Wild charm adds
 
   // Cauldron
-  MIX_SLOTS: 7,
+  MIX_SLOTS: 8,
   REVEAL_SECOND_MS: 12000,      // second need reveals 12s into the cauldron
   REVEAL_TWIST_MS: 24000,       // final twist at 24s
   QUICK_TIP_PER_HIDDEN: 8,      // gold tip per still-hidden need if you serve early AND succeed
@@ -170,25 +177,39 @@ function allergyStatus(slots, allergyType, offset) {
   return { type: allergyType, points, zone };
 }
 
-/* --- Scoring: "Harmless" model — only asked-for magic counts ------------ */
+/* Current green-band edges given how many ingredients are in the pot (it narrows
+ * as you add more — reward for an efficient, few-ingredient mix). */
+function bandFor(slotsUsed) {
+  const half = Math.max(BALANCE.BAND_HALF_MIN, BALANCE.BAND_HALF_BASE - BALANCE.BAND_SHRINK_PER_ADD * slotsUsed);
+  return { low: BALANCE.NEED_TARGET - half, high: BALANCE.NEED_TARGET + half };
+}
+function pointsForNeed(slots, type) {
+  let points = 0;
+  slots.forEach(inst => {
+    if (inst.wild) { if (inst.magic === type) points += inst.strength; return; }
+    const ing = DATA.INGREDIENT_BY_ID[inst.id];
+    let p = ingredientPointsFor(ing, type);
+    if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT * 10) / 10;
+    points += p;
+  });
+  return points;
+}
+/* --- Scoring: SWEET SPOT — land each need in its green band ------------- */
 function scoreMix(slots, wish, allergyOffset) {
+  const band = bandFor(slots.length);
   const perNeed = wish.needs.map(need => {
-    let points = 0;
-    slots.forEach(inst => {
-      if (inst.wild) { if (inst.magic === need.type) points += inst.strength; return; }
-      const ing = DATA.INGREDIENT_BY_ID[inst.id];
-      let p = ingredientPointsFor(ing, need.type);
-      if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
-      points += p;
-    });
-    const pct = Math.min(100, Math.round((points / need.target) * 100));
-    return { type: need.type, label: need.label, pct, points };
+    const points = pointsForNeed(slots, need.type);
+    let pct;
+    if (points >= band.low && points <= band.high) pct = 100;      // in the sweet spot
+    else if (points < band.low) pct = Math.round((points / band.low) * 100); // ramp up
+    else pct = Math.max(0, Math.round(100 - (points - band.high) * BALANCE.OVERSHOOT_K)); // curdled
+    return { type: need.type, label: need.label, pct, points, bandLow: band.low, bandHigh: band.high };
   });
   const w = wish.weights;
   let weighted = 0;
   perNeed.forEach((n, i) => { weighted += n.pct * (w[i] || 0); });
   weighted = Math.round(weighted);
-  return { perNeed, weighted, allergy: allergyStatus(slots, wish.allergy, allergyOffset) };
+  return { perNeed, weighted, band, allergy: allergyStatus(slots, wish.allergy, allergyOffset) };
 }
 
 /* --- Result: match vs required, allergy payout, quick-service tip -------- */

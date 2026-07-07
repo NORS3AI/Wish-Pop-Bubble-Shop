@@ -297,23 +297,31 @@ function paintMixTop() {
   if (w.needs[1] && !w.needs[1].revealed && elapsed >= BALANCE.REVEAL_SECOND_MS) w.needs[1].revealed = true;
   if (w.needs[2] && !w.needs[2].revealed && elapsed >= BALANCE.REVEAL_TWIST_MS) w.needs[2].revealed = true;
   const score = scoreMix(ROUND.slots, w, ROUND.allergyOffset);
+  // DISCOVERY: feeding a hidden need reveals it
+  w.needs.forEach((n, i) => { if (!n.revealed && score.perNeed[i].points > 0) { n.revealed = true; n._discovered = true; } });
   const req = w.requiredMatch, meets = score.weighted >= req;
+  const MAX = BALANCE.BAR_MAX;
   const meters = w.needs.map((n, i) => {
+    const s = score.perNeed[i];
     if (!n.revealed) {
       const at = i === 1 ? BALANCE.REVEAL_SECOND_MS : BALANCE.REVEAL_TWIST_MS;
       const secs = Math.max(0, Math.ceil((at - elapsed) / 1000));
-      return `<div class="need-meter"><div class="lbl"><span class="muted">❔ ${n.label}</span><span class="muted">reveals in ${secs}s</span></div>
-        <div class="meter"><i style="width:0%"></i></div></div>`;
+      return `<div class="need-meter"><div class="lbl"><span class="muted">❔ Mystery Need</span><span class="muted">or in ${secs}s</span></div>
+        <div class="meter sweet"><i style="width:0%"></i></div></div>`;
     }
-    const p = score.perNeed[i].pct;
-    return `<div class="need-meter"><div class="lbl"><span>${magicDot(n.type)} ${n.type}</span><span>${p}%</span></div>
-      <div class="meter"><i style="width:${p}%;background:${D.MAGIC[n.type]}"></i></div></div>`;
+    const fillPct = Math.min(100, s.points / MAX * 100);
+    const over = s.points > s.bandHigh;
+    const fillCol = over ? "var(--bad)" : D.MAGIC[n.type];
+    const bandLeft = Math.max(0, s.bandLow / MAX * 100), bandW = Math.max(2, (s.bandHigh - s.bandLow) / MAX * 100);
+    return `<div class="need-meter"><div class="lbl"><span>${magicDot(n.type)} ${n.type}</span>
+      <span style="color:${s.pct === 100 ? "var(--good)" : over ? "var(--bad)" : "var(--ink)"}">${s.pct === 100 ? "✓ perfect" : over ? "over!" : s.pct + "%"}</span></div>
+      <div class="meter sweet"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
   }).join("");
   const hidden = w.needs.filter(n => !n.revealed).length;
   const tip = hidden * BALANCE.QUICK_TIP_PER_HIDDEN;
   const tipLine = hidden > 0
     ? `<div class="mix-hint" style="color:var(--gold)">⚡ Serve now → <b>+${tip} tip</b> if it works! (${hidden} need${hidden > 1 ? "s" : ""} still secret)</div>`
-    : `<div class="mix-hint muted">All needs revealed — mix to ${req}% and serve.</div>`;
+    : `<div class="mix-hint muted">Land each bar in its <b style="color:var(--good)">green zone</b> — don't overfill! The zones shrink as you add.</div>`;
   el.innerHTML = `
     <div class="stat-line" style="padding:0 0 4px"><span>${ROUND.customer.emoji} ${ROUND.customer.name}</span>
       <span>Match <b style="color:${meets ? "var(--good)" : "var(--ink)"}">${score.weighted}%</b> / need ${req}%</span></div>

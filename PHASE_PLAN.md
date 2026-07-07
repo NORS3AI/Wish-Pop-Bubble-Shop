@@ -244,6 +244,32 @@ timing, serve‑early gamble), always attemptable, and faster than the shop loop
 
 ---
 
+## Design revision v4 — Sweet Spot cauldron (✅ BUILT)
+
+Playtest: "it tells us the need, we click the matching ingredient" was still too
+shallow, and the round was too fast. Fix = give the mix a real decision:
+
+- **Sweet Spot:** each need wants magic in a **green target band**, not "as much as
+  possible." Land in the band = perfect; **overfill past it and the bar curdles**
+  (its % drops), so you can't just dump matching ingredients. Small ingredient
+  chunks make the amount controllable; duplicates become "add one more or stop?"
+- **The band shrinks as you add ingredients** (visible on screen) — an efficient
+  few‑ingredient mix is easier; overpacking makes precision hard. Rewards restraint.
+- **Hidden needs:** only the **main** need is shown. The other two are **Mystery
+  bars** you *discover* by feeding them (a bar reveals the moment an ingredient
+  moves it) — or on the reveal timer. Ingredients stay labeled (your foothold).
+- **Fatter hand:** more ingredient drops per round so there's a real surplus to
+  choose from and leave out.
+- Kept the quick‑service tip (serve while needs still secret + hit the match).
+- Balance (smart stop‑at‑band player): win ≈ **95 / 87 / 59 / 57%**
+  (easy/medium/hard/veryhard); avg ingredients *used* 1.7→5.4 (players stop, not
+  dump). Tunables in `BALANCE` (band base/shrink/min, target, overshoot).
+- **Deferred (not killed):** a match‑3 acquire mini‑game — revisit only if the pop
+  phase still feels passive after this. Rejected the crystal‑ball probe (hands you
+  the answer) and per‑ingredient pour QTEs (realism zoo, not worth it).
+
+---
+
 ## Phase 5 — Magic Allergy system — ✅ DONE
 Hard customers may be **allergic** to a magic type (never one of their needs;
 themed per customer where defined). A live **allergy meter** in the cauldron

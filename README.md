@@ -58,6 +58,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   the cauldron. The customer's other needs now **reveal on a timer while you mix**,
   and serving early with a matching potion earns a **quick‑service tip**. Fewer,
   more memorable ingredients (20). Faster, and every round is a real decision.
+- 🎯 **Sweet Spot mixing.** Each need now wants magic in a **green target zone** —
+  hit it just right, don't overfill (too much *curdles* the potion). The zones
+  **shrink as you add**, so a tidy few‑ingredient mix beats dumping everything. Only
+  the main need is shown; the other two are **mystery bars you discover** as your
+  ingredients move them. This is the real puzzle the game was missing.
 - Next up: the art‑upload tool and final polish + sound (see `PHASE_PLAN.md`).
 - Portrait‑first: fills the screen, locks scroll/zoom, respects notches, and shows
   a "rotate to portrait" nudge in landscape.

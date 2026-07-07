@@ -134,6 +134,10 @@ html, body {
 @keyframes pop { from { transform: scale(0.3); } to { transform: scale(1); } }
 .meter { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.14); overflow: hidden; }
 .meter > i { display: block; height: 100%; border-radius: 6px; transition: width .35s ease; }
+.meter.sweet { position: relative; overflow: visible; }
+.meter.sweet > i { position: relative; z-index: 2; }
+.meter.sweet .band { position: absolute; top: -2px; bottom: -2px; z-index: 1; border-radius: 5px;
+  background: rgba(126,224,138,0.30); box-shadow: inset 0 0 0 1.5px var(--good); transition: left .35s ease, width .35s ease; }
 .need-meter { margin: 5px 0; }
 .need-meter .lbl { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; }
 
