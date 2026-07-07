@@ -134,6 +134,8 @@ you once you've uploaded it — just ask.)
 | `trash_can.png` | 🥫 Rusty Can |
 | `trash_core.png` | 🍎 Apple Core |
 | `trash_bone.png` | 🦴 Old Bone |
+| `trash_bag.png` | 🛍️ Crumpled Bag (the mystery you open in the bin) |
+| `trash_ring.png` | 💍 Gold Ring (the rare treasure inside a bag) |
 
 ### Little icons (optional)
 | File name | Replaces |

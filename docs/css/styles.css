@@ -580,3 +580,16 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .skin-tile.ach .skin-chip { filter: grayscale(.3) opacity(.85); }
 .ach-big { font-size: 60px; line-height: 1; animation: charmpop 1s cubic-bezier(.2,1.4,.4,1); }
 .ach-big img.art { height: 1em; width: auto; max-width: none; }
+
+/* --- mystery Crumpled Bag + Gold Ring treasure in the recycle bin --- */
+.trash-slot.bag { position: relative; cursor: pointer;
+  background: rgba(205,185,140,.18); border-color: rgba(215,195,150,.55);
+  animation: bagwiggle 2.2s ease-in-out infinite; }
+@keyframes bagwiggle { 0%,100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+.bag-q { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--gold); color: #3a2a00; font-size: 12px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.trash-slot.treasure { border-color: var(--gold);
+  background: radial-gradient(circle at 40% 30%, rgba(255,220,120,.4), rgba(255,180,60,.2));
+  box-shadow: 0 0 12px rgba(255,210,100,.55); animation: treasureglow 1.6s ease-in-out infinite; }
+@keyframes treasureglow { 0%,100% { box-shadow: 0 0 10px rgba(255,210,100,.45); } 50% { box-shadow: 0 0 18px rgba(255,220,120,.8); } }

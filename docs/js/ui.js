@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v32"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v33"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -389,6 +389,7 @@ function buySkin(id) {
 /* ======================================================================= */
 /* RECYCLE — turn collected trash into coins or Stardust                    */
 /* ======================================================================= */
+function isBag(id) { const t = D.TRASH_BY_ID[id]; return !!(t && t.bag); }
 function recycleTotal(mode) { return GAME.trash.reduce((s, id) => s + (mode === "dust" ? trashDust(id) : trashCoins(id)), 0); }
 function renderRecycle(mode) {
   mode = mode === "dust" ? "dust" : "coins";
@@ -396,9 +397,14 @@ function renderRecycle(mode) {
   const slots = [];
   for (let i = 0; i < cap; i++) {
     const id = bin[i];
-    if (id) { const t = D.TRASH_BY_ID[id], val = mode === "dust" ? trashDust(id) : trashCoins(id);
-      slots.push(`<button class="trash-slot filled" data-i="${i}" title="${t.name} — recycle for ${mode === "dust" ? "✨" : "🪙"}${val}">${trashArt(id, "trash-face")}</button>`);
-    } else slots.push(`<div class="trash-slot"></div>`);
+    if (!id) { slots.push(`<div class="trash-slot"></div>`); continue; }
+    const t = D.TRASH_BY_ID[id];
+    if (t.bag) {
+      slots.push(`<button class="trash-slot filled bag" data-i="${i}" title="${t.name} — tap to open!">${trashArt(id, "trash-face")}<span class="bag-q">?</span></button>`);
+    } else {
+      const val = mode === "dust" ? trashDust(id) : trashCoins(id);
+      slots.push(`<button class="trash-slot filled ${t.treasure ? "treasure" : ""}" data-i="${i}" title="${t.name} — ${t.treasure ? "cash in for" : "recycle for"} ${mode === "dust" ? "✨" : "🪙"}${val}">${trashArt(id, "trash-face")}</button>`);
+    }
   }
   const total = recycleTotal(mode), cur = mode === "dust" ? `✨ ${total}` : `🪙 ${total}`;
   const nextAch = nextTrashAchievement();
@@ -414,13 +420,15 @@ function renderRecycle(mode) {
       <button class="btn small ${mode === "coins" ? "good" : "secondary"}" id="rc-coins">🪙 Coins</button>
       <button class="btn small ${mode === "dust" ? "good" : "secondary"}" id="rc-dust">✨ Stardust</button>
     </div>
-    <div class="muted" style="text-align:center;font-size:12px;margin-bottom:8px">Tap a piece to recycle just it, or recycle everything below.</div>
+    <div class="muted" style="text-align:center;font-size:12px;margin-bottom:8px">Tap a piece to recycle it. 🛍️ bags must be <b>opened</b> first — you never know!</div>
     <div class="grow" style="overflow-y:auto">${bin.length ? `<div class="trash-grid">${slots.join("")}</div>` : `<div class="muted center" style="height:100%">Your bin is empty!<br>Trash comes from customers whose wish you miss.</div>`}</div>
     <button class="btn good" id="rc-all" ${bin.length ? "" : "disabled"}>♻️ Recycle all → ${cur}</button>
     <div style="height:8px"></div>
     <button class="btn secondary" id="rc-back">←  Back</button>
   `);
-  $("#screen-recycle").querySelectorAll(".trash-slot.filled").forEach(b => b.addEventListener("click", () => recycleOne(+b.dataset.i, mode)));
+  $("#screen-recycle").querySelectorAll(".trash-slot.filled").forEach(b => b.addEventListener("click", () => {
+    const i = +b.dataset.i; if (isBag(GAME.trash[i])) openBag(i, mode); else recycleOne(i, mode);
+  }));
   on("#rc-coins", "click", () => renderRecycle("coins"));
   on("#rc-dust", "click", () => renderRecycle("dust"));
   on("#rc-all", "click", () => recycleAll(mode));
@@ -436,13 +444,28 @@ function recycleOne(index, mode) {
   if (!checkTrashAchievements()) renderRecycle(mode);
 }
 function recycleAll(mode) {
-  if (!GAME.trash.length) { toast("No trash to recycle."); return; }
-  const val = recycleTotal(mode), count = GAME.trash.length;
+  const bags = GAME.trash.filter(isBag);            // unopened bags are kept, not recycled
+  const recyclable = GAME.trash.filter(id => !isBag(id));
+  if (!recyclable.length) { toast(bags.length ? "Open your bags first! 🛍️" : "No trash to recycle."); return; }
+  const val = recyclable.reduce((s, id) => s + (mode === "dust" ? trashDust(id) : trashCoins(id)), 0);
   if (mode === "dust") GAME.stardust += val; else GAME.gold += val;
-  GAME.trash = []; GAME.recycled += count; save();
+  GAME.recycled += recyclable.length; GAME.trash = bags; save();
   SFX.charm();
   toast(mode === "dust" ? `♻️ +${val} Stardust!` : `♻️ +${val} gold!`);
   if (!checkTrashAchievements()) renderRecycle(mode);
+}
+// Open a Crumpled Bag: usually more junk, rarely a Gold Ring. The revealed item
+// takes the bag's slot (still recyclable / sellable from there).
+function openBag(index, mode) {
+  if (!isBag(GAME.trash[index])) return;
+  SFX.unlock();
+  const isRing = Math.random() < BALANCE.TRASH_RING_CHANCE;
+  const newId = isRing ? "ring" : D.TRASH[Math.floor(Math.random() * D.TRASH.length)].id;
+  GAME.trash[index] = newId; save();
+  const nt = D.TRASH_BY_ID[newId];
+  if (isRing) { SFX.charm(); confettiOver($("#app")); toast("🛍️ → 💍 A Gold Ring! Cash it in for a nice bonus."); }
+  else { SFX.pop(1); toast(`🛍️ → ${nt.emoji} Just more junk (${nt.name}).`); }
+  renderRecycle(mode);
 }
 // achievement cosmetics unlocked by lifetime recycling
 function trashAchievements() { return allSkins().filter(c => c.achievement && c.achievement.stat === "recycled"); }

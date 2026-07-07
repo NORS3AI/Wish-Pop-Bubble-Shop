@@ -78,6 +78,8 @@ const BALANCE = {
   TRASH_BIN_MAX: 30,            // collection capacity
   TRASH_MIN: 2, TRASH_MAX: 4,  // pieces thrown per failed wish
   TRASH_DUST_DIVISOR: 6,       // Stardust value = round(coins / this)
+  TRASH_BAG_CHANCE: 0.1,       // chance a thrown piece is a mystery Crumpled Bag
+  TRASH_RING_CHANCE: 0.18,     // chance an opened bag holds a Gold Ring (else more junk)
 };
 
 const R = {
@@ -352,7 +354,7 @@ function scoreResult(round) {
     // FAIL: no coins at all — the disgruntled customer throws trash instead.
     type = DATA.RESULT_TYPES.fail; gold = 0;
     const n = R.int(BALANCE.TRASH_MIN, BALANCE.TRASH_MAX);
-    for (let i = 0; i < n; i++) trash.push(R.pick(DATA.TRASH).id);
+    for (let i = 0; i < n; i++) trash.push(R.chance(BALANCE.TRASH_BAG_CHANCE) ? "bag" : R.pick(DATA.TRASH).id);
   } else if (worst === "red") {
     type = DATA.RESULT_TYPES.red; gold = Math.round(round.payment * DATA.RESULT_TYPES.red.payoutPct); // no tips — they reacted!
   } else if (worst === "yellow") {

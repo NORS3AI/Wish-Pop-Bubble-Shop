@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🛍️ **Mystery bags in the trash.** Sometimes the junk a customer throws includes a
+  **crumpled paper bag** — and you can't recycle it until you **open it** in the bin.
+  Usually it's just more junk… but every so often it's a **💍 Gold Ring** you can
+  cash in for a nice little bonus of coins or Stardust. A tiny "do I dare open it?"
+  treasure hunt inside the recycling.
 - 🗑️ **Trash & Recycle (+ trophies!).** Miss a customer's wish and — instead of
   coins — they **storm off in a huff and pelt you with their trash**: banana peels,
   fishy bones, soggy boots, old rocks and more, which float around the result

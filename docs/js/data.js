@@ -171,8 +171,15 @@ const TRASH = [
   { id: "core",      name: "Apple Core",   emoji: "🍎", coins: 5 },
   { id: "bone",      name: "Old Bone",     emoji: "🦴", coins: 9 },
 ];
+// Special items (not in the normal throw pool):
+//  - bag: a mystery you must OPEN in the recycle screen before it can be used.
+//  - ring: the rare treasure a bag can contain — worth a nice bonus.
+const TRASH_EXTRA = [
+  { id: "bag",  name: "Crumpled Bag", emoji: "🛍️", coins: 0,  bag: true },
+  { id: "ring", name: "Gold Ring",    emoji: "💍", coins: 30, treasure: true },
+];
 const TRASH_BY_ID = {};
-TRASH.forEach(t => TRASH_BY_ID[t.id] = t);
+TRASH.concat(TRASH_EXTRA).forEach(t => TRASH_BY_ID[t.id] = t);
 
 /* Expose as a single namespace */
 const DATA = {
