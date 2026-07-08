@@ -102,7 +102,28 @@ html, body {
   background: linear-gradient(90deg, #fff0fb, #ffd6ea); -webkit-background-clip: text; background-clip: text; color: transparent; }
 #screen-start .sub { font-size: 20px; font-weight: 800; color: var(--pink); margin-top: -4px; }
 /* Custom brand logo (art/logo.png) — replaces the text wordmark when present */
-#screen-start .wp-logo { display: block; width: 80%; max-width: 300px; height: auto; margin: 2px auto 4px; }
+#screen-start .wp-logo { display: block; width: 82%; max-width: 300px; height: auto; margin: 0 auto; }
+/* Logo stage: a soft pulsing glow behind it, gentle float, drifting sparkles */
+.logo-stage { position: relative; display: flex; align-items: center; justify-content: center;
+  width: 100%; padding: 22px 0; margin-bottom: 2px; }
+.logo-stage::before { content: ""; position: absolute; width: 280px; height: 170px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,158,224,.38), rgba(180,140,255,.16) 55%, transparent 72%);
+  filter: blur(8px); z-index: 0; animation: logoGlow 4s ease-in-out infinite; }
+@keyframes logoGlow { 0%,100% { opacity: .7; transform: scale(.96); } 50% { opacity: 1; transform: scale(1.04); } }
+.logo-float { position: relative; z-index: 2; animation: logoFloat 4.6s ease-in-out infinite; will-change: transform; }
+@keyframes logoFloat { 0%,100% { transform: translateY(-5px); } 50% { transform: translateY(5px); } }
+.logo-sparkles { position: absolute; inset: -6px 0; overflow: hidden; z-index: 1; pointer-events: none; }
+.lspark { position: absolute; top: -8%; border-radius: 50%;
+  background: radial-gradient(circle, #fff, rgba(255,220,240,.95) 45%, rgba(255,158,224,0) 72%);
+  box-shadow: 0 0 6px rgba(255,224,240,.9); opacity: 0;
+  animation-name: lsparkFall; animation-timing-function: linear; animation-iteration-count: infinite; }
+@keyframes lsparkFall {
+  0% { transform: translateY(0) scale(.5); opacity: 0; }
+  12% { opacity: 1; } 55% { opacity: .95; } 88% { opacity: .35; }
+  100% { transform: translateY(150px) scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .logo-float, .logo-stage::before, .lspark { animation: none; }
+  .lspark { opacity: 0; } }
 .bubble-emojis { font-size: 30px; letter-spacing: 6px; }
 
 /* --- Menu / upgrades --- */

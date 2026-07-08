@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v69"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v70"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -79,6 +79,18 @@ function logoMarkup() {
   if (ART.isReady("logo")) return `<img class="wp-logo" src="${ART.url("logo")}" alt="Wish Pop Bubble Shop" draggable="false">`;
   ART.ensure("logo", () => { const s = screen("start"); if (s && s.classList.contains("active")) renderStart(); });
   return `<div class="logo">Wish Pop</div><div class="sub">Bubble Shop</div>`;
+}
+// A gentle layer of sparkles drifting down behind the logo (pure-CSS particles).
+function logoSparkles() {
+  const N = 11, out = [];
+  for (let i = 0; i < N; i++) {
+    const left = Math.round(3 + i * (94 / (N - 1)) + (i % 2 ? 3 : -3));
+    const size = 5 + (i % 3) * 3;
+    const delay = (i * 0.45).toFixed(2);
+    const dur = (3.4 + (i % 4) * 0.8).toFixed(2);
+    out.push(`<span class="lspark" style="left:${left}%;width:${size}px;height:${size}px;animation-delay:${delay}s;animation-duration:${dur}s"></span>`);
+  }
+  return out.join("");
 }
 function buddyArt(id, cls) { const c = D.COSMETIC_BY_ID[id]; return ART.tag("buddy_" + id, c ? c.chip : D.FAMILIAR.emoji, cls || ""); }
 function trashArt(id, cls) { const t = D.TRASH_BY_ID[id]; return ART.tag("trash_" + id, t ? t.emoji : "🗑️", cls || "trash-art"); }
@@ -172,8 +184,10 @@ function renderStart() {
   html("start", `
     ${hud("Bubble Shop", { noHome: true })}
     <div class="grow center">
-      <div class="bubble-emojis">🫧 ✨ 🫧</div>
-      ${logoMarkup()}
+      <div class="logo-stage">
+        <div class="logo-sparkles" aria-hidden="true">${logoSparkles()}</div>
+        <div class="logo-float">${logoMarkup()}</div>
+      </div>
       <div class="realm-here">${realm.icon} ${realm.name}</div>
       <p class="muted" style="max-width:300px">Fairytale folk arrive with a wish. Scoop bubbles, pop them for ingredients &amp; charms, then mix the perfect potion in your cauldron!</p>
       <div class="bubble-emojis" style="font-size:26px">${cast}</div>
