@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🦉 **Sleepy Owl now has real artwork — with four expressions!** She shows up sleepy-eyed when
+  she orders, then beams when you make her wish, scowls if you fail it, and goes puffy-eyed and
+  itchy on an allergy reaction. (White backgrounds removed, cropped, and sized for fast loading.)
+
 - ✨ **The real Wish Pop Bubble Shop logo is now on the main screen!** I removed its white
   background so it sits cleanly on the game, and it floats gently with a soft glow and drifting
   sparkles.
