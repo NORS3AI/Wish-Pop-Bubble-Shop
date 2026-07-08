@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v38"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v39"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1700,7 +1700,7 @@ function wireFamiliar(phase) {
   el.addEventListener("click", () => {
     if (phase === "mix") { if (GAME.unlocked.undo) familiarUndo(); else toast("🐸 Unlock 'Undo' in Shop & Upgrades!"); }
     else if (phase === "scoop") toast(GAME.unlocked.scoop ? "🐸 Better Scoop is boosting your haul!" : "🐸 Unlock 'Better Scoop' in Shop & Upgrades!");
-    else toast(GAME.unlocked.charm ? "🐸 Charm Finder is helping you pop charms!" : "🐸 The Toad has upgrades in Shop & Upgrades!");
+    else toast(GAME.unlocked.charm ? "🐸 Keen Nose — sniffing out extra charms & ingredients!" : "🐸 Unlock 'Keen Nose' in Shop & Upgrades!");
   });
 }
 function familiarUndo() {

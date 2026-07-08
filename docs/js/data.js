@@ -118,7 +118,7 @@ const FAMILIAR = {
   id: "toad", name: "Toad", emoji: "🐸",
   abilities: {
     scoop: { name: "Better Scoop", desc: "Find more Wish Bubbles each round.", unlockCost: 100 },
-    charm: { name: "Charm Finder", desc: "Higher chance to pop special charms.", unlockCost: 250 },
+    charm: { name: "Keen Nose", desc: "Toad sniffs out a few more charms AND ingredients each round.", unlockCost: 250 },
     undo:  { name: "Undo", desc: "In the cauldron, spend a treat to remove your last ingredient.", unlockCost: 500 },
   },
 };

@@ -39,7 +39,8 @@ const BALANCE = {
   JACKPOT_CHANCE: 0.0125,      // a rainbow scoop: extra-full + a guaranteed charm (~1 in 80 scoops)
 
   // Haul composition — mostly ingredients now (fatter hand)
-  CHARM_DROP_CHANCE: 0.08, CHARM_DROP_CHANCE_FINDER: 0.16, // with "Charm Finder" upgrade
+  CHARM_DROP_CHANCE: 0.08, CHARM_DROP_CHANCE_FINDER: 0.16, // "Keen Nose" upgrade: double charm chance
+  KEEN_NOSE_BUBBLES: 3,          // ...AND a few extra bubbles, so ingredients rise too (not just shift to charms)
   CHARM_CAPS: { cleanse: 1, insight: 1, peek: 2 },         // per-round caps (potent/wild uncapped)
   GOLD_DROP_CHANCE: 0.06, TREAT_DROP_CHANCE: 0.025,
   BONUS_BUBBLE_CHANCE: 0.12,            // a bubble that pops into MORE (golden) bubbles
@@ -236,6 +237,9 @@ function newRound(state) {
   const scoopJackpots = scoopYields.map(() => R.chance(BALANCE.JACKPOT_CHANCE));
   scoopJackpots.forEach((j, i) => { if (j) scoopYields[i] += 2; });
   bubbles = scoopYields.reduce((a, b) => a + b, 0);
+  // "Keen Nose": a few EXTRA bubbles (so ingredients go up) on top of the boosted
+  // charm chance below — the scoop reveals these too, so counts stay consistent.
+  if (state.charmFinder) { scoopYields[scoopYields.length - 1] += BALANCE.KEEN_NOSE_BUBBLES; bubbles += BALANCE.KEEN_NOSE_BUBBLES; }
   const haul = generateHaul(wish, bubbles, !!state.charmFinder);
   // Rare "bonus frenzy" round: seed a couple of bonus bubbles so the runaway chain
   // reliably kicks off (otherwise it depends on the haul happening to have one).

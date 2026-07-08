@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐸 **Toad's "Keen Nose" (was "Charm Finder") now actually helps.** The old power
+  only nudged charm luck (and quietly *reduced* ingredients). It's reworked to
+  sniff out **a few more charms AND ingredients every round** — noticeably more of
+  both — for players who've unlocked it.
 - 📋 **Daily & Weekly Quests.** A new **Quests** screen (in Shop & Upgrades) gives
   you rotating goals to chase — *"Serve 5 happy customers," "Make 2 Perfect
   potions," "Recycle 12 junk," "Beat an In-a-Rush customer"* — that pay gold,
