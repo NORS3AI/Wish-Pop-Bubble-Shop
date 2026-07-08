@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v50"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v51"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1382,6 +1382,7 @@ function renderQueenIntro() {
         <div class="stat-line" style="margin-top:6px"><span>☠️ Poison in her pantry</span><span style="color:var(--bad)">${magicDot(w.allergy)} ${w.allergy}</span></div>
       </div>
       <div class="muted" style="max-width:315px">Pay for scoops of her cursed pantry, then <b>scoop &amp; pop</b> her bubbles for ingredients (and charms!). Brew a potion matching the recipe — some ingredients hide <b>poison</b>, so don't overdo those. Match <b>${w.requiredMatch}%+</b> to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
+      <div class="muted" style="max-width:315px;font-size:12px">🐾 She's holding your Pet captive — <b>none of its abilities help you here</b>.</div>
       <div class="queen-buys">
         ${QUEEN_PACKAGES.map((pk, i) => `<button class="btn ${afford(pk.gold) ? "" : "secondary"} queen-buy" data-i="${i}" ${afford(pk.gold) ? "" : "disabled"}>🪙 ${pk.gold} → ${pk.scoops} scoops</button>`).join("")}
       </div>
@@ -1396,10 +1397,12 @@ function queenBuy(i) {
   const pk = QUEEN_PACKAGES[i];
   if (!pk || GAME.gold < pk.gold) { toast("Not enough gold."); return; }
   GAME.gold -= pk.gold; save();
-  // run the real scoop -> pop -> mix pipeline, villain-styled, with HER pantry
+  // run the real scoop -> pop -> mix pipeline, villain-styled, with HER pantry.
+  // The Queen has your Pet, so NONE of its abilities help here (no Keen Nose,
+  // no Better Scoop, no Undo — see familiarToken/wireFamiliar villain guards).
   ROUND = ENGINE.newVillainRound({
     wish: QUEEN.wish, scoops: pk.scoops, ingredientSet: D.QUEEN_INGREDIENTS,
-    customer: queenCustomer(), betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm,
+    customer: queenCustomer(), betterScoop: false, charmFinder: false,
   });
   QUEEN = null;                                  // state now lives on ROUND
   document.body.classList.add("villain");        // villain colors for scoop/pop/mix
@@ -2477,10 +2480,12 @@ function confirmDialog(msg, onYes) {
   ov.querySelector("#cf-yes").addEventListener("click", () => { ov.remove(); onYes(); });
 }
 function familiarToken(phase) {
+  if (ROUND && ROUND.villain) return ""; // Pet is captured during a villain event — no helper on screen
   const active = phase === "mix" && GAME.unlocked.undo;
   return `<div class="familiar" id="familiar">${equippedFamiliarChip()}${active ? `<span class="fam-badge">🐾</span>` : ""}</div>`;
 }
 function wireFamiliar(phase) {
+  if (ROUND && ROUND.villain) return; // no Pet abilities during a villain event
   const el = document.querySelector("#screen-" + phase + " #familiar"); if (!el) return;
   el.addEventListener("click", () => {
     if (phase === "mix") { if (GAME.unlocked.undo) familiarUndo(); else toast("🐾 Unlock 'Undo' in Shop & Upgrades!"); }
@@ -2489,6 +2494,7 @@ function wireFamiliar(phase) {
   });
 }
 function familiarUndo() {
+  if (ROUND.villain) return; // Pet is captured — no undo during a villain event
   if (!ROUND.slots.length) { toast("Nothing to undo."); return; }
   if (GAME.treats <= 0) { toast("No treats left! Buy more with gold."); return; }
   if (ROUND.treatsUsed >= BALANCE.MAX_TREATS_PER_ROUND) { toast("Your pet's had enough (5 per round)."); return; }
