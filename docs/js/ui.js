@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v48"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v49"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -109,9 +109,17 @@ function hud(title, opts) {
 function goHome() {
   const active = document.querySelector(".screen.active");
   const inRound = active && /screen-(scoop|pop|mix)$/.test(active.id);
-  const leave = () => { stopRoundTimers(); renderStart(); };
+  const leave = () => { stopRoundTimers(); stopEventTimers(); renderStart(); };
   if (inRound) confirmDialog("Leave this round and head to the menu? This round won't be saved.", leave);
   else leave();
+}
+// cancel any in-flight event timers/animations and clear event state
+function stopEventTimers() {
+  if (typeof RUMPEL !== "undefined" && RUMPEL && RUMPEL.raf) cancelAnimationFrame(RUMPEL.raf);
+  if (typeof GOBLIN !== "undefined" && GOBLIN) { if (GOBLIN.timer) clearTimeout(GOBLIN.timer); if (GOBLIN.cdTimer) clearTimeout(GOBLIN.cdTimer); }
+  if (typeof RUMPEL !== "undefined") RUMPEL = null;
+  if (typeof GOBLIN !== "undefined") GOBLIN = null;
+  if (typeof DUEL !== "undefined") DUEL = null;
 }
 function syncHud(id) {
   const g = document.querySelector("#screen-" + id + " .hud .gold"); if (g) g.textContent = "🪙 " + GAME.gold;
@@ -180,6 +188,7 @@ function renderAdmin() {
         <button class="btn" id="ad-fairy" style="margin-bottom:8px">🧚 Fairy's Matching Boon</button>
         <button class="btn" id="ad-rumpel" style="margin-bottom:8px">🧵 Rumpelstiltskin</button>
         <button class="btn" id="ad-goblin" style="margin-bottom:8px">🧌 Gribble the Goblin</button>
+        <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen</button>
         <button class="btn secondary" id="ad-boss" style="margin-bottom:8px">👑 VIP (Boss) Customer</button>
         <button class="btn secondary" id="ad-rush">⏱️ In‑a‑Rush Customer</button>
       </div>
@@ -206,6 +215,10 @@ function renderAdmin() {
       save();
     }
     renderGoblinIntro();
+  });
+  on("#ad-queen", "click", () => {
+    if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); } // need gold to pay her ransom
+    renderQueenIntro();
   });
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
@@ -299,7 +312,7 @@ function claimDaily() {
 function ownedCount(kind) { return D.COSMETICS[kind].filter(c => GAME.owned[c.id]).length; }
 function allSkins() { return [].concat(D.COSMETICS.cauldron, D.COSMETICS.familiar); }
 // the Well only awards buyable skins — achievement-only skins are earned, never rolled
-function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement); }
+function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain); }
 // Roll a prize from the weighted tiers. Always returns a prize object.
 function rollWellPrize() {
   const rndInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -416,23 +429,27 @@ function renderWardrobe() {
   const dustCost = BALANCE.STARDUST_SKIN_COST;
   const section = (kind, title) => {
     const tiles = D.COSMETICS[kind].map(c => {
-      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement;
-      const canBuy = !owned && !ach && GAME.stardust >= dustCost;
+      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain;
+      const special = ach || vil; // earned, never bought
+      const canBuy = !owned && !special && GAME.stardust >= dustCost;
       const btn = equipped
         ? `<span class="skin-tag equipped">✓ On</span>`
         : owned
           ? `<button class="btn small good skin-equip" data-kind="${kind}" data-id="${c.id}">Wear</button>`
           : ach
             ? `<span class="skin-tag muted">🏆 ${Math.min(GAME.recycled, ach.need)}/${ach.need}</span>`
-            : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
-      // achievement skins reveal their look + goal (to chase); other unowned stay a mystery
+            : vil
+              ? `<span class="skin-tag muted">👑 Beat a villain</span>`
+              : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
+      // achievement/villain skins reveal their look + how to earn; other unowned stay a mystery
       const chip = owned
         ? (kind === "familiar" ? buddyArt(c.id, "skin-art") : ART.tag("cauldron_" + c.id, c.chip, "skin-art"))
-        : ach ? c.chip : "❔";
-      const nameShown = owned || ach ? c.name : "???";
-      return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${ach && !owned ? "ach" : ""}">
+        : special ? c.chip : "❔";
+      const nameShown = owned || special ? c.name : "???";
+      const hint = ach && !owned ? ach.desc : vil && !owned ? "Win a villain event" : "";
+      return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${special && !owned ? "ach" : ""}">
         <div class="skin-chip">${chip}</div>
-        <div class="skin-name">${nameShown}${ach && !owned ? `<div class="muted" style="font-size:10px;font-weight:600">${ach.desc}</div>` : ""}</div>
+        <div class="skin-name">${nameShown}${hint ? `<div class="muted" style="font-size:10px;font-weight:600">${hint}</div>` : ""}</div>
         ${btn}</div>`;
     }).join("");
     return `<div class="card" style="margin-bottom:10px">
@@ -462,6 +479,7 @@ function equipSkin(kind, id) {
 function buySkin(id) {
   if (GAME.owned[id]) return;
   const cz = D.COSMETIC_BY_ID[id]; if (cz && cz.achievement) { toast(`🏆 Earn this one: ${cz.achievement.desc}!`); return; }
+  if (cz && cz.villain) { toast("👑 Win it from a villain event!"); return; }
   const cost = BALANCE.STARDUST_SKIN_COST;
   if (GAME.stardust < cost) { toast("Not enough Stardust."); return; }
   GAME.stardust -= cost; GAME.owned[id] = true; save();
@@ -753,7 +771,9 @@ function maybeEvent() {
   if (GAME.nextEventAt < 0) { GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save(); return false; }
   if (servedTotal < GAME.nextEventAt) return false;
   GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save();
-  if (Math.random() < 0.5) renderDuelIntro(); else renderFairyIntro();  // pick an event
+  const events = [renderDuelIntro, renderFairyIntro];
+  if (GAME.gold >= QUEEN_PACKAGES[0].gold) events.push(renderQueenIntro); // Queen needs gold for her ransom
+  R.pick(events)();
   return true;
 }
 function renderFairyIntro() {
@@ -1195,9 +1215,28 @@ function renderGoblinIntro() {
     <div style="height:8px"></div>
     <button class="btn secondary" id="gob-skip">Not now</button>
   `);
-  on("#gob-play", "click", () => { GOBLIN = { happy: 0, correct: 0, done: 0, want: null, answered: true, timer: null, feedback: null }; goblinRequest(); });
+  on("#gob-play", "click", () => { GOBLIN = { happy: 0, correct: 0, done: 0, want: null, answered: true, timer: null, cdTimer: null, feedback: null }; goblinCountdown(); });
   on("#gob-skip", "click", startRound);
   show("event");
+}
+function goblinCountdown() {
+  let n = 3;
+  const tick = () => {
+    if (!GOBLIN) return;
+    html("event", `
+      ${hud("Get Ready!")}
+      <div class="grow center" style="gap:18px">
+        <div class="gob-face" style="font-size:76px">🧌</div>
+        <div style="font-weight:800;font-size:18px">Gribble is getting hungry…</div>
+        <div class="gob-count-big ${n === 0 ? "go" : ""}">${n > 0 ? n : "Go!"}</div>
+      </div>
+    `);
+    show("event");
+    SFX.pop(n > 0 ? 1 : 3);
+    if (n > 0) { n--; GOBLIN.cdTimer = setTimeout(tick, 800); }
+    else { GOBLIN.cdTimer = setTimeout(() => { if (GOBLIN) goblinRequest(); }, 450); }
+  };
+  tick();
 }
 function goblinRequest() {
   const want = goblinPickWant();
@@ -1285,6 +1324,174 @@ function goblinFinish() {
     <button class="btn" id="gob-next">Next Customer  →</button>
   `);
   on("#gob-next", "click", startRound);
+  show("event");
+}
+
+/* ======================================================================= */
+/* THE EVIL QUEEN — a villain event. She's stolen your Pet; brew a ransom    */
+/* potion from her cursed pantry (bought with gold) to match her recipe and  */
+/* win the Pet back plus a unique villain skin. Some ingredients hide poison. */
+/* Cozy fallback: your Pet always comes home, win or lose — you just miss the */
+/* skin. First of a planned villain series.                                  */
+/* ======================================================================= */
+let QUEEN = null;
+const QUEEN_SLOTS = 8, QUEEN_REQUIRED = 60, QUEEN_SKIN = "cauldron_queen";
+const QUEEN_PACKAGES = [
+  { gold: 50,  ings: 6 },
+  { gold: 70,  ings: 10 },
+  { gold: 120, ings: 15 },
+];
+const QUEEN_LINES = [
+  "Your darling little Pet is MINE now. Brew my ransom potion from my cursed pantry… or never see it again!",
+  "Such a sweet Pet you have — had. Match my recipe with my own ingredients and perhaps I'll return it.",
+  "A potion for a Pet, that's the bargain. My pantry is poisoned in places — mix carefully, dearie."
+];
+function queenWish() {
+  const counts = {};
+  D.QUEEN_INGREDIENTS.forEach(i => i.qualities.forEach(q => counts[q] = (counts[q] || 0) + 1));
+  const strong = Object.keys(counts).filter(q => counts[q] >= 2); // magics her pantry can actually build
+  for (let i = strong.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = strong[i]; strong[i] = strong[j]; strong[j] = t; }
+  const needTypes = strong.slice(0, 3), poison = strong[3] || null;
+  const labels = ["First Charm", "Second Charm", "Final Charm"];
+  const needs = needTypes.map((type, i) => ({ type, label: labels[i], target: BALANCE.NEED_TARGET, revealed: true }));
+  return { needs, requiredMatch: QUEEN_REQUIRED, difficulty: "hard", weights: BALANCE.NEED_WEIGHTS[3],
+    allergy: poison, allergy2: null, boss: false, bandTight: 1, bandShrink: BALANCE.BAND_SHRINK_PER_ADD };
+}
+function queenPool(count, wish) {
+  const srcFor = t => D.QUEEN_INGREDIENTS.filter(i => i.qualities.includes(t));
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+  // guarantee at least one source per need so no package is a dead hand
+  const guaranteed = [];
+  wish.needs.forEach(n => { const s = srcFor(n.type); if (s.length) guaranteed.push(R.pick(s).id); });
+  // then a 2nd source per need, then random pantry fill — shuffled
+  const extra = [];
+  wish.needs.forEach(n => { const s = srcFor(n.type); if (s.length) extra.push(R.pick(s).id); });
+  while (guaranteed.length + extra.length < count) extra.push(R.pick(D.QUEEN_INGREDIENTS).id);
+  const pool = guaranteed.concat(shuffle(extra)).slice(0, count);
+  return shuffle(pool);
+}
+function renderQueenIntro() {
+  SFX.unlock(); SFX.fanfare();
+  QUEEN = { wish: queenWish(), pool: [], slots: [], pkg: null };
+  const w = QUEEN.wish, line = R.pick(QUEEN_LINES);
+  const recipe = w.needs.map(n => `${magicDot(n.type)} ${n.type}`).join(" · ");
+  const skin = D.COSMETIC_BY_ID[QUEEN_SKIN];
+  const afford = g => GAME.gold >= g;
+  html("event", `
+    ${hud("The Evil Queen")}
+    <div class="grow center" style="gap:12px;overflow-y:auto">
+      <div class="ph big">👑</div>
+      <div style="font-weight:800;font-size:20px">The Evil Queen</div>
+      <div class="speech">“${line}”</div>
+      <div class="card" style="width:100%;max-width:330px">
+        <div style="font-weight:800;text-align:center;margin-bottom:4px">🧪 Ransom Recipe</div>
+        <div style="text-align:center">${recipe}</div>
+        <div class="stat-line" style="margin-top:6px"><span>☠️ Poison in her pantry</span><span style="color:var(--bad)">${magicDot(w.allergy)} ${w.allergy}</span></div>
+      </div>
+      <div class="muted" style="max-width:315px">Buy scoops of her cursed pantry, then brew a potion matching the recipe. Some ingredients hide <b>poison</b> — don't overdo those! Match <b>${w.requiredMatch}%+</b> (without poisoning it) to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
+      <div class="queen-buys">
+        ${QUEEN_PACKAGES.map((pk, i) => `<button class="btn ${afford(pk.gold) ? "" : "secondary"} queen-buy" data-i="${i}" ${afford(pk.gold) ? "" : "disabled"}>🪙 ${pk.gold} → ${pk.ings} ingredients</button>`).join("")}
+      </div>
+    </div>
+    <button class="btn secondary" id="queen-skip">Not now</button>
+  `);
+  $("#screen-event").querySelectorAll(".queen-buy").forEach(b => b.addEventListener("click", () => queenBuy(+b.dataset.i)));
+  on("#queen-skip", "click", startRound);
+  show("event");
+}
+function queenBuy(i) {
+  const pk = QUEEN_PACKAGES[i];
+  if (!pk || GAME.gold < pk.gold) { toast("Not enough gold."); return; }
+  GAME.gold -= pk.gold; save();
+  QUEEN.pkg = pk; QUEEN.pool = queenPool(pk.ings, QUEEN.wish); QUEEN.slots = [];
+  SFX.scoop();
+  renderQueenMix();
+}
+function queenPoisonMeter(al) {
+  if (!al) return "";
+  const max = BALANCE.ALLERGY_RED_AT + 2, pct = Math.min(100, al.points / max * 100);
+  const col = al.zone === "red" ? "var(--bad)" : al.zone === "yellow" ? "var(--gold)" : "var(--good)";
+  return `<div class="duel-meter"><span class="dm-lbl">☠️ ${al.type}</span>
+    <div class="meter sweet ${al.zone === "red" ? "" : "hit"}"><i style="width:${pct}%;background:${col}"></i></div></div>`;
+}
+function renderQueenMix() {
+  const w = QUEEN.wish, sc = scoreMix(QUEEN.slots, w, 0);
+  const needBars = w.needs.map((n, i) => duelMeter(sc.perNeed[i], false, n.type, true)).join("");
+  const poison = queenPoisonMeter(sc.allergy);
+  const poolTiles = QUEEN.pool.map((id, i) => `<button class="duel-tile" data-i="${i}">${ingArt(id)}<span>${D.INGREDIENT_BY_ID[id].name}</span></button>`).join("");
+  const slotTiles = QUEEN.slots.map((inst, s) => `<button class="queen-slot" data-s="${s}" title="Tap to remove">${ingArt(inst.id)}</button>`).join("");
+  const full = QUEEN.slots.length >= QUEEN_SLOTS;
+  html("event", `
+    ${hud("Brew the Ransom")}
+    <div class="queen-foe"><span class="queen-face">👑</span><div><b>Match ${w.requiredMatch}%+</b> to free your Pet — mind the ☠️!</div></div>
+    <div class="card" style="width:100%">${needBars}${poison}</div>
+    <div class="queen-brew-row">
+      <div class="rumpel-stat sub">Your brew — ${QUEEN.slots.length}/${QUEEN_SLOTS}${full ? " (full)" : ""}</div>
+      <div class="queen-slots">${slotTiles || `<span class="muted">Tap her ingredients below to add them</span>`}</div>
+    </div>
+    <div class="grow" style="overflow-y:auto">
+      <div class="duel-turn you">👇 ${QUEEN.pool.length ? "Tap to add · tap a brewed one to remove" : "Pantry's empty — brew what you have!"}</div>
+      <div class="duel-pool">${poolTiles}</div>
+    </div>
+    <button class="btn good" id="queen-brew">🧪 Brew the potion!</button>
+  `);
+  if (!full) $("#screen-event").querySelectorAll(".duel-tile").forEach(b => b.addEventListener("click", () => queenAdd(+b.dataset.i)));
+  $("#screen-event").querySelectorAll(".queen-slot").forEach(b => b.addEventListener("click", () => queenRemove(+b.dataset.s)));
+  on("#queen-brew", "click", queenBrew);
+  show("event");
+}
+function queenAdd(i) {
+  if (QUEEN.slots.length >= QUEEN_SLOTS) { toast("Cauldron's full — remove one first."); return; }
+  const id = QUEEN.pool.splice(i, 1)[0]; if (id == null) return;
+  QUEEN.slots.push({ id, potent: false }); SFX.pop(3);
+  renderQueenMix();
+}
+function queenRemove(s) {
+  const inst = QUEEN.slots.splice(s, 1)[0]; if (!inst) return;
+  QUEEN.pool.push(inst.id); SFX.pop(1);
+  renderQueenMix();
+}
+function queenBrew() {
+  const w = QUEEN.wish, sc = scoreMix(QUEEN.slots, w, 0);
+  const poisoned = !!(sc.allergy && sc.allergy.zone === "red");
+  const win = sc.weighted >= w.requiredMatch && !poisoned;
+  renderQueenResult(win, sc, poisoned);
+}
+function renderQueenResult(win, sc, poisoned) {
+  const skin = D.COSMETIC_BY_ID[QUEEN_SKIN];
+  let prize = "", note, title, emoji, cls;
+  if (win) {
+    if (!GAME.owned[skin.id]) { GAME.owned[skin.id] = true; prize = `New villain skin: ${skin.chip} ${skin.name}!`; }
+    else { grantReward({ gold: 120, stardust: 10 }); prize = "You already own her Mirror — 🪙120 · ✨10 instead."; }
+    save();
+    SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
+    emoji = "🐾"; cls = "win"; title = "Your Pet is free!";
+    note = "The Queen keeps her word (this once). Your Pet scampers home — and you snatched her prize!";
+  } else {
+    save();
+    SFX.sneeze();
+    emoji = "🐾"; cls = "lose"; title = "Pet comes home anyway";
+    note = poisoned
+      ? "The brew turned to poison! The Queen scoffs… but your Pet wriggles free and scampers home regardless. No skin this time — she'll be back."
+      : `Not quite a match (${sc.weighted}% / ${QUEEN.wish.requiredMatch}%). The Queen tuts… but your Pet slips away and comes home anyway. No skin — try her again another day.`;
+  }
+  const statLines = win
+    ? `<div class="stat-line"><span>Recipe match</span><span><b>${sc.weighted}%</b></span></div>
+       <div class="stat-line"><span>Prize</span><span class="gold">${prize}</span></div>`
+    : `<div class="stat-line"><span>Recipe match</span><span><b>${sc.weighted}%</b> / ${QUEEN.wish.requiredMatch}%</span></div>
+       <div class="stat-line"><span>Your Pet</span><span class="gold">🐾 safe &amp; home</span></div>`;
+  QUEEN = null;
+  html("event", `
+    ${hud("The Evil Queen")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${emoji}</div>
+      <div class="result-title ${cls}">${title}</div>
+      <div class="card" style="width:100%;max-width:330px">${statLines}</div>
+      <p class="muted" style="max-width:310px">${note}</p>
+    </div>
+    <button class="btn" id="queen-next">Next Customer  →</button>
+  `);
+  on("#queen-next", "click", startRound);
   show("event");
 }
 
@@ -2336,7 +2543,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenAdd, queenRemove, queenBrew, renderQueenMix, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

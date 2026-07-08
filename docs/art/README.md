@@ -138,6 +138,22 @@ you once you've uploaded it — just ask.)
 | `trash_bag.png` | 🛍️ Crumpled Bag (the mystery you open in the bin) |
 | `trash_ring.png` | 💍 Gold Ring (the rare treasure inside a bag) |
 
+### The Evil Queen's cursed pantry (villain event only)
+These only show up during the Evil Queen ransom event. Optional — they use emojis until you add art.
+| File name | Replaces |
+|---|---|
+| `ing_q_nightshade.png` | 🟣 Nightshade |
+| `ing_q_toadstool.png` | 🍄 Toadstool |
+| `ing_q_ravenfeather.png` | 🪶 Raven Feather |
+| `ing_q_venomvine.png` | 🌿 Venom Vine |
+| `ing_q_frostberry.png` | 🫐 Frost Berry |
+| `ing_q_emberroot.png` | 🥔 Ember Root |
+| `ing_q_moonthistle.png` | 🌸 Moon Thistle |
+| `ing_q_glimmercap.png` | 💠 Glimmer Cap |
+| `ing_q_wispdust.png` | ✨ Wisp Dust |
+| `ing_q_bloodplum.png` | 🍑 Blood Plum |
+| `cauldron_queen.png` | 🪞 Queen's Mirror cauldron skin (won by beating her) |
+
 ### Little icons (optional)
 | File name | Replaces |
 |---|---|

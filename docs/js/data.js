@@ -55,6 +55,23 @@ const INGREDIENTS = [
 ];
 const INGREDIENT_BY_ID = {};
 INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
+/* --- Villain ingredients — used ONLY in villain events (Evil Queen ransom).
+ * Registered in INGREDIENT_BY_ID so the scorer resolves them, but kept OUT of
+ * the normal INGREDIENTS pool so they never appear in regular rounds. Their
+ * magics are hidden — the player learns them by brewing. -------------------- */
+const QUEEN_INGREDIENTS = [
+  { id: "q_nightshade",   name: "Nightshade",    qualities: ["Sleep", "Mischief"],      emoji: "🟣" },
+  { id: "q_toadstool",    name: "Toadstool",     qualities: ["Growth", "Sleep"],        emoji: "🍄" },
+  { id: "q_ravenfeather", name: "Raven Feather", qualities: ["Mischief", "Protection"], emoji: "🪶" },
+  { id: "q_venomvine",    name: "Venom Vine",    qualities: ["Strength", "Mischief"],   emoji: "🌿" },
+  { id: "q_frostberry",   name: "Frost Berry",   qualities: ["Calm", "Beauty"],         emoji: "🫐" },
+  { id: "q_emberroot",    name: "Ember Root",    qualities: ["Courage", "Strength"],    emoji: "🥔" },
+  { id: "q_moonthistle",  name: "Moon Thistle",  qualities: ["Sleep", "Beauty"],        emoji: "🌸" },
+  { id: "q_glimmercap",   name: "Glimmer Cap",   qualities: ["Light", "Luck"],          emoji: "💠" },
+  { id: "q_wispdust",     name: "Wisp Dust",     qualities: ["Light", "Calm"],          emoji: "✨" },
+  { id: "q_bloodplum",    name: "Blood Plum",    qualities: ["Love", "Strength"],       emoji: "🍑" },
+];
+QUEEN_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
 
 /* --- 3. Special charms — power-ups popped from bubbles, played in the
  * cauldron (a small tray; tap to use). Mostly deterministic = skill in WHEN
@@ -147,6 +164,8 @@ const COSMETICS = {
     { id: "cauldron_rainbow",  name: "Rainbow",          chip: "🌈" },
     // achievement-only: earned by recycling junk (not buyable / not in the Well)
     { id: "cauldron_trashcan", name: "Trash Can",        chip: "🗑️", achievement: { stat: "recycled", need: 500, desc: "Recycle 500 junk" } },
+    // villain-only: won by beating a villain event (not buyable / not in the Well)
+    { id: "cauldron_queen",    name: "Queen's Mirror",   chip: "🪞", villain: true },
   ],
   familiar: [
     { id: "toad_classic", name: "Toad",    chip: "🐸", default: true },
@@ -212,7 +231,7 @@ QUESTS.daily.concat(QUESTS.weekly).forEach(q => QUEST_BY_ID[q.id] = q);
 
 /* Expose as a single namespace */
 const DATA = {
-  MAGIC, MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID,
+  MAGIC, MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS,
   FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
   QUESTS, QUEST_BY_ID,

@@ -722,3 +722,18 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .gob-tile .art-emoji { font-size: 34px; line-height: 1; }
 .gob-tile:active { transform: scale(.92); }
 .gob-count { font-size: 13px; color: var(--ink-dim); }
+.gob-count-big { font-size: 96px; font-weight: 900; line-height: 1; color: var(--gold);
+  text-shadow: 0 0 24px rgba(255,216,107,.6); animation: gobcd .8s ease; }
+.gob-count-big.go { color: var(--good); }
+@keyframes gobcd { 0% { transform: scale(1.6); opacity: 0; } 40% { transform: scale(1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+/* The Evil Queen — ransom brewing */
+.queen-buys { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px; }
+.queen-foe { display: flex; align-items: center; gap: 10px; padding: 4px 2px; font-size: 13px; }
+.queen-face { font-size: 38px; line-height: 1; }
+.queen-brew-row { padding: 6px 2px; text-align: center; }
+.queen-slots { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; min-height: 46px; margin-top: 4px; }
+.queen-slot { width: 46px; height: 46px; border-radius: 11px; background: var(--card2); border: 1px solid rgba(224,123,224,.4);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.queen-slot img.art { height: 28px; width: auto; }
+.queen-slot .art-emoji { font-size: 26px; line-height: 1; }
+.queen-slot:active { transform: scale(.9); }
