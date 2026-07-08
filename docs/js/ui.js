@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v56"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v57"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1592,7 +1592,7 @@ function renderScoop() {
     let jackCharm = null;
     if (jackpot) {
       SFX.charm(); // fanfare
-      jackCharm = ENGINE.pickCappedCharm(ROUND.charms);
+      jackCharm = ENGINE.pickCappedCharm(ROUND.charms, ROUND.villain ? ["peek"] : null);
       ROUND.charms.push(jackCharm); jackDone[idx] = true; if (ROUND.stats) ROUND.stats.charms++; // awarded straight into the tray
     }
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
@@ -1637,7 +1637,7 @@ function renderScoop() {
     for (let i = 0; i < scoops; i++) {
       if (isJackpot(i) && !jackDone[i]) {
         jackDone[i] = true;
-        const ch = ENGINE.pickCappedCharm(ROUND.charms);
+        const ch = ENGINE.pickCappedCharm(ROUND.charms, ROUND.villain ? ["peek"] : null);
         ROUND.charms.push(ch); if (ROUND.stats) ROUND.stats.charms++;
       }
     }

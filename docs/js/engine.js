@@ -152,20 +152,20 @@ function generateWish(customer, diff, isBoss) {
  * ---------------------------------------------------------------------- */
 // Pick a charm id that respects the per-round caps (cleanse 1, insight 1, peek 2;
 // potent/wild uncapped). Returns null only if literally nothing is available.
-function drawCharm(items) {
+function drawCharm(items, exclude) {
   const held = {};
   items.forEach(it => { if (it.kind === "charm") held[it.id] = (held[it.id] || 0) + 1; });
-  const pool = DATA.SPECIAL_CHARM_IDS.filter(id => (held[id] || 0) < (BALANCE.CHARM_CAPS[id] || Infinity));
+  const pool = DATA.SPECIAL_CHARM_IDS.filter(id => (held[id] || 0) < (BALANCE.CHARM_CAPS[id] || Infinity) && !(exclude && exclude.includes(id)));
   return pool.length ? R.pick(pool) : null;
 }
 // Pick a charm id from a list of already-held charm ids, respecting caps (for the
 // jackpot reward, which is awarded straight into the tray).
-function pickCappedCharm(heldIds) {
+function pickCappedCharm(heldIds, exclude) {
   const held = {}; (heldIds || []).forEach(id => held[id] = (held[id] || 0) + 1);
-  const pool = DATA.SPECIAL_CHARM_IDS.filter(id => (held[id] || 0) < (BALANCE.CHARM_CAPS[id] || Infinity));
+  const pool = DATA.SPECIAL_CHARM_IDS.filter(id => (held[id] || 0) < (BALANCE.CHARM_CAPS[id] || Infinity) && !(exclude && exclude.includes(id)));
   return pool.length ? R.pick(pool) : "potent"; // potent/wild are uncapped, so always a fallback
 }
-function generateHaul(wish, count, charmFinder, ingredientSet) {
+function generateHaul(wish, count, charmFinder, ingredientSet, excludeCharms) {
   const SET = ingredientSet || DATA.INGREDIENTS;
   const needs = wish.needs.map(n => n.type);
   // main-need sources: prefer a PRIMARY match, but fall back to any-quality match
@@ -183,7 +183,7 @@ function generateHaul(wish, count, charmFinder, ingredientSet) {
   while (items.length < count) {
     const r = Math.random();
     if (r < charmChance) {
-      const id = drawCharm(items);
+      const id = drawCharm(items, excludeCharms);
       if (id) items.push({ kind: "charm", id }); else items.push(ingItem(R.pick(mainSources))); // capped out → give an ingredient
     }
     else if (r < charmChance + BALANCE.GOLD_DROP_CHANCE) items.push({ kind: "gold", amt: R.int(BALANCE.GOLD_MIN, BALANCE.GOLD_MAX) });
@@ -289,7 +289,8 @@ function newVillainRound(opts) {
   scoopJackpots.forEach((j, i) => { if (j) scoopYields[i] += 2; });
   bubbles = scoopYields.reduce((a, b) => a + b, 0);
   if (opts.charmFinder) { scoopYields[scoopYields.length - 1] += BALANCE.KEEN_NOSE_BUBBLES; bubbles += BALANCE.KEEN_NOSE_BUBBLES; }
-  const haul = generateHaul(wish, bubbles, !!opts.charmFinder, SET);
+  // villains don't gift "peek" — their needs are already shown, so it'd be a dud charm
+  const haul = generateHaul(wish, bubbles, !!opts.charmFinder, SET, ["peek"]);
   return {
     customer: opts.customer || { id: "villain", name: "Villain", emoji: "👑", location: "Villain", line: "" },
     wish, payment: 0, bubblesTotal: bubbles, scoops, scoopYields, scoopJackpots, haul,
