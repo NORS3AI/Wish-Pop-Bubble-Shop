@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 👧 **Little Red now has real artwork too — all four expressions!** Friendly when she orders,
+  a fist-pump grin on a win, a hand-on-hip scowl on a fail, and covered in an itchy rash on an
+  allergy reaction.
+
 - 🦉 **Sleepy Owl now has real artwork — with four expressions!** She shows up sleepy-eyed when
   she orders, then beams when you make her wish, scowls if you fail it, and goes puffy-eyed and
   itchy on an allergy reaction. (White backgrounds removed, cropped, and sized for fast loading.)
