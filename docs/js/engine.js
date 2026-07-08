@@ -321,6 +321,9 @@ function allergyStatus(slots, allergyType, offset) {
   let points = 0;
   slots.forEach(inst => {
     const pinch = inst.shrunk ? BALANCE.PINCH_MULT : 1;
+    // per-piece hidden poison (villain rounds): a flagged ingredient taints the brew
+    // regardless of its magics; Pinch softens it, like any other contribution.
+    if (inst.poison && allergyType === "Poison") points += BALANCE.SECONDARY_POWER * pinch;
     if (inst.wild) { if (inst.magic === allergyType) points += inst.strength * pinch; return; }
     if (inst.essence) { if (inst.magic === allergyType) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; }
     const ing = DATA.INGREDIENT_BY_ID[inst.id];

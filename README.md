@@ -25,14 +25,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   tray and everything stays in sync.
 - ☠️ **The Evil Queen's pantry is now truly cursed.** Her ingredients use a brand-new
   set of dark magics you've never seen — **Dread, Malice, Shadow, Rot, Curse, Frost** —
-  with all-new spooky icons (spiders, snakes, skulls…). **Poison is now a hidden trap:**
-  about **2 in 5 ingredients** secretly carry it (a *different* random set every visit,
-  and never as an ingredient's obvious main quality) — so you have to discover which are
-  safe. A single tainted ingredient is tolerable, but **let the ☠️ Poison meter creep to
-  yellow and the brew is ruined** (the meter reads **CLEAN ✓ / TAINTED!**, not "allergy").
-  Since your Pet can't help you here, you can **tap an ingredient in the cauldron to pull
-  it back out**, and the **Insight** charm reveals hidden qualities so you can spot the
-  poison.
+  with all-new spooky icons (spiders, snakes, skulls…). **Poison is a hidden, per-piece
+  trap:** every single ingredient you pull has about a **1-in-3 chance** of secretly
+  hiding poison — so **even two of the same ingredient can differ** (one safe, one toxic).
+  A single tainted piece is tolerable, but **let the ☠️ Poison meter creep to yellow and
+  the brew is ruined** (the meter reads **CLEAN ✓ / TAINTED!**, not "allergy"). The
+  **Insight** charm reveals exactly which pieces are poisoned, and — since your Pet can't
+  help here — you can **tap an ingredient in the cauldron to pull it back out**.
 - 👑 **The Evil Queen — first villain event!** Every so often the Evil Queen sweeps
   in and **steals your Pet**, demanding a ransom potion. **Pay for scoops of her cursed
   pantry** (🪙50 / 🪙70 / 🪙120 for 2 / 5 / 7 scoops — more scoops = an easier brew),

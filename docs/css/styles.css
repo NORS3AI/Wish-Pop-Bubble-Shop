@@ -750,3 +750,5 @@ body.villain .cauldron .liquid { filter: saturate(1.25) hue-rotate(8deg); }
 body.villain .scoop-instr, body.villain .pop-sub { color: #c9f5b0; }
 .slot.removable { cursor: pointer; box-shadow: 0 0 0 1.5px rgba(255,140,140,.5) inset; }
 .slot.removable:active { transform: scale(.9); }
+.poison-badge { position: absolute; top: -6px; right: -6px; font-size: 14px; filter: drop-shadow(0 0 3px rgba(0,0,0,.6)); pointer-events: none; }
+.inv-tile.poisoned, .slot.poisoned { box-shadow: 0 0 0 2px var(--bad) inset; }

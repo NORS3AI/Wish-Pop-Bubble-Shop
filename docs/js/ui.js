@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v55"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v56"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1337,18 +1337,11 @@ function goblinFinish() {
 /* skin. First of a planned villain series.                                  */
 /* ======================================================================= */
 let QUEEN = null;
-const QUEEN_REQUIRED = 72, QUEEN_SKIN = "cauldron_queen", QUEEN_POISON_FRAC = 0.4; // ~2 in 5 ingredients hide poison
-// Randomly hide Poison in a subset of the pantry, fresh each event. Poison is always
-// appended (a HIDDEN quality, never the primary), so which ingredients are toxic
-// changes every visit — you have to discover them.
-function assignQueenPoison() {
-  const list = D.QUEEN_INGREDIENTS;
-  list.forEach(i => { i.qualities = i.baseQualities.slice(); });      // reset to poison-free base
-  const order = list.slice();
-  for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); const t = order[k]; order[k] = order[j]; order[j] = t; }
-  const n = Math.max(1, Math.round(list.length * QUEEN_POISON_FRAC));
-  for (let k = 0; k < n; k++) order[k].qualities.push("Poison");      // hidden (non-primary) taint
-}
+const QUEEN_REQUIRED = 72, QUEEN_SKIN = "cauldron_queen", QUEEN_POISON_CHANCE = 0.30; // each piece: ~1 in 3 hides poison
+// Per-piece poison: every ingredient you collect in a villain round independently rolls
+// for a hidden ☠️ taint, so even two of the SAME ingredient can differ. Rolled here at
+// collection time (only for villain rounds; normal rounds always get poison:false).
+function ingInst(id) { return { id, potent: false, poison: !!(ROUND && ROUND.villain) && R.chance(QUEEN_POISON_CHANCE) }; }
 const QUEEN_PACKAGES = [
   { gold: 50,  scoops: 2 },
   { gold: 70,  scoops: 5 },
@@ -1377,7 +1370,6 @@ function queenCustomer() {
 }
 function renderQueenIntro() {
   SFX.unlock(); SFX.fanfare();
-  assignQueenPoison();               // sprinkle hidden poison anew for this visit
   QUEEN = { wish: queenWish() };
   const w = QUEEN.wish, line = R.pick(QUEEN_LINES);
   const recipe = w.needs.map(n => `${magicDot(n.type)} ${n.type}`).join(" · ");
@@ -1394,7 +1386,7 @@ function renderQueenIntro() {
         <div style="text-align:center">${recipe}</div>
         <div class="stat-line" style="margin-top:6px"><span>☠️ Hazard</span><span style="color:var(--bad)">${magicDot("Poison")} hidden Poison</span></div>
       </div>
-      <div class="muted" style="max-width:315px">Pay for scoops of her cursed pantry, then <b>scoop &amp; pop</b> her bubbles for ingredients (and charms!). Brew a potion matching the recipe — but a few ingredients <b>secretly hide ☠️ Poison</b> (different ones each visit!). Keep the poison meter in the <b>green</b> — let it creep to <b>yellow</b> and the brew is ruined. Tap an ingredient in the cauldron to pull it back out. Match <b>${w.requiredMatch}%+</b> with a <b>clean</b> potion to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
+      <div class="muted" style="max-width:315px">Pay for scoops of her cursed pantry, then <b>scoop &amp; pop</b> her bubbles for ingredients (and charms!). Brew a potion matching the recipe — but <b>each piece has about a 1-in-3 chance of hiding ☠️ Poison</b> (even two of the same ingredient can differ!). Adding a poisoned piece makes the meter climb — keep it in the <b>green</b>; let it reach <b>yellow</b> and the brew is ruined. <b>Insight</b> reveals the poisoned ones, and you can tap a piece in the cauldron to pull it back out. Match <b>${w.requiredMatch}%+</b> with a <b>clean</b> potion to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
       <div class="muted" style="max-width:315px;font-size:12px">🐾 She's holding your Pet captive — <b>none of its abilities help you here</b>.</div>
       <div class="queen-buys">
         ${QUEEN_PACKAGES.map((pk, i) => `<button class="btn ${afford(pk.gold) ? "" : "secondary"} queen-buy" data-i="${i}" ${afford(pk.gold) ? "" : "disabled"}>🪙 ${pk.gold} → ${pk.scoops} scoops</button>`).join("")}
@@ -1884,7 +1876,7 @@ function collectCharm(id, tok) {
 // Ingredient floats out of the popped bubble; tap to catch it (or it drifts up and
 // auto-banks, so you never lose it). Catching just feels good.
 function spawnFloatingIngredient(id, x, y, autoMs) {
-  const layer = $("#catch-layer"); if (!layer) { ROUND.inventory.push({ id, potent: false }); return; }
+  const layer = $("#catch-layer"); if (!layer) { ROUND.inventory.push(ingInst(id)); return; }
   const ing = D.INGREDIENT_BY_ID[id];
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const tok = document.createElement("div");
@@ -1903,7 +1895,7 @@ function spawnFloatingIngredient(id, x, y, autoMs) {
 }
 function collectIngredient(id, tok, silent) {
   if (!tok || tok._caught) return; tok._caught = true; clearTimeout(tok._timer);
-  ROUND.inventory.push({ id, potent: false });
+  ROUND.inventory.push(ingInst(id));
   if (!silent) {
     SFX.unlock(); SFX.reveal("ingredient", 0);
     const r = tok.getBoundingClientRect();
@@ -1942,7 +1934,7 @@ function collectAllFloating() {
     if (!tok.classList.contains("caught")) { ROUND.charms.push(tok.dataset.charm); tok.remove(); }
   });
   document.querySelectorAll("#catch-layer .ing-token").forEach(tok => {
-    if (!tok._caught) { tok._caught = true; clearTimeout(tok._timer); ROUND.inventory.push({ id: tok.dataset.ing, potent: false }); tok.remove(); }
+    if (!tok._caught) { tok._caught = true; clearTimeout(tok._timer); ROUND.inventory.push(ingInst(tok.dataset.ing)); tok.remove(); }
   });
 }
 
@@ -2004,7 +1996,9 @@ function refreshPop() {
 /* ======================================================================= */
 function renderMix() {
   const rawCount = ROUND.inventory.length;                 // how abundant this round was
-  const merged = applyTripleMatch(ROUND.inventory); ROUND.inventory = merged.inventory;
+  // villain rounds skip triple-match so each piece keeps its own hidden-poison flag
+  const merged = ROUND.villain ? { inventory: ROUND.inventory, merged: [] } : applyTripleMatch(ROUND.inventory);
+  ROUND.inventory = merged.inventory;
   if (ROUND.stats) ROUND.stats.triples = merged.merged.length;
   ROUND.slots = []; ROUND.mixStart = Date.now();
   ROUND.potentNext = false; ROUND.allergyOffset = 0; ROUND.insight = false;
@@ -2087,7 +2081,8 @@ function paintMix() {
       : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>`
       : ingArt(inst.id);
     const removable = ROUND.villain && inst;   // villain rounds have no Pet Undo — tap a slot to pull it back
-    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
+    const poisonedSlot = inst && ROUND.insight && inst.poison;
+    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""} ${poisonedSlot ? "poisoned" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${poisonedSlot ? `<span class="poison-badge">☠️</span>` : ""}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
   }
   const tray = ROUND.charms.length
     ? `<div class="charm-tray">${ROUND.charms.map((c, i) => `<button class="charm-chip" data-charm="${i}" title="${CHARM(c).desc}">${charmArt(c)} <span>${CHARM(c).name}</span></button>`).join("")}</div>`
@@ -2129,9 +2124,11 @@ function invTile(inst, idx) {
   }
   const ing = D.INGREDIENT_BY_ID[inst.id];
   const cuttable = ROUND.toolMode ? " cuttable" : "";
-  const quals = ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0];
-  return `<div class="inv-tile ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}${cuttable}" id="invt-${idx}">
-    <div class="emoji">${ingArt(inst.id)}${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div><div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
+  const poisoned = ROUND.insight && inst.poison; // Insight reveals which pieces hide poison
+  const quals = (ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0])
+    + (poisoned ? ` <span style="color:var(--bad)">☠️ Poison</span>` : "");
+  return `<div class="inv-tile ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}${cuttable}${poisoned ? " poisoned" : ""}" id="invt-${idx}">
+    <div class="emoji">${ingArt(inst.id)}${poisoned ? `<span class="poison-badge">☠️</span>` : ""}${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div><div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
 }
 function allergyMeter(a) {
   const villain = !!(ROUND && ROUND.villain);
@@ -2546,7 +2543,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, assignQueenPoison, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
