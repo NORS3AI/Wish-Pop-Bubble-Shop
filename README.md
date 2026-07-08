@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ✨ **The real Wish Pop Bubble Shop logo is now on the main screen!** I removed its white
+  background so it sits cleanly on the game, and it floats gently with a soft glow and drifting
+  sparkles.
+
 - 🎨 **Drop in your own logo and character art!** The `art` folder now has slots for your
   **Wish Pop Bubble Shop logo** (replaces the title on the main screen) and for **four
   expressions per base-game customer** — a normal face when they arrive, plus **happy, angry,
