@@ -699,3 +699,26 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   border-radius: 3px; background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.9); }
 .rumpel-stat { font-weight: 800; font-size: 15px; }
 .rumpel-stat.sub { font-weight: 600; font-size: 13px; color: var(--ink-dim); }
+/* Gribble the Goblin — feed-the-junk timing game */
+.gob-top { display: flex; align-items: center; gap: 12px; padding: 6px 2px 2px; }
+.gob-face { font-size: 54px; line-height: 1; flex: 0 0 auto; }
+.gob-bubble { position: relative; flex: 1; background: var(--card2); border: 1px solid var(--line);
+  border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-weight: 800; }
+.gob-bubble::before { content: ""; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+  border: 8px solid transparent; border-right-color: var(--card2); }
+.gob-bubble img.art.gob-want { height: 40px; width: auto; }
+.gob-bubble .art-emoji { font-size: 34px; line-height: 1; }
+.gob-timer { height: 8px; border-radius: 5px; background: rgba(255,255,255,.08); overflow: hidden; margin: 8px 2px; }
+.gob-timer > i { display: block; height: 100%; width: 100%; border-radius: 5px; background: linear-gradient(90deg,#ffe58a,#f6c945); }
+.gob-status { padding: 0 2px 4px; text-align: center; }
+.gob-happy { position: relative; height: 12px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 6px; }
+.gob-happy > i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg,#7ee08a,#4fd1c5); transition: width .2s ease; }
+.gob-happy-mark { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1.5px; background: var(--gold); border-radius: 2px; box-shadow: 0 0 6px var(--gold); overflow: visible; }
+.gob-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-content: flex-start; padding: 6px 0; }
+.gob-tile { position: relative; width: 88px; padding: 12px 6px; border-radius: 14px; cursor: pointer;
+  background: var(--card2); border: 1px solid var(--line); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 700; }
+.gob-tile img.art { height: 40px; width: auto; }
+.gob-tile .art-emoji { font-size: 34px; line-height: 1; }
+.gob-tile:active { transform: scale(.92); }
+.gob-count { font-size: 13px; color: var(--ink-dim); }

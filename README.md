@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧌 **Meet Gribble the Goblin — a second junk visitor!** When your bin is full,
+  a hungry goblin now shows up **instead of Rumpelstiltskin every other time** (they
+  swap back and forth). He points at a piece of junk every couple seconds and you
+  **feed him the matching junk from your bin** — tap the right one, or tap **"I don't
+  have it!"** when he asks for something you're missing. Keep him happy enough by the
+  end and he **pays out gold + Stardust** (eating the junk you fed him); feed him
+  wrong too often and he waddles off grumpy. (Also in the ⚙️ Admin & Testing panel.)
 - 🧵 **Rumpelstiltskin — now a push-your-luck wheel!** When your **trash bin fills
   up (30/30)**, the strange little man offers to spin your junk into gold across
   **escalating rounds**. Each round the golden band gets **smaller** and the wheel

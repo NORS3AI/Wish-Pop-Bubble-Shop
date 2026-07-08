@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v47"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v48"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -25,7 +25,8 @@ function normalizeGame(g) {
   if (typeof g.streak !== "number") g.streak = 0;
   if (typeof g.bestStreak !== "number") g.bestStreak = 0;
   if (typeof g.nextEventAt !== "number") g.nextEventAt = -1; // -1 = uninitialized (set on first play)
-  if (typeof g.rumpelSeen !== "boolean") g.rumpelSeen = false; // offered Rumpelstiltskin while bin full?
+  if (typeof g.rumpelSeen !== "boolean") g.rumpelSeen = false; // offered a junk visitor while bin full?
+  if (typeof g.goblinTurn !== "boolean") g.goblinTurn = false; // alternate Rumpelstiltskin <-> the goblin
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
   ["served", "perfect", "bossWins", "rings", "bags", "rushWins"].forEach(k => { if (typeof g.stats[k] !== "number") g.stats[k] = 0; });
   if (!g.quests || typeof g.quests !== "object") g.quests = { day: "", week: -1, daily: [], weekly: [], dailyBonus: false };
@@ -178,6 +179,7 @@ function renderAdmin() {
         <button class="btn" id="ad-duel" style="margin-bottom:8px">⚔️ Mixing Duel</button>
         <button class="btn" id="ad-fairy" style="margin-bottom:8px">🧚 Fairy's Matching Boon</button>
         <button class="btn" id="ad-rumpel" style="margin-bottom:8px">🧵 Rumpelstiltskin</button>
+        <button class="btn" id="ad-goblin" style="margin-bottom:8px">🧌 Gribble the Goblin</button>
         <button class="btn secondary" id="ad-boss" style="margin-bottom:8px">👑 VIP (Boss) Customer</button>
         <button class="btn secondary" id="ad-rush">⏱️ In‑a‑Rush Customer</button>
       </div>
@@ -196,6 +198,15 @@ function renderAdmin() {
   on("#ad-duel", "click", renderDuelIntro);
   on("#ad-fairy", "click", renderFairyIntro);
   on("#ad-rumpel", "click", renderRumpelIntro);
+  on("#ad-goblin", "click", () => {
+    // make sure there's junk to feed when testing
+    if (GAME.trash.filter(id => !isBag(id)).length < 10) {
+      const ids = D.TRASH.map(t => t.id);
+      while (GAME.trash.length < BALANCE.TRASH_BIN_MAX) GAME.trash.push(R.pick(ids));
+      save();
+    }
+    renderGoblinIntro();
+  });
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
@@ -991,12 +1002,13 @@ const RUMPEL_LINES = [
 function rumpelBand(r)   { return Math.max(0.09, 0.42 - 0.05 * r); } // golden band width (shrinks each round)
 function rumpelSpeed(r)  { return 0.60 + 0.14 * r; }                 // sweeps/sec (faster each round)
 function rumpelReward(r) { return 30 + 15 * r; }                     // gold for landing round r
-function maybeRumpel() {
+function maybeJunkRound() {
   const full = GAME.trash.length >= BALANCE.TRASH_BIN_MAX;
   if (!full) { if (GAME.rumpelSeen) { GAME.rumpelSeen = false; save(); } return false; }
   if (GAME.rumpelSeen) return false;     // already offered while the bin is full — don't nag
-  GAME.rumpelSeen = true; save();
-  renderRumpelIntro();
+  GAME.rumpelSeen = true;
+  const goblin = !!GAME.goblinTurn; GAME.goblinTurn = !GAME.goblinTurn; save(); // swap back and forth
+  if (goblin) renderGoblinIntro(); else renderRumpelIntro();
   return true;
 }
 function renderRumpelIntro() {
@@ -1134,13 +1146,156 @@ function renderRumpelTally(banked) {
 }
 
 /* ======================================================================= */
+/* GRIBBLE THE GOBLIN — the other junk visitor. He barks out a piece of junk */
+/* he wants (a new one every couple seconds); feed him the matching junk from */
+/* your bin. Sometimes he asks for something you don't have — say so! Keep him */
+/* happy enough by the end and he pays out (eating the junk you fed him).     */
+/* ======================================================================= */
+let GOBLIN = null;
+const GOB_REQUESTS = 12;     // how many things he demands
+const GOB_MS = 2200;         // time per demand
+const GOB_FAKE = 0.30;       // chance he asks for something you DON'T have
+const GOB_TARGET = 55;       // happiness needed for a happy, paying goblin
+const GOB_D = { correct: 14, goodpass: 10, miss: -6, wrong: -12, badpass: -12 };
+const GOB_LINES = [
+  "Grubs and grimeys! I'm STARVING. Feed me your junk — but only what I ask for, in order!",
+  "Gribble hungry! Give me the exact bit I point at. Quick quick, before I get grumpy!",
+  "Ooh, a full bin! Feed me piece by piece — get it right and I'll pay you in shinies!"
+];
+function goblinHaveTypes() {
+  const set = {}; GAME.trash.forEach(id => { if (!isBag(id)) set[id] = true; });
+  return Object.keys(set);
+}
+function goblinPickWant() {
+  const have = goblinHaveTypes();
+  const missing = D.TRASH.map(t => t.id).filter(id => !have.includes(id));
+  if (missing.length && Math.random() < GOB_FAKE) return R.pick(missing); // a fake-out he knows you lack
+  if (have.length) return R.pick(have);
+  return null; // nothing left to eat
+}
+function goblinConsume(id) { const i = GAME.trash.indexOf(id); if (i >= 0) { GAME.trash.splice(i, 1); save(); } }
+function renderGoblinIntro() {
+  SFX.unlock(); SFX.fanfare();
+  const line = R.pick(GOB_LINES);
+  html("event", `
+    ${hud("A Hungry Goblin!")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">🧌</div>
+      <div style="font-weight:800;font-size:20px">Gribble the Goblin</div>
+      <div class="speech">“${line}”</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>He'll ask for</span><span>${GOB_REQUESTS} bits of junk</span></div>
+        <div class="stat-line"><span>Feed the right one</span><span class="gold">keep him happy 😋</span></div>
+        <div class="stat-line"><span>Wrong one / no answer</span><span style="color:var(--bad)">he sulks 😠</span></div>
+        <div class="stat-line"><span>Happy at the end</span><span class="gold">🪙 payout!</span></div>
+      </div>
+      <div class="muted" style="max-width:300px">He points at a piece of junk every couple seconds. Tap the <b>matching junk</b> in your bin — or tap <b>“I don't have it!”</b> when he asks for something you're missing.</div>
+    </div>
+    <button class="btn good" id="gob-play">😋 Feed him!</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="gob-skip">Not now</button>
+  `);
+  on("#gob-play", "click", () => { GOBLIN = { happy: 0, correct: 0, done: 0, want: null, answered: true, timer: null, feedback: null }; goblinRequest(); });
+  on("#gob-skip", "click", startRound);
+  show("event");
+}
+function goblinRequest() {
+  const want = goblinPickWant();
+  if (!want) { goblinFinish(); return; }   // bin's out of edible junk
+  GOBLIN.want = want; GOBLIN.answered = false;
+  renderGoblin();
+  GOBLIN.timer = setTimeout(() => { if (GOBLIN && !GOBLIN.answered) goblinResolve("miss"); }, GOB_MS);
+}
+function goblinResolve(kind) {
+  if (!GOBLIN || GOBLIN.answered) return;
+  GOBLIN.answered = true;
+  if (GOBLIN.timer) { clearTimeout(GOBLIN.timer); GOBLIN.timer = null; }
+  if (kind === "correct") { GOBLIN.correct++; goblinConsume(GOBLIN.want); }
+  GOBLIN.happy = Math.max(0, Math.min(100, GOBLIN.happy + (GOB_D[kind] || 0)));
+  GOBLIN.done++;
+  GOBLIN.feedback = { kind, delta: GOB_D[kind] || 0 };
+  SFX[kind === "correct" ? "coin" : kind === "goodpass" ? "charm" : "sneeze"]();
+  if (GOBLIN.done >= GOB_REQUESTS) goblinFinish(); else goblinRequest();
+}
+function goblinFeed(id) { if (!GOBLIN || GOBLIN.answered) return; goblinResolve(id === GOBLIN.want ? "correct" : "wrong"); }
+function goblinPass() { if (!GOBLIN || GOBLIN.answered) return; goblinResolve(GAME.trash.indexOf(GOBLIN.want) >= 0 ? "badpass" : "goodpass"); }
+function renderGoblin() {
+  const wantT = D.TRASH_BY_ID[GOBLIN.want];
+  const counts = {}; GAME.trash.forEach(id => { if (!isBag(id)) counts[id] = (counts[id] || 0) + 1; });
+  const tiles = Object.keys(counts).map(id =>
+    `<button class="gob-tile" data-id="${id}">${trashArt(id, "trash-face")}<span class="gob-count">×${counts[id]}</span></button>`).join("");
+  const fb = GOBLIN.feedback;
+  const fbTxt = !fb ? "Feed him what he points at!"
+    : fb.kind === "correct" ? `<span style="color:var(--good)">Yum! +${fb.delta}</span>`
+    : fb.kind === "goodpass" ? `<span style="color:var(--good)">Good call! +${fb.delta}</span>`
+    : fb.kind === "miss" ? `<span style="color:var(--bad)">Too slow! ${fb.delta}</span>`
+    : `<span style="color:var(--bad)">Nope! ${fb.delta}</span>`;
+  html("event", `
+    ${hud("Feed the Goblin!")}
+    <div class="gob-top">
+      <div class="gob-face">🧌</div>
+      <div class="gob-bubble">${trashArt(GOBLIN.want, "gob-want")}<span>“${wantT.name}!”</span></div>
+    </div>
+    <div class="gob-timer"><i id="gob-timerbar"></i></div>
+    <div class="gob-status">
+      <div class="rumpel-stat sub">Fed ${GOBLIN.done}/${GOB_REQUESTS} · ${fbTxt}</div>
+      <div class="gob-happy"><i style="width:${GOBLIN.happy}%"></i><span class="gob-happy-mark" style="left:${GOB_TARGET}%"></span></div>
+    </div>
+    <div class="grow" style="overflow-y:auto">
+      <div class="gob-grid">${tiles || `<div class="muted center" style="padding:20px">Nothing left to feed!</div>`}</div>
+    </div>
+    <button class="btn secondary" id="gob-pass">🚫 I don't have it!</button>
+  `);
+  $("#screen-event").querySelectorAll(".gob-tile").forEach(b => b.addEventListener("click", () => goblinFeed(b.dataset.id)));
+  on("#gob-pass", "click", goblinPass);
+  show("event");
+  const tb = $("#gob-timerbar");
+  if (tb) { tb.style.transition = "none"; tb.style.width = "100%";
+    requestAnimationFrame(() => { if (tb.isConnected) { tb.style.transition = "width " + GOB_MS + "ms linear"; tb.style.width = "0%"; } }); }
+}
+function goblinFinish() {
+  if (GOBLIN.timer) { clearTimeout(GOBLIN.timer); GOBLIN.timer = null; }
+  const win = GOBLIN.happy >= GOB_TARGET, correct = GOBLIN.correct;
+  let outcome;
+  if (win) {
+    const gold = 40 + correct * 16, dust = 6;
+    grantReward({ gold, stardust: dust }); save();
+    SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
+    outcome = { emoji: "😋", title: "Stuffed &amp; happy!", cls: "win",
+      lines: [`<div class="stat-line"><span>Junk he gobbled</span><span>${correct} bits</span></div>`,
+              `<div class="stat-line"><span>He pays you</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`],
+      note: "“Burp! Deee-licious. Here's your shinies!” 🪙" };
+  } else {
+    save();
+    SFX.sneeze();
+    outcome = { emoji: "😠", title: "Still hungry!", cls: "lose",
+      lines: [`<div class="stat-line"><span>Junk he gobbled</span><span>${correct} bits</span></div>`,
+              `<div class="stat-line"><span>Payout</span><span class="muted">none — too grumpy</span></div>`],
+      note: "“Bleh! You fed me all wrong.” He waddles off unsatisfied — no shinies this time." };
+  }
+  GOBLIN = null;
+  html("event", `
+    ${hud("Gribble the Goblin")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${outcome.emoji}</div>
+      <div class="result-title ${outcome.cls}">${outcome.title}</div>
+      <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
+      <p class="muted" style="max-width:300px">${outcome.note}</p>
+    </div>
+    <button class="btn" id="gob-next">Next Customer  →</button>
+  `);
+  on("#gob-next", "click", startRound);
+  show("event");
+}
+
+/* ======================================================================= */
 /* CUSTOMER                                                                */
 /* ======================================================================= */
 function startRound() {
   SFX.unlock();
   stopRoundTimers();
   refreshQuests();
-  if (maybeRumpel()) return;  // full trash bin? the imp offers to spin it into gold
+  if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
@@ -2181,7 +2336,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
