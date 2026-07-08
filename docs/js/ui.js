@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v44"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v45"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -837,6 +837,8 @@ function duelWish() {
 function setupDuel() {
   const challenger = R.pick(D.CUSTOMERS);
   const you = { wish: duelWish(), slots: [] }, ai = { wish: duelWish(), slots: [] };
+  // you can't see the ingredients' magic, so at least show all three of YOUR needs
+  you.wish.needs.forEach(n => n.revealed = true);
   // build a shared pool relevant to BOTH sides' needs, then fill with random
   const pool = [];
   const needTypes = [].concat(you.wish.needs.map(n => n.type), ai.wish.needs.map(n => n.type));

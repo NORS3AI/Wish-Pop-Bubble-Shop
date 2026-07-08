@@ -19,6 +19,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎯 **See all your needs in the duel.** Since you can't peek at the ingredients'
+  hidden magic, all **three of your own bars are now labeled** from the start — no
+  more mystery "?" needs on your side (your opponent's stay hidden).
 - 🔍 **Bigger, easier-to-read duel ingredients.** In the Mixing Duel the
   ingredient tiles are now much larger with clearer pictures and names, and the
   pile sits centered in the middle of the screen instead of squished up top.
