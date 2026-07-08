@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v67"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v68"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -134,9 +134,11 @@ function stopEventTimers() {
   if (typeof RUMPEL !== "undefined" && RUMPEL && RUMPEL.raf) cancelAnimationFrame(RUMPEL.raf);
   if (typeof GOBLIN !== "undefined" && GOBLIN) { if (GOBLIN.timer) clearTimeout(GOBLIN.timer); if (GOBLIN.cdTimer) clearTimeout(GOBLIN.cdTimer); }
   if (typeof DANCE !== "undefined" && DANCE) { if (DANCE.timer) clearTimeout(DANCE.timer); if (DANCE.cdTimer) clearTimeout(DANCE.cdTimer); if (DANCE.tTimer) clearTimeout(DANCE.tTimer); }
+  if (typeof CAKE !== "undefined" && CAKE && CAKE.timer) clearTimeout(CAKE.timer);
   if (typeof RUMPEL !== "undefined") RUMPEL = null;
   if (typeof GOBLIN !== "undefined") GOBLIN = null;
   if (typeof DANCE !== "undefined") DANCE = null;
+  if (typeof CAKE !== "undefined") CAKE = null;
   if (typeof DUEL !== "undefined") DUEL = null;
   if (typeof QUEEN !== "undefined") QUEEN = null;
   document.body.classList.remove("villain");
@@ -276,6 +278,7 @@ function renderAdmin() {
         <button class="btn" id="ad-goblin" style="margin-bottom:8px">🧌 Gribble the Goblin</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen</button>
         <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Royal Ball (Dance)</button>
+        <button class="btn" id="ad-cake" style="margin-bottom:8px">🧁 Drury Lane Bake-Off</button>
         <button class="btn secondary" id="ad-boss" style="margin-bottom:8px">👑 VIP (Boss) Customer</button>
         <button class="btn secondary" id="ad-rush">⏱️ In‑a‑Rush Customer</button>
       </div>
@@ -309,6 +312,7 @@ function renderAdmin() {
     renderQueenIntro();
   });
   on("#ad-dance", "click", () => renderDanceIntro("knight"));
+  on("#ad-cake", "click", renderCakeIntro);
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
@@ -923,7 +927,7 @@ function maybeEvent() {
   if (GAME.nextEventAt < 0) { GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save(); return false; }
   if (servedTotal < GAME.nextEventAt) return false;
   GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save();
-  const events = [renderDuelIntro, renderFairyIntro];
+  const events = [renderDuelIntro, renderFairyIntro, renderCakeIntro];
   if (GAME.gold >= QUEEN_PACKAGES[0].gold) events.push(renderQueenIntro); // Queen needs gold for her ransom
   if (currentRealm().id === "courtyard") events.push(() => renderDanceIntro("knight")); // a royal-ball dance lesson
   R.pick(events)();
@@ -1734,6 +1738,174 @@ function danceFinish() {
     <button class="btn" id="dance-next">Next Customer  →</button>
   `);
   on("#dance-next", "click", startRound);
+  show("event");
+}
+
+/* ======================================================================= */
+/* THE DRURY LANE BAKE-OFF — a spatial-memory event (the Muffin Man's realm).*/
+/* Study a decorated treat, then recreate it from memory: pick a decoration  */
+/* and tap the spots where it went. Six confusable decorations (swirl vs     */
+/* dollop, cherry vs strawberry, choc vs rainbow sprinkles) make it a real   */
+/* memory test. Score your accuracy → a 🥇/🥈/🥉 ribbon and a matching prize */
+/* (even 3rd place earns a little). This build: the one-tier cake; the two-  */
+/* and three-tier rounds escalate on the same engine next.                   */
+/* ======================================================================= */
+let CAKE = null;
+// The six decorations — deliberately in look-alike pairs so memory matters.
+const CAKE_DECOS = [
+  { id: "icing_swirl",      name: "Swirl",     emoji: "🍦" },
+  { id: "icing_dollop",     name: "Dollop",    emoji: "⚪" },
+  { id: "cherry",           name: "Cherry",    emoji: "🍒" },
+  { id: "strawberry",       name: "Strawberry",emoji: "🍓" },
+  { id: "choc_sprinkles",   name: "Choc",      emoji: "🍫" },
+  { id: "rainbow_sprinkles",name: "Rainbow",   emoji: "🌈" },
+];
+const CAKE_DECO_BY_ID = {}; CAKE_DECOS.forEach(d => CAKE_DECO_BY_ID[d.id] = d);
+// The treat you're decorating — flavor only; the spot mechanic is identical.
+const CAKE_CANVASES = [
+  { id: "cake",    label: "cake",    emoji: "🎂" },
+  { id: "cookie",  label: "cookie",  emoji: "🍪" },
+  { id: "cupcake", label: "cupcake", emoji: "🧁" },
+];
+const CAKE_STUDY_MS = 5000;      // time to memorise the one-tier
+const CAKE_SLOTS_1TIER = 4;      // decoration spots on the single tier
+// Accuracy (%) → competition ribbon + prize. Even a shaky 3rd place pays a little.
+const CAKE_PLACES = [
+  { min: 90, place: 1, ribbon: "🥇", title: "First Place!",  reward: { gold: 60, keys: 1, stardust: 8 } },
+  { min: 70, place: 2, ribbon: "🥈", title: "Second Place!", reward: { gold: 40, keys: 1 } },
+  { min: 50, place: 3, ribbon: "🥉", title: "Third Place!",  reward: { gold: 25 } },
+];
+// Decoration art: drop art/dec_<id>.png to replace the emoji (see art README).
+function cakeArt(id, cls) { const d = CAKE_DECO_BY_ID[id]; return ART.tag("dec_" + id, d ? d.emoji : "❔", cls || "cake-deco"); }
+function cakeMakeTarget(n) { const t = []; for (let i = 0; i < n; i++) t.push(R.pick(CAKE_DECOS).id); return t; }
+function renderCakeIntro() {
+  CAKE = null;
+  SFX.unlock(); SFX.fanfare();
+  const canvas = R.pick(CAKE_CANVASES);
+  html("event", `
+    ${hud("The Drury Lane Bake-Off!")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">🧑‍🍳</div>
+      <div style="font-weight:800;font-size:20px">The Bake-Off Judge</div>
+      <div class="speech">“Welcome, decorator! I'll show you a finished ${canvas.label} — study it well, then recreate it from memory. Best decorator wins a ribbon!”</div>
+      <div class="card" style="width:100%;max-width:330px">
+        <div class="stat-line"><span>1 · Study</span><span>memorise the ${canvas.label} 👀</span></div>
+        <div class="stat-line"><span>2 · Decorate</span><span>place it back from memory 🧁</span></div>
+        <div class="stat-line"><span>Judged</span><span class="gold">🥇 🥈 🥉 → a prize!</span></div>
+      </div>
+      <div class="muted" style="max-width:310px">Pick a decoration, then tap the spots where it belongs. Watch out — a swirl looks like a dollop, a cherry like a strawberry!</div>
+    </div>
+    <button class="btn good" id="cake-play">🧁 Enter the Bake-Off!</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="cake-skip">Not now</button>
+  `);
+  on("#cake-play", "click", () => {
+    const n = CAKE_SLOTS_1TIER;
+    CAKE = { canvas, n, target: cakeMakeTarget(n), placed: new Array(n).fill(null),
+      tool: CAKE_DECOS[0].id, phase: "study", timer: null };
+    cakeStudy();
+  });
+  on("#cake-skip", "click", startRound);
+  show("event");
+}
+function cakeStudy() {
+  CAKE.phase = "study";
+  renderCake();
+  CAKE.timer = setTimeout(() => { if (CAKE) cakeToDecorate(); }, CAKE_STUDY_MS);
+}
+function cakeToDecorate() {
+  if (CAKE.timer) { clearTimeout(CAKE.timer); CAKE.timer = null; }
+  CAKE.phase = "decorate";
+  SFX.whoosh();
+  renderCake();
+}
+function cakePickTool(id) { if (!CAKE) return; CAKE.tool = id; renderCake(); }
+function cakeTapSlot(i) { if (!CAKE || CAKE.phase !== "decorate") return; CAKE.placed[i] = CAKE.tool; SFX.pop(2); renderCake(); }
+function cakeSlotMarkup(deco, idx, tappable) {
+  const inner = deco ? cakeArt(deco, "cake-slot-ic") : `<span class="cake-slot-empty">+</span>`;
+  return `<button class="cake-slot ${deco ? "filled" : ""}" ${tappable ? `data-i="${idx}"` : "disabled"}>${inner}</button>`;
+}
+function renderCake() {
+  const C = CAKE, study = C.phase === "study";
+  const row = (study ? C.target : C.placed)
+    .map((deco, i) => cakeSlotMarkup(deco, i, !study)).join("");
+  const tools = CAKE_DECOS.map(d =>
+    `<button class="cake-tool ${d.id === C.tool ? "sel" : ""}" data-id="${d.id}">${cakeArt(d.id, "cake-tool-ic")}<span>${d.name}</span></button>`).join("");
+  const placedCount = C.placed.filter(Boolean).length;
+  html("event", `
+    ${hud(study ? "Study the " + C.canvas.label + "! 👀" : "Decorate! 🧁")}
+    <div class="cake-stage">
+      <div class="cake-caption">${study
+        ? `<b>Memorise</b> where each decoration sits…`
+        : `Recreate it from memory — tap the spots (${placedCount}/${C.n} placed)`}</div>
+      <div class="cake-layer"><div class="cake-slots">${row}</div></div>
+      <div class="cake-plate"></div>
+      ${study ? `<div class="cake-study-bar"><i id="cake-study-fill"></i></div>` : ""}
+    </div>
+    ${study
+      ? `<div class="grow"></div><button class="btn good" id="cake-ready">I've got it! →</button>`
+      : `<div class="cake-tools">${tools}</div><button class="btn good" id="cake-done">✓ Present to the judge</button>`}
+  `);
+  if (study) {
+    on("#cake-ready", "click", cakeToDecorate);
+    const fill = $("#cake-study-fill");
+    if (fill) { fill.style.transition = "none"; fill.style.width = "100%";
+      requestAnimationFrame(() => { if (fill.isConnected) { fill.style.transition = "width " + CAKE_STUDY_MS + "ms linear"; fill.style.width = "0%"; } }); }
+  } else {
+    $("#screen-event").querySelectorAll(".cake-slot[data-i]").forEach(b =>
+      b.addEventListener("click", () => cakeTapSlot(+b.dataset.i)));
+    $("#screen-event").querySelectorAll(".cake-tool").forEach(b =>
+      b.addEventListener("click", () => cakePickTool(b.dataset.id)));
+    on("#cake-done", "click", cakeSubmit);
+  }
+  show("event");
+}
+function cakeScore() {
+  let correct = 0;
+  for (let i = 0; i < CAKE.n; i++) if (CAKE.placed[i] === CAKE.target[i]) correct++;
+  return { correct, pct: Math.round((correct / CAKE.n) * 100) };
+}
+function cakeSubmit() {
+  if (!CAKE) return;
+  if (CAKE.timer) { clearTimeout(CAKE.timer); CAKE.timer = null; }
+  const { correct, pct } = cakeScore();
+  const place = CAKE_PLACES.find(p => pct >= p.min) || null;
+  // a little side-by-side so you can see what you missed
+  const compare = `
+    <div class="cake-compare">
+      <div class="cake-compare-row"><span class="cake-cmp-lbl">Theirs</span><div class="cake-cmp-slots">${CAKE.target.map(d => `<span class="cake-cmp-slot">${cakeArt(d, "cake-cmp-ic")}</span>`).join("")}</div></div>
+      <div class="cake-compare-row"><span class="cake-cmp-lbl">Yours</span><div class="cake-cmp-slots">${CAKE.placed.map((d, i) => `<span class="cake-cmp-slot ${d === CAKE.target[i] ? "ok" : "bad"}">${d ? cakeArt(d, "cake-cmp-ic") : "·"}</span>`).join("")}</div></div>
+    </div>`;
+  let outcome;
+  if (place) {
+    const got = grantReward(place.reward); save();
+    SFX.perfect(); SFX.bigCoin(); if (place.place === 1) confettiOver($("#app"));
+    outcome = { emoji: place.ribbon, title: place.title, cls: "win",
+      lines: [`<div class="stat-line"><span>Decorations matched</span><span>${correct}/${CAKE.n} (${pct}%)</span></div>`,
+              `<div class="stat-line"><span>Your prize</span><span class="gold">${got}</span></div>`],
+      note: place.place === 1 ? "“Flawless! A blue-ribbon bake if I ever saw one!” 🎀"
+          : place.place === 2 ? "“Very nicely done — a fine second place!”"
+          : "“Not bad! A third-place ribbon for effort.”" };
+  } else {
+    save(); SFX.sneeze();
+    outcome = { emoji: "😖", title: "No ribbon this time!", cls: "lose",
+      lines: [`<div class="stat-line"><span>Decorations matched</span><span>${correct}/${CAKE.n} (${pct}%)</span></div>`,
+              `<div class="stat-line"><span>Needed</span><span>${CAKE_PLACES[CAKE_PLACES.length - 1].min}% for a ribbon</span></div>`],
+      note: "“Ooh, close! Study a touch longer next time.” The judge waves you on with a smile." };
+  }
+  CAKE = null;
+  html("event", `
+    ${hud("The Drury Lane Bake-Off")}
+    <div class="grow center" style="gap:12px">
+      <div class="ph big">${outcome.emoji}</div>
+      <div class="result-title ${outcome.cls}">${outcome.title}</div>
+      ${compare}
+      <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
+      <p class="muted" style="max-width:300px">${outcome.note}</p>
+    </div>
+    <button class="btn" id="cake-next">Next Customer  →</button>
+  `);
+  on("#cake-next", "click", startRound);
   show("event");
 }
 
@@ -3045,7 +3217,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStudy, cakeToDecorate, cakePickTool, cakeTapSlot, cakeScore, cakeSubmit, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

@@ -19,6 +19,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧁 **The Drury Lane Bake-Off — a memory decorating game!** A judge shows you a finished
+  treat, you **study it**, and then it vanishes — now recreate it from memory! Pick from
+  **six decorations** (deliberately look-alike: a swirl vs a dollop, a cherry vs a strawberry,
+  chocolate vs rainbow sprinkles) and tap the spots where each one goes. The closer you match,
+  the higher you place — **🥇 first, 🥈 second, or 🥉 third** — and every ribbon pays a prize
+  (even third place earns a little). The results screen shows *theirs vs yours* side by side so
+  you can see what you missed. This first version is the one-tier cake; two- and three-tier
+  rounds that escalate the memory challenge are on the way.
+
 - 💃 **The Royal Ball — a brand-new kind of minigame in the King's Courtyard!** No potions this
   time: you're the **dance teacher**, and a clumsy courtier is your student. It's a real
   **rhythm game** — a marker slides to a beat line and you tap the move **right as it lands on

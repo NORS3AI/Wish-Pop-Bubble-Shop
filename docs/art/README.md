@@ -165,6 +165,19 @@ These appear when you're playing in King's Courtyard. Optional — emojis until 
 | `ing_kc_griffin_egg.png` | 🪺 Griffin Egg (infused: next ingredient is Potent) |
 | `ing_kc_royal_seal.png` | 🔒 Royal Seal (infused: locks a bar) |
 
+### The Drury Lane Bake-Off — decorations (memory event)
+These are the six decorations you place on the cake in the bake-off. Drop art in and it
+replaces the emoji everywhere (the tool buttons, the cake spots, and the results comparison).
+Optional — they use emojis until you add art.
+| File name | Replaces |
+|---|---|
+| `dec_icing_swirl.png` | 🍦 Icing Swirl |
+| `dec_icing_dollop.png` | ⚪ Icing Dollop |
+| `dec_cherry.png` | 🍒 Cherry |
+| `dec_strawberry.png` | 🍓 Strawberry |
+| `dec_choc_sprinkles.png` | 🍫 Chocolate Sprinkles |
+| `dec_rainbow_sprinkles.png` | 🌈 Rainbow Sprinkles |
+
 ### The Evil Queen's cursed pantry (villain event only)
 These only show up during the Evil Queen ransom event. Optional — they use emojis until you add art.
 | File name | Replaces |

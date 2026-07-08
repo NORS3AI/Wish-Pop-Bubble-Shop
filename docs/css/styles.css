@@ -765,6 +765,41 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .dance-btn-ic { font-size: 40px; line-height: 1; }
 .dance-btn-nm { font-size: 13px; }
 .dance-btn:active { transform: scale(.93); background: rgba(197,139,255,.18); border-color: #c58bff; }
+/* The Drury Lane Bake-Off — study a decorated treat, recreate it from memory */
+.cake-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px 2px; }
+.cake-caption { font-size: 13px; color: var(--ink-dim); text-align: center; margin-bottom: 4px; min-height: 18px; }
+.cake-layer { width: 100%; max-width: 320px; border-radius: 18px 18px 12px 12px;
+  background: linear-gradient(#fff4e6, #ffe3c2); border: 2px solid #f0c08a;
+  box-shadow: inset 0 -8px 0 rgba(210,150,90,.25), 0 4px 10px rgba(0,0,0,.2); padding: 18px 12px; }
+.cake-plate { width: 100%; max-width: 344px; height: 12px; border-radius: 0 0 16px 16px;
+  background: linear-gradient(#d9dde6, #aeb6c6); box-shadow: 0 4px 8px rgba(0,0,0,.25); }
+.cake-slots { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.cake-slot { width: 62px; height: 62px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.7); border: 2px dashed #e0a366; cursor: pointer; padding: 0; }
+.cake-slot.filled { border-style: solid; border-color: #f0a95a; background: #fff; }
+.cake-slot:not([disabled]):active { transform: scale(.9); }
+.cake-slot-ic, .cake-slot-ic.art { font-size: 34px; line-height: 1; height: 40px; width: auto; }
+.cake-slot .art-emoji { font-size: 34px; line-height: 1; }
+.cake-slot-empty { font-size: 26px; color: #d09a5e; font-weight: 700; }
+.cake-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 340px; margin: 10px auto 8px; }
+.cake-tool { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border-radius: 14px;
+  background: var(--card2); border: 1px solid var(--line); color: var(--ink); font-weight: 700; font-size: 11px; cursor: pointer; }
+.cake-tool-ic, .cake-tool-ic.art { font-size: 28px; line-height: 1; height: 30px; width: auto; }
+.cake-tool .art-emoji { font-size: 28px; line-height: 1; }
+.cake-tool.sel { border-color: var(--gold); background: rgba(255,216,107,.16); box-shadow: 0 0 10px rgba(255,216,107,.4); }
+.cake-tool:active { transform: scale(.94); }
+.cake-study-bar { width: 100%; max-width: 320px; height: 8px; border-radius: 5px; background: rgba(255,255,255,.1); overflow: hidden; margin-top: 10px; }
+.cake-study-bar > i { display: block; height: 100%; width: 100%; border-radius: 5px; background: linear-gradient(90deg,#ffd76a,#ff9de0); }
+.cake-compare { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 6px; }
+.cake-compare-row { display: flex; align-items: center; gap: 8px; }
+.cake-cmp-lbl { font-size: 11px; color: var(--ink-dim); width: 44px; text-align: right; font-weight: 700; }
+.cake-cmp-slots { display: flex; gap: 6px; flex: 1; justify-content: center; }
+.cake-cmp-slot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--card2); border: 1px solid var(--line); font-size: 20px; }
+.cake-cmp-slot.art, .cake-cmp-ic.art { height: 24px; width: auto; }
+.cake-cmp-slot .art-emoji, .cake-cmp-ic { font-size: 20px; line-height: 1; }
+.cake-cmp-slot.ok { border-color: var(--good); box-shadow: 0 0 6px rgba(126,224,138,.5); }
+.cake-cmp-slot.bad { border-color: var(--bad); box-shadow: 0 0 6px rgba(255,120,120,.4); }
 /* The Evil Queen — ransom brewing */
 .queen-buys { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px; }
 .queen-foe { display: flex; align-items: center; gap: 10px; padding: 4px 2px; font-size: 13px; }
