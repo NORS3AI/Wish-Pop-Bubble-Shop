@@ -19,6 +19,17 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🥚❄️ **New kind of ingredient — Infused Ingredients!** Some ingredients now carry a
+  built-in power that fires the moment you drop them in the cauldron — no charm needed.
+  The first two: **Dragon Egg** (🥚 — your *next* ingredient counts double, like a free
+  Potent) and **Frost Gem** (❄️ — *locks* the bar it fills so it can't overfill/curdle,
+  even as the green zones shrink). They glow gold in your bag and show their effect right
+  on the card. This is the new "realm mechanic" — the effect stays the same as you
+  progress, just reskinned per realm (a Dragon Egg becomes a Golden Goose Egg, etc.).
+  They still carry their own magic, so the power comes bundled to a magic you may or may
+  not need — a fun little decision. (Currently they show up often so they're easy to try;
+  we'll tune the rarity later.)
+
 - 🐛 **Fixed:** in the Evil Queen event, removing a **Wild charm** from the cauldron
   (tap-to-remove) used to jam the mix screen — the slot stayed stuck and new
   ingredients wouldn't show. Now a removed Wild charm goes safely back to your charm

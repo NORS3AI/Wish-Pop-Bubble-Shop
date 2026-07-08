@@ -90,6 +90,19 @@ const QUEEN_INGREDIENTS = [
   { id: "q_creepvine",  name: "Creep Vine",    qualities: ["Frost", "Rot"],      emoji: "🕷️" },
 ];
 QUEEN_INGREDIENTS.forEach(i => { i.baseQualities = i.qualities.slice(); INGREDIENT_BY_ID[i.id] = i; });
+/* --- Infused ingredients — a normal ingredient with a built-in charm-like effect
+ * that fires when you drop it in the cauldron (no charm slot needed). Introduced as
+ * the new "realm mechanic". They carry their own magic too, so the effect is bundled
+ * to a magic you may or may not need. The MECHANIC stays constant across realms; only
+ * the name/art/magics get reskinned per realm (Dragon Egg -> Golden Goose Egg, etc.).
+ *   infused: "potentNext" — your NEXT added ingredient counts double (like Potent charm)
+ *   infused: "lockBar"    — locks the need bar it fills so it can't overfill/curdle
+ * ---------------------------------------------------------------------------------- */
+const INFUSED_INGREDIENTS = [
+  { id: "dragon_egg", name: "Dragon Egg", qualities: ["Courage", "Strength"],  emoji: "🥚", infused: "potentNext" },
+  { id: "frost_gem",  name: "Frost Gem",  qualities: ["Calm", "Protection"],   emoji: "❄️", infused: "lockBar" },
+];
+INFUSED_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
 
 /* --- 3. Special charms — power-ups popped from bubbles, played in the
  * cauldron (a small tray; tap to use). Mostly deterministic = skill in WHEN
@@ -249,7 +262,7 @@ QUESTS.daily.concat(QUESTS.weekly).forEach(q => QUEST_BY_ID[q.id] = q);
 
 /* Expose as a single namespace */
 const DATA = {
-  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS,
+  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, INFUSED_INGREDIENTS,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS,
   FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
   QUESTS, QUEST_BY_ID,

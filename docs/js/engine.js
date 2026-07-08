@@ -365,9 +365,9 @@ function scoreMix(slots, wish, allergyOffset) {
   const perNeed = wish.needs.map(need => {
     const points = pointsForNeed(slots, need.type);
     let pct;
-    if (points >= band.low && points <= band.high) pct = 100;      // in the sweet spot
-    else if (points < band.low) pct = Math.round(Math.pow(points / band.low, BALANCE.BELOW_BAND_POW) * 100); // ramp up (steep: reward reaching the green)
-    else pct = Math.max(0, Math.round(100 - (points - band.high) * BALANCE.OVERSHOOT_K)); // curdled
+    if (points >= band.low) pct = (points <= band.high || need.frozen) ? 100 // in the sweet spot (or frozen: can't curdle)
+      : Math.max(0, Math.round(100 - (points - band.high) * BALANCE.OVERSHOOT_K)); // curdled from overshoot
+    else pct = Math.round(Math.pow(points / band.low, BALANCE.BELOW_BAND_POW) * 100); // ramp up toward the green
     return { type: need.type, label: need.label, pct, points, bandLow: band.low, bandHigh: band.high };
   });
   const w = wish.weights;

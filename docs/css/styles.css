@@ -752,3 +752,6 @@ body.villain .scoop-instr, body.villain .pop-sub { color: #c9f5b0; }
 .slot.removable:active { transform: scale(.9); }
 .poison-badge { position: absolute; top: -6px; right: -6px; font-size: 14px; filter: drop-shadow(0 0 3px rgba(0,0,0,.6)); pointer-events: none; }
 .inv-tile.poisoned, .slot.poisoned { box-shadow: 0 0 0 2px var(--bad) inset; }
+/* Infused ingredients (built-in charm effect) — glow + effect label */
+.inv-tile.infused { box-shadow: 0 0 0 2px rgba(255,216,107,.7) inset, 0 0 12px rgba(255,216,107,.35); }
+.infused-tag { font-size: 9px; font-weight: 800; color: var(--gold); line-height: 1.1; margin-top: 2px; }

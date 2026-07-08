@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v57"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v58"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1473,6 +1473,7 @@ function startRound() {
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
+  injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
   // when scooping begins.
   ROUND.rush = !ROUND.wish.boss && Math.random() < BALANCE.RUSH_CHANCE;
@@ -2050,10 +2051,11 @@ function paintMixTop() {
         <span class="muted" style="${inBand ? "color:var(--good);font-weight:800" : ""}">${inBand ? "✓ in the green!" : "?"}</span></div>
         <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${inBand ? "var(--good)" : "rgba(255,255,255,0.28)"}"></i></div></div>`;
     }
+    const frozen = !!n.frozen;
     const fillCol = inBand ? "var(--good)" : over ? "var(--bad)" : D.MAGIC[n.type];
-    const status = inBand ? "✓ in the green!" : over ? "overfilled!" : s.pct + "%";
-    const statusCol = inBand ? "var(--good)" : over ? "var(--bad)" : "var(--ink-dim)";
-    return `<div class="need-meter"><div class="lbl"><span>${magicDot(n.type)} ${n.type}</span>
+    const status = frozen && s.pct === 100 ? "🔒 locked" : inBand ? "✓ in the green!" : over ? "overfilled!" : s.pct + "%";
+    const statusCol = (inBand || (frozen && s.pct === 100)) ? "var(--good)" : over ? "var(--bad)" : "var(--ink-dim)";
+    return `<div class="need-meter"><div class="lbl"><span>${magicDot(n.type)} ${n.type}${frozen ? " ❄️" : ""}</span>
       <span style="color:${statusCol};font-weight:800">${status}</span></div>
       <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
   }).join("");
@@ -2125,10 +2127,11 @@ function invTile(inst, idx) {
   const ing = D.INGREDIENT_BY_ID[inst.id];
   const cuttable = ROUND.toolMode ? " cuttable" : "";
   const poisoned = ROUND.insight && inst.poison; // Insight reveals which pieces hide poison
+  const infused = ing.infused ? INFUSED_LABEL[ing.infused] : "";
   const quals = (ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0])
     + (poisoned ? ` <span style="color:var(--bad)">☠️ Poison</span>` : "");
-  return `<div class="inv-tile ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}${cuttable}${poisoned ? " poisoned" : ""}" id="invt-${idx}">
-    <div class="emoji">${ingArt(inst.id)}${poisoned ? `<span class="poison-badge">☠️</span>` : ""}${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div><div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
+  return `<div class="inv-tile ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}${cuttable}${poisoned ? " poisoned" : ""}${ing.infused ? " infused" : ""}" id="invt-${idx}">
+    <div class="emoji">${ingArt(inst.id)}${poisoned ? `<span class="poison-badge">☠️</span>` : ""}${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div><div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${ing.name}</div><div class="q">${quals}</div>${infused ? `<div class="infused-tag">${infused}</div>` : ""}</div>`;
 }
 function allergyMeter(a) {
   const villain = !!(ROUND && ROUND.villain);
@@ -2141,6 +2144,40 @@ function allergyMeter(a) {
     <span style="color:${col};font-weight:800">${status}</span></div>
     <div class="meter" style="background:rgba(255,90,90,0.12)"><i style="width:${pct}%;background:${col}"></i></div></div>`;
 }
+/* --- Infused ingredients: a built-in charm-like effect that fires on drop-in ------ */
+const INFUSED_LABEL = { potentNext: "✨ next is Potent", lockBar: "❄️ locks its bar" };
+const INFUSED_PER_ROUND = 1;   // guaranteed per round for now (prototype); tune later
+// Replace a few random ingredient slots in the haul with infused ingredients.
+function injectInfused(round) {
+  const list = D.INFUSED_INGREDIENTS || []; if (!list.length) return;
+  const idxs = []; round.haul.forEach((it, i) => { if (it.kind === "ingredient" && !D.INGREDIENT_BY_ID[it.id].infused) idxs.push(i); });
+  for (let i = idxs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = idxs[i]; idxs[i] = idxs[j]; idxs[j] = t; }
+  const n = INFUSED_PER_ROUND + (Math.random() < 0.4 ? 1 : 0); // 1, sometimes 2
+  for (let k = 0; k < n && k < idxs.length; k++) round.haul[idxs[k]] = { kind: "ingredient", id: R.pick(list).id };
+}
+// Which need should a lockBar ingredient freeze: one it fills (by its magics), else
+// the fullest unfrozen need (so it's never wasted).
+function pickFreezeNeed(ing) {
+  const needs = ROUND.wish.needs;
+  for (const q of ing.qualities) { const n = needs.find(x => x.type === q && !x.frozen); if (n) return n; }
+  const sc = scoreMix(ROUND.slots, ROUND.wish, ROUND.allergyOffset || 0);
+  let best = null, bestPts = -1;
+  needs.forEach((n, i) => { if (!n.frozen && sc.perNeed[i].points > bestPts) { bestPts = sc.perNeed[i].points; best = n; } });
+  return best;
+}
+// Fire an infused ingredient's effect the moment it lands in the cauldron.
+function applyInfusedEffect(inst) {
+  const ing = inst && inst.id ? D.INGREDIENT_BY_ID[inst.id] : null;
+  if (!ing || !ing.infused) return;
+  if (ing.infused === "potentNext") {
+    ROUND.potentNext = true; SFX.unlock(); SFX.charm();
+    toast(`${ing.emoji} ${ing.name} — your next ingredient will be Potent! ✨`);
+  } else if (ing.infused === "lockBar") {
+    const need = pickFreezeNeed(ing);
+    if (need) { need.frozen = true; need.revealed = true; SFX.unlock(); SFX.charm(); toast(`${ing.emoji} ${ing.name} — ${need.type} is locked; it can't curdle! ❄️`); }
+    else { toast(`${ing.emoji} ${ing.name} fizzles — nothing to lock.`); }
+  }
+}
 function addToSlot(idx, fromEl) {
   if (ROUND.toolMode === "cut") { cutIngredient(idx, fromEl); return; }
   if (ROUND.toolMode === "transmute") { transmuteIngredient(idx, fromEl); return; }
@@ -2152,6 +2189,7 @@ function addToSlot(idx, fromEl) {
   const flyChar = inst.essence ? "💧" : D.INGREDIENT_BY_ID[inst.id].emoji;
   if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), flyChar);
   ROUND.slots.push(inst);
+  applyInfusedEffect(inst);   // built-in charm effect (Dragon Egg / Frost Gem) fires on drop-in
   paintMix();
   const c2 = document.getElementById("cauldron"); if (c2) { c2.classList.remove("splash"); void c2.offsetWidth; c2.classList.add("splash"); }
 }
@@ -2543,7 +2581,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, applyInfusedEffect, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
