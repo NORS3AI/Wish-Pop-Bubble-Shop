@@ -20,13 +20,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 ## What's new
 
 - 👑 **The Evil Queen — first villain event!** Every so often the Evil Queen sweeps
-  in and **steals your Pet**, demanding a ransom potion. **Buy scoops of her cursed
-  pantry** (🪙50 / 🪙70 / 🪙120 for more ingredients — pay more for an easier brew),
-  then **mix a potion that matches her recipe** while avoiding the hidden **☠️ poison**
-  in some ingredients. Match it and you win your Pet back **plus her unique 🪞 Queen's
-  Mirror skin** (a villain-only skin — can't be bought). Miss it and — cozy twist —
-  **your Pet always scampers home anyway**, you just don't get the skin. She only
-  visits when you can afford her ransom.
+  in and **steals your Pet**, demanding a ransom potion. **Pay for scoops of her cursed
+  pantry** (🪙50 / 🪙70 / 🪙120 for 2 / 5 / 7 scoops — more scoops = an easier brew),
+  then play the full **scoop & bubble-pop** with spooky green villain visuals — you
+  collect her ingredients **and can find charms**, just like a normal round. Then
+  **brew a potion matching her recipe** while avoiding the hidden **☠️ poison** in
+  some ingredients. Match **72%+** and you win your Pet back **plus her unique 🪞
+  Queen's Mirror skin** (a villain-only skin — can't be bought). Miss it and — cozy
+  twist — **your Pet always scampers home anyway**, you just don't get the skin. The
+  cheap package is a real long shot; the big one is a fairly safe bet.
 - ⏱️ **Goblin now has a 3-2-1 countdown** before the feeding frenzy starts, so the
   first demand doesn't catch you off guard.
 - 🧌 **Meet Gribble the Goblin — a second junk visitor!** When your bin is full,

@@ -165,9 +165,14 @@ function pickCappedCharm(heldIds) {
   const pool = DATA.SPECIAL_CHARM_IDS.filter(id => (held[id] || 0) < (BALANCE.CHARM_CAPS[id] || Infinity));
   return pool.length ? R.pick(pool) : "potent"; // potent/wild are uncapped, so always a fallback
 }
-function generateHaul(wish, count, charmFinder) {
+function generateHaul(wish, count, charmFinder, ingredientSet) {
+  const SET = ingredientSet || DATA.INGREDIENTS;
   const needs = wish.needs.map(n => n.type);
-  const mainSources = DATA.INGREDIENTS.filter(i => i.qualities[0] === needs[0]);
+  // main-need sources: prefer a PRIMARY match, but fall back to any-quality match
+  // (custom ingredient sets may carry a need only as a secondary quality).
+  let mainSources = SET.filter(i => i.qualities[0] === needs[0]);
+  if (!mainSources.length) mainSources = SET.filter(i => i.qualities.includes(needs[0]));
+  if (!mainSources.length) mainSources = SET.slice();
   const ingItem = ing => ({ kind: "ingredient", id: ing.id });
   const items = [];
   // guarantee 2 main-need ingredients (attemptable + enough to build the main
@@ -189,12 +194,12 @@ function generateHaul(wish, count, charmFinder) {
       // sometimes draft a "tempting but risky" ingredient: it serves a need (so you
       // want it) yet secretly carries the allergy magic — the real allergy risk.
       if (wish.allergy && R.chance(BALANCE.ALLERGY_BAIT_CHANCE)) {
-        const s = DATA.INGREDIENTS.filter(i => needs.includes(i.qualities[0]) && i.qualities.includes(wish.allergy));
+        const s = SET.filter(i => needs.includes(i.qualities[0]) && i.qualities.includes(wish.allergy));
         if (s.length) ing = R.pick(s); // main = a need (full value), allergy only a hidden +1 secondary
       }
       if (!ing) {
-        if (R.chance(BALANCE.NEED_BIAS)) { const t = R.pick(needs); const s = DATA.INGREDIENTS.filter(i => i.qualities[0] === t); ing = R.pick(s.length ? s : DATA.INGREDIENTS); }
-        else ing = R.pick(DATA.INGREDIENTS);
+        if (R.chance(BALANCE.NEED_BIAS)) { const t = R.pick(needs); const s = SET.filter(i => i.qualities[0] === t); ing = R.pick(s.length ? s : SET); }
+        else ing = R.pick(SET);
       }
       items.push(ingItem(ing));
     }
@@ -264,6 +269,34 @@ function newRound(state) {
 
     treatsUsed: 0, potentNext: false, allergyOffset: 0, insight: false,
     result: null,
+  };
+}
+
+/* --- Villain round: reuses the scoop/pop/mix pipeline with a custom wish
+ * and a custom ingredient set (e.g. the Evil Queen's cursed pantry). Scoop
+ * count is bought with gold. No boss/payment/rush — the caller scores it. --- */
+function newVillainRound(opts) {
+  const wish = opts.wish, scoops = Math.max(1, opts.scoops || 2);
+  const SET = opts.ingredientSet || DATA.INGREDIENTS;
+  const smin = BALANCE.BUBBLES_PER_SCOOP_MIN;
+  const smax = BALANCE.BUBBLES_PER_SCOOP_MAX + (opts.betterScoop ? 1 : 0);
+  const scoopYields = [];
+  for (let i = 0; i < scoops; i++) scoopYields.push(R.int(smin, smax));
+  let bubbles = scoopYields.reduce((a, b) => a + b, 0);
+  if (bubbles < BALANCE.MIN_BUBBLES) { scoopYields[0] += BALANCE.MIN_BUBBLES - bubbles; bubbles = BALANCE.MIN_BUBBLES; }
+  const scoopJackpots = scoopYields.map(() => R.chance(BALANCE.JACKPOT_CHANCE));
+  scoopJackpots.forEach((j, i) => { if (j) scoopYields[i] += 2; });
+  bubbles = scoopYields.reduce((a, b) => a + b, 0);
+  if (opts.charmFinder) { scoopYields[scoopYields.length - 1] += BALANCE.KEEN_NOSE_BUBBLES; bubbles += BALANCE.KEEN_NOSE_BUBBLES; }
+  const haul = generateHaul(wish, bubbles, !!opts.charmFinder, SET);
+  return {
+    customer: opts.customer || { id: "villain", name: "Villain", emoji: "👑", location: "Villain", line: "" },
+    wish, payment: 0, bubblesTotal: bubbles, scoops, scoopYields, scoopJackpots, haul,
+    inventory: [], charms: [], slots: [], maxSlots: BALANCE.MIX_SLOTS,
+    bonusSpawned: 0, bonusFrenzy: false,
+    stats: { scooped: bubbles, popped: 0, ingredients: 0, charms: 0, gold: 0, treats: 0, triples: 0 },
+    treatsUsed: 0, potentNext: false, allergyOffset: 0, insight: false,
+    result: null, villain: true,
   };
 }
 
@@ -389,5 +422,5 @@ function scoreResult(round) {
 /* Expose */
 const ENGINE = {
   BALANCE, R, ingredientPointsFor, difficultyFor, needCountFor,
-  generateWish, generateHaul, bonusBubbleItems, pickCappedCharm, addSneezeAllergy, newRound, applyTripleMatch, scoreMix, scoreResult, allergyStatus,
+  generateWish, generateHaul, bonusBubbleItems, pickCappedCharm, addSneezeAllergy, newRound, newVillainRound, applyTripleMatch, scoreMix, scoreResult, allergyStatus,
 };

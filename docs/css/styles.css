@@ -737,3 +737,14 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .queen-slot img.art { height: 28px; width: auto; }
 .queen-slot .art-emoji { font-size: 26px; line-height: 1; }
 .queen-slot:active { transform: scale(.9); }
+/* Villain (Evil Queen) theming for the reused scoop / pop / mix pipeline */
+body.villain #app { background: radial-gradient(circle at 50% 12%, #3a1550 0%, #22103a 52%, #0c1710 100%); }
+body.villain .pbubble {
+  background: radial-gradient(circle at 34% 28%, rgba(224,255,205,.95), rgba(120,210,90,.42) 52%, rgba(52,112,42,.30) 100%);
+  border-color: rgba(190,255,150,.45);
+  box-shadow: 0 6px 16px rgba(0,0,0,.42), inset 0 -6px 10px rgba(28,86,28,.42);
+}
+body.villain .scoop-bubbles, body.villain .glitter-cover, body.villain .glitter-pile { filter: hue-rotate(85deg) saturate(1.3); }
+body.villain .scoop-bowl { filter: hue-rotate(70deg) brightness(.95); }
+body.villain .cauldron .liquid { filter: saturate(1.25) hue-rotate(8deg); }
+body.villain .scoop-instr, body.villain .pop-sub { color: #c9f5b0; }

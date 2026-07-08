@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v49"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v50"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -120,6 +120,8 @@ function stopEventTimers() {
   if (typeof RUMPEL !== "undefined") RUMPEL = null;
   if (typeof GOBLIN !== "undefined") GOBLIN = null;
   if (typeof DUEL !== "undefined") DUEL = null;
+  if (typeof QUEEN !== "undefined") QUEEN = null;
+  document.body.classList.remove("villain");
 }
 function syncHud(id) {
   const g = document.querySelector("#screen-" + id + " .hud .gold"); if (g) g.textContent = "🪙 " + GAME.gold;
@@ -1335,21 +1337,22 @@ function goblinFinish() {
 /* skin. First of a planned villain series.                                  */
 /* ======================================================================= */
 let QUEEN = null;
-const QUEEN_SLOTS = 8, QUEEN_REQUIRED = 60, QUEEN_SKIN = "cauldron_queen";
+const QUEEN_REQUIRED = 72, QUEEN_SKIN = "cauldron_queen";
 const QUEEN_PACKAGES = [
-  { gold: 50,  ings: 6 },
-  { gold: 70,  ings: 10 },
-  { gold: 120, ings: 15 },
+  { gold: 50,  scoops: 2 },
+  { gold: 70,  scoops: 5 },
+  { gold: 120, scoops: 7 },
 ];
 const QUEEN_LINES = [
-  "Your darling little Pet is MINE now. Brew my ransom potion from my cursed pantry… or never see it again!",
-  "Such a sweet Pet you have — had. Match my recipe with my own ingredients and perhaps I'll return it.",
+  "Your darling little Pet is MINE now. Scoop from my cursed pantry and brew my ransom potion… or never see it again!",
+  "Such a sweet Pet you have — had. Pop my bubbles, brew my recipe, and perhaps I'll return it.",
   "A potion for a Pet, that's the bargain. My pantry is poisoned in places — mix carefully, dearie."
 ];
 function queenWish() {
-  const counts = {};
-  D.QUEEN_INGREDIENTS.forEach(i => i.qualities.forEach(q => counts[q] = (counts[q] || 0) + 1));
-  const strong = Object.keys(counts).filter(q => counts[q] >= 2); // magics her pantry can actually build
+  const any = {}, primary = {};
+  D.QUEEN_INGREDIENTS.forEach(i => { i.qualities.forEach(q => any[q] = (any[q] || 0) + 1); primary[i.qualities[0]] = (primary[i.qualities[0]] || 0) + 1; });
+  // buildable needs: at least one PRIMARY source (so the haul biases correctly) AND >=2 sources total
+  const strong = Object.keys(any).filter(q => any[q] >= 2 && primary[q] >= 1);
   for (let i = strong.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = strong[i]; strong[i] = strong[j]; strong[j] = t; }
   const needTypes = strong.slice(0, 3), poison = strong[3] || null;
   const labels = ["First Charm", "Second Charm", "Final Charm"];
@@ -1357,22 +1360,12 @@ function queenWish() {
   return { needs, requiredMatch: QUEEN_REQUIRED, difficulty: "hard", weights: BALANCE.NEED_WEIGHTS[3],
     allergy: poison, allergy2: null, boss: false, bandTight: 1, bandShrink: BALANCE.BAND_SHRINK_PER_ADD };
 }
-function queenPool(count, wish) {
-  const srcFor = t => D.QUEEN_INGREDIENTS.filter(i => i.qualities.includes(t));
-  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
-  // guarantee at least one source per need so no package is a dead hand
-  const guaranteed = [];
-  wish.needs.forEach(n => { const s = srcFor(n.type); if (s.length) guaranteed.push(R.pick(s).id); });
-  // then a 2nd source per need, then random pantry fill — shuffled
-  const extra = [];
-  wish.needs.forEach(n => { const s = srcFor(n.type); if (s.length) extra.push(R.pick(s).id); });
-  while (guaranteed.length + extra.length < count) extra.push(R.pick(D.QUEEN_INGREDIENTS).id);
-  const pool = guaranteed.concat(shuffle(extra)).slice(0, count);
-  return shuffle(pool);
+function queenCustomer() {
+  return { id: "queen", name: "The Evil Queen", emoji: "👑", location: "The Dark Tower", line: R.pick(QUEEN_LINES) };
 }
 function renderQueenIntro() {
   SFX.unlock(); SFX.fanfare();
-  QUEEN = { wish: queenWish(), pool: [], slots: [], pkg: null };
+  QUEEN = { wish: queenWish() };
   const w = QUEEN.wish, line = R.pick(QUEEN_LINES);
   const recipe = w.needs.map(n => `${magicDot(n.type)} ${n.type}`).join(" · ");
   const skin = D.COSMETIC_BY_ID[QUEEN_SKIN];
@@ -1388,9 +1381,9 @@ function renderQueenIntro() {
         <div style="text-align:center">${recipe}</div>
         <div class="stat-line" style="margin-top:6px"><span>☠️ Poison in her pantry</span><span style="color:var(--bad)">${magicDot(w.allergy)} ${w.allergy}</span></div>
       </div>
-      <div class="muted" style="max-width:315px">Buy scoops of her cursed pantry, then brew a potion matching the recipe. Some ingredients hide <b>poison</b> — don't overdo those! Match <b>${w.requiredMatch}%+</b> (without poisoning it) to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
+      <div class="muted" style="max-width:315px">Pay for scoops of her cursed pantry, then <b>scoop &amp; pop</b> her bubbles for ingredients (and charms!). Brew a potion matching the recipe — some ingredients hide <b>poison</b>, so don't overdo those. Match <b>${w.requiredMatch}%+</b> to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
       <div class="queen-buys">
-        ${QUEEN_PACKAGES.map((pk, i) => `<button class="btn ${afford(pk.gold) ? "" : "secondary"} queen-buy" data-i="${i}" ${afford(pk.gold) ? "" : "disabled"}>🪙 ${pk.gold} → ${pk.ings} ingredients</button>`).join("")}
+        ${QUEEN_PACKAGES.map((pk, i) => `<button class="btn ${afford(pk.gold) ? "" : "secondary"} queen-buy" data-i="${i}" ${afford(pk.gold) ? "" : "disabled"}>🪙 ${pk.gold} → ${pk.scoops} scoops</button>`).join("")}
       </div>
     </div>
     <button class="btn secondary" id="queen-skip">Not now</button>
@@ -1403,61 +1396,26 @@ function queenBuy(i) {
   const pk = QUEEN_PACKAGES[i];
   if (!pk || GAME.gold < pk.gold) { toast("Not enough gold."); return; }
   GAME.gold -= pk.gold; save();
-  QUEEN.pkg = pk; QUEEN.pool = queenPool(pk.ings, QUEEN.wish); QUEEN.slots = [];
+  // run the real scoop -> pop -> mix pipeline, villain-styled, with HER pantry
+  ROUND = ENGINE.newVillainRound({
+    wish: QUEEN.wish, scoops: pk.scoops, ingredientSet: D.QUEEN_INGREDIENTS,
+    customer: queenCustomer(), betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm,
+  });
+  QUEEN = null;                                  // state now lives on ROUND
+  document.body.classList.add("villain");        // villain colors for scoop/pop/mix
   SFX.scoop();
-  renderQueenMix();
+  renderScoop();
 }
-function queenPoisonMeter(al) {
-  if (!al) return "";
-  const max = BALANCE.ALLERGY_RED_AT + 2, pct = Math.min(100, al.points / max * 100);
-  const col = al.zone === "red" ? "var(--bad)" : al.zone === "yellow" ? "var(--gold)" : "var(--good)";
-  return `<div class="duel-meter"><span class="dm-lbl">☠️ ${al.type}</span>
-    <div class="meter sweet ${al.zone === "red" ? "" : "hit"}"><i style="width:${pct}%;background:${col}"></i></div></div>`;
-}
-function renderQueenMix() {
-  const w = QUEEN.wish, sc = scoreMix(QUEEN.slots, w, 0);
-  const needBars = w.needs.map((n, i) => duelMeter(sc.perNeed[i], false, n.type, true)).join("");
-  const poison = queenPoisonMeter(sc.allergy);
-  const poolTiles = QUEEN.pool.map((id, i) => `<button class="duel-tile" data-i="${i}">${ingArt(id)}<span>${D.INGREDIENT_BY_ID[id].name}</span></button>`).join("");
-  const slotTiles = QUEEN.slots.map((inst, s) => `<button class="queen-slot" data-s="${s}" title="Tap to remove">${ingArt(inst.id)}</button>`).join("");
-  const full = QUEEN.slots.length >= QUEEN_SLOTS;
-  html("event", `
-    ${hud("Brew the Ransom")}
-    <div class="queen-foe"><span class="queen-face">👑</span><div><b>Match ${w.requiredMatch}%+</b> to free your Pet — mind the ☠️!</div></div>
-    <div class="card" style="width:100%">${needBars}${poison}</div>
-    <div class="queen-brew-row">
-      <div class="rumpel-stat sub">Your brew — ${QUEEN.slots.length}/${QUEEN_SLOTS}${full ? " (full)" : ""}</div>
-      <div class="queen-slots">${slotTiles || `<span class="muted">Tap her ingredients below to add them</span>`}</div>
-    </div>
-    <div class="grow" style="overflow-y:auto">
-      <div class="duel-turn you">👇 ${QUEEN.pool.length ? "Tap to add · tap a brewed one to remove" : "Pantry's empty — brew what you have!"}</div>
-      <div class="duel-pool">${poolTiles}</div>
-    </div>
-    <button class="btn good" id="queen-brew">🧪 Brew the potion!</button>
-  `);
-  if (!full) $("#screen-event").querySelectorAll(".duel-tile").forEach(b => b.addEventListener("click", () => queenAdd(+b.dataset.i)));
-  $("#screen-event").querySelectorAll(".queen-slot").forEach(b => b.addEventListener("click", () => queenRemove(+b.dataset.s)));
-  on("#queen-brew", "click", queenBrew);
-  show("event");
-}
-function queenAdd(i) {
-  if (QUEEN.slots.length >= QUEEN_SLOTS) { toast("Cauldron's full — remove one first."); return; }
-  const id = QUEEN.pool.splice(i, 1)[0]; if (id == null) return;
-  QUEEN.slots.push({ id, potent: false }); SFX.pop(3);
-  renderQueenMix();
-}
-function queenRemove(s) {
-  const inst = QUEEN.slots.splice(s, 1)[0]; if (!inst) return;
-  QUEEN.pool.push(inst.id); SFX.pop(1);
-  renderQueenMix();
-}
-function queenBrew() {
-  const w = QUEEN.wish, sc = scoreMix(QUEEN.slots, w, 0);
+// villain rounds are scored here (serve() routes to this) — no payment/trash/streak
+function queenServe() {
+  const w = ROUND.wish, sc = scoreMix(ROUND.slots, w, ROUND.allergyOffset || 0);
   const poisoned = !!(sc.allergy && sc.allergy.zone === "red");
   const win = sc.weighted >= w.requiredMatch && !poisoned;
-  renderQueenResult(win, sc, poisoned);
+  document.body.classList.remove("villain");
+  stopRoundTimers();
+  renderQueenResult(win, sc, poisoned, w.requiredMatch);
 }
-function renderQueenResult(win, sc, poisoned) {
+function renderQueenResult(win, sc, poisoned, required) {
   const skin = D.COSMETIC_BY_ID[QUEEN_SKIN];
   let prize = "", note, title, emoji, cls;
   if (win) {
@@ -1473,14 +1431,14 @@ function renderQueenResult(win, sc, poisoned) {
     emoji = "🐾"; cls = "lose"; title = "Pet comes home anyway";
     note = poisoned
       ? "The brew turned to poison! The Queen scoffs… but your Pet wriggles free and scampers home regardless. No skin this time — she'll be back."
-      : `Not quite a match (${sc.weighted}% / ${QUEEN.wish.requiredMatch}%). The Queen tuts… but your Pet slips away and comes home anyway. No skin — try her again another day.`;
+      : `Not quite a match (${sc.weighted}% / ${required}%). The Queen tuts… but your Pet slips away and comes home anyway. No skin — try her again another day.`;
   }
   const statLines = win
     ? `<div class="stat-line"><span>Recipe match</span><span><b>${sc.weighted}%</b></span></div>
        <div class="stat-line"><span>Prize</span><span class="gold">${prize}</span></div>`
-    : `<div class="stat-line"><span>Recipe match</span><span><b>${sc.weighted}%</b> / ${QUEEN.wish.requiredMatch}%</span></div>
+    : `<div class="stat-line"><span>Recipe match</span><span><b>${sc.weighted}%</b> / ${required}%</span></div>
        <div class="stat-line"><span>Your Pet</span><span class="gold">🐾 safe &amp; home</span></div>`;
-  QUEEN = null;
+  QUEEN = null; ROUND = null;
   html("event", `
     ${hud("The Evil Queen")}
     <div class="grow center" style="gap:14px">
@@ -1501,6 +1459,7 @@ function renderQueenResult(win, sc, poisoned) {
 function startRound() {
   SFX.unlock();
   stopRoundTimers();
+  document.body.classList.remove("villain"); // clear any villain theming
   refreshQuests();
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
@@ -2034,7 +1993,7 @@ function renderMix() {
   paintMix(); show("mix");
   if (ROUND._mixTimer) clearInterval(ROUND._mixTimer);
   ROUND._mixTimer = setInterval(paintMixTop, 500);
-  const afterTriples = () => { if (rawCount > BALANCE.SNEEZE_AT && !ROUND.wish.boss) setTimeout(sneezeAllergy, 250); }; // bosses don't sneeze
+  const afterTriples = () => { if (rawCount > BALANCE.SNEEZE_AT && !ROUND.wish.boss && !ROUND.villain) setTimeout(sneezeAllergy, 250); }; // bosses/villains don't sneeze
   if (merged.merged.length) showTriple(merged.merged, afterTriples);
   else setTimeout(afterTriples, 350);
 }
@@ -2087,7 +2046,7 @@ function paintMixTop() {
       <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
   }).join("");
   const needCount = w.needs.length, effLimit = needCount + 1, tipAmt = needCount * BALANCE.QUICK_TIP_PER_HIDDEN;
-  const tipLine = ROUND.slots.length <= effLimit
+  const tipLine = (ROUND.slots.length <= effLimit && !ROUND.villain)
     ? `<div class="mix-hint" style="color:var(--gold)">⚡ Serve with <b>≤${effLimit} ingredient${effLimit > 1 ? "s" : ""}</b> → <b>+${tipAmt} speed tip!</b></div>`
     : `<div class="mix-hint muted">Land each bar in its <b style="color:var(--good)">green zone</b> — don't overfill! The zones shrink as you add.</div>`;
   el.innerHTML = `
@@ -2126,7 +2085,7 @@ function paintMix() {
       <div class="slots">${slotCells.join("")}</div>
       ${tray}
     </div>
-    <button class="btn good" id="serve-btn" ${ROUND.slots.length === 0 ? "disabled" : ""}>✨ Serve the Wish</button>
+    <button class="btn good" id="serve-btn" ${ROUND.slots.length === 0 ? "disabled" : ""}>${ROUND.villain ? "🧪 Brew the Ransom" : "✨ Serve the Wish"}</button>
     ${ROUND.inventory.length
       ? `<div class="inv-2row ${ROUND.toolMode ? "cutting" : ""}" id="inv-row">${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("")}</div>`
       : `<div class="muted" style="text-align:center;padding:12px">Bag empty — serve what's in the pot!</div>`}
@@ -2248,6 +2207,7 @@ function playCharm(i) {
 /* ======================================================================= */
 function serve() {
   if (ROUND.slots.length === 0) return;
+  if (ROUND.villain) { queenServe(); return; }    // villain events score their own way
   stopRoundTimers();                              // served in time — stop the rush clock
   const res = scoreResult(ROUND);
   const isPerfect = res.success && res.weighted === 100 && !(res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red"));
@@ -2543,7 +2503,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenAdd, queenRemove, queenBrew, renderQueenMix, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
