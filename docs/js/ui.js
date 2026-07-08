@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v64"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v65"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1632,6 +1632,9 @@ function startRound() {
   // when scooping begins.
   ROUND.rush = !ROUND.wish.boss && Math.random() < BALANCE.RUSH_CHANCE;
   if (ROUND.rush) { ROUND.rushMs = BALANCE.RUSH_MS; ROUND.rushStart = null; }
+  // a VIP guest (any realm) — you may wager a key on the customer screen for a bigger reward
+  ROUND.vip = !ROUND.wish.boss && !ROUND.rush && Math.random() < BALANCE.VIP_CHANCE;
+  ROUND.keyStaked = false;
   renderCustomer();
 }
 function renderCustomer() {
@@ -1643,17 +1646,22 @@ function renderCustomer() {
   const allergyTxt = allergyList.length
     ? `<span style="color:var(--bad)">${allergyList.map(a => `⚠️ ${magicDot(a)} ${a}`).join(" ")}</span>` : "None";
   const bossBanner = w.boss
-    ? `<div class="boss-banner">👑 VIP Customer — extra picky! All three needs, tiny green zones, only ${BALANCE.BOSS_SLOTS} cauldron slots, two allergies.</div>` : "";
+    ? `<div class="boss-banner">👑 Picky Royal — extra fussy! All three needs, tiny green zones, only ${BALANCE.BOSS_SLOTS} cauldron slots, two allergies.</div>` : "";
   const rushBanner = ROUND.rush
     ? `<div class="boss-banner" style="background:linear-gradient(90deg,#ff9a5a,#ff6b6b,#ff9a5a)">⏱️ In a Rush! Serve before their patience runs out for a <b>+${BALANCE.RUSH_BONUS} bonus</b> — miss it and they leave.</div>` : "";
+  const keys = GAME.keys || 0, canWager = ROUND.vip && keys > 0;
+  const vipBanner = ROUND.vip
+    ? `<div class="boss-banner vip-banner">⭐ VIP Guest!${canWager
+        ? ` Wager a 🗝️ key for a <b>${BALANCE.VIP_GOLD_MULT}× reward</b> — win keeps your key, but a <b>failed</b> wish loses it.`
+        : ` Bring a 🗝️ key next time to wager for a bigger reward!`}</div>` : "";
   const streakChip = GAME.streak >= 2 ? `<div class="streak-chip">🔥 ${GAME.streak} win streak</div>` : "";
   html("customer", `
     ${hud(currentRealm().name)}
-    ${bossBanner}${rushBanner}
+    ${bossBanner}${rushBanner}${vipBanner}
     <div class="grow center" style="gap:16px">
       ${streakChip}
-      <div class="ph big ${w.boss ? "boss-emoji" : ""}">${custArt(c, "cust-big")}</div>
-      <div style="font-weight:800;font-size:20px">${w.boss ? "👑 " : ""}${c.name}</div>
+      <div class="ph big ${w.boss ? "boss-emoji" : ""} ${ROUND.vip ? "vip-emoji" : ""}">${custArt(c, "cust-big")}</div>
+      <div style="font-weight:800;font-size:20px">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</div>
       <div class="speech">“${c.line}”</div>
       <div class="needs-row">${needChips}</div>
       <div class="card" style="width:100%;max-width:340px">
@@ -1663,9 +1671,14 @@ function renderCustomer() {
         <div class="stat-line"><span>Allerg${allergyList.length > 1 ? "ies" : "y"}</span><span>${allergyTxt}</span></div>
       </div>
     </div>
-    <button class="btn ${w.boss ? "good" : ""}" id="scoop-btn">Start Scoop  ✨</button>
+    ${canWager
+      ? `<button class="btn good" id="vip-wager">🗝️ Wager a Key — ${BALANCE.VIP_GOLD_MULT}× reward!</button>
+         <div style="height:8px"></div>
+         <button class="btn secondary" id="scoop-btn">Serve normally</button>`
+      : `<button class="btn ${w.boss ? "good" : ""}" id="scoop-btn">Start Scoop  ✨</button>`}
   `);
-  if (w.boss || ROUND.rush) { SFX.unlock(); SFX.fanfare(); } // special arrival — hard to miss
+  if (w.boss || ROUND.rush || ROUND.vip) { SFX.unlock(); SFX.fanfare(); } // special arrival — hard to miss
+  on("#vip-wager", "click", () => { ROUND.keyStaked = true; SFX.unlock(); SFX.charm(); toast("🗝️ Key wagered — make it count!"); renderScoop(); });
   on("#scoop-btn", "click", renderScoop);
   show("customer");
 }
@@ -2453,6 +2466,19 @@ function serve() {
   res.streak = GAME.streak;
   // In-a-Rush: bonus for serving one in time
   if (ROUND.rush && res.success) { res.rushBonus = BALANCE.RUSH_BONUS; res.gold += res.rushBonus; }
+  // VIP key wager: win → multiply the whole payout + bonus Stardust (key kept);
+  // fail → the wagered key is lost.
+  if (ROUND.vip && ROUND.keyStaked) {
+    if (res.success) {
+      res.vipKeyBonus = res.gold * (BALANCE.VIP_GOLD_MULT - 1);
+      res.gold += res.vipKeyBonus;
+      res.vipStardust = BALANCE.VIP_KEY_STARDUST; GAME.stardust += res.vipStardust;
+      res.vipKept = true;
+    } else {
+      GAME.keys = Math.max(0, (GAME.keys || 0) - 1);
+      res.vipKeyLost = true;
+    }
+  }
   GAME.gold += res.gold;
   // tracked stats for quests
   if (res.success) {
@@ -2488,10 +2514,17 @@ function renderResult(res) {
     ? `<div class="stat-line"><span>⏱️ Beat the clock!</span><span class="gold">🪙 +${res.rushBonus}</span></div>` : "";
   const streakLine = (win && res.streakBonus > 0)
     ? `<div class="stat-line"><span>🔥 Win streak ×${res.streak}</span><span class="gold">🪙 +${res.streakBonus}</span></div>` : "";
+  // VIP key wager: on a win the staked key is kept and pays a big bonus; on a
+  // failed wish the key is lost (handled in serve()).
+  const vipWinLine = (win && res.vipKept)
+    ? `<div class="stat-line"><span>⭐ VIP key bonus ×${BALANCE.VIP_GOLD_MULT}!</span><span class="gold">🪙 +${res.vipKeyBonus} · ✨ +${res.vipStardust}</span></div>
+       <div class="stat-line"><span>🗝️ Your key</span><span style="color:var(--good)">kept — nice!</span></div>` : "";
+  const vipLostLine = (!win && res.vipKeyLost)
+    ? `<div class="stat-line"><span>🗝️ Wagered key</span><span style="color:var(--bad)">lost!</span></div>` : "";
   const earnedRow = win
-    ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}${rushLine}${streakLine}`
+    ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}${rushLine}${streakLine}${vipWinLine}`
     : `<div class="stat-line"><span>Earned</span><span class="muted">no coins — just trash!</span></div>
-       <div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${trashN}</b> piece${trashN === 1 ? "" : "s"}</span></div>
+       <div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${trashN}</b> piece${trashN === 1 ? "" : "s"}</span></div>${vipLostLine}
        <div class="stat-line"><span>🔥 Win streak</span><span class="muted">broken</span></div>`;
   html("result", `
     ${hud("Result")}
@@ -2750,7 +2783,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

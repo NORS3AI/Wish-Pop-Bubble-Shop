@@ -39,6 +39,12 @@ html, body {
 @keyframes bossshine { 0% { background-position: 0% 0; } 100% { background-position: 300% 0; } }
 .boss-emoji { animation: bossbob 1.4s ease-in-out infinite; filter: drop-shadow(0 0 14px rgba(255,200,120,.9)); }
 @keyframes bossbob { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.06); } }
+/* VIP guest — a star-gold banner distinct from the boss's pink shimmer */
+.vip-banner { color: #3a2a08; background: linear-gradient(90deg, #ffe98a, #ffd24d, #fff0b0, #ffd24d); background-size: 300% 100%;
+  box-shadow: 0 0 18px rgba(255,205,90,.6); }
+.vip-emoji { animation: vipglow 1.6s ease-in-out infinite; filter: drop-shadow(0 0 16px rgba(255,215,100,.95)); }
+@keyframes vipglow { 0%,100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255,215,100,.7)); }
+  50% { transform: scale(1.07); filter: drop-shadow(0 0 20px rgba(255,235,150,1)); } }
 .screen.shake { animation: scrshake .58s cubic-bezier(.36,.07,.19,.97); }
 @keyframes scrshake {
   10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(4px); }

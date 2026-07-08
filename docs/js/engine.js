@@ -88,6 +88,9 @@ const BALANCE = {
   RUSH_CHANCE: 0.15,           // chance a (non-boss) customer is In a Rush
   RUSH_MS: 60000,              // patience before they leave
   RUSH_BONUS: 25,              // extra gold for serving an In-a-Rush customer in time
+  VIP_CHANCE: 0.12,            // chance a (non-boss, non-rush) customer is a VIP (any realm)
+  VIP_GOLD_MULT: 2,            // wagered-key VIP win: payout multiplied by this
+  VIP_KEY_STARDUST: 12,        // wagered-key VIP win: bonus Stardust on top
 
   EVENT_EVERY: 30,             // a fairytale event appears roughly every N customers
 };

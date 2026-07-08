@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ⭐ **VIP guests — wager a key for double the reward!** Every so often a **VIP guest** walks
+  in (any realm). If you have a 🗝️ key, you can choose right on the customer screen to
+  **wager a key** before you start: nail their wish and you keep the key **plus double coins
+  and bonus Stardust**. But if you *fail* their wish, the wagered key is lost. No key? No
+  pressure — you can still serve them normally. High stakes, big payoff!
+
 - ✨ **Infused ingredients are now flexible — their magic adapts to your wish!** Instead of
   a fixed magic, each infused ingredient (Dragon Egg, Frost Gem, and friends) now rolls a
   **random magic from your current needs** when you find it — so it's *always* useful, and
