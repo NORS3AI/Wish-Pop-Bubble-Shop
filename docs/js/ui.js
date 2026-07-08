@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v60"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v61"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -47,6 +47,8 @@ function normalizeGame(g) {
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(GAME)); } catch (e) {} }
 // --- Realms: the current location (shop name never changes, only the place) ---
 function currentRealm() { return D.REALM_BY_ID[GAME.realm] || D.REALM_BY_ID.willow; }
+function realmIngredients() { return currentRealm().ingredients || D.INGREDIENTS; }
+function realmCustomers() { return currentRealm().customers || D.CUSTOMERS; }
 function realmUnlocked(id) { return !!GAME.unlockedRealms[id]; }
 // Apply the current realm's palette theme to the page (a body class).
 function applyRealmTheme() {
@@ -938,7 +940,7 @@ function renderFairyIntro() {
   show("event");
 }
 function renderFairy() {
-  const pool = D.INGREDIENTS.slice();
+  const pool = realmIngredients().slice();
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
   const picks = pool.slice(0, FAIRY_SHOW);
   // baskets: each pick's MAIN magic guaranteed (so always solvable), then fill to 6
@@ -1006,12 +1008,12 @@ const DUEL_POOL = 16, DUEL_MISTAKE = 0.4;
 const DUEL_WIN = { gold: 80, stardust: 15 }, DUEL_DRAW = { gold: 30 }, DUEL_PER_NEED = 2;
 const DUEL_TAUNTS = ["Bet I brew a better potion than you!", "Loser buys the sprinkles!", "Prepare to be out‑mixed!", "My greens will be greener!"];
 function duelWish() {
-  const w = generateWish(R.pick(D.CUSTOMERS), "hard", false); // 3 needs
+  const w = generateWish(R.pick(realmCustomers()), "hard", false); // 3 needs
   w.allergy = null; w.allergy2 = null;
   return w;
 }
 function setupDuel() {
-  const challenger = R.pick(D.CUSTOMERS);
+  const challenger = R.pick(realmCustomers());
   const you = { wish: duelWish(), slots: [] }, ai = { wish: duelWish(), slots: [] };
   // you can't see the ingredients' magic, so at least show all three of YOUR needs
   you.wish.needs.forEach(n => n.revealed = true);
@@ -1019,9 +1021,10 @@ function setupDuel() {
   // need on BOTH sides so each mixer actually has enough of what they need to
   // build green bars, then fill the rest with variety.
   const pool = [];
-  const addFor = type => { const s = D.INGREDIENTS.filter(i => i.qualities[0] === type); if (s.length) pool.push(R.pick(s).id); };
+  const RSET = realmIngredients();
+  const addFor = type => { const s = RSET.filter(i => i.qualities[0] === type); if (s.length) pool.push(R.pick(s).id); };
   [you, ai].forEach(side => side.wish.needs.forEach(n => { for (let k = 0; k < DUEL_PER_NEED; k++) addFor(n.type); }));
-  while (pool.length < DUEL_POOL) pool.push(R.pick(D.INGREDIENTS).id);
+  while (pool.length < DUEL_POOL) pool.push(R.pick(RSET).id);
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
   DUEL = { challenger, you, ai, pool: pool.slice(0, DUEL_POOL), turn: "you", first: "you", over: false, line: R.pick(DUEL_TAUNTS) };
 }
@@ -1613,7 +1616,7 @@ function startRound() {
   refreshQuests();
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
-  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: currentRealm().customers });
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: currentRealm().customers, ingredientSet: currentRealm().ingredients });
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
@@ -1973,7 +1976,7 @@ function spawnBonusBubbles(cx, cy) {
   const frenzy = ROUND.bonusFrenzy;
   const cap = frenzy ? BALANCE.BONUS_MAX_FRENZY : BALANCE.BONUS_MAX_SPAWN;
   const remaining = cap - (ROUND.bonusSpawned || 0);
-  const bonusSet = ROUND.villain ? D.QUEEN_INGREDIENTS : null; // villain bonus bubbles stay in her pantry
+  const bonusSet = ROUND.ingredientSet || null; // bonus bubbles stay in this round's pantry (realm/villain)
   if (remaining <= 0) { // at the cap — don't dud; hand over one ingredient directly
     const it = ENGINE.bonusBubbleItems(ROUND.wish, 1, 0, bonusSet)[0];
     if (it && it.kind === "ingredient") { if (ROUND.stats) ROUND.stats.ingredients++; spawnFloatingIngredient(it.id, cx, cy, 850); }
@@ -2366,7 +2369,7 @@ function transmuteIngredient(idx, fromEl) {
   const inst = ROUND.inventory[idx];
   if (!inst || !inst.id || inst.essence) { toast("Pick a whole ingredient to transmute."); return; }
   const needs = ROUND.wish.needs.map(n => n.type);
-  const SET = ROUND.villain ? D.QUEEN_INGREDIENTS : D.INGREDIENTS; // villain rounds transmute within her pantry
+  const SET = ROUND.ingredientSet || D.INGREDIENTS; // transmute within the current realm's pantry
   let pool = SET.filter(i => needs.includes(i.qualities[0]) && i.id !== inst.id);
   if (!pool.length) pool = SET.filter(i => i.id !== inst.id);
   const ing = R.pick(pool), oldName = D.INGREDIENT_BY_ID[inst.id].name;

@@ -138,6 +138,31 @@ you once you've uploaded it — just ask.)
 | `trash_bag.png` | 🛍️ Crumpled Bag (the mystery you open in the bin) |
 | `trash_ring.png` | 💍 Gold Ring (the rare treasure inside a bag) |
 
+### King's Courtyard pantry (the 🏰 realm's ingredients)
+These appear when you're playing in King's Courtyard. Optional — emojis until you add art.
+| File name | Replaces |
+|---|---|
+| `ing_kc_goblet_wine.png` | 🍷 Goblet Wine |
+| `ing_kc_royal_decree.png` | 📜 Royal Decree |
+| `ing_kc_beeswax.png` | 🕯️ Beeswax Candle |
+| `ing_kc_royal_lily.png` | ⚜️ Royal Lily |
+| `ing_kc_herald_brass.png` | 🎺 Herald's Brass |
+| `ing_kc_amphora.png` | 🏺 Sealed Amphora |
+| `ing_kc_cherries.png` | 🍒 Sugared Cherries |
+| `ing_kc_grapes.png` | 🍇 Vineyard Grapes |
+| `ing_kc_castle_olive.png` | 🫒 Castle Olive |
+| `ing_kc_onyx_pawn.png` | ♟️ Onyx Pawn |
+| `ing_kc_aged_cheese.png` | 🧀 Aged Cheese |
+| `ing_kc_pungent_bulb.png` | 🧅 Pungent Bulb |
+| `ing_kc_toast_fizz.png` | 🥂 Toast Fizz |
+| `ing_kc_peacock.png` | 🦚 Peacock Plume |
+| `ing_kc_regal_tea.png` | 🫖 Regal Tea |
+| `ing_kc_court_wand.png` | 🪄 Court Wand |
+| `ing_kc_white_dove.png` | 🕊️ White Dove |
+| `ing_kc_blackbird_pie.png` | 🥧 Blackbird Pie |
+| `ing_kc_silk_rosette.png` | 🏵️ Silk Rosette |
+| `ing_kc_royal_cocoa.png` | 🍫 Royal Cocoa |
+
 ### The Evil Queen's cursed pantry (villain event only)
 These only show up during the Evil Queen ransom event. Optional — they use emojis until you add art.
 | File name | Replaces |

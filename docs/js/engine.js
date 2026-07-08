@@ -248,7 +248,8 @@ function newRound(state) {
   // "Keen Nose": a few EXTRA bubbles (so ingredients go up) on top of the boosted
   // charm chance below — the scoop reveals these too, so counts stay consistent.
   if (state.charmFinder) { scoopYields[scoopYields.length - 1] += BALANCE.KEEN_NOSE_BUBBLES; bubbles += BALANCE.KEEN_NOSE_BUBBLES; }
-  const haul = generateHaul(wish, bubbles, !!state.charmFinder);
+  const SET = state.ingredientSet || DATA.INGREDIENTS;   // the realm's own pantry (defaults to Willow-Wish)
+  const haul = generateHaul(wish, bubbles, !!state.charmFinder, SET);
   // Rare "bonus frenzy" round: seed a couple of bonus bubbles so the runaway chain
   // reliably kicks off (otherwise it depends on the haul happening to have one).
   const bonusFrenzy = R.chance(BALANCE.BONUS_FRENZY_CHANCE);
@@ -264,6 +265,7 @@ function newRound(state) {
     charms: [],              // special charms held, ready to play in the cauldron
     slots: [],               // ingredients (and played Wild charms) in the cauldron
     maxSlots: isBoss ? BALANCE.BOSS_SLOTS : BALANCE.MIX_SLOTS,
+    ingredientSet: SET,      // this round's pantry (realm-specific)
     bonusSpawned: 0,         // running count of bonus-spawned bubbles (hard-capped)
     bonusFrenzy,             // rare rounds get a runaway chain
     stats: { scooped: bubbles, popped: 0, ingredients: 0, charms: 0, gold: 0, treats: 0, triples: 0 },
@@ -295,6 +297,7 @@ function newVillainRound(opts) {
     customer: opts.customer || { id: "villain", name: "Villain", emoji: "👑", location: "Villain", line: "" },
     wish, payment: 0, bubblesTotal: bubbles, scoops, scoopYields, scoopJackpots, haul,
     inventory: [], charms: [], slots: [], maxSlots: BALANCE.MIX_SLOTS,
+    ingredientSet: SET,
     bonusSpawned: 0, bonusFrenzy: false,
     stats: { scooped: bubbles, popped: 0, ingredients: 0, charms: 0, gold: 0, treats: 0, triples: 0 },
     treatsUsed: 0, potentNext: false, allergyOffset: 0, insight: false,

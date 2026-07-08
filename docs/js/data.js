@@ -103,6 +103,32 @@ const INFUSED_INGREDIENTS = [
   { id: "frost_gem",  name: "Frost Gem",  qualities: ["Calm", "Protection"],   emoji: "❄️", infused: "lockBar" },
 ];
 INFUSED_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
+/* --- King's Courtyard pantry — the realm's own ingredients (regular 12 magics,
+ * all-new royal/feast icons never used elsewhere). Covers every magic so any wish
+ * is solvable. Registered in INGREDIENT_BY_ID; the realm swaps to this set. -------- */
+const COURTYARD_INGREDIENTS = [
+  { id: "kc_goblet_wine",  name: "Goblet Wine",      qualities: ["Love", "Calm"],         emoji: "🍷" },
+  { id: "kc_royal_decree", name: "Royal Decree",     qualities: ["Protection", "Light"],  emoji: "📜" },
+  { id: "kc_beeswax",      name: "Beeswax Candle",    qualities: ["Light", "Sleep"],       emoji: "🕯️" },
+  { id: "kc_royal_lily",   name: "Royal Lily",        qualities: ["Beauty", "Love"],       emoji: "⚜️" },
+  { id: "kc_herald_brass", name: "Herald's Brass",    qualities: ["Energy", "Courage"],    emoji: "🎺" },
+  { id: "kc_amphora",      name: "Sealed Amphora",    qualities: ["Sleep", "Protection"],  emoji: "🏺" },
+  { id: "kc_cherries",     name: "Sugared Cherries",  qualities: ["Luck", "Beauty"],       emoji: "🍒" },
+  { id: "kc_grapes",       name: "Vineyard Grapes",   qualities: ["Growth", "Love"],       emoji: "🍇" },
+  { id: "kc_castle_olive", name: "Castle Olive",      qualities: ["Calm", "Growth"],       emoji: "🫒" },
+  { id: "kc_onyx_pawn",    name: "Onyx Pawn",         qualities: ["Mischief", "Strength"], emoji: "♟️" },
+  { id: "kc_aged_cheese",  name: "Aged Cheese",       qualities: ["Strength", "Growth"],   emoji: "🧀" },
+  { id: "kc_pungent_bulb", name: "Pungent Bulb",      qualities: ["Courage", "Strength"],  emoji: "🧅" },
+  { id: "kc_toast_fizz",   name: "Toast Fizz",        qualities: ["Energy", "Luck"],       emoji: "🥂" },
+  { id: "kc_peacock",      name: "Peacock Plume",     qualities: ["Beauty", "Mischief"],   emoji: "🦚" },
+  { id: "kc_regal_tea",    name: "Regal Tea",         qualities: ["Calm", "Sleep"],        emoji: "🫖" },
+  { id: "kc_court_wand",   name: "Court Wand",        qualities: ["Mischief", "Light"],    emoji: "🪄" },
+  { id: "kc_white_dove",   name: "White Dove",        qualities: ["Protection", "Love"],   emoji: "🕊️" },
+  { id: "kc_blackbird_pie",name: "Blackbird Pie",     qualities: ["Luck", "Courage"],      emoji: "🥧" },
+  { id: "kc_silk_rosette", name: "Silk Rosette",      qualities: ["Beauty", "Luck"],       emoji: "🏵️" },
+  { id: "kc_royal_cocoa",  name: "Royal Cocoa",       qualities: ["Love", "Energy"],       emoji: "🍫" },
+];
+COURTYARD_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
 
 /* --- 3. Special charms — power-ups popped from bubbles, played in the
  * cauldron (a small tray; tap to use). Mostly deterministic = skill in WHEN
@@ -145,7 +171,7 @@ const COURTYARD_CUSTOMERS = [
 const REALMS = [
   { id: "willow",    name: "Willow-Wish Village", icon: "🏘️", tagline: "The cozy hamlet where your bubble shop began." },
   { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.",
-    unlock: { gold: 3000, keys: 10 }, theme: "courtyard", customers: COURTYARD_CUSTOMERS },
+    unlock: { gold: 3000, keys: 10 }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS },
   { id: "oasis",     name: "Forgotten Oasis",     icon: "🏜️", comingSoon: true, tagline: "Lamps, genies, and desert wishes." },
   { id: "thieves",   name: "Thieves' Corner",     icon: "🗝️", comingSoon: true, tagline: "Rogues, locks, and light fingers." },
   { id: "beanstalk", name: "Beanstalk Bank",      icon: "🌱", comingSoon: true, tagline: "Giants, gold, and golden geese." },
@@ -294,7 +320,7 @@ QUESTS.daily.concat(QUESTS.weekly).forEach(q => QUEST_BY_ID[q.id] = q);
 
 /* Expose as a single namespace */
 const DATA = {
-  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, INFUSED_INGREDIENTS,
+  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, INFUSED_INGREDIENTS, COURTYARD_INGREDIENTS,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS, REALMS, REALM_BY_ID,
   FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
   QUESTS, QUEST_BY_ID,

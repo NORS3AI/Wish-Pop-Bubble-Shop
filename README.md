@@ -19,6 +19,14 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🏰 **King's Courtyard now has its own ingredients!** When you travel to the Courtyard,
+  the whole pantry changes — **20 brand-new royal ingredients** (Goblet Wine 🍷, Royal
+  Decree 📜, Sealed Amphora 🏺, Peacock Plume 🦚, Blackbird Pie 🥧, Court Wand 🪄, and
+  more), all with **all-new icons** never used elsewhere. They cover every magic, so wishes
+  stay just as solvable as in the village. Willow-Wish Village keeps its own cozy pantry —
+  each realm brews with its own ingredients (and the Fairy/Duel events use the local
+  ingredients too).
+
 - 🗺️ **Realms & the World Map — travel to new locations!** There's now a **🗺️ Map** on
   the main screen. Your shop is always *Wish Pop: Bubble Shop* — only the **location**
   changes. You start in **🏘️ Willow-Wish Village**; save up **🪙3,000 + 🗝️10 keys** to
