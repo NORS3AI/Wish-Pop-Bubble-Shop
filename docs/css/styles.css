@@ -748,3 +748,5 @@ body.villain .scoop-bubbles, body.villain .glitter-cover, body.villain .glitter-
 body.villain .scoop-bowl { filter: hue-rotate(70deg) brightness(.95); }
 body.villain .cauldron .liquid { filter: saturate(1.25) hue-rotate(8deg); }
 body.villain .scoop-instr, body.villain .pop-sub { color: #c9f5b0; }
+.slot.removable { cursor: pointer; box-shadow: 0 0 0 1.5px rgba(255,140,140,.5) inset; }
+.slot.removable:active { transform: scale(.9); }

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v51"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v52"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1351,14 +1351,15 @@ const QUEEN_LINES = [
 function queenWish() {
   const any = {}, primary = {};
   D.QUEEN_INGREDIENTS.forEach(i => { i.qualities.forEach(q => any[q] = (any[q] || 0) + 1); primary[i.qualities[0]] = (primary[i.qualities[0]] || 0) + 1; });
-  // buildable needs: at least one PRIMARY source (so the haul biases correctly) AND >=2 sources total
-  const strong = Object.keys(any).filter(q => any[q] >= 2 && primary[q] >= 1);
+  // buildable needs: at least one PRIMARY source (so the haul biases correctly) AND >=2 sources
+  // total — but NEVER Poison, which is the hazard you must keep out of the brew entirely.
+  const strong = Object.keys(any).filter(q => q !== "Poison" && any[q] >= 2 && primary[q] >= 1);
   for (let i = strong.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = strong[i]; strong[i] = strong[j]; strong[j] = t; }
-  const needTypes = strong.slice(0, 3), poison = strong[3] || null;
+  const needTypes = strong.slice(0, 3);
   const labels = ["First Charm", "Second Charm", "Final Charm"];
   const needs = needTypes.map((type, i) => ({ type, label: labels[i], target: BALANCE.NEED_TARGET, revealed: true }));
   return { needs, requiredMatch: QUEEN_REQUIRED, difficulty: "hard", weights: BALANCE.NEED_WEIGHTS[3],
-    allergy: poison, allergy2: null, boss: false, bandTight: 1, bandShrink: BALANCE.BAND_SHRINK_PER_ADD };
+    allergy: "Poison", allergy2: null, boss: false, bandTight: 1, bandShrink: BALANCE.BAND_SHRINK_PER_ADD };
 }
 function queenCustomer() {
   return { id: "queen", name: "The Evil Queen", emoji: "👑", location: "The Dark Tower", line: R.pick(QUEEN_LINES) };
@@ -1379,9 +1380,9 @@ function renderQueenIntro() {
       <div class="card" style="width:100%;max-width:330px">
         <div style="font-weight:800;text-align:center;margin-bottom:4px">🧪 Ransom Recipe</div>
         <div style="text-align:center">${recipe}</div>
-        <div class="stat-line" style="margin-top:6px"><span>☠️ Poison in her pantry</span><span style="color:var(--bad)">${magicDot(w.allergy)} ${w.allergy}</span></div>
+        <div class="stat-line" style="margin-top:6px"><span>☠️ Hazard</span><span style="color:var(--bad)">${magicDot("Poison")} Poison — any trace fails!</span></div>
       </div>
-      <div class="muted" style="max-width:315px">Pay for scoops of her cursed pantry, then <b>scoop &amp; pop</b> her bubbles for ingredients (and charms!). Brew a potion matching the recipe — some ingredients hide <b>poison</b>, so don't overdo those. Match <b>${w.requiredMatch}%+</b> to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
+      <div class="muted" style="max-width:315px">Pay for scoops of her cursed pantry, then <b>scoop &amp; pop</b> her bubbles for ingredients (and charms!). Brew a potion matching the recipe — but some ingredients hide <b>☠️ Poison</b>, and <b>even a trace of it ruins the brew</b>. Tap an ingredient in the cauldron to pull it back out. Match <b>${w.requiredMatch}%+</b> with a <b>clean</b> potion to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
       <div class="muted" style="max-width:315px;font-size:12px">🐾 She's holding your Pet captive — <b>none of its abilities help you here</b>.</div>
       <div class="queen-buys">
         ${QUEEN_PACKAGES.map((pk, i) => `<button class="btn ${afford(pk.gold) ? "" : "secondary"} queen-buy" data-i="${i}" ${afford(pk.gold) ? "" : "disabled"}>🪙 ${pk.gold} → ${pk.scoops} scoops</button>`).join("")}
@@ -1412,7 +1413,8 @@ function queenBuy(i) {
 // villain rounds are scored here (serve() routes to this) — no payment/trash/streak
 function queenServe() {
   const w = ROUND.wish, sc = scoreMix(ROUND.slots, w, ROUND.allergyOffset || 0);
-  const poisoned = !!(sc.allergy && sc.allergy.zone === "red");
+  // stricter than a normal allergy: ANY poison (yellow OR red) taints the brew
+  const poisoned = !!(sc.allergy && sc.allergy.zone !== "green");
   const win = sc.weighted >= w.requiredMatch && !poisoned;
   document.body.classList.remove("villain");
   stopRoundTimers();
@@ -2071,7 +2073,8 @@ function paintMix() {
     const face = !inst ? "" : inst.wild ? "🌈"
       : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>`
       : ingArt(inst.id);
-    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""}">${face}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
+    const removable = ROUND.villain && inst;   // villain rounds have no Pet Undo — tap a slot to pull it back
+    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
   }
   const tray = ROUND.charms.length
     ? `<div class="charm-tray">${ROUND.charms.map((c, i) => `<button class="charm-chip" data-charm="${i}" title="${CHARM(c).desc}">${charmArt(c)} <span>${CHARM(c).name}</span></button>`).join("")}</div>`
@@ -2098,6 +2101,7 @@ function paintMix() {
   applyCauldronArt();
   ROUND.inventory.forEach((inst, idx) => { const t = document.getElementById("invt-" + idx); if (t) t.addEventListener("click", () => addToSlot(idx, t)); });
   ROUND.charms.forEach((c, i) => { const b = document.querySelector(`[data-charm="${i}"]`); if (b) b.addEventListener("click", () => playCharm(i)); });
+  if (ROUND.villain) $("#screen-mix").querySelectorAll(".slot.removable").forEach(el => el.addEventListener("click", () => removeFromSlot(+el.dataset.slot)));
   on("#serve-btn", "click", serve);
   wireFamiliar("mix");
 }
@@ -2114,10 +2118,14 @@ function invTile(inst, idx) {
     <div class="emoji">${ingArt(inst.id)}${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div><div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${ing.name}</div><div class="q">${quals}</div></div>`;
 }
 function allergyMeter(a) {
+  const villain = !!(ROUND && ROUND.villain);
   const pct = Math.min(100, Math.round(a.points / BALANCE.ALLERGY_RED_AT * 100));
-  const col = a.zone === "red" ? "var(--bad)" : a.zone === "yellow" ? "var(--gold)" : "var(--good)";
-  return `<div class="need-meter" style="margin-top:8px"><div class="lbl"><span>⚠️ Allergy: ${magicDot(a.type)} ${a.type}</span>
-    <span style="color:${col};font-weight:800">${a.zone.toUpperCase()}</span></div>
+  // villain brews are stricter: even "yellow" is a failing taint, so paint it red
+  const col = a.zone === "red" ? "var(--bad)" : a.zone === "yellow" ? (villain ? "var(--bad)" : "var(--gold)") : "var(--good)";
+  const label = villain ? `☠️ Poison` : `⚠️ Allergy: ${magicDot(a.type)} ${a.type}`;
+  const status = villain ? (a.zone === "green" ? "CLEAN ✓" : "TAINTED!") : a.zone.toUpperCase();
+  return `<div class="need-meter" style="margin-top:8px"><div class="lbl"><span>${label}</span>
+    <span style="color:${col};font-weight:800">${status}</span></div>
     <div class="meter" style="background:rgba(255,90,90,0.12)"><i style="width:${pct}%;background:${col}"></i></div></div>`;
 }
 function addToSlot(idx, fromEl) {
@@ -2492,6 +2500,15 @@ function wireFamiliar(phase) {
     else if (phase === "scoop") toast(GAME.unlocked.scoop ? "🐾 Better Scoop is boosting your haul!" : "🐾 Unlock 'Better Scoop' in Shop & Upgrades!");
     else toast(GAME.unlocked.charm ? "🐾 Keen Nose — sniffing out extra charms & ingredients!" : "🐾 Unlock 'Keen Nose' in Shop & Upgrades!");
   });
+}
+// Villain rounds: tap a filled cauldron slot to return that ingredient to the bag
+// (there's no Pet Undo here — this lets you pull out a poison you didn't mean to add).
+function removeFromSlot(i) {
+  const inst = ROUND.slots[i]; if (!inst) return;
+  ROUND.slots.splice(i, 1);
+  ROUND.inventory.push(inst);
+  SFX.pop(1);
+  paintMix();
 }
 function familiarUndo() {
   if (ROUND.villain) return; // Pet is captured — no undo during a villain event

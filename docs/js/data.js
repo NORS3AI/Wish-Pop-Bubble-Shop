@@ -20,6 +20,21 @@ const MAGIC = {
   Mischief:   "#9b6bd6",
 };
 const MAGIC_TYPES = Object.keys(MAGIC);
+/* Villain magics — a DARK, never-before-seen set used ONLY by villain events
+ * (the Evil Queen's cursed pantry). They get colors so their bars/dots render,
+ * but they are deliberately kept OUT of MAGIC_TYPES so they never appear as a
+ * normal customer's allergy or in the Fairy's basket game. "Poison" is the
+ * hazard quality — any trace of it taints the brew. */
+const VILLAIN_MAGIC = {
+  Dread:  "#6d5a8c",
+  Malice: "#b5334d",
+  Shadow: "#5b5580",
+  Rot:    "#8a7d3a",
+  Curse:  "#8e44ad",
+  Frost:  "#4aa8c9",
+  Poison: "#8fd14f",
+};
+const MAGIC_ALL = Object.assign({}, MAGIC, VILLAIN_MAGIC); // colors for BOTH sets (rendering)
 
 /* --- 2. Ingredient library (20) ----------------------------------------
  * qualities[0] = the ONE magic quality shown to the player (its identity).
@@ -60,16 +75,16 @@ INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
  * the normal INGREDIENTS pool so they never appear in regular rounds. Their
  * magics are hidden — the player learns them by brewing. -------------------- */
 const QUEEN_INGREDIENTS = [
-  { id: "q_nightshade",   name: "Nightshade",    qualities: ["Sleep", "Mischief"],      emoji: "🟣" },
-  { id: "q_toadstool",    name: "Toadstool",     qualities: ["Growth", "Sleep"],        emoji: "🍄" },
-  { id: "q_ravenfeather", name: "Raven Feather", qualities: ["Mischief", "Protection"], emoji: "🪶" },
-  { id: "q_venomvine",    name: "Venom Vine",    qualities: ["Strength", "Mischief"],   emoji: "🌿" },
-  { id: "q_frostberry",   name: "Frost Berry",   qualities: ["Calm", "Beauty"],         emoji: "🫐" },
-  { id: "q_emberroot",    name: "Ember Root",    qualities: ["Courage", "Strength"],    emoji: "🥔" },
-  { id: "q_moonthistle",  name: "Moon Thistle",  qualities: ["Sleep", "Beauty"],        emoji: "🌸" },
-  { id: "q_glimmercap",   name: "Glimmer Cap",   qualities: ["Light", "Luck"],          emoji: "💠" },
-  { id: "q_wispdust",     name: "Wisp Dust",     qualities: ["Light", "Calm"],          emoji: "✨" },
-  { id: "q_bloodplum",    name: "Blood Plum",    qualities: ["Love", "Strength"],       emoji: "🍑" },
+  { id: "q_spidersilk", name: "Spider Silk",   qualities: ["Shadow", "Dread"],   emoji: "🕸️" },
+  { id: "q_venomfang",  name: "Venom Fang",    qualities: ["Poison", "Malice"],  emoji: "🐍" },
+  { id: "q_batwing",    name: "Bat Wing",      qualities: ["Dread", "Shadow"],   emoji: "🦇" },
+  { id: "q_scorpsting", name: "Scorpion Sting",qualities: ["Poison", "Rot"],     emoji: "🦂" },
+  { id: "q_gravemoss",  name: "Grave Moss",    qualities: ["Rot", "Curse"],      emoji: "🪳" },
+  { id: "q_evileye",    name: "Evil Eye",      qualities: ["Curse", "Malice"],   emoji: "🧿" },
+  { id: "q_boneash",    name: "Bone Ash",      qualities: ["Frost", "Dread"],    emoji: "💀" },
+  { id: "q_witherroot", name: "Wither Root",   qualities: ["Malice", "Frost"],   emoji: "🐀" },
+  { id: "q_hexcrystal", name: "Hex Crystal",   qualities: ["Shadow", "Curse"],   emoji: "🔮" },
+  { id: "q_creepvine",  name: "Creep Vine",    qualities: ["Frost", "Rot"],      emoji: "🕷️" },
 ];
 QUEEN_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
 
@@ -231,7 +246,7 @@ QUESTS.daily.concat(QUESTS.weekly).forEach(q => QUEST_BY_ID[q.id] = q);
 
 /* Expose as a single namespace */
 const DATA = {
-  MAGIC, MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS,
+  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS,
   FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
   QUESTS, QUEST_BY_ID,
