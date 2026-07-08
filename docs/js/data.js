@@ -186,9 +186,33 @@ const TRASH_EXTRA = [
 const TRASH_BY_ID = {};
 TRASH.concat(TRASH_EXTRA).forEach(t => TRASH_BY_ID[t.id] = t);
 
+/* --- 11. Quests — daily (pick 3) + weekly (pick 2). `stat` names a tracked
+ * counter; progress is measured from a snapshot taken when the quest is rolled.
+ * ------------------------------------------------------------------------ */
+const QUESTS = {
+  daily: [
+    { id: "d_serve",   emoji: "🙂", desc: "Serve 5 happy customers",   stat: "served",   goal: 5,  reward: { gold: 40 } },
+    { id: "d_perfect", emoji: "🥳", desc: "Make 2 Perfect potions",     stat: "perfect",  goal: 2,  reward: { stardust: 15 } },
+    { id: "d_recycle", emoji: "♻️", desc: "Recycle 12 junk",            stat: "recycled", goal: 12, reward: { gold: 30 } },
+    { id: "d_bag",     emoji: "🛍️", desc: "Open a mystery bag",         stat: "bags",     goal: 1,  reward: { gold: 25 } },
+    { id: "d_boss",    emoji: "👑", desc: "Please a boss customer",      stat: "bossWins", goal: 1,  reward: { stardust: 20 } },
+    { id: "d_rush",    emoji: "⏱️", desc: "Beat an In-a-Rush customer",  stat: "rushWins", goal: 1,  reward: { gold: 35 } },
+  ],
+  weekly: [
+    { id: "w_serve",   emoji: "🧾", desc: "Serve 40 customers",         stat: "served",   goal: 40, reward: { stardust: 40 } },
+    { id: "w_perfect", emoji: "🌟", desc: "Make 15 Perfect potions",     stat: "perfect",  goal: 15, reward: { stardust: 55 } },
+    { id: "w_recycle", emoji: "♻️", desc: "Recycle 80 junk",            stat: "recycled", goal: 80, reward: { gold: 220 } },
+    { id: "w_boss",    emoji: "👑", desc: "Please 5 boss customers",     stat: "bossWins", goal: 5,  reward: { stardust: 35 } },
+    { id: "w_ring",    emoji: "💍", desc: "Find 2 Gold Rings",           stat: "rings",    goal: 2,  reward: { stardust: 30 } },
+  ],
+};
+const QUEST_BY_ID = {};
+QUESTS.daily.concat(QUESTS.weekly).forEach(q => QUEST_BY_ID[q.id] = q);
+
 /* Expose as a single namespace */
 const DATA = {
   MAGIC, MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS,
   FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
+  QUESTS, QUEST_BY_ID,
 };

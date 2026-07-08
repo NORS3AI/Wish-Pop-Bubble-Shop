@@ -19,6 +19,19 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 📋 **Daily & Weekly Quests.** A new **Quests** screen (in Shop & Upgrades) gives
+  you rotating goals to chase — *"Serve 5 happy customers," "Make 2 Perfect
+  potions," "Recycle 12 junk," "Beat an In-a-Rush customer"* — that pay gold,
+  Stardust, and treats. Dailies refresh each day (clear all 3 for a bonus),
+  weeklies pay bigger. Progress tracks automatically as you play; the menu button
+  glows when something's ready to claim.
+- 🔥 **Win streaks.** Keep customers happy in a row to build a streak that **boosts
+  your pay** — a failed (or lost) customer breaks it. (It never touches the
+  Wishing Well.)
+- ⏱️ **"In a Rush" customers.** Every so often a customer arrives impatient, with a
+  visible patience clock. Serve them in time for a **bonus** — dawdle and they
+  leave (you get nothing, but no harm done). A pinch of urgency without breaking
+  the cozy pace: everyone else still lets you take your time.
 - ⚖️ **Ingredients rebalanced for even variety.** Every magic is now represented
   evenly across the ingredient library (each shows up 3–4 times instead of some
   magics being crammed into everything and others barely appearing), and no two

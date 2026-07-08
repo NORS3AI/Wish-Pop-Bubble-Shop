@@ -80,6 +80,13 @@ const BALANCE = {
   TRASH_DUST_DIVISOR: 6,       // Stardust value = round(coins / this)
   TRASH_BAG_CHANCE: 0.1,       // chance a thrown piece is a mystery Crumpled Bag
   TRASH_RING_CHANCE: 0.18,     // chance an opened bag holds a Gold Ring (else more junk)
+
+  // Win streak (boosts PAY only — never the Wishing Well) + In-a-Rush customers.
+  STREAK_BONUS_PER: 4,         // gold per streak step
+  STREAK_BONUS_CAP: 10,        // max steps counted (so bonus caps at CAP*PER)
+  RUSH_CHANCE: 0.15,           // chance a (non-boss) customer is In a Rush
+  RUSH_MS: 60000,              // patience before they leave
+  RUSH_BONUS: 25,              // extra gold for serving an In-a-Rush customer in time
 };
 
 const R = {

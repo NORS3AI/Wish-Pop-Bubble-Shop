@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v37"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v38"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -22,6 +22,11 @@ function loadGame() {
 function normalizeGame(g) {
   if (typeof g.stardust !== "number") g.stardust = 0;
   if (typeof g.recycled !== "number") g.recycled = 0; // lifetime junk recycled (drives achievements)
+  if (typeof g.streak !== "number") g.streak = 0;
+  if (typeof g.bestStreak !== "number") g.bestStreak = 0;
+  if (!g.stats || typeof g.stats !== "object") g.stats = {};
+  ["served", "perfect", "bossWins", "rings", "bags", "rushWins"].forEach(k => { if (typeof g.stats[k] !== "number") g.stats[k] = 0; });
+  if (!g.quests || typeof g.quests !== "object") g.quests = { day: "", week: -1, daily: [], weekly: [], dailyBonus: false };
   if (!Array.isArray(g.trash)) g.trash = [];
   if (!g.owned || typeof g.owned !== "object") g.owned = {};
   if (!g.equipped || typeof g.equipped !== "object") g.equipped = {};
@@ -101,7 +106,7 @@ function hud(title, opts) {
 function goHome() {
   const active = document.querySelector(".screen.active");
   const inRound = active && /screen-(scoop|pop|mix)$/.test(active.id);
-  const leave = () => { if (ROUND && ROUND._mixTimer) { clearInterval(ROUND._mixTimer); ROUND._mixTimer = null; } renderStart(); };
+  const leave = () => { stopRoundTimers(); renderStart(); };
   if (inRound) confirmDialog("Leave this round and head to the menu? This round won't be saved.", leave);
   else leave();
 }
@@ -166,6 +171,7 @@ function renderMenu() {
         <div style="font-weight:800">🎁 Daily Gift</div>
         <button class="btn ${canDaily ? "" : "secondary"}" id="daily-btn" ${canDaily ? "" : "disabled"} style="max-width:240px">${canDaily ? "Claim 🪙 " + BALANCE.DAILY_GRANT : "Come back tomorrow!"}</button>
       </div>
+      <button class="btn ${anyQuestClaimable() ? "good" : ""}" id="quests-btn" style="margin-bottom:10px">📋 Quests${anyQuestClaimable() ? ` <span class="q-badge">!</span>` : ""}</button>
       <div class="row" style="margin-bottom:10px;gap:10px">
         <button class="btn" id="well-btn" style="flex:1">🌟 Wishing Well</button>
         <button class="btn secondary" id="wardrobe-btn" style="flex:1">🎨 My Skins</button>
@@ -195,6 +201,7 @@ function renderMenu() {
   on("#tr-buy", "click", () => buyTreats(qty));
   ["scoop", "charm", "undo"].forEach(k => on("#unlock-" + k, "click", () => unlockAbility(k)));
   on("#daily-btn", "click", claimDaily);
+  on("#quests-btn", "click", renderQuests);
   on("#well-btn", "click", renderWell);
   on("#wardrobe-btn", "click", renderWardrobe);
   on("#recycle-btn", "click", () => renderRecycle("coins"));
@@ -471,7 +478,7 @@ function openBag(index, mode) {
   SFX.unlock();
   const isRing = Math.random() < BALANCE.TRASH_RING_CHANCE;
   const newId = isRing ? "ring" : D.TRASH[Math.floor(Math.random() * D.TRASH.length)].id;
-  GAME.trash[index] = newId; save();
+  GAME.trash[index] = newId; bumpStat("bags"); if (isRing) bumpStat("rings"); save();
   const nt = D.TRASH_BY_ID[newId];
   if (isRing) { SFX.charm(); confettiOver($("#app")); toast("🛍️ → 💍 A Gold Ring! Cash it in for a nice bonus."); }
   else { SFX.pop(1); toast(`🛍️ → ${nt.emoji} Just more junk (${nt.name}).`); }
@@ -521,11 +528,162 @@ function confettiOver(host) {
 }
 
 /* ======================================================================= */
+/* QUESTS (dailies + weeklies), win STREAK, and tracked STATS               */
+/* ======================================================================= */
+function weekKey() { return Math.floor(Date.now() / 86400000 / 7); } // integer week bucket
+function questStat(stat) { return stat === "recycled" ? (GAME.recycled || 0) : (GAME.stats[stat] || 0); }
+function bumpStat(stat, n) { GAME.stats[stat] = (GAME.stats[stat] || 0) + (n || 1); save(); }
+function pickQuests(pool, n) {
+  const a = pool.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a.slice(0, n).map(t => ({ id: t.id, base: questStat(t.stat), claimed: false }));
+}
+// roll fresh quests when the day/week rolls over
+function refreshQuests() {
+  const q = GAME.quests, d = todayStr(), w = weekKey();
+  let changed = false;
+  if (q.day !== d || !q.daily || !q.daily.length) { q.day = d; q.daily = pickQuests(D.QUESTS.daily, 3); q.dailyBonus = false; changed = true; }
+  if (q.week !== w || !q.weekly || !q.weekly.length) { q.week = w; q.weekly = pickQuests(D.QUESTS.weekly, 2); changed = true; }
+  if (changed) save();
+}
+function questProgress(entry) {
+  const t = D.QUEST_BY_ID[entry.id]; if (!t) return { t: null, prog: 0, done: false };
+  const prog = Math.max(0, Math.min(t.goal, questStat(t.stat) - entry.base));
+  return { t, prog, done: prog >= t.goal, claimable: prog >= t.goal && !entry.claimed };
+}
+function anyQuestClaimable() {
+  refreshQuests();
+  const list = [].concat(GAME.quests.daily || [], GAME.quests.weekly || []);
+  if (list.some(e => questProgress(e).claimable)) return true;
+  return (GAME.quests.daily || []).every(e => e.claimed) && (GAME.quests.daily || []).length > 0 && !GAME.quests.dailyBonus;
+}
+function grantReward(r) {
+  if (!r) return "";
+  const parts = [];
+  if (r.gold) { GAME.gold += r.gold; parts.push(`🪙 ${r.gold}`); }
+  if (r.stardust) { GAME.stardust += r.stardust; parts.push(`✨ ${r.stardust}`); }
+  if (r.treats) { GAME.treats += r.treats; parts.push(`🐸 ${r.treats}`); }
+  return parts.join(" · ");
+}
+function claimQuest(kind, id) {
+  const list = kind === "weekly" ? GAME.quests.weekly : GAME.quests.daily;
+  const e = list.find(x => x.id === id); if (!e) return;
+  const pr = questProgress(e); if (!pr.claimable) return;
+  e.claimed = true; const got = grantReward(pr.t.reward); save();
+  SFX.charm(); toast(`✅ Claimed! ${got}`);
+  renderQuests();
+}
+function claimDailyBonus() {
+  const daily = GAME.quests.daily || [];
+  if (!daily.length || !daily.every(e => e.claimed) || GAME.quests.dailyBonus) return;
+  GAME.quests.dailyBonus = true; const got = grantReward({ stardust: 25 }); save();
+  SFX.perfect(); confettiOver($("#app")); toast(`🎉 All dailies done! ${got}`);
+  renderQuests();
+}
+function renderQuests() {
+  refreshQuests();
+  const row = (kind, e) => {
+    const { t, prog, claimable } = questProgress(e); if (!t) return "";
+    const pct = Math.min(100, prog / t.goal * 100);
+    const rw = [t.reward.gold ? `🪙${t.reward.gold}` : "", t.reward.stardust ? `✨${t.reward.stardust}` : "", t.reward.treats ? `🐸${t.reward.treats}` : ""].filter(Boolean).join(" ");
+    const btn = e.claimed ? `<span class="skin-tag equipped">✓</span>`
+      : claimable ? `<button class="btn small good q-claim" data-kind="${kind}" data-id="${e.id}">Claim</button>`
+      : `<span class="q-rew muted">${rw}</span>`;
+    return `<div class="quest-row ${claimable ? "ready" : ""}">
+      <div class="q-emoji">${t.emoji}</div>
+      <div class="q-body"><div class="q-desc">${t.desc}</div>
+        <div class="q-track"><i style="width:${pct}%"></i></div>
+        <div class="q-sub muted">${prog}/${t.goal}${e.claimed ? "" : " · " + rw}</div></div>
+      ${btn}</div>`;
+  };
+  const daily = GAME.quests.daily || [], weekly = GAME.quests.weekly || [];
+  const allDaily = daily.length && daily.every(e => e.claimed);
+  const bonusRow = `<div class="quest-row ${allDaily && !GAME.quests.dailyBonus ? "ready" : ""}">
+    <div class="q-emoji">🎁</div>
+    <div class="q-body"><div class="q-desc">All 3 dailies done — bonus!</div><div class="q-sub muted">✨ 25 Stardust</div></div>
+    ${GAME.quests.dailyBonus ? `<span class="skin-tag equipped">✓</span>` : allDaily ? `<button class="btn small good" id="q-bonus">Claim</button>` : `<span class="q-rew muted">${daily.filter(e => e.claimed).length}/3</span>`}</div>`;
+  html("quests", `
+    ${hud("Quests")}
+    <div class="grow" style="overflow-y:auto">
+      <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:8px">📅 Daily <span class="muted" style="font-weight:500;font-size:12px">· resets tomorrow</span></div>
+        ${daily.map(e => row("daily", e)).join("")}
+        ${bonusRow}
+      </div>
+      <div class="card">
+        <div style="font-weight:800;margin-bottom:8px">🗓️ Weekly <span class="muted" style="font-weight:500;font-size:12px">· bigger rewards</span></div>
+        ${weekly.map(e => row("weekly", e)).join("")}
+      </div>
+    </div>
+    <button class="btn secondary" id="quests-back">←  Back</button>
+  `);
+  $("#screen-quests").querySelectorAll(".q-claim").forEach(b => b.addEventListener("click", () => claimQuest(b.dataset.kind, b.dataset.id)));
+  on("#q-bonus", "click", claimDailyBonus);
+  on("#quests-back", "click", renderMenu);
+  show("quests");
+}
+
+/* --- win streak: consecutive happy customers boost PAY (never the Well) --- */
+function streakBonusFor(streak) { return Math.min(Math.max(0, streak - 1), BALANCE.STREAK_BONUS_CAP) * BALANCE.STREAK_BONUS_PER; }
+
+/* --- In-a-Rush customer: a patience clock across the round; serve in time for a
+ * bonus, or they leave and you get nothing (and the streak breaks). ---------- */
+function stopRoundTimers() {
+  if (!ROUND) return;
+  if (ROUND._mixTimer) { clearInterval(ROUND._mixTimer); ROUND._mixTimer = null; }
+  if (ROUND._scoopIv) { clearInterval(ROUND._scoopIv); ROUND._scoopIv = null; }
+  if (ROUND._rushTimer) { clearInterval(ROUND._rushTimer); ROUND._rushTimer = null; }
+  const el = document.getElementById("rush-clock"); if (el) el.style.display = "none";
+}
+function startRushClock() {
+  if (!ROUND || !ROUND.rush) return;
+  if (ROUND._rushTimer) return;                 // already running (persists across phases)
+  if (!ROUND.rushStart) ROUND.rushStart = Date.now();
+  let el = document.getElementById("rush-clock");
+  if (!el) { el = document.createElement("div"); el.id = "rush-clock"; $("#app").appendChild(el); }
+  const paint = () => {
+    const left = ROUND.rushMs - (Date.now() - ROUND.rushStart);
+    if (left <= 0) { rushExpire(); return; }
+    const s = Math.ceil(left / 1000), pct = Math.max(0, left / ROUND.rushMs * 100);
+    el.innerHTML = `<span class="rc-lbl">⏱️ In a Rush — <b>${s}s</b></span><span class="rc-track"><i style="width:${pct}%"></i></span>`;
+    el.classList.toggle("urgent", s <= 10);
+  };
+  el.style.display = "flex"; paint();
+  ROUND._rushTimer = setInterval(paint, 200);
+}
+function rushExpire() {
+  stopRoundTimers();
+  GAME.streak = 0; save();                       // lost customer breaks the streak
+  const c = ROUND.customer;
+  html("result", `
+    ${hud("Result")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">😾</div>
+      <div class="result-title lose">Too Slow!</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>${c.name} got impatient</span><span class="muted">left!</span></div>
+        <div class="stat-line"><span>Earned</span><span class="muted">nothing</span></div>
+      </div>
+      <p class="muted" style="max-width:300px">${c.name} couldn't wait and hurried off empty‑handed. No harm done — a fresh customer is on the way!</p>
+    </div>
+    <button class="btn" id="next-btn">Next Customer  →</button>
+  `);
+  on("#next-btn", "click", startRound);
+  show("result");
+}
+
+/* ======================================================================= */
 /* CUSTOMER                                                                */
 /* ======================================================================= */
 function startRound() {
   SFX.unlock();
+  stopRoundTimers();
+  refreshQuests();
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
+  // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
+  // when scooping begins.
+  ROUND.rush = !ROUND.wish.boss && Math.random() < BALANCE.RUSH_CHANCE;
+  if (ROUND.rush) { ROUND.rushMs = BALANCE.RUSH_MS; ROUND.rushStart = null; }
   renderCustomer();
 }
 function renderCustomer() {
@@ -538,10 +696,14 @@ function renderCustomer() {
     ? `<span style="color:var(--bad)">${allergyList.map(a => `⚠️ ${magicDot(a)} ${a}`).join(" ")}</span>` : "None";
   const bossBanner = w.boss
     ? `<div class="boss-banner">👑 VIP Customer — extra picky! All three needs, tiny green zones, only ${BALANCE.BOSS_SLOTS} cauldron slots, two allergies.</div>` : "";
+  const rushBanner = ROUND.rush
+    ? `<div class="boss-banner" style="background:linear-gradient(90deg,#ff9a5a,#ff6b6b,#ff9a5a)">⏱️ In a Rush! Serve before their patience runs out for a <b>+${BALANCE.RUSH_BONUS} bonus</b> — miss it and they leave.</div>` : "";
+  const streakChip = GAME.streak >= 2 ? `<div class="streak-chip">🔥 ${GAME.streak} win streak</div>` : "";
   html("customer", `
     ${hud(c.location)}
-    ${bossBanner}
+    ${bossBanner}${rushBanner}
     <div class="grow center" style="gap:16px">
+      ${streakChip}
       <div class="ph big ${w.boss ? "boss-emoji" : ""}">${custArt(c, "cust-big")}</div>
       <div style="font-weight:800;font-size:20px">${w.boss ? "👑 " : ""}${c.name}</div>
       <div class="speech">“${c.line}”</div>
@@ -716,9 +878,10 @@ function renderScoop() {
     const a = $("#auto-sift"); if (a) { a.textContent = "⏭️ Skip"; a.classList.remove("secondary"); }
     if (autoIv) return;
     autoIv = setInterval(() => {
-      if (state === "done") { clearInterval(autoIv); autoIv = null; return; }
+      if (state === "done") { clearInterval(autoIv); autoIv = null; ROUND._scoopIv = null; return; }
       if (state === "shaking") shakeTick(0.7);
     }, 150);
+    ROUND._scoopIv = autoIv; // let round-ending paths (rush expire / home) clear it
   });
   on("#scoop-continue", "click", () => { if (autoIv) clearInterval(autoIv); renderPop(); });
   on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
@@ -733,6 +896,7 @@ function renderScoop() {
   loadScoop();
   wireFamiliar("scoop");
   show("scoop");
+  startRushClock();      // In-a-Rush patience clock ticks from here through serve
 }
 
 /* ======================================================================= */
@@ -1259,9 +1423,27 @@ function playCharm(i) {
 /* ======================================================================= */
 function serve() {
   if (ROUND.slots.length === 0) return;
-  if (ROUND._mixTimer) { clearInterval(ROUND._mixTimer); ROUND._mixTimer = null; }
+  stopRoundTimers();                              // served in time — stop the rush clock
   const res = scoreResult(ROUND);
+  const isPerfect = res.success && res.weighted === 100 && !(res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red"));
+  // WIN STREAK (boosts pay only — never the Well)
+  if (res.success) {
+    GAME.streak = (GAME.streak || 0) + 1;
+    if (GAME.streak > (GAME.bestStreak || 0)) GAME.bestStreak = GAME.streak;
+    res.streakBonus = streakBonusFor(GAME.streak);
+    res.gold += res.streakBonus;
+  } else { GAME.streak = 0; res.streakBonus = 0; }
+  res.streak = GAME.streak;
+  // In-a-Rush: bonus for serving one in time
+  if (ROUND.rush && res.success) { res.rushBonus = BALANCE.RUSH_BONUS; res.gold += res.rushBonus; }
   GAME.gold += res.gold;
+  // tracked stats for quests
+  if (res.success) {
+    bumpStat("served");
+    if (ROUND.wish.boss) bumpStat("bossWins");
+    if (ROUND.rush) bumpStat("rushWins");
+    if (isPerfect) bumpStat("perfect");
+  }
   servedTotal++; localStorage.setItem("wishpop_served", servedTotal); save();
   renderResult(res);
 }
@@ -1285,10 +1467,15 @@ function renderResult(res) {
     : zone === "red" ? "The wish worked… but " + c.name + " reacted to the " + res.allergy.type + " magic! Half pay."
     : zone === "yellow" ? c.name + " got their wish, but a little " + res.allergy.type + " magic left them itchy."
     : res.qualityTip > 0 ? c.name + " loves it — that potion was practically perfect!" : res.quickTip > 0 ? c.name + " is thrilled with the speedy service!" : c.name + " is happy with their wish!";
+  const rushLine = (win && res.rushBonus > 0)
+    ? `<div class="stat-line"><span>⏱️ Beat the clock!</span><span class="gold">🪙 +${res.rushBonus}</span></div>` : "";
+  const streakLine = (win && res.streakBonus > 0)
+    ? `<div class="stat-line"><span>🔥 Win streak ×${res.streak}</span><span class="gold">🪙 +${res.streakBonus}</span></div>` : "";
   const earnedRow = win
-    ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}`
+    ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}${rushLine}${streakLine}`
     : `<div class="stat-line"><span>Earned</span><span class="muted">no coins — just trash!</span></div>
-       <div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${trashN}</b> piece${trashN === 1 ? "" : "s"}</span></div>`;
+       <div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${trashN}</b> piece${trashN === 1 ? "" : "s"}</span></div>
+       <div class="stat-line"><span>🔥 Win streak</span><span class="muted">broken</span></div>`;
   html("result", `
     ${hud("Result")}
     <div class="grow center" style="gap:14px">
@@ -1531,10 +1718,10 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
-window.addEventListener("load", () => { applyCustomBackground(); renderStart(); });
+window.addEventListener("load", () => { applyCustomBackground(); refreshQuests(); renderStart(); });
 
 })();
