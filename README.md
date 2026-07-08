@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐛 **Fixed:** in the Evil Queen event, removing a **Wild charm** from the cauldron
+  (tap-to-remove) used to jam the mix screen — the slot stayed stuck and new
+  ingredients wouldn't show. Now a removed Wild charm goes safely back to your charm
+  tray and everything stays in sync.
 - ☠️ **The Evil Queen's pantry is now truly cursed.** Her ingredients use a brand-new
   set of dark magics you've never seen — **Dread, Malice, Shadow, Rot, Curse, Frost** —
   with all-new spooky icons (spiders, snakes, skulls…). **Poison is now a hidden trap:**

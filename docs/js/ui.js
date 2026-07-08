@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v54"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v55"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2119,6 +2119,9 @@ function paintMix() {
   wireFamiliar("mix");
 }
 function invTile(inst, idx) {
+  if (inst.wild) { // safety: a Wild instance should never reach the bag, but never crash if it does
+    return `<div class="inv-tile" id="invt-${idx}"><div class="emoji">🌈</div><div class="nm">Wild ${inst.magic || ""}</div><div class="q">any magic</div></div>`;
+  }
   if (inst.essence) {
     return `<div class="inv-tile essence ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}" id="invt-${idx}">
       <div class="emoji"><span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>
@@ -2520,7 +2523,10 @@ function wireFamiliar(phase) {
 function removeFromSlot(i) {
   const inst = ROUND.slots[i]; if (!inst) return;
   ROUND.slots.splice(i, 1);
-  ROUND.inventory.push(inst);
+  // a played Wild charm goes back to the tray (it's not a bag ingredient); everything
+  // else (ingredients, essences) returns to the bag.
+  if (inst.wild) { ROUND.charms.push("wild"); toast("🌈 Wild charm back in your tray."); }
+  else ROUND.inventory.push(inst);
   SFX.pop(1);
   paintMix();
 }
