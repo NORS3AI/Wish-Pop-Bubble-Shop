@@ -221,7 +221,7 @@ function bonusBubbleItems(wish, n, chainChance) {
 function newRound(state) {
   const customer = R.pick(DATA.CUSTOMERS);
   const diff = difficultyFor(state.servedTotal);
-  const isBoss = ((state.servedTotal || 0) + 1) % BALANCE.BOSS_EVERY === 0;
+  const isBoss = !!state.forceBoss || ((state.servedTotal || 0) + 1) % BALANCE.BOSS_EVERY === 0;
   const wish = generateWish(customer, diff, isBoss);
   const [pmin, pmax] = BALANCE.PAYMENT_RANGE[diff];
   let payment = R.int(pmin / 10, pmax / 10) * 10;

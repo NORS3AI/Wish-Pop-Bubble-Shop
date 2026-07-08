@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ⚙️ **Admin & Testing panel.** The **⚙️ Admin & Testing** button on the main
+  menu now opens a test panel where you can **jump straight to any event** — the
+  Mixing Duel, the Fairy's boon, a VIP (boss) customer, or an in-a-rush customer —
+  without playing through dozens of normal rounds to find one. It also has quick
+  buttons to give yourself gold, Stardust, or treats. (We can hide this before the
+  game goes public.)
 - ⚔️ **Fairytale events: the Mixing Duel!** Every so often a rival mixer struts in
   and challenges you to a **potion duel**. Win a quick round of **rock–paper–scissors**
   to decide who drafts first, then take turns picking from a **shared pile of

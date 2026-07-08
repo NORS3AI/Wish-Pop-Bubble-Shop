@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v42"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v43"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -133,7 +133,7 @@ function renderStart() {
     <div style="height:8px"></div>
     <button class="btn secondary" id="menu-btn">🛍️  Shop &amp; Upgrades</button>
     <div style="height:8px"></div>
-    <button class="btn secondary small" id="admin-btn" style="align-self:center">⚙️ Admin (art upload — coming soon)</button>
+    <button class="btn secondary small" id="admin-btn" style="align-self:center">⚙️ Admin &amp; Testing</button>
     <div class="row" style="justify-content:center;gap:10px;margin-top:8px;align-items:center">
       <button class="btn good small" id="sound-test" style="max-width:210px">🔊 Tap to test sound</button>
       <span class="muted" style="font-size:12px">Build ${BUILD}</span>
@@ -141,7 +141,7 @@ function renderStart() {
   `);
   on("#play-btn", "click", startRound);
   on("#menu-btn", "click", renderMenu);
-  on("#admin-btn", "click", () => toast("Art uploader arrives in a later phase."));
+  on("#admin-btn", "click", renderAdmin);
   on("#sound-test", "click", () => {
     SFX.unlock();
     [0, 1, 2, 3].forEach((s, i) => setTimeout(() => { SFX.pop(s); SFX.reveal(i === 3 ? "charm" : "ingredient", s); }, i * 160));
@@ -149,6 +149,57 @@ function renderStart() {
     toast(SFX.isMuted() ? "Sound is muted — tap 🔇 to unmute" : "Hear that? 🔊");
   });
   show("start");
+}
+
+/* ======================================================================= */
+/* ADMIN / TESTING — jump straight to any event, no grinding                */
+/* ======================================================================= */
+function adminBoss() {
+  SFX.unlock(); stopRoundTimers(); refreshQuests();
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, forceBoss: true });
+  ROUND.rush = false;
+  renderCustomer();
+}
+function adminRush() {
+  SFX.unlock(); stopRoundTimers(); refreshQuests();
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
+  ROUND.wish.boss = false;
+  ROUND.rush = true; ROUND.rushMs = BALANCE.RUSH_MS; ROUND.rushStart = null;
+  renderCustomer();
+}
+function renderAdmin() {
+  html("admin", `
+    ${hud("Admin & Testing")}
+    <div class="grow" style="overflow-y:auto">
+      <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:6px">🎬 Jump to an event</div>
+        <p class="muted" style="font-size:12px;margin-bottom:10px">Launch a special encounter right now — no need to play through normal rounds to find one.</p>
+        <button class="btn" id="ad-duel" style="margin-bottom:8px">⚔️ Mixing Duel</button>
+        <button class="btn" id="ad-fairy" style="margin-bottom:8px">🧚 Fairy's Matching Boon</button>
+        <button class="btn secondary" id="ad-boss" style="margin-bottom:8px">👑 VIP (Boss) Customer</button>
+        <button class="btn secondary" id="ad-rush">⏱️ In‑a‑Rush Customer</button>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:8px">💰 Give yourself resources</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn good small" id="ad-gold">+1000 🪙</button>
+          <button class="btn good small" id="ad-dust">+100 ✨</button>
+          <button class="btn good small" id="ad-treats">+10 🐸</button>
+        </div>
+      </div>
+      <p class="muted" style="font-size:11px;text-align:center">For testing only — we can hide this panel before the game goes public.</p>
+    </div>
+    <button class="btn secondary" id="ad-back">←  Back</button>
+  `);
+  on("#ad-duel", "click", renderDuelIntro);
+  on("#ad-fairy", "click", renderFairyIntro);
+  on("#ad-boss", "click", adminBoss);
+  on("#ad-rush", "click", adminRush);
+  on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
+  on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
+  on("#ad-treats", "click", () => { GAME.treats += 10; save(); toast("+10 treats 🐸"); renderAdmin(); });
+  on("#ad-back", "click", renderStart);
+  show("admin");
 }
 
 /* ======================================================================= */
@@ -1962,7 +2013,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
