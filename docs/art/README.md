@@ -36,6 +36,11 @@ minute for it to update, then refresh).
 |---|---|
 | `background.png` | The whole screen background (tall portrait picture) |
 
+### Logo (main screen)
+| File name | Replaces |
+|---|---|
+| `logo.png` | The **“Wish Pop / Bubble Shop”** title on the main menu. Drop it in and your logo shows instead of the text. A wide, transparent PNG works best (it's shown about 300px wide). |
+
 ### Ingredients (20)
 | File name | Replaces |
 |---|---|
@@ -72,17 +77,27 @@ minute for it to update, then refresh).
 | `charm_transmute.png` | 🔀 Transmute |
 | `charm_pinch.png` | 🤏 Pinch |
 
-### Customers (8)
-| File name | Replaces |
-|---|---|
-| `customer_gingerbread.png` | 🍪 Gingerbread Man |
-| `customer_muffin.png` | 🧁 Muffin Man |
-| `customer_baker.png` | 👨‍🍳 Village Baker |
-| `customer_mouse.png` | 🐭 Tiny Mouse |
-| `customer_owl.png` | 🦉 Sleepy Owl |
-| `customer_little_red.png` | 👧 Little Red |
-| `customer_wolf.png` | 🐺 Wolf |
-| `customer_gnome.png` | 🧝 Garden Gnome |
+### Customers (8) — with four expressions each
+Each base-game customer can have **four faces**, shown at the right moment:
+
+- **normal** — the plain filename (e.g. `customer_wolf.png`). Shown when they arrive with their wish.
+- **happy** — `..._happy.png`. Shown on the results screen when you make their wish.
+- **angry** — `..._angry.png`. Shown when you fail their wish.
+- **allergic** — `..._allergic.png`. Shown when the potion gave them an allergy reaction.
+
+You can add them a few at a time — any face you haven't uploaded just falls back to the emoji.
+(These can be full head-to-toe character pictures; the game centers and scales them.)
+
+| Customer | normal | happy | angry | allergic |
+|---|---|---|---|---|
+| 🍪 Gingerbread Man | `customer_gingerbread.png` | `customer_gingerbread_happy.png` | `customer_gingerbread_angry.png` | `customer_gingerbread_allergic.png` |
+| 🧁 Muffin Man | `customer_muffin.png` | `customer_muffin_happy.png` | `customer_muffin_angry.png` | `customer_muffin_allergic.png` |
+| 👨‍🍳 Village Baker | `customer_baker.png` | `customer_baker_happy.png` | `customer_baker_angry.png` | `customer_baker_allergic.png` |
+| 🐭 Tiny Mouse | `customer_mouse.png` | `customer_mouse_happy.png` | `customer_mouse_angry.png` | `customer_mouse_allergic.png` |
+| 🦉 Sleepy Owl | `customer_owl.png` | `customer_owl_happy.png` | `customer_owl_angry.png` | `customer_owl_allergic.png` |
+| 👧 Little Red | `customer_little_red.png` | `customer_little_red_happy.png` | `customer_little_red_angry.png` | `customer_little_red_allergic.png` |
+| 🐺 Wolf | `customer_wolf.png` | `customer_wolf_happy.png` | `customer_wolf_angry.png` | `customer_wolf_allergic.png` |
+| 🧝 Garden Gnome | `customer_gnome.png` | `customer_gnome_happy.png` | `customer_gnome_angry.png` | `customer_gnome_allergic.png` |
 
 ### Buddy (Toad) skins (7)
 These are the little friend in the corner and in the "My Skins" wardrobe.

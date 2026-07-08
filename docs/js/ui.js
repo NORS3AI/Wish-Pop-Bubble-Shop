@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v68"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v69"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -66,6 +66,20 @@ function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar); }
 function ingArt(id, cls)  { const ing = D.INGREDIENT_BY_ID[id]; return ART.tag("ing_" + id, ing ? ing.emoji : "❔", cls || "ing-art"); }
 function charmArt(id, cls) { const ch = D.SPECIAL_CHARMS[id]; return ART.tag("charm_" + id, ch ? ch.emoji : "❔", cls || "charm-art"); }
 function custArt(c, cls)  { return ART.tag("customer_" + c.id, c.emoji, cls || "cust-art"); }
+// A customer's face with an EXPRESSION. "normal" is the base customer_<id>.png;
+// happy / angry / allergic are customer_<id>_<mood>.png. If that art isn't there,
+// it falls back to the given emoji (the emotion face we've always shown).
+function custMoodArt(c, mood, fallbackEmoji, cls) {
+  const key = mood && mood !== "normal" ? "customer_" + c.id + "_" + mood : "customer_" + c.id;
+  return ART.tag(key, fallbackEmoji || c.emoji, cls || "cust-art");
+}
+// The main-screen brand mark. If art/logo.png is present, show it; otherwise show
+// the "Wish Pop / Bubble Shop" wordmark, and hot-swap to the image if it loads.
+function logoMarkup() {
+  if (ART.isReady("logo")) return `<img class="wp-logo" src="${ART.url("logo")}" alt="Wish Pop Bubble Shop" draggable="false">`;
+  ART.ensure("logo", () => { const s = screen("start"); if (s && s.classList.contains("active")) renderStart(); });
+  return `<div class="logo">Wish Pop</div><div class="sub">Bubble Shop</div>`;
+}
 function buddyArt(id, cls) { const c = D.COSMETIC_BY_ID[id]; return ART.tag("buddy_" + id, c ? c.chip : D.FAMILIAR.emoji, cls || ""); }
 function trashArt(id, cls) { const t = D.TRASH_BY_ID[id]; return ART.tag("trash_" + id, t ? t.emoji : "🗑️", cls || "trash-art"); }
 // recycle values for a piece of trash
@@ -159,8 +173,7 @@ function renderStart() {
     ${hud("Bubble Shop", { noHome: true })}
     <div class="grow center">
       <div class="bubble-emojis">🫧 ✨ 🫧</div>
-      <div class="logo">Wish Pop</div>
-      <div class="sub">Bubble Shop</div>
+      ${logoMarkup()}
       <div class="realm-here">${realm.icon} ${realm.name}</div>
       <p class="muted" style="max-width:300px">Fairytale folk arrive with a wish. Scoop bubbles, pop them for ingredients &amp; charms, then mix the perfect potion in your cauldron!</p>
       <div class="bubble-emojis" style="font-size:26px">${cast}</div>
@@ -2937,6 +2950,9 @@ function renderResult(res) {
   const isPerfect = win && res.weighted === 100 && zone !== "yellow" && zone !== "red";
   const trashN = (res.trash || []).length;
   const emoji = !win ? "😤" : isPerfect ? "🥳" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (res.tip > 0 ? "🤩" : "😊");
+  // Which of the customer's four faces to show: angry on a fail, allergic on an
+  // allergy reaction, otherwise happy. Falls back to the emotion emoji above.
+  const mood = !win ? "angry" : (zone === "red" || zone === "yellow") ? "allergic" : "happy";
   const title = win ? (isPerfect ? "Perfect!" : res.type.title) : "Wish Failed!";
   const blurb = !win
     ? c.name + " storms off in a huff — and pelts you with their trash on the way out! Grab it: junk recycles into coins or Stardust."
@@ -2963,7 +2979,7 @@ function renderResult(res) {
   html("result", `
     ${hud("Result")}
     <div class="grow center" style="gap:14px">
-      <div class="ph big">${emoji}</div>
+      <div class="ph big">${custMoodArt(c, mood, emoji, "cust-big result-face")}</div>
       <div class="result-title ${win ? "win" : "lose"} ${isPerfect ? "perfect" : ""}">${title}</div>
       ${win ? rewardBubblesMarkup(res) : (trashN ? trashInfoMarkup(res) : "")}
       <div class="card" style="width:100%;max-width:320px">
@@ -3217,7 +3233,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStudy, cakeToDecorate, cakePickTool, cakeTapSlot, cakeScore, cakeSubmit, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStudy, cakeToDecorate, cakePickTool, cakeTapSlot, cakeScore, cakeSubmit, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

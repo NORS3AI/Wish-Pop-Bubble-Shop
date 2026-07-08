@@ -91,11 +91,18 @@ html, body {
   font-size: 34px; line-height: 1;
 }
 .ph.big { width: 118px; height: 118px; font-size: 62px; border-radius: 26px; }
+/* When a real character IMAGE is dropped in (customer portraits/expressions),
+   let it fill the space and drop the dashed placeholder frame. Emoji fallbacks
+   keep the framed box. */
+.ph.big:has(img.art) { width: auto; height: auto; min-width: 118px; background: none; border: none; }
+.ph.big img.art { height: 128px; width: auto; max-width: 150px; }
 
 /* --- Start screen --- */
 #screen-start .logo { font-size: 44px; font-weight: 900; letter-spacing: .5px;
   background: linear-gradient(90deg, #fff0fb, #ffd6ea); -webkit-background-clip: text; background-clip: text; color: transparent; }
 #screen-start .sub { font-size: 20px; font-weight: 800; color: var(--pink); margin-top: -4px; }
+/* Custom brand logo (art/logo.png) — replaces the text wordmark when present */
+#screen-start .wp-logo { display: block; width: 80%; max-width: 300px; height: auto; margin: 2px auto 4px; }
 .bubble-emojis { font-size: 30px; letter-spacing: 6px; }
 
 /* --- Menu / upgrades --- */

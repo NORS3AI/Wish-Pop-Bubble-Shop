@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎨 **Drop in your own logo and character art!** The `art` folder now has slots for your
+  **Wish Pop Bubble Shop logo** (replaces the title on the main screen) and for **four
+  expressions per base-game customer** — a normal face when they arrive, plus **happy, angry,
+  and allergic** faces that show on the results screen depending on how their wish turned out.
+  Add them whenever you like; anything you haven't uploaded just keeps showing the emoji. See
+  the art folder's guide for the exact filenames.
+
 - 🧁 **The Drury Lane Bake-Off — a memory decorating game!** A judge shows you a finished
   treat, you **study it**, and then it vanishes — now recreate it from memory! Pick from
   **six decorations** (deliberately look-alike: a swirl vs a dollop, a cherry vs a strawberry,
