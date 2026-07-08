@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v65"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v66"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -28,6 +28,7 @@ function normalizeGame(g) {
   if (typeof g.nextEventAt !== "number") g.nextEventAt = -1; // -1 = uninitialized (set on first play)
   if (typeof g.rumpelSeen !== "boolean") g.rumpelSeen = false; // offered a junk visitor while bin full?
   if (typeof g.goblinTurn !== "boolean") g.goblinTurn = false; // alternate Rumpelstiltskin <-> the goblin
+  if (typeof g.danceLessons !== "number") g.danceLessons = 0; // ball dance lessons taught (paces toward Cinderella)
   if (typeof g.realm !== "string" || !D.REALM_BY_ID[g.realm]) g.realm = "willow"; // current location
   if (!g.unlockedRealms || typeof g.unlockedRealms !== "object") g.unlockedRealms = {};
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
@@ -132,8 +133,10 @@ function goHome() {
 function stopEventTimers() {
   if (typeof RUMPEL !== "undefined" && RUMPEL && RUMPEL.raf) cancelAnimationFrame(RUMPEL.raf);
   if (typeof GOBLIN !== "undefined" && GOBLIN) { if (GOBLIN.timer) clearTimeout(GOBLIN.timer); if (GOBLIN.cdTimer) clearTimeout(GOBLIN.cdTimer); }
+  if (typeof DANCE !== "undefined" && DANCE) { if (DANCE.timer) clearTimeout(DANCE.timer); if (DANCE.cdTimer) clearTimeout(DANCE.cdTimer); if (DANCE.tTimer) clearTimeout(DANCE.tTimer); }
   if (typeof RUMPEL !== "undefined") RUMPEL = null;
   if (typeof GOBLIN !== "undefined") GOBLIN = null;
+  if (typeof DANCE !== "undefined") DANCE = null;
   if (typeof DUEL !== "undefined") DUEL = null;
   if (typeof QUEEN !== "undefined") QUEEN = null;
   document.body.classList.remove("villain");
@@ -272,6 +275,7 @@ function renderAdmin() {
         <button class="btn" id="ad-rumpel" style="margin-bottom:8px">🧵 Rumpelstiltskin</button>
         <button class="btn" id="ad-goblin" style="margin-bottom:8px">🧌 Gribble the Goblin</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen</button>
+        <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Royal Ball (Dance)</button>
         <button class="btn secondary" id="ad-boss" style="margin-bottom:8px">👑 VIP (Boss) Customer</button>
         <button class="btn secondary" id="ad-rush">⏱️ In‑a‑Rush Customer</button>
       </div>
@@ -304,6 +308,7 @@ function renderAdmin() {
     if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); } // need gold to pay her ransom
     renderQueenIntro();
   });
+  on("#ad-dance", "click", () => renderDanceIntro("knight"));
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
@@ -791,6 +796,7 @@ function grantReward(r) {
   if (!r) return "";
   const parts = [];
   if (r.gold) { GAME.gold += r.gold; parts.push(`🪙 ${r.gold}`); }
+  if (r.keys) { GAME.keys = (GAME.keys || 0) + r.keys; parts.push(`🗝️ ${r.keys}`); }
   if (r.stardust) { GAME.stardust += r.stardust; parts.push(`✨ ${r.stardust}`); }
   if (r.treats) { GAME.treats += r.treats; parts.push(`🐸 ${r.treats}`); }
   return parts.join(" · ");
@@ -919,6 +925,7 @@ function maybeEvent() {
   GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save();
   const events = [renderDuelIntro, renderFairyIntro];
   if (GAME.gold >= QUEEN_PACKAGES[0].gold) events.push(renderQueenIntro); // Queen needs gold for her ransom
+  if (currentRealm().id === "courtyard") events.push(() => renderDanceIntro("knight")); // a royal-ball dance lesson
   R.pick(events)();
   return true;
 }
@@ -1472,6 +1479,199 @@ function goblinFinish() {
     <button class="btn" id="gob-next">Next Customer  →</button>
   `);
   on("#gob-next", "click", startRound);
+  show("event");
+}
+
+/* ======================================================================= */
+/* THE ROYAL BALL — a King's Courtyard dance lesson. You are the dance       */
+/* TEACHER; a clumsy courtier is your student. Two acts, back to back:       */
+/*   Act 1 (Rehearsal): the choreography is called out in a bubble on the    */
+/*     beat — tap the matching move to demonstrate the step.                 */
+/*   Act 2 (The Ball): the SAME routine, no hints — lead it from memory.     */
+/* Learn the rhythm, then recall it. Teach enough steps right and your       */
+/* student dances beautifully and rewards you. Early students (a clumsy      */
+/* knight, then a prince) give generic prizes like keys; Cinderella is the   */
+/* finale of the realm and gives a rare skin. (This build: the knight.)      */
+/* ======================================================================= */
+let DANCE = null;
+// The four dance moves — the shared "alphabet" every routine is built from.
+const DANCE_MOVES = [
+  { id: "left",  icon: "↩️", name: "Twirl Left" },
+  { id: "right", icon: "↪️", name: "Twirl Right" },
+  { id: "toe",   icon: "🩰", name: "Tiptoes" },
+  { id: "spin",  icon: "🌀", name: "Spin" },
+];
+const DANCE_MOVE_BY_ID = {}; DANCE_MOVES.forEach(m => DANCE_MOVE_BY_ID[m.id] = m);
+// Dance students you teach. The knight is first; the prince and Cinderella
+// slot in here later as one row each (Cinderella carries a rare-skin prize).
+const DANCE_PARTNERS = {
+  knight: {
+    id: "knight", emoji: "🤺", name: "Sir Wobble", title: "A Clumsy Knight",
+    steps: 6, callMs: 2000, ballMs: 2300, pass: 8,   // pass = correct taps needed of steps*2
+    line: "“I'm to dance at the royal ball tonight and I've got two left feet! Teach me the steps, please?”",
+    reward: { gold: 45, keys: 1, stardust: 6 }, prizeTxt: "🪙 gold + a 🗝️ key",
+    winNote: "“I did it! Look at me twirl!” Sir Wobble bows deeply and presses a key into your hand. 🗝️",
+    loseNote: "“Oof — I tripped again!” He laughs it off. Come teach him another time!",
+  },
+};
+const DANCE_D = { good: 1, wrong: 0, miss: 0 }; // correct-count deltas (grace meter is correct/total)
+function danceRoutine(n) { const r = []; for (let i = 0; i < n; i++) r.push(R.pick(DANCE_MOVES).id); return r; }
+function renderDanceIntro(partnerId) {
+  const p = DANCE_PARTNERS[partnerId] || DANCE_PARTNERS.knight;
+  SFX.unlock(); SFX.fanfare();
+  html("event", `
+    ${hud("A Royal Ball!")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${p.emoji}</div>
+      <div style="font-weight:800;font-size:20px">${p.name}</div>
+      <div class="speech">${p.line}</div>
+      <div class="card" style="width:100%;max-width:330px">
+        <div class="stat-line"><span>Act 1 · Rehearsal</span><span>follow the called steps 💃</span></div>
+        <div class="stat-line"><span>Act 2 · The Ball</span><span>same steps, from memory 🎼</span></div>
+        <div class="stat-line"><span>Teach him well</span><span class="gold">${p.prizeTxt}</span></div>
+      </div>
+      <div class="muted" style="max-width:310px">Four moves, four buttons. In the rehearsal the next move shows in his bubble — tap the matching button on the beat. Then the music starts and you lead the <b>same routine</b> from memory!</div>
+    </div>
+    <button class="btn good" id="dance-play">💃 Teach him to dance!</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="dance-skip">Not now</button>
+  `);
+  on("#dance-play", "click", () => {
+    DANCE = { p, phase: 1, routine: danceRoutine(p.steps), idx: 0, correct: 0,
+      total: p.steps * 2, answered: true, feedback: null, timer: null, cdTimer: null, tTimer: null };
+    danceCountdown();
+  });
+  on("#dance-skip", "click", startRound);
+  show("event");
+}
+function danceCountdown() {
+  let n = 3;
+  const tick = () => {
+    if (!DANCE) return;
+    html("event", `
+      ${hud("Get Ready!")}
+      <div class="grow center" style="gap:18px">
+        <div class="dance-face" style="font-size:76px">${DANCE.p.emoji}</div>
+        <div style="font-weight:800;font-size:18px">Take your positions…</div>
+        <div class="gob-count-big ${n === 0 ? "go" : ""}">${n > 0 ? n : "Dance!"}</div>
+      </div>
+    `);
+    show("event");
+    SFX.pop(n > 0 ? 1 : 3);
+    if (n > 0) { n--; DANCE.cdTimer = setTimeout(tick, 800); }
+    else { DANCE.cdTimer = setTimeout(() => { if (DANCE) danceStep(); }, 450); }
+  };
+  tick();
+}
+// Advance to the next called step — handles the Act 1 → Act 2 handoff and the finish.
+function danceStep() {
+  if (!DANCE) return;
+  if (DANCE.idx >= DANCE.routine.length) {
+    if (DANCE.phase === 1) { DANCE.phase = 2; DANCE.idx = 0; DANCE.feedback = null; danceBallTransition(); return; }
+    danceFinish(); return;
+  }
+  DANCE.answered = false;
+  renderDance();
+  const ms = DANCE.phase === 1 ? DANCE.p.callMs : DANCE.p.ballMs;
+  DANCE.timer = setTimeout(() => { if (DANCE && !DANCE.answered) danceResolve("miss"); }, ms);
+}
+// The show-stopping moment: hints drop away and the real music begins.
+function danceBallTransition() {
+  html("event", `
+    ${hud("The Ball Begins!")}
+    <div class="grow center" style="gap:16px">
+      <div class="dance-face" style="font-size:80px">🎼</div>
+      <div class="result-title win">Now… from memory!</div>
+      <p class="muted" style="max-width:300px">The music swells and the hints fade. Lead ${DANCE.p.name} through the <b>same routine</b> you just rehearsed!</p>
+    </div>
+  `);
+  show("event");
+  SFX.fanfare();
+  DANCE.tTimer = setTimeout(() => { if (DANCE) danceStep(); }, 1600);
+}
+function danceTap(moveId) {
+  if (!DANCE || DANCE.answered) return;
+  danceResolve(moveId === DANCE.routine[DANCE.idx] ? "good" : "wrong");
+}
+function danceResolve(kind) {
+  if (!DANCE || DANCE.answered) return;
+  DANCE.answered = true;
+  if (DANCE.timer) { clearTimeout(DANCE.timer); DANCE.timer = null; }
+  if (kind === "good") DANCE.correct++;
+  DANCE.feedback = { kind, move: DANCE.routine[DANCE.idx] };
+  SFX[kind === "good" ? "charm" : "sneeze"]();
+  DANCE.idx++;
+  danceStep();
+}
+function renderDance() {
+  const D0 = DANCE, p = D0.p, moveId = D0.routine[D0.idx];
+  const rehearse = D0.phase === 1;
+  const gracePct = Math.round((D0.correct / D0.total) * 100);
+  const targetPct = Math.round((p.pass / D0.total) * 100);
+  const fb = D0.feedback;
+  const fbTxt = !fb ? (rehearse ? "Tap the move he's shown!" : "Lead the step from memory!")
+    : fb.kind === "good" ? `<span style="color:var(--good)">Lovely! 💫</span>`
+    : fb.kind === "miss" ? `<span style="color:var(--bad)">Too slow!</span>`
+    : `<span style="color:var(--bad)">A stumble!</span>`;
+  const mv = DANCE_MOVE_BY_ID[moveId];
+  const bubble = rehearse
+    ? `<div class="dance-bubble"><span class="dance-cue">${mv.icon}</span><span>“${mv.name}!”</span></div>`
+    : `<div class="dance-bubble memory"><span class="dance-cue">❓</span><span>What comes next?</span></div>`;
+  const buttons = DANCE_MOVES.map(m =>
+    `<button class="dance-btn" data-id="${m.id}"><span class="dance-btn-ic">${m.icon}</span><span class="dance-btn-nm">${m.name}</span></button>`).join("");
+  html("event", `
+    ${hud(rehearse ? "Rehearsal 💃" : "The Ball 🎼")}
+    <div class="dance-top">
+      <div class="dance-face ${fb && fb.kind === "good" ? "happy" : fb ? "oops" : ""}">${p.emoji}</div>
+      ${bubble}
+    </div>
+    <div class="dance-timer"><i id="dance-timerbar"></i></div>
+    <div class="dance-status">
+      <div class="rumpel-stat sub">${rehearse ? "Act 1" : "Act 2"} · Step ${Math.min(D0.idx + 1, p.steps)}/${p.steps} · ${fbTxt}</div>
+      <div class="dance-grace"><i style="width:${gracePct}%"></i><span class="dance-grace-mark" style="left:${targetPct}%"></span></div>
+    </div>
+    <div class="grow center">
+      <div class="dance-grid">${buttons}</div>
+    </div>
+  `);
+  $("#screen-event").querySelectorAll(".dance-btn").forEach(b =>
+    b.addEventListener("click", () => danceTap(b.dataset.id)));
+  show("event");
+  const tb = $("#dance-timerbar"), ms = rehearse ? p.callMs : p.ballMs;
+  if (tb) { tb.style.transition = "none"; tb.style.width = "100%";
+    requestAnimationFrame(() => { if (tb.isConnected) { tb.style.transition = "width " + ms + "ms linear"; tb.style.width = "0%"; } }); }
+}
+function danceFinish() {
+  if (DANCE.timer) { clearTimeout(DANCE.timer); DANCE.timer = null; }
+  const p = DANCE.p, correct = DANCE.correct, win = correct >= p.pass;
+  GAME.danceLessons = (GAME.danceLessons || 0) + 1;
+  let outcome;
+  if (win) {
+    const got = grantReward(p.reward); save();
+    SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
+    outcome = { emoji: "🕺", title: "A graceful dancer!", cls: "win",
+      lines: [`<div class="stat-line"><span>Steps taught right</span><span>${correct}/${DANCE.total}</span></div>`,
+              `<div class="stat-line"><span>Your reward</span><span class="gold">${got}</span></div>`],
+      note: p.winNote };
+  } else {
+    save(); SFX.sneeze();
+    outcome = { emoji: "😅", title: "Still a bit clumsy!", cls: "lose",
+      lines: [`<div class="stat-line"><span>Steps taught right</span><span>${correct}/${DANCE.total}</span></div>`,
+              `<div class="stat-line"><span>Needed</span><span>${p.pass}/${DANCE.total} to shine</span></div>`],
+      note: p.loseNote };
+  }
+  DANCE = null;
+  html("event", `
+    ${hud("The Royal Ball")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${outcome.emoji}</div>
+      <div class="result-title ${outcome.cls}">${outcome.title}</div>
+      <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
+      <p class="muted" style="max-width:300px">${outcome.note}</p>
+    </div>
+    <button class="btn" id="dance-next">Next Customer  →</button>
+  `);
+  on("#dance-next", "click", startRound);
   show("event");
 }
 
@@ -2783,7 +2983,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceTap, danceResolve, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

@@ -19,6 +19,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 💃 **The Royal Ball — a brand-new kind of minigame in the King's Courtyard!** No potions this
+  time: you're the **dance teacher**, and a clumsy courtier is your student. It plays in two
+  acts. **Act 1 (Rehearsal):** the next dance move is called out in his bubble on the beat —
+  tap the matching move (Twirl Left, Twirl Right, Tiptoes, Spin) to show him the step.
+  **Act 2 (The Ball):** the music starts, the hints fade, and you lead the **same routine from
+  memory!** Learn the rhythm, then recall it. Teach him well and he dances beautifully — and
+  rewards you with gold and a 🗝️ key. First up: a clumsy knight (**Sir Wobble**). A clumsy
+  prince and, eventually, **Cinderella** are on the way as you near the end of the realm.
+
 - ⭐ **VIP guests — wager a key for double the reward!** Every so often a **VIP guest** walks
   in (any realm). If you have a 🗝️ key, you can choose right on the customer screen to
   **wager a key** before you start: nail their wish and you keep the key **plus double coins
