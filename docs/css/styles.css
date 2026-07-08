@@ -640,3 +640,23 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .q-track > i { display: block; height: 100%; background: linear-gradient(90deg,#7ee08a,#4fd1c5); border-radius: 5px; transition: width .3s ease; }
 .q-sub { font-size: 11px; }
 .q-rew { font-size: 12px; font-weight: 800; white-space: nowrap; }
+
+/* --- Fairytale event: the Fairy's Matching game --- */
+.fairy-baskets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fbasket { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 6px; border-radius: 12px;
+  background: var(--card2); border: 1px solid var(--line); color: var(--ink); font-weight: 700; font-size: 13px; cursor: pointer; }
+.fbasket:active { transform: scale(.93); filter: brightness(1.1); }
+.fbasket .dot { width: 15px; height: 15px; }
+.fairy-tray { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.ftile { width: 92px; padding: 8px 4px; border-radius: 12px; cursor: pointer;
+  background: var(--card2); border: 2px solid var(--line); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ftile .emoji { font-size: 28px; line-height: 1; } .ftile .nm { font-size: 11px; font-weight: 700; text-align: center; }
+.ftile .qd { display: flex; gap: 2px; justify-content: center; margin-top: 2px; }
+.ftile .qd .dot { width: 9px; height: 9px; }
+.ftile.sel { border-color: var(--gold); box-shadow: 0 0 10px rgba(255,216,107,.55); transform: translateY(-2px); }
+.ftile.done { pointer-events: none; }
+.ftile.ok { border-color: var(--good); background: rgba(126,224,138,.12); }
+.ftile.bad { border-color: var(--bad); background: rgba(255,107,107,.12); }
+.fairy-result { text-align: center; font-weight: 800; margin: 8px 0; font-size: 15px; }
+.fairy-result.win { color: var(--good); } .fairy-result.lose { color: var(--gold); }

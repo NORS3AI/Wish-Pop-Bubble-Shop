@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v40"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v41"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -24,6 +24,7 @@ function normalizeGame(g) {
   if (typeof g.recycled !== "number") g.recycled = 0; // lifetime junk recycled (drives achievements)
   if (typeof g.streak !== "number") g.streak = 0;
   if (typeof g.bestStreak !== "number") g.bestStreak = 0;
+  if (typeof g.nextEventAt !== "number") g.nextEventAt = -1; // -1 = uninitialized (set on first play)
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
   ["served", "perfect", "bossWins", "rings", "bags", "rushWins"].forEach(k => { if (typeof g.stats[k] !== "number") g.stats[k] = 0; });
   if (!g.quests || typeof g.quests !== "object") g.quests = { day: "", week: -1, daily: [], weekly: [], dailyBonus: false };
@@ -673,12 +674,110 @@ function rushExpire() {
 }
 
 /* ======================================================================= */
+/* FAIRYTALE EVENTS — occasional interludes. First one: the Fairy's Match.   */
+/* ======================================================================= */
+// press-your-luck ladder: win a round, then bank or risk it for a bigger prize
+const FAIRY_LADDER = [
+  { reward: { gold: 45 },      label: "🪙 45" },
+  { reward: { stardust: 25 },  label: "✨ 25" },
+  { reward: { stardust: 60 },  label: "✨ 60" },
+];
+const FAIRY_SHOW = 5, FAIRY_NEED = 3, FAIRY_BASKETS = 6;
+let fairyRung = 1;
+function maybeFairyEvent() {
+  if (GAME.nextEventAt < 0) { GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save(); return false; }
+  if (servedTotal < GAME.nextEventAt) return false;
+  GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save();
+  renderFairyIntro();
+  return true;
+}
+function renderFairyIntro() {
+  fairyRung = 1;
+  html("event", `
+    ${hud("A Visitor!")}
+    <div class="grow center" style="gap:16px">
+      <div class="ph big">🧚</div>
+      <div style="font-weight:800;font-size:20px">Fairy Godmother</div>
+      <div class="speech">“Sort my ingredients into their magic, dearie — get <b>3 of 5</b> right and I'll reward you. Feeling lucky? Keep going for more!”</div>
+      <div class="muted" style="max-width:300px">Tap an ingredient, then tap the magic it belongs to. <b>Any one</b> of its magics counts.</div>
+    </div>
+    <button class="btn good" id="fairy-play">✨ Play</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="fairy-skip">Not now</button>
+  `);
+  on("#fairy-play", "click", () => renderFairy());
+  on("#fairy-skip", "click", startRound);
+  show("event");
+}
+function renderFairy() {
+  const pool = D.INGREDIENTS.slice();
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+  const picks = pool.slice(0, FAIRY_SHOW);
+  // baskets: each pick's MAIN magic guaranteed (so always solvable), then fill to 6
+  const baskets = [];
+  picks.forEach(p => { if (!baskets.includes(p.qualities[0])) baskets.push(p.qualities[0]); });
+  picks.forEach(p => p.qualities.slice(1).forEach(q => { if (baskets.length < FAIRY_BASKETS && !baskets.includes(q)) baskets.push(q); }));
+  const others = D.MAGIC_TYPES.filter(m => !baskets.includes(m));
+  while (baskets.length < FAIRY_BASKETS && others.length) baskets.push(others.splice(Math.floor(Math.random() * others.length), 1)[0]);
+  for (let i = baskets.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = baskets[i]; baskets[i] = baskets[j]; baskets[j] = t; }
+
+  let selected = null, placed = 0, correct = 0;
+  const cur = FAIRY_LADDER[fairyRung - 1];
+  html("event", `
+    ${hud("Fairy's Game")}
+    <div style="text-align:center;font-weight:800;margin-bottom:2px">Round ${fairyRung} · Prize <span class="gold">${cur.label}</span> <span class="muted" style="font-weight:500;font-size:12px">· need ${FAIRY_NEED}/5</span></div>
+    <div class="muted" style="text-align:center;font-size:12px;margin-bottom:8px">Tap an ingredient, then its magic basket.</div>
+    <div class="fairy-baskets" id="fairy-baskets">${baskets.map(m => `<button class="fbasket" data-m="${m}">${magicDot(m)}<span>${m}</span></button>`).join("")}</div>
+    <div class="fairy-status muted" id="fairy-status" style="text-align:center;min-height:22px;margin:10px 0">Placed 0/5 · 0 correct</div>
+    <div class="fairy-tray" id="fairy-tray">${picks.map((p, i) => `<button class="ftile" data-i="${i}"><div class="emoji">${ingArt(p.id)}</div><div class="nm">${p.name}</div></button>`).join("")}</div>
+    <div id="fairy-foot" style="margin-top:auto"></div>
+  `);
+  const tiles = [...document.querySelectorAll("#fairy-tray .ftile")];
+  const status = () => { const s = $("#fairy-status"); if (s) s.textContent = `Placed ${placed}/5 · ${correct} correct`; };
+  tiles.forEach(t => t.addEventListener("click", () => { if (t.classList.contains("done")) return; selected = +t.dataset.i; tiles.forEach(x => x.classList.toggle("sel", x === t)); }));
+  document.querySelectorAll("#fairy-baskets .fbasket").forEach(bk => bk.addEventListener("click", () => {
+    if (selected == null) { toast("Tap an ingredient first."); return; }
+    const ing = picks[selected], ok = ing.qualities.includes(bk.dataset.m), tile = tiles[selected];
+    tile.classList.add("done", ok ? "ok" : "bad"); tile.classList.remove("sel");
+    tile.querySelector(".nm").innerHTML = (ok ? "✓ " : "✗ ") + ing.name + `<div class="qd">${ing.qualities.map(q => magicDot(q)).join("")}</div>`;
+    SFX.pop(ok ? 3 : 0); if (ok) correct++; placed++; selected = null; status();
+    if (placed >= FAIRY_SHOW) finishFairyRung(correct, cur);
+  }));
+  show("event");
+}
+function finishFairyRung(correct, cur) {
+  const foot = $("#fairy-foot"); if (!foot) return;
+  if (correct >= FAIRY_NEED) {
+    const isMax = fairyRung >= FAIRY_LADDER.length, next = isMax ? null : FAIRY_LADDER[fairyRung];
+    SFX.reveal("charm");
+    foot.innerHTML = `<div class="fairy-result win">✨ ${correct}/5 — you win ${cur.label}!</div>
+      ${isMax ? `<button class="btn good" id="fairy-collect">Collect ${cur.label}</button>`
+        : `<button class="btn good" id="fairy-bank">Bank ${cur.label}</button><div style="height:8px"></div>
+           <button class="btn" id="fairy-risk">Risk it → ${next.label}</button>`}`;
+    on("#fairy-collect", "click", () => fairyPayout(cur.reward));
+    on("#fairy-bank", "click", () => fairyPayout(cur.reward));
+    on("#fairy-risk", "click", () => { fairyRung++; renderFairy(); });
+  } else {
+    foot.innerHTML = `<div class="fairy-result lose">😅 Only ${correct}/5 — not quite!${fairyRung > 1 ? " You risked the prize and lost it." : ""}</div>
+      <button class="btn" id="fairy-done">Off we go →</button>`;
+    on("#fairy-done", "click", startRound);
+  }
+}
+function fairyPayout(reward) {
+  const got = grantReward(reward); save();
+  SFX.charm(); confettiOver($("#app"));
+  toast(`✨ ${got}!`);
+  startRound();
+}
+
+/* ======================================================================= */
 /* CUSTOMER                                                                */
 /* ======================================================================= */
 function startRound() {
   SFX.unlock();
   stopRoundTimers();
   refreshQuests();
+  if (maybeFairyEvent()) return;   // a fairytale event takes this turn instead of a customer
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
   // when scooping begins.
@@ -1718,7 +1817,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeFairyEvent };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

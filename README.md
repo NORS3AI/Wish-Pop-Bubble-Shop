@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧚 **Fairytale events begin — the Fairy's Matching game!** Every so often (about
+  every dozen customers) a **Fairy Godmother** drops by with a sorting game: tap
+  each of 5 ingredients into the right **magic basket** (any one of its magics
+  counts). Get **3 of 5** and you win a prize — then **bank it, or press your luck**
+  for a bigger one (miss and you lose it). It also quietly teaches which magics
+  each ingredient carries. First of a planned series of fairytale events.
 - 🐾 **Meet your Pet.** Your little helper is now called your **Pet** (not "the
   Toad") everywhere — since it can be reskinned as a dragon, cat, fox, unicorn and
   more. The Toad is still one of the looks you can wear.
