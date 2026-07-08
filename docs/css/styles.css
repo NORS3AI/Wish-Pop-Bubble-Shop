@@ -690,3 +690,10 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* the sweet meter needs a base height in the duel (it's inline there) */
 .duel-meter .meter.sweet { border-radius: 6px; background: rgba(255,255,255,.08); position: relative; overflow: visible; }
 .duel-meter .meter.sweet > i { display: block; height: 100%; border-radius: 6px; }
+/* Rumpelstiltskin spinning-wheel timing bar */
+.rumpel-track { position: relative; width: 100%; max-width: 320px; height: 30px; border-radius: 15px;
+  background: rgba(255,255,255,.08); border: 1px solid var(--line); overflow: hidden; }
+.rumpel-band { position: absolute; top: 0; bottom: 0; border-radius: 6px;
+  background: linear-gradient(180deg, #ffe58a, #f6c945); box-shadow: 0 0 12px rgba(246,201,69,.7); }
+.rumpel-needle { position: absolute; top: -4px; bottom: -4px; left: 0; width: 5px; margin-left: -2.5px;
+  border-radius: 3px; background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.9); }

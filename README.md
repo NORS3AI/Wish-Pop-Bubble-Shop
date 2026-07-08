@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧵 **Rumpelstiltskin arrives!** When your **trash bin fills up (30/30)**, the
+  strange little man offers to spin your "straw" (junk) into gold. Play his
+  **spinning-wheel timing game** — tap **Stop!** when the needle is on the golden
+  band. Land it and he pays **🪙250 and empties your bin**; miss and he charges a
+  small **🪙100 fee** for the wasted straw (your junk stays). You can always say
+  "Not now." (Also launchable from the ⚙️ Admin & Testing panel.)
 - 🎯 **See all your needs in the duel.** Since you can't peek at the ingredients'
   hidden magic, all **three of your own bars are now labeled** from the start — no
   more mystery "?" needs on your side (your opponent's stay hidden).

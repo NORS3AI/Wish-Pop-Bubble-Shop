@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v45"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v46"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -25,6 +25,7 @@ function normalizeGame(g) {
   if (typeof g.streak !== "number") g.streak = 0;
   if (typeof g.bestStreak !== "number") g.bestStreak = 0;
   if (typeof g.nextEventAt !== "number") g.nextEventAt = -1; // -1 = uninitialized (set on first play)
+  if (typeof g.rumpelSeen !== "boolean") g.rumpelSeen = false; // offered Rumpelstiltskin while bin full?
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
   ["served", "perfect", "bossWins", "rings", "bags", "rushWins"].forEach(k => { if (typeof g.stats[k] !== "number") g.stats[k] = 0; });
   if (!g.quests || typeof g.quests !== "object") g.quests = { day: "", week: -1, daily: [], weekly: [], dailyBonus: false };
@@ -176,6 +177,7 @@ function renderAdmin() {
         <p class="muted" style="font-size:12px;margin-bottom:10px">Launch a special encounter right now — no need to play through normal rounds to find one.</p>
         <button class="btn" id="ad-duel" style="margin-bottom:8px">⚔️ Mixing Duel</button>
         <button class="btn" id="ad-fairy" style="margin-bottom:8px">🧚 Fairy's Matching Boon</button>
+        <button class="btn" id="ad-rumpel" style="margin-bottom:8px">🧵 Rumpelstiltskin</button>
         <button class="btn secondary" id="ad-boss" style="margin-bottom:8px">👑 VIP (Boss) Customer</button>
         <button class="btn secondary" id="ad-rush">⏱️ In‑a‑Rush Customer</button>
       </div>
@@ -193,6 +195,7 @@ function renderAdmin() {
   `);
   on("#ad-duel", "click", renderDuelIntro);
   on("#ad-fairy", "click", renderFairyIntro);
+  on("#ad-rumpel", "click", renderRumpelIntro);
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
@@ -969,12 +972,132 @@ function duelResolve() {
 }
 
 /* ======================================================================= */
+/* RUMPELSTILTSKIN — when the trash bin is full, the imp offers to spin      */
+/* your "straw" into gold. Stop the spinning wheel's needle in the golden    */
+/* band to win big; miss and he takes a small fee for the wasted straw.      */
+/* ======================================================================= */
+let RUMPEL = null;
+const RUMPEL_WIN_GOLD = 250, RUMPEL_FEE = 100;
+const RUMPEL_BAND = 0.20;   // width of the golden target band (fraction of the wheel)
+const RUMPEL_SPEED = 0.85;  // full sweeps (there-and-back) per second
+const RUMPEL_LINES = [
+  "Straw into gold, that's my trade! Stop my wheel on the gold and I'll pay handsomely.",
+  "A brimming bin of straw! Let me spin it — time my wheel just right and you'll be rich!",
+  "Tsk, so much straw going to waste. Stop the needle on the gold band… if you dare!"
+];
+function maybeRumpel() {
+  const full = GAME.trash.length >= BALANCE.TRASH_BIN_MAX;
+  if (!full) { if (GAME.rumpelSeen) { GAME.rumpelSeen = false; save(); } return false; }
+  if (GAME.rumpelSeen) return false;     // already offered while the bin is full — don't nag
+  GAME.rumpelSeen = true; save();
+  renderRumpelIntro();
+  return true;
+}
+function renderRumpelIntro() {
+  SFX.unlock(); SFX.fanfare();
+  const line = R.pick(RUMPEL_LINES);
+  html("event", `
+    ${hud("A Strange Little Man")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">🧵</div>
+      <div style="font-weight:800;font-size:20px">Rumpelstiltskin</div>
+      <div class="speech">“${line}”</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>Your straw (junk)</span><span>${GAME.trash.length} bits</span></div>
+        <div class="stat-line"><span>Land on the gold</span><span class="gold">🪙 ${RUMPEL_WIN_GOLD} + bin emptied</span></div>
+        <div class="stat-line"><span>Miss the gold</span><span style="color:var(--bad)">🪙 ${RUMPEL_FEE} fee</span></div>
+      </div>
+      <div class="muted" style="max-width:300px">Tap <b>Spin!</b> to start the wheel, then tap <b>Stop!</b> when the needle is on the golden band.</div>
+    </div>
+    <button class="btn good" id="rumpel-play">🎡 Spin!</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="rumpel-skip">Not now</button>
+  `);
+  on("#rumpel-play", "click", renderRumpelGame);
+  on("#rumpel-skip", "click", startRound);
+  show("event");
+}
+function renderRumpelGame() {
+  const half = RUMPEL_BAND / 2;
+  const center = half + Math.random() * (1 - RUMPEL_BAND);  // keep the whole band on the wheel
+  RUMPEL = { center, half, pos: 0, dir: 1, raf: null, done: false, last: null };
+  html("event", `
+    ${hud("Spin the Wheel!")}
+    <div class="grow center" style="gap:18px">
+      <div class="ph big" style="font-size:56px">🎡</div>
+      <div class="rumpel-track">
+        <span class="rumpel-band" style="left:${(center - half) * 100}%;width:${RUMPEL_BAND * 100}%"></span>
+        <span class="rumpel-needle" id="rumpel-needle"></span>
+      </div>
+      <div id="rumpel-hint" class="muted" style="min-height:22px">Tap <b>Stop!</b> on the gold ✨</div>
+    </div>
+    <button class="btn good" id="rumpel-stop">🛑 Stop!</button>
+  `);
+  on("#rumpel-stop", "click", rumpelStop);
+  show("event");
+  const needle = $("#rumpel-needle");
+  const step = ts => {
+    if (!RUMPEL || RUMPEL.done) return;
+    if (!document.getElementById("rumpel-needle")) { RUMPEL = null; return; } // left the screen
+    if (RUMPEL.last == null) RUMPEL.last = ts;
+    const dt = (ts - RUMPEL.last) / 1000; RUMPEL.last = ts;
+    RUMPEL.pos += RUMPEL.dir * RUMPEL_SPEED * dt;
+    if (RUMPEL.pos >= 1) { RUMPEL.pos = 1; RUMPEL.dir = -1; }
+    else if (RUMPEL.pos <= 0) { RUMPEL.pos = 0; RUMPEL.dir = 1; }
+    if (needle) needle.style.left = (RUMPEL.pos * 100) + "%";
+    RUMPEL.raf = requestAnimationFrame(step);
+  };
+  RUMPEL.raf = requestAnimationFrame(step);
+}
+function rumpelStop() {
+  if (!RUMPEL || RUMPEL.done) return;
+  RUMPEL.done = true;
+  if (RUMPEL.raf) cancelAnimationFrame(RUMPEL.raf);
+  const hit = Math.abs(RUMPEL.pos - RUMPEL.center) <= RUMPEL.half;
+  renderRumpelResult(hit);
+}
+function renderRumpelResult(hit) {
+  const strawCount = GAME.trash.length;
+  let outcome;
+  if (hit) {
+    GAME.gold += RUMPEL_WIN_GOLD;
+    GAME.trash = GAME.trash.filter(isBag);   // spin the junk into gold, but keep unopened bags
+    save();
+    SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
+    outcome = { emoji: "🥇", title: "Spun into gold!", cls: "win",
+      lines: [`<div class="stat-line"><span>Straw spun away</span><span>${strawCount} bits</span></div>`,
+              `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${RUMPEL_WIN_GOLD}</span></div>`],
+      note: "Round and round it goes — your junk is treasure now! ✨" };
+  } else {
+    const fee = Math.min(RUMPEL_FEE, GAME.gold);
+    GAME.gold -= fee; save();
+    SFX.sneeze();
+    outcome = { emoji: "🪤", title: "Missed the gold!", cls: "lose",
+      lines: [`<div class="stat-line"><span>His fee for the wasted straw</span><span style="color:var(--bad)">🪙 -${fee}</span></div>`],
+      note: "“Hee hee! Better luck next spin.” Your straw is still in the bin." };
+  }
+  html("event", `
+    ${hud("Rumpelstiltskin")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${outcome.emoji}</div>
+      <div class="result-title ${outcome.cls}">${outcome.title}</div>
+      <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
+      <p class="muted" style="max-width:300px">${outcome.note}</p>
+    </div>
+    <button class="btn" id="rumpel-next">Next Customer  →</button>
+  `);
+  on("#rumpel-next", "click", startRound);
+  show("event");
+}
+
+/* ======================================================================= */
 /* CUSTOMER                                                                */
 /* ======================================================================= */
 function startRound() {
   SFX.unlock();
   stopRoundTimers();
   refreshQuests();
+  if (maybeRumpel()) return;  // full trash bin? the imp offers to spin it into gold
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
@@ -2015,7 +2138,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelGame, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
