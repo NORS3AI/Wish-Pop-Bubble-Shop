@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v63"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v64"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -281,6 +281,7 @@ function renderAdmin() {
           <button class="btn good small" id="ad-gold">+1000 🪙</button>
           <button class="btn good small" id="ad-dust">+100 ✨</button>
           <button class="btn good small" id="ad-treats">+10 🐸</button>
+          <button class="btn good small" id="ad-keys">+10 🗝️</button>
         </div>
       </div>
       <p class="muted" style="font-size:11px;text-align:center">For testing only — we can hide this panel before the game goes public.</p>
@@ -308,6 +309,7 @@ function renderAdmin() {
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
   on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
   on("#ad-treats", "click", () => { GAME.treats += 10; save(); toast("+10 treats 🐸"); renderAdmin(); });
+  on("#ad-keys", "click", () => { GAME.keys = (GAME.keys || 0) + 10; save(); toast("+10 keys 🗝️"); renderAdmin(); });
   on("#ad-back", "click", renderStart);
   show("admin");
 }
