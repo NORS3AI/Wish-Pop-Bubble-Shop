@@ -697,3 +697,5 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   background: linear-gradient(180deg, #ffe58a, #f6c945); box-shadow: 0 0 12px rgba(246,201,69,.7); }
 .rumpel-needle { position: absolute; top: -4px; bottom: -4px; left: 0; width: 5px; margin-left: -2.5px;
   border-radius: 3px; background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.9); }
+.rumpel-stat { font-weight: 800; font-size: 15px; }
+.rumpel-stat.sub { font-weight: 600; font-size: 13px; color: var(--ink-dim); }

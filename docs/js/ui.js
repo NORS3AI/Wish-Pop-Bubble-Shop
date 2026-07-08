@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v46"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v47"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -830,7 +830,7 @@ function fairyPayout(reward) {
 /* ======================================================================= */
 let DUEL = null;
 const DUEL_POOL = 16, DUEL_MISTAKE = 0.4;
-const DUEL_WIN = { gold: 80, stardust: 15 }, DUEL_DRAW = { gold: 30 };
+const DUEL_WIN = { gold: 80, stardust: 15 }, DUEL_DRAW = { gold: 30 }, DUEL_PER_NEED = 2;
 const DUEL_TAUNTS = ["Bet I brew a better potion than you!", "Loser buys the sprinkles!", "Prepare to be out‑mixed!", "My greens will be greener!"];
 function duelWish() {
   const w = generateWish(R.pick(D.CUSTOMERS), "hard", false); // 3 needs
@@ -842,10 +842,12 @@ function setupDuel() {
   const you = { wish: duelWish(), slots: [] }, ai = { wish: duelWish(), slots: [] };
   // you can't see the ingredients' magic, so at least show all three of YOUR needs
   you.wish.needs.forEach(n => n.revealed = true);
-  // build a shared pool relevant to BOTH sides' needs, then fill with random
+  // Build a FAIR shared pool: seed several primary-match ingredients for EVERY
+  // need on BOTH sides so each mixer actually has enough of what they need to
+  // build green bars, then fill the rest with variety.
   const pool = [];
-  const needTypes = [].concat(you.wish.needs.map(n => n.type), ai.wish.needs.map(n => n.type));
-  needTypes.forEach(t => { const s = D.INGREDIENTS.filter(i => i.qualities[0] === t); if (s.length) pool.push(R.pick(s).id); });
+  const addFor = type => { const s = D.INGREDIENTS.filter(i => i.qualities[0] === type); if (s.length) pool.push(R.pick(s).id); };
+  [you, ai].forEach(side => side.wish.needs.forEach(n => { for (let k = 0; k < DUEL_PER_NEED; k++) addFor(n.type); }));
   while (pool.length < DUEL_POOL) pool.push(R.pick(D.INGREDIENTS).id);
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
   DUEL = { challenger, you, ai, pool: pool.slice(0, DUEL_POOL), turn: "you", first: "you", over: false, line: R.pick(DUEL_TAUNTS) };
@@ -973,18 +975,22 @@ function duelResolve() {
 
 /* ======================================================================= */
 /* RUMPELSTILTSKIN — when the trash bin is full, the imp offers to spin      */
-/* your "straw" into gold. Stop the spinning wheel's needle in the golden    */
-/* band to win big; miss and he takes a small fee for the wasted straw.      */
+/* your "straw" into gold across escalating rounds. Each round the golden    */
+/* band shrinks and the wheel spins faster; land it to bank gold and press   */
+/* on. Spin at least RUMPEL_TARGET gold and he pays out (bin emptied); fall  */
+/* short and you owe him a fee.                                              */
 /* ======================================================================= */
 let RUMPEL = null;
-const RUMPEL_WIN_GOLD = 250, RUMPEL_FEE = 100;
-const RUMPEL_BAND = 0.20;   // width of the golden target band (fraction of the wheel)
-const RUMPEL_SPEED = 0.85;  // full sweeps (there-and-back) per second
+const RUMPEL_TARGET = 150;   // gold you must spin to win the deal
+const RUMPEL_FEE = 100;      // what you owe if you fall short
 const RUMPEL_LINES = [
-  "Straw into gold, that's my trade! Stop my wheel on the gold and I'll pay handsomely.",
-  "A brimming bin of straw! Let me spin it — time my wheel just right and you'll be rich!",
-  "Tsk, so much straw going to waste. Stop the needle on the gold band… if you dare!"
+  "Straw into gold, that's my trade! The more you spin, the more I pay — but each round is trickier.",
+  "A brimming bin of straw! Keep landing my wheel on the gold and you'll be rich… if you're quick enough!",
+  "Tsk, so much straw going to waste. Spin enough gold and it's yours — fall short and you'll owe me!"
 ];
+function rumpelBand(r)   { return Math.max(0.09, 0.42 - 0.05 * r); } // golden band width (shrinks each round)
+function rumpelSpeed(r)  { return 0.60 + 0.14 * r; }                 // sweeps/sec (faster each round)
+function rumpelReward(r) { return 30 + 15 * r; }                     // gold for landing round r
 function maybeRumpel() {
   const full = GAME.trash.length >= BALANCE.TRASH_BIN_MAX;
   if (!full) { if (GAME.rumpelSeen) { GAME.rumpelSeen = false; save(); } return false; }
@@ -1004,44 +1010,47 @@ function renderRumpelIntro() {
       <div class="speech">“${line}”</div>
       <div class="card" style="width:100%;max-width:320px">
         <div class="stat-line"><span>Your straw (junk)</span><span>${GAME.trash.length} bits</span></div>
-        <div class="stat-line"><span>Land on the gold</span><span class="gold">🪙 ${RUMPEL_WIN_GOLD} + bin emptied</span></div>
-        <div class="stat-line"><span>Miss the gold</span><span style="color:var(--bad)">🪙 ${RUMPEL_FEE} fee</span></div>
+        <div class="stat-line"><span>Spin 🪙${RUMPEL_TARGET}+ to win</span><span class="gold">he pays out · bin emptied</span></div>
+        <div class="stat-line"><span>Fall short</span><span style="color:var(--bad)">🪙 ${RUMPEL_FEE} fee</span></div>
       </div>
-      <div class="muted" style="max-width:300px">Tap <b>Spin!</b> to start the wheel, then tap <b>Stop!</b> when the needle is on the golden band.</div>
+      <div class="muted" style="max-width:300px">Each round the golden band gets <b>smaller</b> and the wheel spins <b>faster</b>. Land it to bank gold and keep going — miss and the wheel stops for good!</div>
     </div>
     <button class="btn good" id="rumpel-play">🎡 Spin!</button>
     <div style="height:8px"></div>
     <button class="btn secondary" id="rumpel-skip">Not now</button>
   `);
-  on("#rumpel-play", "click", renderRumpelGame);
+  on("#rumpel-play", "click", () => { RUMPEL = { round: 0, tally: 0 }; renderRumpelRound(); });
   on("#rumpel-skip", "click", startRound);
   show("event");
 }
-function renderRumpelGame() {
-  const half = RUMPEL_BAND / 2;
-  const center = half + Math.random() * (1 - RUMPEL_BAND);  // keep the whole band on the wheel
-  RUMPEL = { center, half, pos: 0, dir: 1, raf: null, done: false, last: null };
+function renderRumpelRound() {
+  const r = RUMPEL.round, width = rumpelBand(r), half = width / 2;
+  const center = half + Math.random() * (1 - width);  // keep the whole band on the wheel
+  Object.assign(RUMPEL, { center, half, pos: 0, dir: 1, raf: null, done: false, last: null });
+  const reached = RUMPEL.tally >= RUMPEL_TARGET;
   html("event", `
     ${hud("Spin the Wheel!")}
-    <div class="grow center" style="gap:18px">
-      <div class="ph big" style="font-size:56px">🎡</div>
+    <div class="grow center" style="gap:14px">
+      <div class="rumpel-stat">Round ${r + 1} · land it for <b class="gold">🪙${rumpelReward(r)}</b></div>
+      <div class="rumpel-stat sub">Spun so far: <b class="gold">🪙${RUMPEL.tally}</b> / need 🪙${RUMPEL_TARGET}${reached ? " ✓" : ""}</div>
+      <div class="ph big" style="font-size:52px">🎡</div>
       <div class="rumpel-track">
-        <span class="rumpel-band" style="left:${(center - half) * 100}%;width:${RUMPEL_BAND * 100}%"></span>
+        <span class="rumpel-band" style="left:${(center - half) * 100}%;width:${width * 100}%"></span>
         <span class="rumpel-needle" id="rumpel-needle"></span>
       </div>
-      <div id="rumpel-hint" class="muted" style="min-height:22px">Tap <b>Stop!</b> on the gold ✨</div>
+      <div class="muted" style="min-height:20px">Tap <b>Stop!</b> on the gold ✨</div>
     </div>
     <button class="btn good" id="rumpel-stop">🛑 Stop!</button>
   `);
   on("#rumpel-stop", "click", rumpelStop);
   show("event");
-  const needle = $("#rumpel-needle");
+  const needle = $("#rumpel-needle"), speed = rumpelSpeed(r);
   const step = ts => {
     if (!RUMPEL || RUMPEL.done) return;
     if (!document.getElementById("rumpel-needle")) { RUMPEL = null; return; } // left the screen
     if (RUMPEL.last == null) RUMPEL.last = ts;
     const dt = (ts - RUMPEL.last) / 1000; RUMPEL.last = ts;
-    RUMPEL.pos += RUMPEL.dir * RUMPEL_SPEED * dt;
+    RUMPEL.pos += RUMPEL.dir * speed * dt;
     if (RUMPEL.pos >= 1) { RUMPEL.pos = 1; RUMPEL.dir = -1; }
     else if (RUMPEL.pos <= 0) { RUMPEL.pos = 0; RUMPEL.dir = 1; }
     if (needle) needle.style.left = (RUMPEL.pos * 100) + "%";
@@ -1054,28 +1063,62 @@ function rumpelStop() {
   RUMPEL.done = true;
   if (RUMPEL.raf) cancelAnimationFrame(RUMPEL.raf);
   const hit = Math.abs(RUMPEL.pos - RUMPEL.center) <= RUMPEL.half;
-  renderRumpelResult(hit);
-}
-function renderRumpelResult(hit) {
-  const strawCount = GAME.trash.length;
-  let outcome;
   if (hit) {
-    GAME.gold += RUMPEL_WIN_GOLD;
+    RUMPEL.tally += rumpelReward(RUMPEL.round);
+    RUMPEL.round += 1;
+    SFX.coin();
+    renderRumpelBetween();
+  } else {
+    SFX.sneeze();
+    renderRumpelTally(false);   // the wheel stops for good
+  }
+}
+function renderRumpelBetween() {
+  const justWon = rumpelReward(RUMPEL.round - 1);
+  const reached = RUMPEL.tally >= RUMPEL_TARGET;
+  html("event", `
+    ${hud("Nice Spin!")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">🪙</div>
+      <div class="result-title win">Landed it! +🪙${justWon}</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>Gold spun so far</span><span class="gold">🪙 ${RUMPEL.tally}</span></div>
+        <div class="stat-line"><span>To win the deal</span><span>${reached ? "✓ reached!" : "🪙 " + RUMPEL_TARGET}</span></div>
+        <div class="stat-line"><span>Next round</span><span>smaller band · faster · 🪙${rumpelReward(RUMPEL.round)}</span></div>
+      </div>
+      <p class="muted" style="max-width:300px">${reached ? "You've spun enough to win — bank it, or press your luck for more!" : "Keep spinning to reach the deal… but each round is harder."}</p>
+    </div>
+    <button class="btn good" id="rumpel-again">🎡 Spin again</button>
+    <div style="height:8px"></div>
+    <button class="btn ${reached ? "" : "secondary"}" id="rumpel-bank">✋ Stop &amp; tally</button>
+  `);
+  on("#rumpel-again", "click", renderRumpelRound);
+  on("#rumpel-bank", "click", () => renderRumpelTally(true));
+  show("event");
+}
+function renderRumpelTally(banked) {
+  const strawCount = GAME.trash.length;
+  const win = RUMPEL.tally >= RUMPEL_TARGET;
+  let outcome;
+  if (win) {
+    GAME.gold += RUMPEL.tally;
     GAME.trash = GAME.trash.filter(isBag);   // spin the junk into gold, but keep unopened bags
     save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
-    outcome = { emoji: "🥇", title: "Spun into gold!", cls: "win",
+    outcome = { emoji: "🥇", title: "The straw is gold!", cls: "win",
       lines: [`<div class="stat-line"><span>Straw spun away</span><span>${strawCount} bits</span></div>`,
-              `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${RUMPEL_WIN_GOLD}</span></div>`],
-      note: "Round and round it goes — your junk is treasure now! ✨" };
+              `<div class="stat-line"><span>Gold he pays you</span><span class="gold">🪙 +${RUMPEL.tally}</span></div>`],
+      note: banked ? "You banked it at just the right moment! ✨" : "You rode the wheel all the way to a fortune! ✨" };
   } else {
     const fee = Math.min(RUMPEL_FEE, GAME.gold);
     GAME.gold -= fee; save();
     SFX.sneeze();
-    outcome = { emoji: "🪤", title: "Missed the gold!", cls: "lose",
-      lines: [`<div class="stat-line"><span>His fee for the wasted straw</span><span style="color:var(--bad)">🪙 -${fee}</span></div>`],
-      note: "“Hee hee! Better luck next spin.” Your straw is still in the bin." };
+    outcome = { emoji: "🪤", title: "Not enough gold spun!", cls: "lose",
+      lines: [`<div class="stat-line"><span>Gold spun</span><span>🪙 ${RUMPEL.tally} / ${RUMPEL_TARGET}</span></div>`,
+              `<div class="stat-line"><span>His fee for the straw</span><span style="color:var(--bad)">🪙 -${fee}</span></div>`],
+      note: "“Hee hee! Not enough, not enough!” Your straw stays in the bin." };
   }
+  RUMPEL = null;
   html("event", `
     ${hud("Rumpelstiltskin")}
     <div class="grow center" style="gap:14px">
@@ -2138,7 +2181,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelGame, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

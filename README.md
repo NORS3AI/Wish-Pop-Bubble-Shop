@@ -19,12 +19,18 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
-- 🧵 **Rumpelstiltskin arrives!** When your **trash bin fills up (30/30)**, the
-  strange little man offers to spin your "straw" (junk) into gold. Play his
-  **spinning-wheel timing game** — tap **Stop!** when the needle is on the golden
-  band. Land it and he pays **🪙250 and empties your bin**; miss and he charges a
-  small **🪙100 fee** for the wasted straw (your junk stays). You can always say
-  "Not now." (Also launchable from the ⚙️ Admin & Testing panel.)
+- 🧵 **Rumpelstiltskin — now a push-your-luck wheel!** When your **trash bin fills
+  up (30/30)**, the strange little man offers to spin your junk into gold across
+  **escalating rounds**. Each round the golden band gets **smaller** and the wheel
+  spins **faster** — land it to bank gold and press on, or **bank & tally** when
+  you're ahead. Spin **🪙150 or more** and he pays out your whole haul and empties
+  your bin; **miss the wheel** and the run ends — fall short of 150 and you owe a
+  **🪙100 fee**. (Also launchable from the ⚙️ Admin & Testing panel.)
+- ⚔️ **Fairer duels.** The shared ingredient pile now seeds **enough of what each
+  side needs** (a proper supply for every need, both sides) instead of mostly
+  random picks — so you can actually build green bars. In testing your potion now
+  lands ~89% green on average (was ~55%), while the rival is still beatable most
+  of the time.
 - 🎯 **See all your needs in the duel.** Since you can't peek at the ingredients'
   hidden magic, all **three of your own bars are now labeled** from the start — no
   more mystery "?" needs on your side (your opponent's stay hidden).
