@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v58"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v59"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -21,6 +21,7 @@ function loadGame() {
 // backfill cosmetic fields for older saves (so new features never crash on load)
 function normalizeGame(g) {
   if (typeof g.stardust !== "number") g.stardust = 0;
+  if (typeof g.keys !== "number") g.keys = 0; // Treasure keys popped from bubbles → open the Vault
   if (typeof g.recycled !== "number") g.recycled = 0; // lifetime junk recycled (drives achievements)
   if (typeof g.streak !== "number") g.streak = 0;
   if (typeof g.bestStreak !== "number") g.bestStreak = 0;
@@ -257,7 +258,10 @@ function renderMenu() {
         <button class="btn" id="well-btn" style="flex:1">🌟 Wishing Well</button>
         <button class="btn secondary" id="wardrobe-btn" style="flex:1">🎨 My Skins</button>
       </div>
-      <button class="btn secondary" id="recycle-btn" style="margin-bottom:10px">🗑️ Trash &amp; Recycle <span class="muted" style="font-weight:500;font-size:12px">· ${GAME.trash.length}/${BALANCE.TRASH_BIN_MAX}</span></button>
+      <div class="row" style="margin-bottom:10px;gap:10px">
+        <button class="btn secondary" id="recycle-btn" style="flex:1">🗑️ Recycle <span class="muted" style="font-weight:500;font-size:12px">· ${GAME.trash.length}/${BALANCE.TRASH_BIN_MAX}</span></button>
+        <button class="btn ${GAME.keys > 0 ? "good" : "secondary"}" id="vault-btn" style="flex:1">🗝️ Vault <span class="muted" style="font-weight:500;font-size:12px">· ${GAME.keys}</span></button>
+      </div>
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:8px">🐸 Treats <span class="muted" style="font-weight:500;font-size:13px">· ${GAME.treats} owned · 🪙${BALANCE.PRICES.treat} each</span></div>
         <div class="row" style="align-items:center;justify-content:center">
@@ -286,6 +290,7 @@ function renderMenu() {
   on("#well-btn", "click", renderWell);
   on("#wardrobe-btn", "click", renderWardrobe);
   on("#recycle-btn", "click", () => renderRecycle("coins"));
+  on("#vault-btn", "click", renderVault);
   on("#menu-back", "click", renderStart);
   show("menu");
 }
@@ -306,6 +311,63 @@ function claimDaily() {
   if (!dailyAvailable()) { toast("Already claimed today."); return; }
   GAME.gold += BALANCE.DAILY_GRANT; GAME.lastDaily = todayStr(); save();
   toast(`🎁 +${BALANCE.DAILY_GRANT} gold!`); renderMenu();
+}
+
+/* ======================================================================= */
+/* TREASURE VAULT — spend Treasure Keys (popped from bubbles) on chests.    */
+/* Keys are rarer than gold, so a chest always pays a chunky, guaranteed    */
+/* reward — with a rare shot at a brand-new skin.                           */
+/* ======================================================================= */
+function rollChestPrize() {
+  const rndInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
+  const r = Math.random();
+  if (r < 0.44) return { kind: "gold", amt: rndInt(12, 26) * 10 };      // 120–260 gold
+  if (r < 0.70) return { kind: "treats", amt: rndInt(3, 6) };
+  if (r < 0.90) return { kind: "stardust", amt: rndInt(10, 24) };
+  const pool = unownedSkins();                                          // rare: a new skin
+  if (pool.length) return { kind: "skin", cosmetic: pool[Math.floor(Math.random() * pool.length)] };
+  return { kind: "stardust", amt: 30 };                                 // own them all → extra Stardust
+}
+function grantChestPrize(p) {
+  if (p.kind === "gold") { GAME.gold += p.amt; save(); return { emoji: "🪙", label: `+${p.amt} gold`, sub: "A heap of coins!" }; }
+  if (p.kind === "treats") { GAME.treats += p.amt; save(); return { emoji: "🐸", label: `+${p.amt} treats`, sub: "Your pet is delighted." }; }
+  if (p.kind === "stardust") { GAME.stardust += p.amt; save(); return { emoji: "✨", label: `+${p.amt} Stardust`, sub: "Spend it on any skin." }; }
+  GAME.owned[p.cosmetic.id] = true; save();
+  return { emoji: p.cosmetic.chip, label: `New skin: ${p.cosmetic.name}!`, sub: "Equip it in 🎨 My Skins.", jackpot: true };
+}
+function renderVault(stageHtml) {
+  const keys = GAME.keys || 0, can = keys > 0;
+  html("vault", `
+    ${hud("Treasure Vault")}
+    <div class="grow center" style="gap:14px;overflow-y:auto">
+      <div class="well-visual"><div class="well-emoji">${ART.tag("vault_chest", "🧰")}</div><div class="well-ripple"></div></div>
+      <div class="rb-total">🗝️ <b id="vault-keys">${keys}</b> Treasure Key${keys === 1 ? "" : "s"}</div>
+      <div id="vault-stage" class="well-stage muted">${stageHtml || "Keys pop from bubbles as you play — spend one to crack open a chest!"}</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div style="font-weight:800;text-align:center;margin-bottom:6px">What's inside a chest?</div>
+        <div class="stat-line"><span>🪙 A heap of gold</span><span class="muted">common</span></div>
+        <div class="stat-line"><span>🐸 A handful of treats</span><span class="muted">common</span></div>
+        <div class="stat-line"><span>✨ Stardust</span><span class="muted">uncommon</span></div>
+        <div class="stat-line"><span>🎁 A brand-new skin!</span><span style="color:var(--gold);font-weight:800">rare</span></div>
+      </div>
+      <p class="muted" style="font-size:12px;max-width:280px">Every chest gives something worthwhile — keys are precious, so they always pay off.</p>
+    </div>
+    <button class="btn ${can ? "good" : "secondary"}" id="vault-open" ${can ? "" : "disabled"}>🗝️ Open a Chest ${can ? "" : "· need a key"}</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="vault-back">←  Back</button>
+  `);
+  on("#vault-open", "click", openChest);
+  on("#vault-back", "click", renderMenu);
+  show("vault");
+}
+function openChest() {
+  if ((GAME.keys || 0) <= 0) { toast("No keys yet — pop bubbles to find some!"); return; }
+  GAME.keys -= 1; save();
+  const prize = rollChestPrize();
+  const info = grantChestPrize(prize);
+  SFX.unlock(); if (info.jackpot) { SFX.perfect(); confettiOver($("#app")); } else { SFX.bigCoin(); }
+  renderVault(`<div class="well-prize ${info.jackpot ? "jackpot" : ""}"><div class="wp-emoji">${info.emoji}</div>
+    <div class="wp-label">${info.label}</div><div class="wp-sub muted">${info.sub}</div></div>`);
 }
 
 /* ======================================================================= */
@@ -1474,6 +1536,7 @@ function startRound() {
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
+  injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
   // when scooping begins.
   ROUND.rush = !ROUND.wish.boss && Math.random() < BALANCE.RUSH_CHANCE;
@@ -1702,6 +1765,7 @@ const POP_FLAVOR = {
   ingredient: { parts: ["#8fd3ff", "#bfe3ff", "#ffffff"], rare: 0 },
   treat:      { parts: ["#7ee08a", "#b6f5c4", "#ffffff"], rare: 0 },
   gold:       { parts: ["#ffd76a", "#ffb43c", "#fff3c0"], rare: 1 },
+  key:        { parts: ["#ffe98a", "#ffd76a", "#fff3c0", "#ffffff"], rare: 2 },
   bubble:     { parts: ["#8fe9ff", "#c9f6ff", "#ffffff", "#ffe38a"], rare: 1 },
   charm:      { parts: ["#e6a3ff", "#a97bff", "#ffd76a", "#7ee08a"], rare: 2 },
 };
@@ -1772,6 +1836,7 @@ function itemInfo(item) {
   if (item.kind === "charm") { const ch = CHARM(item.id); return { emoji: charmArt(item.id), label: ch.name + " charm!", kind: "charm" }; }
   if (item.kind === "gold") return { emoji: ART.tag("icon_gold", "🪙"), label: "+" + item.amt + " gold", kind: "gold" };
   if (item.kind === "bubble") return { emoji: "🫧", label: "Bonus bubbles!", kind: "bubble" };
+  if (item.kind === "key") return { emoji: ART.tag("icon_key", "🗝️"), label: "A Treasure Key!", kind: "key" };
   return { emoji: ART.tag("icon_treat", "🐸"), label: "+1 treat", kind: "treat" };
 }
 
@@ -1782,6 +1847,7 @@ function popAt(i, el, fromCascade, power) {
   // gold/treat bank instantly; ingredients & charms pop OUT of the bubble to be caught
   if (item.kind === "gold") { GAME.gold += item.amt; save(); }
   else if (item.kind === "treat") { GAME.treats += 1; save(); }
+  else if (item.kind === "key") { GAME.keys = (GAME.keys || 0) + 1; save(); }
   ROUND.popIndex++;
   const st = ROUND.stats;
   if (st) { st.popped++;
@@ -1789,6 +1855,7 @@ function popAt(i, el, fromCascade, power) {
     else if (item.kind === "charm") st.charms++;
     else if (item.kind === "gold") st.gold += item.amt;
     else if (item.kind === "treat") st.treats++;
+    else if (item.kind === "key") st.keys = (st.keys || 0) + 1;
   }
 
   const info = itemInfo(item), flavor = POP_FLAVOR[info.kind];
@@ -2154,6 +2221,13 @@ function injectInfused(round) {
   for (let i = idxs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = idxs[i]; idxs[i] = idxs[j]; idxs[j] = t; }
   const n = INFUSED_PER_ROUND + (Math.random() < 0.4 ? 1 : 0); // 1, sometimes 2
   for (let k = 0; k < n && k < idxs.length; k++) round.haul[idxs[k]] = { kind: "ingredient", id: R.pick(list).id };
+}
+const KEY_DROP_CHANCE = 0.22;   // ~1 Treasure Key every ~5 rounds
+// Occasionally swap a plain ingredient bubble for a Treasure Key (banks on pop).
+function injectKeys(round) {
+  if (Math.random() >= KEY_DROP_CHANCE) return;
+  const idxs = []; round.haul.forEach((it, i) => { if (it.kind === "ingredient" && !D.INGREDIENT_BY_ID[it.id].infused) idxs.push(i); });
+  if (idxs.length) round.haul[R.pick(idxs)] = { kind: "key" };
 }
 // Which need should a lockBar ingredient freeze: one it fills (by its magics), else
 // the fullest unfrozen need (so it's never wasted).
@@ -2581,7 +2655,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, applyInfusedEffect, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

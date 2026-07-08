@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🗝️ **Treasure Keys & the Vault!** A shiny **Treasure Key** now occasionally pops from
+  a bubble as you play (it banks instantly, like a coin). Spend keys in the new **🗝️
+  Treasure Vault** (in Shop & Upgrades) to **crack open a chest** — always a chunky,
+  guaranteed reward (a heap of gold, treats, or Stardust) with a **rare shot at a
+  brand-new skin**. Keys are precious, so a chest always pays off. (This is the start of
+  the keys system — later, special keys will unlock VIP customers' jackpots and new realms.)
+
 - 🥚❄️ **New kind of ingredient — Infused Ingredients!** Some ingredients now carry a
   built-in power that fires the moment you drop them in the cauldron — no charm needed.
   The first two: **Dragon Egg** (🥚 — your *next* ingredient counts double, like a free
