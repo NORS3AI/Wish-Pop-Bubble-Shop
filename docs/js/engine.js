@@ -116,8 +116,9 @@ function difficultyFor(servedTotal) {
 function needCountFor(diff) { return diff === "easy" ? 1 : diff === "medium" ? 2 : 3; }
 
 /* --- Wish generation ---------------------------------------------------- */
-function generateWish(customer, diff, isBoss) {
+function generateWish(customer, diff, isBoss, magicPool) {
   const wt = DATA.WISH_TYPES[customer.wishType];
+  const MP = magicPool && magicPool.length ? magicPool : DATA.MAGIC_TYPES; // realm's magic universe
   const count = isBoss ? 3 : needCountFor(diff);       // boss always wants all three
   const pools = [wt.main, wt.second, wt.twist];
   const chosen = [];
@@ -129,7 +130,7 @@ function generateWish(customer, diff, isBoss) {
   const needs = chosen.map((type, i) => ({ type, label: labels[i], target: BALANCE.NEED_TARGET, revealed: i === 0 }));
   const pickAllergy = forbidden => {
     let a = DATA.ALLERGY_IDEAS[customer.id];
-    if (!a || forbidden.includes(a)) a = R.pick(DATA.MAGIC_TYPES.filter(m => !forbidden.includes(m)));
+    if (!a || forbidden.includes(a) || !MP.includes(a)) a = R.pick(MP.filter(m => !forbidden.includes(m)));
     return forbidden.includes(a) ? null : a;
   };
   let allergy = null, allergy2 = null;
@@ -228,7 +229,7 @@ function newRound(state) {
   const customer = R.pick(state.customers && state.customers.length ? state.customers : DATA.CUSTOMERS);
   const diff = difficultyFor(state.servedTotal);
   const isBoss = !!state.forceBoss || ((state.servedTotal || 0) + 1) % BALANCE.BOSS_EVERY === 0;
-  const wish = generateWish(customer, diff, isBoss);
+  const wish = generateWish(customer, diff, isBoss, state.magicPool);
   const [pmin, pmax] = BALANCE.PAYMENT_RANGE[diff];
   let payment = R.int(pmin / 10, pmax / 10) * 10;
   const scoops = Math.max(1, Math.round(payment / 10));   // scoop COUNT from base payment (boss keeps a normal count)
@@ -384,12 +385,13 @@ function scoreMix(slots, wish, allergyOffset) {
 /* pick a NEW allergy magic for the "over-abundant round" sneeze: not a need, not an
  * existing allergy, and not a MAIN quality of any held ingredient (so it doesn't
  * overlap with what you're already holding). Returns the added type, or null. */
-function addSneezeAllergy(wish, heldIds) {
+function addSneezeAllergy(wish, heldIds, magicPool) {
+  const MP = magicPool && magicPool.length ? magicPool : DATA.MAGIC_TYPES;
   const forbidden = new Set(wish.needs.map(n => n.type));
   if (wish.allergy) forbidden.add(wish.allergy);
   if (wish.allergy2) forbidden.add(wish.allergy2);
   (heldIds || []).forEach(id => { const ing = DATA.INGREDIENT_BY_ID[id]; if (ing) forbidden.add(ing.qualities[0]); });
-  const options = DATA.MAGIC_TYPES.filter(m => !forbidden.has(m));
+  const options = MP.filter(m => !forbidden.has(m));
   if (!options.length) return null;
   const pick = R.pick(options);
   if (!wish.allergy) wish.allergy = pick; else if (!wish.allergy2) wish.allergy2 = pick; else return null; // never overwrite

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v61"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v62"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -947,7 +947,8 @@ function renderFairy() {
   const baskets = [];
   picks.forEach(p => { if (!baskets.includes(p.qualities[0])) baskets.push(p.qualities[0]); });
   picks.forEach(p => p.qualities.slice(1).forEach(q => { if (baskets.length < FAIRY_BASKETS && !baskets.includes(q)) baskets.push(q); }));
-  const others = D.MAGIC_TYPES.filter(m => !baskets.includes(m));
+  const realmMagics = currentRealm().magics || D.MAGIC_TYPES; // fill from the current realm's magic universe
+  const others = realmMagics.filter(m => !baskets.includes(m));
   while (baskets.length < FAIRY_BASKETS && others.length) baskets.push(others.splice(Math.floor(Math.random() * others.length), 1)[0]);
   for (let i = baskets.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = baskets[i]; baskets[i] = baskets[j]; baskets[j] = t; }
 
@@ -1616,7 +1617,7 @@ function startRound() {
   refreshQuests();
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
-  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: currentRealm().customers, ingredientSet: currentRealm().ingredients });
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: currentRealm().customers, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics });
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
@@ -2162,7 +2163,7 @@ function renderMix() {
 // Over-abundant round → the customer sneezes up a fresh allergy (self-balancing).
 function sneezeAllergy() {
   const heldIds = ROUND.inventory.map(x => x.id).filter(Boolean);
-  const added = ENGINE.addSneezeAllergy(ROUND.wish, heldIds);
+  const added = ENGINE.addSneezeAllergy(ROUND.wish, heldIds, currentRealm().magics);
   if (!added) return; // no non-overlapping magic available — skip quietly
   SFX.unlock(); SFX.sneeze();
   shakeScreen("mix");

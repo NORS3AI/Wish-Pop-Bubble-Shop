@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 👑 **King's Courtyard has its own MAGIC now, too!** The Courtyard no longer borrows the
+  village's magics — it runs on **10 brand-new regal magics** you've never seen: **Valor,
+  Majesty, Wisdom, Glamour, Mirth, Honor, Fortune, Cunning, Radiance, Serenity**, each with
+  its own color. The royal customers wish for these, and the royal ingredients provide them
+  — a self-contained magic universe. They're kept separate from the village's magics (and
+  the villains'), so nothing bleeds between realms. Every realm can now feel truly its own.
+
 - 🏰 **King's Courtyard now has its own ingredients!** When you travel to the Courtyard,
   the whole pantry changes — **20 brand-new royal ingredients** (Goblet Wine 🍷, Royal
   Decree 📜, Sealed Amphora 🏺, Peacock Plume 🦚, Blackbird Pie 🥧, Court Wand 🪄, and

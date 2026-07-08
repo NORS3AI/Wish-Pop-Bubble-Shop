@@ -34,7 +34,24 @@ const VILLAIN_MAGIC = {
   Frost:  "#4aa8c9",
   Poison: "#8fd14f",
 };
-const MAGIC_ALL = Object.assign({}, MAGIC, VILLAIN_MAGIC); // colors for BOTH sets (rendering)
+/* Courtyard magics — a REGAL set used only in King's Courtyard. Like the villain
+ * magics, they get colors so bars/dots render, but stay OUT of MAGIC_TYPES so they
+ * never leak into other realms' allergies or the base Fairy game. Each realm can
+ * bring its own magic universe this way. */
+const COURT_MAGIC = {
+  Valor:    "#c0392b",
+  Majesty:  "#7b2fbf",
+  Wisdom:   "#2f6fb0",
+  Glamour:  "#e0559b",
+  Mirth:    "#f39c12",
+  Honor:    "#5f7d9a",
+  Fortune:  "#d4a017",
+  Cunning:  "#6c5ce7",
+  Radiance: "#ffd75e",
+  Serenity: "#2fb3a0",
+};
+const COURT_MAGIC_TYPES = Object.keys(COURT_MAGIC);
+const MAGIC_ALL = Object.assign({}, MAGIC, VILLAIN_MAGIC, COURT_MAGIC); // colors for ALL sets (rendering)
 
 /* --- 2. Ingredient library (20) ----------------------------------------
  * qualities[0] = the ONE magic quality shown to the player (its identity).
@@ -107,26 +124,26 @@ INFUSED_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
  * all-new royal/feast icons never used elsewhere). Covers every magic so any wish
  * is solvable. Registered in INGREDIENT_BY_ID; the realm swaps to this set. -------- */
 const COURTYARD_INGREDIENTS = [
-  { id: "kc_goblet_wine",  name: "Goblet Wine",      qualities: ["Love", "Calm"],         emoji: "🍷" },
-  { id: "kc_royal_decree", name: "Royal Decree",     qualities: ["Protection", "Light"],  emoji: "📜" },
-  { id: "kc_beeswax",      name: "Beeswax Candle",    qualities: ["Light", "Sleep"],       emoji: "🕯️" },
-  { id: "kc_royal_lily",   name: "Royal Lily",        qualities: ["Beauty", "Love"],       emoji: "⚜️" },
-  { id: "kc_herald_brass", name: "Herald's Brass",    qualities: ["Energy", "Courage"],    emoji: "🎺" },
-  { id: "kc_amphora",      name: "Sealed Amphora",    qualities: ["Sleep", "Protection"],  emoji: "🏺" },
-  { id: "kc_cherries",     name: "Sugared Cherries",  qualities: ["Luck", "Beauty"],       emoji: "🍒" },
-  { id: "kc_grapes",       name: "Vineyard Grapes",   qualities: ["Growth", "Love"],       emoji: "🍇" },
-  { id: "kc_castle_olive", name: "Castle Olive",      qualities: ["Calm", "Growth"],       emoji: "🫒" },
-  { id: "kc_onyx_pawn",    name: "Onyx Pawn",         qualities: ["Mischief", "Strength"], emoji: "♟️" },
-  { id: "kc_aged_cheese",  name: "Aged Cheese",       qualities: ["Strength", "Growth"],   emoji: "🧀" },
-  { id: "kc_pungent_bulb", name: "Pungent Bulb",      qualities: ["Courage", "Strength"],  emoji: "🧅" },
-  { id: "kc_toast_fizz",   name: "Toast Fizz",        qualities: ["Energy", "Luck"],       emoji: "🥂" },
-  { id: "kc_peacock",      name: "Peacock Plume",     qualities: ["Beauty", "Mischief"],   emoji: "🦚" },
-  { id: "kc_regal_tea",    name: "Regal Tea",         qualities: ["Calm", "Sleep"],        emoji: "🫖" },
-  { id: "kc_court_wand",   name: "Court Wand",        qualities: ["Mischief", "Light"],    emoji: "🪄" },
-  { id: "kc_white_dove",   name: "White Dove",        qualities: ["Protection", "Love"],   emoji: "🕊️" },
-  { id: "kc_blackbird_pie",name: "Blackbird Pie",     qualities: ["Luck", "Courage"],      emoji: "🥧" },
-  { id: "kc_silk_rosette", name: "Silk Rosette",      qualities: ["Beauty", "Luck"],       emoji: "🏵️" },
-  { id: "kc_royal_cocoa",  name: "Royal Cocoa",       qualities: ["Love", "Energy"],       emoji: "🍫" },
+  { id: "kc_goblet_wine",  name: "Goblet Wine",      qualities: ["Mirth", "Serenity"],    emoji: "🍷" },
+  { id: "kc_royal_decree", name: "Royal Decree",     qualities: ["Majesty", "Wisdom"],    emoji: "📜" },
+  { id: "kc_beeswax",      name: "Beeswax Candle",    qualities: ["Radiance", "Serenity"], emoji: "🕯️" },
+  { id: "kc_royal_lily",   name: "Royal Lily",        qualities: ["Glamour", "Majesty"],   emoji: "⚜️" },
+  { id: "kc_herald_brass", name: "Herald's Brass",    qualities: ["Valor", "Radiance"],    emoji: "🎺" },
+  { id: "kc_amphora",      name: "Sealed Amphora",    qualities: ["Honor", "Wisdom"],      emoji: "🏺" },
+  { id: "kc_cherries",     name: "Sugared Cherries",  qualities: ["Fortune", "Glamour"],   emoji: "🍒" },
+  { id: "kc_grapes",       name: "Vineyard Grapes",   qualities: ["Mirth", "Fortune"],     emoji: "🍇" },
+  { id: "kc_castle_olive", name: "Castle Olive",      qualities: ["Wisdom", "Valor"],      emoji: "🫒" },
+  { id: "kc_onyx_pawn",    name: "Onyx Pawn",         qualities: ["Cunning", "Valor"],     emoji: "♟️" },
+  { id: "kc_aged_cheese",  name: "Aged Cheese",       qualities: ["Honor", "Fortune"],     emoji: "🧀" },
+  { id: "kc_pungent_bulb", name: "Pungent Bulb",      qualities: ["Valor", "Honor"],       emoji: "🧅" },
+  { id: "kc_toast_fizz",   name: "Toast Fizz",        qualities: ["Radiance", "Mirth"],    emoji: "🥂" },
+  { id: "kc_peacock",      name: "Peacock Plume",     qualities: ["Glamour", "Cunning"],   emoji: "🦚" },
+  { id: "kc_regal_tea",    name: "Regal Tea",         qualities: ["Majesty", "Serenity"],  emoji: "🫖" },
+  { id: "kc_court_wand",   name: "Court Wand",        qualities: ["Cunning", "Radiance"],  emoji: "🪄" },
+  { id: "kc_white_dove",   name: "White Dove",        qualities: ["Wisdom", "Honor"],      emoji: "🕊️" },
+  { id: "kc_blackbird_pie",name: "Blackbird Pie",     qualities: ["Serenity", "Mirth"],    emoji: "🥧" },
+  { id: "kc_silk_rosette", name: "Silk Rosette",      qualities: ["Serenity", "Glamour"],  emoji: "🏵️" },
+  { id: "kc_royal_cocoa",  name: "Royal Cocoa",       qualities: ["Fortune", "Cunning"],   emoji: "🍫" },
 ];
 COURTYARD_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
 
@@ -151,27 +168,27 @@ const SPECIAL_CHARM_IDS = Object.keys(SPECIAL_CHARMS);
  * its own cast (and later its own ingredients/art/audio). Willow-Wish Village is the
  * starter (uses the default CUSTOMERS). King's Courtyard is the first unlockable. --- */
 const COURTYARD_CUSTOMERS = [
-  { id: "jester",   name: "Court Jester",   emoji: "🃏", location: "King's Courtyard", wishType: "MischiefMix",
+  { id: "jester",   name: "Court Jester",   emoji: "🃏", location: "King's Courtyard", wishType: "c_Jest",
     line: "A wish for mischief — the court could use a laugh!" },
-  { id: "knight",   name: "Brave Knight",   emoji: "🛡️", location: "King's Courtyard", wishType: "BraveBite",
-    line: "Courage before the joust, if you'd be so kind." },
-  { id: "advisor",  name: "Royal Advisor",  emoji: "🧐", location: "King's Courtyard", wishType: "CalmCup",
-    line: "Something calm — His Majesty is in a mood again." },
-  { id: "prince",   name: "Exiled Prince",  emoji: "🤴", location: "King's Courtyard", wishType: "PowerPop",
-    line: "Energy for the long road back to my throne." },
-  { id: "guard",    name: "Palace Guard",   emoji: "💂", location: "King's Courtyard", wishType: "SafeSpell",
-    line: "Protection for the long night watch, please." },
-  { id: "sword",    name: "Talking Sword",  emoji: "⚔️", location: "King's Courtyard", wishType: "StrongTreat",
-    line: "Make me strong — I've a dragon to meet at dawn!" },
-  { id: "noble",    name: "Disguised Noble",emoji: "🎭", location: "King's Courtyard", wishType: "PrettyPotion",
-    line: "A touch of beauty… no one must recognize me." },
-  { id: "king",     name: "Cursed King",    emoji: "👑", location: "King's Courtyard", wishType: "LoveCharm",
-    line: "A little love, perhaps. No one visits a cursed king." },
+  { id: "knight",   name: "Brave Knight",   emoji: "🛡️", location: "King's Courtyard", wishType: "c_Joust",
+    line: "Valor before the joust, if you'd be so kind." },
+  { id: "advisor",  name: "Royal Advisor",  emoji: "🧐", location: "King's Courtyard", wishType: "c_Counsel",
+    line: "A touch of wisdom — His Majesty is in a mood again." },
+  { id: "prince",   name: "Exiled Prince",  emoji: "🤴", location: "King's Courtyard", wishType: "c_Crown",
+    line: "A taste of majesty for the long road back to my throne." },
+  { id: "guard",    name: "Palace Guard",   emoji: "💂", location: "King's Courtyard", wishType: "c_Watch",
+    line: "Honor and vigilance for the long night watch, please." },
+  { id: "sword",    name: "Talking Sword",  emoji: "⚔️", location: "King's Courtyard", wishType: "c_Legend",
+    line: "Fill me with valor — I've a dragon to meet at dawn!" },
+  { id: "noble",    name: "Disguised Noble",emoji: "🎭", location: "King's Courtyard", wishType: "c_Gala",
+    line: "A little glamour… no one must recognize me at the gala." },
+  { id: "king",     name: "Cursed King",    emoji: "👑", location: "King's Courtyard", wishType: "c_Sorrow",
+    line: "A little serenity, perhaps. No one visits a cursed king." },
 ];
 const REALMS = [
   { id: "willow",    name: "Willow-Wish Village", icon: "🏘️", tagline: "The cozy hamlet where your bubble shop began." },
   { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.",
-    unlock: { gold: 3000, keys: 10 }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS },
+    unlock: { gold: 3000, keys: 10 }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS, magics: COURT_MAGIC_TYPES },
   { id: "oasis",     name: "Forgotten Oasis",     icon: "🏜️", comingSoon: true, tagline: "Lamps, genies, and desert wishes." },
   { id: "thieves",   name: "Thieves' Corner",     icon: "🗝️", comingSoon: true, tagline: "Rogues, locks, and light fingers." },
   { id: "beanstalk", name: "Beanstalk Bank",      icon: "🌱", comingSoon: true, tagline: "Giants, gold, and golden geese." },
@@ -192,6 +209,19 @@ const WISH_TYPES = {
   LoveCharm:    { main: ["Love", "Beauty"],         second: ["Luck", "Calm"],          twist: ["Light", "Protection", "Mischief"] },
   PowerPop:     { main: ["Energy", "Strength"],     second: ["Courage", "Light"],      twist: ["Luck", "Mischief", "Calm"] },
 };
+/* King's Courtyard wish types — use the regal COURT_MAGIC set (merged into WISH_TYPES
+ * so generateWish resolves them by key, exactly like the base ones). */
+const COURT_WISH_TYPES = {
+  c_Jest:    { main: ["Mirth", "Cunning"],    second: ["Glamour", "Fortune"],  twist: ["Radiance", "Valor", "Serenity"] },
+  c_Joust:   { main: ["Valor", "Honor"],      second: ["Majesty", "Radiance"], twist: ["Fortune", "Wisdom", "Mirth"] },
+  c_Counsel: { main: ["Wisdom", "Serenity"],  second: ["Honor", "Majesty"],    twist: ["Fortune", "Radiance", "Cunning"] },
+  c_Crown:   { main: ["Majesty", "Radiance"], second: ["Valor", "Glamour"],    twist: ["Wisdom", "Fortune", "Honor"] },
+  c_Watch:   { main: ["Honor", "Valor"],      second: ["Serenity", "Wisdom"],  twist: ["Majesty", "Radiance", "Fortune"] },
+  c_Legend:  { main: ["Valor", "Majesty"],    second: ["Honor", "Radiance"],   twist: ["Fortune", "Cunning", "Serenity"] },
+  c_Gala:    { main: ["Glamour", "Majesty"],  second: ["Radiance", "Mirth"],   twist: ["Fortune", "Serenity", "Wisdom"] },
+  c_Sorrow:  { main: ["Serenity", "Majesty"], second: ["Wisdom", "Honor"],     twist: ["Glamour", "Radiance", "Mirth"] },
+};
+Object.assign(WISH_TYPES, COURT_WISH_TYPES);
 
 /* --- 5. Starter customers (Drury Lane) — line + wish type + emoji -------- */
 const CUSTOMERS = [
@@ -320,7 +350,7 @@ QUESTS.daily.concat(QUESTS.weekly).forEach(q => QUEST_BY_ID[q.id] = q);
 
 /* Expose as a single namespace */
 const DATA = {
-  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, INFUSED_INGREDIENTS, COURTYARD_INGREDIENTS,
+  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, COURT_MAGIC, COURT_MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, INFUSED_INGREDIENTS, COURTYARD_INGREDIENTS,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS, REALMS, REALM_BY_ID,
   FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
   QUESTS, QUEST_BY_ID,
