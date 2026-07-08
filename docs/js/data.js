@@ -26,28 +26,32 @@ const MAGIC_TYPES = Object.keys(MAGIC);
  * qualities[1..] = HIDDEN secondary magics, revealed only by the cauldron bars
  * (or a Peek/Insight charm). Every magic type is the MAIN quality of >=1
  * ingredient so a biased hand can always be assembled.
+ * BALANCE: the 12 magics are spread evenly — each is a hidden quality exactly
+ * twice, so every magic totals 3–4 appearances (no over/under-represented magic),
+ * and no two ingredients share the same magic set. Fronts are fixed; only the
+ * hidden magics are tuned. Keep it this way so learned knowledge stays true.
  * ---------------------------------------------------------------------- */
 const INGREDIENTS = [
   { id: "honey",       name: "Honey",       qualities: ["Love", "Calm"],                emoji: "🍯" },
   { id: "berries",     name: "Berries",     qualities: ["Love", "Energy"],              emoji: "🫐" },
   { id: "rose_jam",    name: "Rose Jam",    qualities: ["Beauty", "Love"],              emoji: "🌹" },
-  { id: "pearl_sugar", name: "Pearl Sugar", qualities: ["Beauty", "Calm", "Love"],      emoji: "⚪" },
-  { id: "moon_drop",   name: "Moon Drop",   qualities: ["Sleep", "Calm"],               emoji: "🌙" },
+  { id: "pearl_sugar", name: "Pearl Sugar", qualities: ["Beauty", "Calm", "Sleep"],     emoji: "⚪" },
+  { id: "moon_drop",   name: "Moon Drop",   qualities: ["Sleep", "Beauty"],             emoji: "🌙" },
   { id: "mushroom_cap",name: "Mushroom Cap",qualities: ["Sleep", "Growth"],             emoji: "🍄" },
-  { id: "star_candy",  name: "Star Candy",  qualities: ["Luck", "Energy"],              emoji: "🍬" },
+  { id: "star_candy",  name: "Star Candy",  qualities: ["Luck", "Beauty"],              emoji: "🍬" },
   { id: "rainbow_drop",name: "Rainbow Drop",qualities: ["Luck", "Love", "Mischief"],    emoji: "🌈" },
   { id: "sun_petal",   name: "Sun Petal",   qualities: ["Light", "Courage"],            emoji: "🌻" },
   { id: "glow_gem",    name: "Glow Gem",    qualities: ["Light", "Protection", "Energy"], emoji: "💎" },
   { id: "iron_oats",   name: "Iron Oats",   qualities: ["Strength", "Growth"],          emoji: "🌰" },
   { id: "bull_horn",   name: "Bull Horn",   qualities: ["Strength", "Courage"],         emoji: "🐂" },
-  { id: "dragon_pepper",name:"Dragon Pepper",qualities:["Courage", "Energy", "Mischief"],emoji: "🌶️" },
+  { id: "dragon_pepper",name:"Dragon Pepper",qualities:["Courage", "Strength", "Mischief"],emoji: "🌶️" },
   { id: "cinnamon",    name: "Cinnamon",    qualities: ["Energy", "Luck"],              emoji: "🟤" },
-  { id: "ginger_root", name: "Ginger Root", qualities: ["Energy", "Courage"],           emoji: "🫚" },
+  { id: "ginger_root", name: "Ginger Root", qualities: ["Energy", "Strength"],          emoji: "🫚" },
   { id: "lavender",    name: "Lavender",    qualities: ["Calm", "Sleep"],               emoji: "🪻" },
   { id: "moss_bloom",  name: "Moss Bloom",  qualities: ["Growth", "Protection"],        emoji: "🌿" },
   { id: "shimmer_salt",name: "Shimmer Salt",qualities: ["Protection", "Light"],         emoji: "🧂" },
   { id: "crow_feather",name: "Crow Feather",qualities: ["Mischief", "Light"],           emoji: "🪶" },
-  { id: "frog_tear",   name: "Frog Tear",   qualities: ["Mischief", "Growth"],          emoji: "💧" },
+  { id: "frog_tear",   name: "Frog Tear",   qualities: ["Mischief", "Luck"],            emoji: "💧" },
 ];
 const INGREDIENT_BY_ID = {};
 INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);

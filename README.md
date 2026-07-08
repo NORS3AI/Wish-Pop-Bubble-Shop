@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ⚖️ **Ingredients rebalanced for even variety.** Every magic is now represented
+  evenly across the ingredient library (each shows up 3–4 times instead of some
+  magics being crammed into everything and others barely appearing), and no two
+  ingredients are secret twins anymore. Every ingredient's **name, look, and main
+  magic are unchanged** — only some of the hidden magics were re-tuned.
 - 🤏 **New charm: Pinch** — the opposite of Potent. Play it and tap an ingredient to
   use *just a pinch*, **halving its magic** so you can trim a bar that's about to
   overfill and land right in the green (it softens that ingredient's allergy a bit
