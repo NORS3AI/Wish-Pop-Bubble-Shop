@@ -19,6 +19,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🗺️ **Realms & the World Map — travel to new locations!** There's now a **🗺️ Map** on
+  the main screen. Your shop is always *Wish Pop: Bubble Shop* — only the **location**
+  changes. You start in **🏘️ Willow-Wish Village**; save up **🪙3,000 + 🗝️10 keys** to
+  unlock **🏰 King's Courtyard**, a whole new place with its own royal cast (jesters,
+  knights, a grumpy cursed king…) and a rich purple palette. More realms are shown as
+  "coming soon" (Forgotten Oasis, Thieves' Corner, Beanstalk Bank). Travel any time from
+  the Map — this is the backbone of real progression, and where future realm-specific
+  ingredients, VIP customers, and story events will live.
+
 - 🗝️ **Treasure Keys & the Vault!** A shiny **Treasure Key** now occasionally pops from
   a bubble as you play (it banks instantly, like a coin). Spend keys in the new **🗝️
   Treasure Vault** (in Shop & Upgrades) to **crack open a chest** — always a chunky,

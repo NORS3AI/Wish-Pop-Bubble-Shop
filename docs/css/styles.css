@@ -755,3 +755,22 @@ body.villain .scoop-instr, body.villain .pop-sub { color: #c9f5b0; }
 /* Infused ingredients (built-in charm effect) — glow + effect label */
 .inv-tile.infused { box-shadow: 0 0 0 2px rgba(255,216,107,.7) inset, 0 0 12px rgba(255,216,107,.35); }
 .infused-tag { font-size: 9px; font-weight: 800; color: var(--gold); line-height: 1.1; margin-top: 2px; }
+/* Realms — location chip on the start screen + the World Map */
+.realm-here { display: inline-block; margin: 6px 0 2px; padding: 4px 12px; border-radius: 999px; font-weight: 800; font-size: 13px;
+  background: rgba(255,255,255,.1); border: 1px solid var(--line); }
+.realm-list { display: flex; flex-direction: column; gap: 10px; padding: 2px; }
+.realm-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px;
+  background: var(--card); border: 1px solid var(--line); }
+.realm-card.here { border-color: rgba(126,224,138,.6); box-shadow: 0 0 12px rgba(126,224,138,.2); }
+.realm-card.locked { opacity: .82; }
+.realm-icon { font-size: 40px; line-height: 1; flex: 0 0 auto; }
+.realm-body { flex: 1; min-width: 0; }
+.realm-name { font-weight: 800; font-size: 16px; }
+.realm-cast { font-size: 17px; margin-top: 4px; letter-spacing: 2px; }
+.realm-status { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
+.realm-tag { font-size: 12px; font-weight: 700; }
+.realm-tag.here { color: var(--good); }
+.realm-cost { display: flex; gap: 8px; font-weight: 800; font-size: 13px; }
+/* King's Courtyard palette (applied via body.realm-courtyard during that realm) */
+body.realm-courtyard #app { background: radial-gradient(circle at 50% 12%, #4a2a6e 0%, #34205a 52%, #1c1230 100%); }
+body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,216,107,.22), rgba(185,140,255,.22)); border-color: rgba(255,216,107,.4); }

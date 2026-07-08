@@ -225,7 +225,7 @@ function bonusBubbleItems(wish, n, chainChance, ingredientSet) {
 
 /* --- Round setup -------------------------------------------------------- */
 function newRound(state) {
-  const customer = R.pick(DATA.CUSTOMERS);
+  const customer = R.pick(state.customers && state.customers.length ? state.customers : DATA.CUSTOMERS);
   const diff = difficultyFor(state.servedTotal);
   const isBoss = !!state.forceBoss || ((state.servedTotal || 0) + 1) % BALANCE.BOSS_EVERY === 0;
   const wish = generateWish(customer, diff, isBoss);

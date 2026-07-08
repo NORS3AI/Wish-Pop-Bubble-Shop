@@ -120,6 +120,38 @@ const SPECIAL_CHARMS = {
 const SPECIAL_CHARM_IDS = Object.keys(SPECIAL_CHARMS);
 
 /* --- 4. Wish types: need pools + the customer line that fits them -------- */
+/* --- Realms — themed locations you unlock and travel between. The shop name is
+ * always "Wish Pop: Bubble Shop"; only the LOCATION changes. Each realm can bring
+ * its own cast (and later its own ingredients/art/audio). Willow-Wish Village is the
+ * starter (uses the default CUSTOMERS). King's Courtyard is the first unlockable. --- */
+const COURTYARD_CUSTOMERS = [
+  { id: "jester",   name: "Court Jester",   emoji: "🃏", location: "King's Courtyard", wishType: "MischiefMix",
+    line: "A wish for mischief — the court could use a laugh!" },
+  { id: "knight",   name: "Brave Knight",   emoji: "🛡️", location: "King's Courtyard", wishType: "BraveBite",
+    line: "Courage before the joust, if you'd be so kind." },
+  { id: "advisor",  name: "Royal Advisor",  emoji: "🧐", location: "King's Courtyard", wishType: "CalmCup",
+    line: "Something calm — His Majesty is in a mood again." },
+  { id: "prince",   name: "Exiled Prince",  emoji: "🤴", location: "King's Courtyard", wishType: "PowerPop",
+    line: "Energy for the long road back to my throne." },
+  { id: "guard",    name: "Palace Guard",   emoji: "💂", location: "King's Courtyard", wishType: "SafeSpell",
+    line: "Protection for the long night watch, please." },
+  { id: "sword",    name: "Talking Sword",  emoji: "⚔️", location: "King's Courtyard", wishType: "StrongTreat",
+    line: "Make me strong — I've a dragon to meet at dawn!" },
+  { id: "noble",    name: "Disguised Noble",emoji: "🎭", location: "King's Courtyard", wishType: "PrettyPotion",
+    line: "A touch of beauty… no one must recognize me." },
+  { id: "king",     name: "Cursed King",    emoji: "👑", location: "King's Courtyard", wishType: "LoveCharm",
+    line: "A little love, perhaps. No one visits a cursed king." },
+];
+const REALMS = [
+  { id: "willow",    name: "Willow-Wish Village", icon: "🏘️", tagline: "The cozy hamlet where your bubble shop began." },
+  { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.",
+    unlock: { gold: 3000, keys: 10 }, theme: "courtyard", customers: COURTYARD_CUSTOMERS },
+  { id: "oasis",     name: "Forgotten Oasis",     icon: "🏜️", comingSoon: true, tagline: "Lamps, genies, and desert wishes." },
+  { id: "thieves",   name: "Thieves' Corner",     icon: "🗝️", comingSoon: true, tagline: "Rogues, locks, and light fingers." },
+  { id: "beanstalk", name: "Beanstalk Bank",      icon: "🌱", comingSoon: true, tagline: "Giants, gold, and golden geese." },
+];
+const REALM_BY_ID = {}; REALMS.forEach(r => REALM_BY_ID[r.id] = r);
+
 const WISH_TYPES = {
   StrongTreat:  { main: ["Strength", "Growth"],     second: ["Calm", "Protection"],   twist: ["Luck", "Love", "Energy"] },
   BraveBite:    { main: ["Courage", "Strength"],    second: ["Energy", "Protection"],  twist: ["Luck", "Calm", "Mischief"] },
@@ -263,7 +295,7 @@ QUESTS.daily.concat(QUESTS.weekly).forEach(q => QUEST_BY_ID[q.id] = q);
 /* Expose as a single namespace */
 const DATA = {
   MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, INFUSED_INGREDIENTS,
-  SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS,
+  SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS, REALMS, REALM_BY_ID,
   FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
   QUESTS, QUEST_BY_ID,
 };

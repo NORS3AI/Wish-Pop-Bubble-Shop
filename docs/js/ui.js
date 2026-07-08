@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v59"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v60"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -28,6 +28,9 @@ function normalizeGame(g) {
   if (typeof g.nextEventAt !== "number") g.nextEventAt = -1; // -1 = uninitialized (set on first play)
   if (typeof g.rumpelSeen !== "boolean") g.rumpelSeen = false; // offered a junk visitor while bin full?
   if (typeof g.goblinTurn !== "boolean") g.goblinTurn = false; // alternate Rumpelstiltskin <-> the goblin
+  if (typeof g.realm !== "string" || !D.REALM_BY_ID[g.realm]) g.realm = "willow"; // current location
+  if (!g.unlockedRealms || typeof g.unlockedRealms !== "object") g.unlockedRealms = {};
+  g.unlockedRealms.willow = true; // the starter realm is always unlocked
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
   ["served", "perfect", "bossWins", "rings", "bags", "rushWins"].forEach(k => { if (typeof g.stats[k] !== "number") g.stats[k] = 0; });
   if (!g.quests || typeof g.quests !== "object") g.quests = { day: "", week: -1, daily: [], weekly: [], dailyBonus: false };
@@ -42,6 +45,15 @@ function normalizeGame(g) {
   return g;
 }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(GAME)); } catch (e) {} }
+// --- Realms: the current location (shop name never changes, only the place) ---
+function currentRealm() { return D.REALM_BY_ID[GAME.realm] || D.REALM_BY_ID.willow; }
+function realmUnlocked(id) { return !!GAME.unlockedRealms[id]; }
+// Apply the current realm's palette theme to the page (a body class).
+function applyRealmTheme() {
+  const cls = document.body.className.split(/\s+/).filter(c => c && !c.startsWith("realm-"));
+  const t = currentRealm().theme; if (t) cls.push("realm-" + t);
+  document.body.className = cls.join(" ");
+}
 // currently-equipped cosmetics
 function equippedCauldronClass() { return "skin-" + (GAME.equipped.cauldron || "cauldron_classic"); }
 function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar); }
@@ -133,18 +145,25 @@ function syncHud(id) {
 /* START                                                                   */
 /* ======================================================================= */
 function renderStart() {
+  applyRealmTheme();
+  const realm = currentRealm();
+  const cast = (realm.customers || D.CUSTOMERS).slice(0, 5).map(c => c.emoji).join(" ");
   html("start", `
     ${hud("Bubble Shop", { noHome: true })}
     <div class="grow center">
       <div class="bubble-emojis">🫧 ✨ 🫧</div>
       <div class="logo">Wish Pop</div>
       <div class="sub">Bubble Shop</div>
+      <div class="realm-here">${realm.icon} ${realm.name}</div>
       <p class="muted" style="max-width:300px">Fairytale folk arrive with a wish. Scoop bubbles, pop them for ingredients &amp; charms, then mix the perfect potion in your cauldron!</p>
-      <div class="bubble-emojis" style="font-size:26px">🍪 🧁 🐭 🦉 🐺</div>
+      <div class="bubble-emojis" style="font-size:26px">${cast}</div>
     </div>
     <button class="btn" id="play-btn">▶  Play</button>
     <div style="height:8px"></div>
-    <button class="btn secondary" id="menu-btn">🛍️  Shop &amp; Upgrades</button>
+    <div class="row" style="gap:10px">
+      <button class="btn secondary" id="menu-btn" style="flex:1">🛍️  Shop</button>
+      <button class="btn secondary" id="map-btn" style="flex:1">🗺️  Map</button>
+    </div>
     <div style="height:8px"></div>
     <button class="btn secondary small" id="admin-btn" style="align-self:center">⚙️ Admin &amp; Testing</button>
     <div class="row" style="justify-content:center;gap:10px;margin-top:8px;align-items:center">
@@ -154,6 +173,7 @@ function renderStart() {
   `);
   on("#play-btn", "click", startRound);
   on("#menu-btn", "click", renderMenu);
+  on("#map-btn", "click", renderMap);
   on("#admin-btn", "click", renderAdmin);
   on("#sound-test", "click", () => {
     SFX.unlock();
@@ -162,6 +182,64 @@ function renderStart() {
     toast(SFX.isMuted() ? "Sound is muted — tap 🔇 to unmute" : "Hear that? 🔊");
   });
   show("start");
+}
+
+/* ======================================================================= */
+/* WORLD MAP — travel between realms; unlock new ones with gold + keys.     */
+/* ======================================================================= */
+function renderMap() {
+  const cards = D.REALMS.map(r => {
+    const here = GAME.realm === r.id, unlocked = realmUnlocked(r.id);
+    const cast = (r.customers || (r.id === "willow" ? D.CUSTOMERS : [])).slice(0, 5).map(c => c.emoji).join(" ");
+    let statusRow, cls = "";
+    if (here) { cls = "here"; statusRow = `<span class="realm-tag here">📍 You are here</span>`; }
+    else if (unlocked) { statusRow = `<button class="btn good small realm-go" data-id="${r.id}">Travel here →</button>`; }
+    else if (r.comingSoon) { cls = "locked"; statusRow = `<span class="realm-tag muted">🔒 Coming soon</span>`; }
+    else if (r.unlock) {
+      cls = "locked";
+      const canGold = GAME.gold >= r.unlock.gold, canKeys = (GAME.keys || 0) >= r.unlock.keys, can = canGold && canKeys;
+      statusRow = `<div class="realm-cost"><span style="color:${canGold ? "var(--good)" : "var(--bad)"}">🪙 ${r.unlock.gold}</span>
+        <span style="color:${canKeys ? "var(--good)" : "var(--bad)"}">🗝️ ${r.unlock.keys}</span></div>
+        <button class="btn ${can ? "" : "secondary"} small realm-unlock" data-id="${r.id}" ${can ? "" : "disabled"}>Unlock</button>`;
+    } else { cls = "locked"; statusRow = `<span class="realm-tag muted">🔒 Locked</span>`; }
+    return `<div class="realm-card ${cls}">
+      <div class="realm-icon">${r.icon}</div>
+      <div class="realm-body">
+        <div class="realm-name">${r.name}</div>
+        <div class="muted" style="font-size:12px">${r.tagline}</div>
+        ${cast ? `<div class="realm-cast">${cast}</div>` : ""}
+      </div>
+      <div class="realm-status">${statusRow}</div></div>`;
+  }).join("");
+  html("map", `
+    ${hud("World Map")}
+    <div class="rb-total" style="text-align:center;margin:2px 0 8px">🪙 <b>${GAME.gold}</b> · 🗝️ <b>${GAME.keys || 0}</b> keys <span class="muted" style="font-size:12px">· your shop travels with you</span></div>
+    <div class="grow" style="overflow-y:auto"><div class="realm-list">${cards}</div></div>
+    <button class="btn secondary" id="map-back">←  Back</button>
+  `);
+  $("#screen-map").querySelectorAll(".realm-go").forEach(b => b.addEventListener("click", () => travelRealm(b.dataset.id)));
+  $("#screen-map").querySelectorAll(".realm-unlock").forEach(b => b.addEventListener("click", () => unlockRealm(b.dataset.id)));
+  on("#map-back", "click", renderStart);
+  show("map");
+}
+function travelRealm(id) {
+  if (!realmUnlocked(id)) return;
+  GAME.realm = id; save();
+  applyRealmTheme();
+  const r = D.REALM_BY_ID[id];
+  SFX.unlock(); SFX.charm();
+  toast(`${r.icon} Off to ${r.name}!`);
+  renderStart();
+}
+function unlockRealm(id) {
+  const r = D.REALM_BY_ID[id]; if (!r || !r.unlock || realmUnlocked(id)) return;
+  if (GAME.gold < r.unlock.gold || (GAME.keys || 0) < r.unlock.keys) { toast("Not enough gold or keys yet."); return; }
+  confirmDialog(`Unlock ${r.name} for 🪙${r.unlock.gold} + 🗝️${r.unlock.keys}?`, () => {
+    GAME.gold -= r.unlock.gold; GAME.keys -= r.unlock.keys; GAME.unlockedRealms[id] = true; save();
+    SFX.unlock(); SFX.perfect(); confettiOver($("#app"));
+    toast(`${r.icon} ${r.name} unlocked! Travel there any time.`);
+    renderMap();
+  });
 }
 
 /* ======================================================================= */
@@ -1531,10 +1609,11 @@ function startRound() {
   SFX.unlock();
   stopRoundTimers();
   document.body.classList.remove("villain"); // clear any villain theming
+  applyRealmTheme();
   refreshQuests();
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
-  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: currentRealm().customers });
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
@@ -1557,7 +1636,7 @@ function renderCustomer() {
     ? `<div class="boss-banner" style="background:linear-gradient(90deg,#ff9a5a,#ff6b6b,#ff9a5a)">⏱️ In a Rush! Serve before their patience runs out for a <b>+${BALANCE.RUSH_BONUS} bonus</b> — miss it and they leave.</div>` : "";
   const streakChip = GAME.streak >= 2 ? `<div class="streak-chip">🔥 ${GAME.streak} win streak</div>` : "";
   html("customer", `
-    ${hud(c.location)}
+    ${hud(currentRealm().name)}
     ${bossBanner}${rushBanner}
     <div class="grow center" style="gap:16px">
       ${streakChip}
@@ -2655,7 +2734,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
