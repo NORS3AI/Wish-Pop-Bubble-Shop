@@ -19,6 +19,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🔍 **Bigger, easier-to-read duel ingredients.** In the Mixing Duel the
+  ingredient tiles are now much larger with clearer pictures and names, and the
+  pile sits centered in the middle of the screen instead of squished up top.
 - ⚙️ **Admin & Testing panel.** The **⚙️ Admin & Testing** button on the main
   menu now opens a test panel where you can **jump straight to any event** — the
   Mixing Duel, the Fairy's boon, a VIP (boss) customer, or an in-a-rush customer —
