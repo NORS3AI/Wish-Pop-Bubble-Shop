@@ -745,8 +745,15 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   border: 8px solid transparent; border-right-color: var(--card2); }
 .dance-bubble.memory { opacity: .85; font-style: italic; }
 .dance-cue { font-size: 38px; line-height: 1; }
-.dance-timer { height: 8px; border-radius: 5px; background: rgba(255,255,255,.08); overflow: hidden; margin: 8px 2px; }
-.dance-timer > i { display: block; height: 100%; width: 100%; border-radius: 5px; background: linear-gradient(90deg,#f8c8ff,#c58bff); }
+/* The beat track: a marker slides left→right, hitting the green line on the beat */
+.beat-track { position: relative; height: 30px; border-radius: 15px; background: rgba(255,255,255,.06);
+  border: 1px solid var(--line); overflow: hidden; margin: 12px 2px 4px; }
+.beat-zone { position: absolute; top: 0; bottom: 0; border-radius: 4px;
+  background: linear-gradient(90deg, rgba(126,224,138,0), rgba(126,224,138,.30), rgba(126,224,138,0)); }
+.beat-line { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px;
+  background: #7ee08a; border-radius: 2px; box-shadow: 0 0 10px #7ee08a; }
+.beat-marker { position: absolute; top: 4px; bottom: 4px; width: 16px; margin-left: -8px; left: 0;
+  border-radius: 8px; background: linear-gradient(#fff, #c58bff); box-shadow: 0 0 12px #c58bff; }
 .dance-status { padding: 0 2px 4px; text-align: center; }
 .dance-grace { position: relative; height: 12px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 6px; }
 .dance-grace > i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg,#ffd76a,#ff9de0,#b98cff); transition: width .25s ease; }

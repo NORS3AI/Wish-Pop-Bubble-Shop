@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v66"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v67"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1504,17 +1504,33 @@ const DANCE_MOVES = [
 const DANCE_MOVE_BY_ID = {}; DANCE_MOVES.forEach(m => DANCE_MOVE_BY_ID[m.id] = m);
 // Dance students you teach. The knight is first; the prince and Cinderella
 // slot in here later as one row each (Cinderella carries a rare-skin prize).
+// beatMs = time between beats (steady metronome); approach = how long the
+// marker slides toward the hit line before the beat lands.
 const DANCE_PARTNERS = {
   knight: {
     id: "knight", emoji: "🤺", name: "Sir Wobble", title: "A Clumsy Knight",
-    steps: 6, callMs: 2000, ballMs: 2300, pass: 8,   // pass = correct taps needed of steps*2
+    steps: 6, beatMs: 2000, approach: 1400, passFrac: 0.5,   // pass = score >= passFrac of the max
     line: "“I'm to dance at the royal ball tonight and I've got two left feet! Teach me the steps, please?”",
     reward: { gold: 45, keys: 1, stardust: 6 }, prizeTxt: "🪙 gold + a 🗝️ key",
-    winNote: "“I did it! Look at me twirl!” Sir Wobble bows deeply and presses a key into your hand. 🗝️",
-    loseNote: "“Oof — I tripped again!” He laughs it off. Come teach him another time!",
+    winNote: "“I did it! Look at me twirl — right on the beat!” Sir Wobble bows and presses a key into your hand. 🗝️",
+    loseNote: "“Oof — I keep losing the rhythm!” He laughs it off. Come teach him another time!",
   },
 };
-const DANCE_D = { good: 1, wrong: 0, miss: 0 }; // correct-count deltas (grace meter is correct/total)
+// Timing tiers, judged by how far your tap lands from the beat (ms). Right move
+// AND on the beat scores best; drift early/late and you lose points; wrong move
+// or no tap scores nothing. Points are summed; pass = passFrac of the max.
+const DANCE_WIN = { perfect: 160, good: 360, ok: 620 };      // |offset| windows (ms)
+const DANCE_PTS = { perfect: 100, good: 74, ok: 44, drift: 18, wrong: 0, miss: 0 };
+function danceJudge(correct, offset) {
+  if (!correct) return { tier: "wrong", pts: DANCE_PTS.wrong };
+  const a = Math.abs(offset);
+  if (a <= DANCE_WIN.perfect) return { tier: "perfect", pts: DANCE_PTS.perfect };
+  if (a <= DANCE_WIN.good)    return { tier: "good",    pts: DANCE_PTS.good };
+  if (a <= DANCE_WIN.ok)      return { tier: "ok",      pts: DANCE_PTS.ok };
+  return { tier: offset < 0 ? "early" : "late", pts: DANCE_PTS.drift };
+}
+function danceMaxScore() { return DANCE.total * DANCE_PTS.perfect; }
+function danceMeterPct() { return Math.round((DANCE.score / danceMaxScore()) * 100); }
 function danceRoutine(n) { const r = []; for (let i = 0; i < n; i++) r.push(R.pick(DANCE_MOVES).id); return r; }
 function renderDanceIntro(partnerId) {
   const p = DANCE_PARTNERS[partnerId] || DANCE_PARTNERS.knight;
@@ -1530,15 +1546,16 @@ function renderDanceIntro(partnerId) {
         <div class="stat-line"><span>Act 2 · The Ball</span><span>same steps, from memory 🎼</span></div>
         <div class="stat-line"><span>Teach him well</span><span class="gold">${p.prizeTxt}</span></div>
       </div>
-      <div class="muted" style="max-width:310px">Four moves, four buttons. In the rehearsal the next move shows in his bubble — tap the matching button on the beat. Then the music starts and you lead the <b>same routine</b> from memory!</div>
+      <div class="muted" style="max-width:310px">Four moves, four buttons. A marker slides to the beat line — tap the move <b>right as it lands on the beat</b>. Off-rhythm or the wrong move costs you! Rehearse first, then lead the <b>same routine</b> from memory.</div>
     </div>
     <button class="btn good" id="dance-play">💃 Teach him to dance!</button>
     <div style="height:8px"></div>
     <button class="btn secondary" id="dance-skip">Not now</button>
   `);
   on("#dance-play", "click", () => {
-    DANCE = { p, phase: 1, routine: danceRoutine(p.steps), idx: 0, correct: 0,
-      total: p.steps * 2, answered: true, feedback: null, timer: null, cdTimer: null, tTimer: null };
+    DANCE = { p, phase: 1, routine: danceRoutine(p.steps), idx: 0, score: 0, nailed: 0,
+      total: p.steps * 2, answered: true, feedback: null, armTime: 0, beatTime: 0,
+      timer: null, cdTimer: null, tTimer: null };
     danceCountdown();
   });
   on("#dance-skip", "click", startRound);
@@ -1563,7 +1580,9 @@ function danceCountdown() {
   };
   tick();
 }
-// Advance to the next called step — handles the Act 1 → Act 2 handoff and the finish.
+// Start the next step on the steady beat. The metronome fires every beatMs no
+// matter when you tap, so the rhythm stays even; the marker slides to the hit
+// line (the beat) over `approach` ms, then the metronome rolls to the next step.
 function danceStep() {
   if (!DANCE) return;
   if (DANCE.idx >= DANCE.routine.length) {
@@ -1571,9 +1590,21 @@ function danceStep() {
     danceFinish(); return;
   }
   DANCE.answered = false;
+  DANCE.armTime = Date.now();
+  DANCE.beatTime = DANCE.armTime + DANCE.p.approach; // the moment the marker hits the line
   renderDance();
-  const ms = DANCE.phase === 1 ? DANCE.p.callMs : DANCE.p.ballMs;
-  DANCE.timer = setTimeout(() => { if (DANCE && !DANCE.answered) danceResolve("miss"); }, ms);
+  DANCE.timer = setTimeout(danceAdvance, DANCE.p.beatMs);
+}
+// The metronome tick: if the beat went untapped it's a miss, then roll forward.
+function danceAdvance() {
+  if (!DANCE) return;
+  if (!DANCE.answered) {
+    DANCE.answered = true;
+    DANCE.feedback = { tier: "miss" };
+    SFX.sneeze();
+  }
+  DANCE.idx++;
+  danceStep();
 }
 // The show-stopping moment: hints drop away and the real music begins.
 function danceBallTransition() {
@@ -1589,46 +1620,72 @@ function danceBallTransition() {
   SFX.fanfare();
   DANCE.tTimer = setTimeout(() => { if (DANCE) danceStep(); }, 1600);
 }
-function danceTap(moveId) {
+// A tap: judge the move AND the timing. `_testOffset` (ms from the beat) lets
+// tests grade deterministically; live play measures against the real beat time.
+function danceTap(moveId, _testOffset) {
   if (!DANCE || DANCE.answered) return;
-  danceResolve(moveId === DANCE.routine[DANCE.idx] ? "good" : "wrong");
-}
-function danceResolve(kind) {
-  if (!DANCE || DANCE.answered) return;
+  const correct = moveId === DANCE.routine[DANCE.idx];
+  const offset = (typeof _testOffset === "number") ? _testOffset : (Date.now() - DANCE.beatTime);
   DANCE.answered = true;
-  if (DANCE.timer) { clearTimeout(DANCE.timer); DANCE.timer = null; }
-  if (kind === "good") DANCE.correct++;
-  DANCE.feedback = { kind, move: DANCE.routine[DANCE.idx] };
-  SFX[kind === "good" ? "charm" : "sneeze"]();
-  DANCE.idx++;
-  danceStep();
+  const j = danceJudge(correct, offset);
+  DANCE.score += j.pts;
+  if (j.tier === "perfect" || j.tier === "good") DANCE.nailed++;
+  DANCE.feedback = { tier: j.tier };
+  SFX[j.tier === "perfect" ? "coin" : j.tier === "good" || j.tier === "ok" ? "charm" : "sneeze"]();
+  dancePaintFeedback();   // update in place — DON'T re-render (that would restart the marker)
+}
+const DANCE_FB = {
+  perfect: `<span style="color:var(--good)">Perfect! ✨</span>`,
+  good:    `<span style="color:var(--good)">Good! 💫</span>`,
+  ok:      `<span style="color:var(--gold)">A touch off…</span>`,
+  early:   `<span style="color:var(--bad)">Too early!</span>`,
+  late:    `<span style="color:var(--bad)">Too late!</span>`,
+  wrong:   `<span style="color:var(--bad)">Wrong step!</span>`,
+  miss:    `<span style="color:var(--bad)">Missed the beat!</span>`,
+};
+function dancePaintFeedback() {
+  const sc = screen("event"); if (!sc) return;
+  const fbEl = sc.querySelector("#dance-fb");
+  if (fbEl) fbEl.innerHTML = DANCE.feedback ? (DANCE_FB[DANCE.feedback.tier] || "") : "";
+  const gr = sc.querySelector("#dance-grace-fill");
+  if (gr) gr.style.width = danceMeterPct() + "%";
+  const face = sc.querySelector(".dance-face");
+  if (face) {
+    const good = DANCE.feedback && (DANCE.feedback.tier === "perfect" || DANCE.feedback.tier === "good");
+    face.classList.remove("happy", "oops"); void face.offsetWidth;
+    face.classList.add(good ? "happy" : "oops");
+  }
 }
 function renderDance() {
   const D0 = DANCE, p = D0.p, moveId = D0.routine[D0.idx];
   const rehearse = D0.phase === 1;
-  const gracePct = Math.round((D0.correct / D0.total) * 100);
-  const targetPct = Math.round((p.pass / D0.total) * 100);
+  const meterPct = danceMeterPct();
+  const targetPct = Math.round(p.passFrac * 100);
+  const zonePct = Math.round((p.approach / p.beatMs) * 100); // where the beat line sits on the track
   const fb = D0.feedback;
-  const fbTxt = !fb ? (rehearse ? "Tap the move he's shown!" : "Lead the step from memory!")
-    : fb.kind === "good" ? `<span style="color:var(--good)">Lovely! 💫</span>`
-    : fb.kind === "miss" ? `<span style="color:var(--bad)">Too slow!</span>`
-    : `<span style="color:var(--bad)">A stumble!</span>`;
+  const fbTxt = fb ? (DANCE_FB[fb.tier] || "")
+    : (rehearse ? "Tap the move on the beat!" : "Lead it from memory — on the beat!");
   const mv = DANCE_MOVE_BY_ID[moveId];
   const bubble = rehearse
     ? `<div class="dance-bubble"><span class="dance-cue">${mv.icon}</span><span>“${mv.name}!”</span></div>`
     : `<div class="dance-bubble memory"><span class="dance-cue">❓</span><span>What comes next?</span></div>`;
   const buttons = DANCE_MOVES.map(m =>
     `<button class="dance-btn" data-id="${m.id}"><span class="dance-btn-ic">${m.icon}</span><span class="dance-btn-nm">${m.name}</span></button>`).join("");
+  const goodFb = fb && (fb.tier === "perfect" || fb.tier === "good");
   html("event", `
     ${hud(rehearse ? "Rehearsal 💃" : "The Ball 🎼")}
     <div class="dance-top">
-      <div class="dance-face ${fb && fb.kind === "good" ? "happy" : fb ? "oops" : ""}">${p.emoji}</div>
+      <div class="dance-face ${fb ? (goodFb ? "happy" : "oops") : ""}">${p.emoji}</div>
       ${bubble}
     </div>
-    <div class="dance-timer"><i id="dance-timerbar"></i></div>
+    <div class="beat-track">
+      <span class="beat-zone" style="left:${zonePct - 8}%;width:16%"></span>
+      <span class="beat-line" style="left:${zonePct}%"></span>
+      <i class="beat-marker" id="beat-marker"></i>
+    </div>
     <div class="dance-status">
-      <div class="rumpel-stat sub">${rehearse ? "Act 1" : "Act 2"} · Step ${Math.min(D0.idx + 1, p.steps)}/${p.steps} · ${fbTxt}</div>
-      <div class="dance-grace"><i style="width:${gracePct}%"></i><span class="dance-grace-mark" style="left:${targetPct}%"></span></div>
+      <div class="rumpel-stat sub">${rehearse ? "Act 1" : "Act 2"} · Step ${Math.min(D0.idx + 1, p.steps)}/${p.steps} · Nailed ${D0.nailed} · <span id="dance-fb">${fbTxt}</span></div>
+      <div class="dance-grace"><i id="dance-grace-fill" style="width:${meterPct}%"></i><span class="dance-grace-mark" style="left:${targetPct}%"></span></div>
     </div>
     <div class="grow center">
       <div class="dance-grid">${buttons}</div>
@@ -1637,27 +1694,32 @@ function renderDance() {
   $("#screen-event").querySelectorAll(".dance-btn").forEach(b =>
     b.addEventListener("click", () => danceTap(b.dataset.id)));
   show("event");
-  const tb = $("#dance-timerbar"), ms = rehearse ? p.callMs : p.ballMs;
-  if (tb) { tb.style.transition = "none"; tb.style.width = "100%";
-    requestAnimationFrame(() => { if (tb.isConnected) { tb.style.transition = "width " + ms + "ms linear"; tb.style.width = "0%"; } }); }
+  // Slide the marker across the track, reaching the beat line exactly on the beat
+  // and the far end when the metronome rolls to the next step.
+  const mk = $("#beat-marker");
+  if (mk) { mk.style.transition = "none"; mk.style.left = "0%";
+    requestAnimationFrame(() => { if (mk.isConnected) { mk.style.transition = "left " + p.beatMs + "ms linear"; mk.style.left = "100%"; } }); }
 }
 function danceFinish() {
   if (DANCE.timer) { clearTimeout(DANCE.timer); DANCE.timer = null; }
-  const p = DANCE.p, correct = DANCE.correct, win = correct >= p.pass;
+  const p = DANCE.p, nailed = DANCE.nailed, meterPct = danceMeterPct();
+  const targetPct = Math.round(p.passFrac * 100), win = meterPct >= targetPct;
   GAME.danceLessons = (GAME.danceLessons || 0) + 1;
   let outcome;
   if (win) {
     const got = grantReward(p.reward); save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
     outcome = { emoji: "🕺", title: "A graceful dancer!", cls: "win",
-      lines: [`<div class="stat-line"><span>Steps taught right</span><span>${correct}/${DANCE.total}</span></div>`,
+      lines: [`<div class="stat-line"><span>On-beat steps</span><span>${nailed}/${DANCE.total}</span></div>`,
+              `<div class="stat-line"><span>Rhythm score</span><span>${meterPct}%</span></div>`,
               `<div class="stat-line"><span>Your reward</span><span class="gold">${got}</span></div>`],
       note: p.winNote };
   } else {
     save(); SFX.sneeze();
-    outcome = { emoji: "😅", title: "Still a bit clumsy!", cls: "lose",
-      lines: [`<div class="stat-line"><span>Steps taught right</span><span>${correct}/${DANCE.total}</span></div>`,
-              `<div class="stat-line"><span>Needed</span><span>${p.pass}/${DANCE.total} to shine</span></div>`],
+    outcome = { emoji: "😅", title: "Lost the rhythm!", cls: "lose",
+      lines: [`<div class="stat-line"><span>On-beat steps</span><span>${nailed}/${DANCE.total}</span></div>`,
+              `<div class="stat-line"><span>Rhythm score</span><span>${meterPct}%</span></div>`,
+              `<div class="stat-line"><span>Needed</span><span>${targetPct}% to shine</span></div>`],
       note: p.loseNote };
   }
   DANCE = null;
@@ -2983,7 +3045,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceTap, danceResolve, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
