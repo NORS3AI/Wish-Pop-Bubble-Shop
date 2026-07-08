@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v39"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v40"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -187,7 +187,7 @@ function renderMenu() {
         </div>
       </div>
       <div class="card">
-        <div style="font-weight:800;margin-bottom:8px">Toad Upgrades</div>
+        <div style="font-weight:800;margin-bottom:8px">🐾 Pet Upgrades</div>
         <div class="up-grid">${abilityRow("scoop")}${abilityRow("charm")}${abilityRow("undo")}</div>
         <div class="muted" style="font-size:11px;margin-top:8px">New fairytale locations with fresh customers are coming soon!</div>
       </div>
@@ -251,7 +251,7 @@ function rollWellPrize() {
 // Apply a prize to the save (returns a short human label for the reveal).
 function grantWellPrize(p) {
   if (p.kind === "gold") { GAME.gold += p.amt; save(); return { emoji: "🪙", label: `+${p.amt} gold back`, sub: "A little something — try again!" }; }
-  if (p.kind === "treats") { GAME.treats += p.amt; save(); return { emoji: "🐸", label: `+${p.amt} treats`, sub: "Toad is pleased." }; }
+  if (p.kind === "treats") { GAME.treats += p.amt; save(); return { emoji: "🐸", label: `+${p.amt} treats`, sub: "Your pet is pleased." }; }
   if (p.kind === "stardust") { GAME.stardust += p.amt; save(); return { emoji: "✨", label: `+${p.amt} Stardust`, sub: p.wasSkin ? "You own every skin — extra Stardust!" : "Save it to buy any skin you like." }; }
   // skin
   GAME.owned[p.cosmetic.id] = true; save();
@@ -378,7 +378,7 @@ function renderWardrobe() {
     <div class="rb-total" style="text-align:center;margin:2px 0 8px">✨ <b>${GAME.stardust}</b> Stardust <span class="muted" style="font-size:12px">· spend it to buy any skin</span></div>
     <div class="grow" style="overflow-y:auto">
       ${section("cauldron", "🫕 Cauldron Skins")}
-      ${section("familiar", "🐸 Buddy Skins")}
+      ${section("familiar", "🐾 Pet Skins")}
     </div>
     <button class="btn secondary" id="ward-back">←  Back</button>
   `);
@@ -1693,24 +1693,24 @@ function confirmDialog(msg, onYes) {
 }
 function familiarToken(phase) {
   const active = phase === "mix" && GAME.unlocked.undo;
-  return `<div class="familiar" id="familiar">${equippedFamiliarChip()}${active ? `<span class="fam-badge">🐸</span>` : ""}</div>`;
+  return `<div class="familiar" id="familiar">${equippedFamiliarChip()}${active ? `<span class="fam-badge">🐾</span>` : ""}</div>`;
 }
 function wireFamiliar(phase) {
   const el = document.querySelector("#screen-" + phase + " #familiar"); if (!el) return;
   el.addEventListener("click", () => {
-    if (phase === "mix") { if (GAME.unlocked.undo) familiarUndo(); else toast("🐸 Unlock 'Undo' in Shop & Upgrades!"); }
-    else if (phase === "scoop") toast(GAME.unlocked.scoop ? "🐸 Better Scoop is boosting your haul!" : "🐸 Unlock 'Better Scoop' in Shop & Upgrades!");
-    else toast(GAME.unlocked.charm ? "🐸 Keen Nose — sniffing out extra charms & ingredients!" : "🐸 Unlock 'Keen Nose' in Shop & Upgrades!");
+    if (phase === "mix") { if (GAME.unlocked.undo) familiarUndo(); else toast("🐾 Unlock 'Undo' in Shop & Upgrades!"); }
+    else if (phase === "scoop") toast(GAME.unlocked.scoop ? "🐾 Better Scoop is boosting your haul!" : "🐾 Unlock 'Better Scoop' in Shop & Upgrades!");
+    else toast(GAME.unlocked.charm ? "🐾 Keen Nose — sniffing out extra charms & ingredients!" : "🐾 Unlock 'Keen Nose' in Shop & Upgrades!");
   });
 }
 function familiarUndo() {
   if (!ROUND.slots.length) { toast("Nothing to undo."); return; }
   if (GAME.treats <= 0) { toast("No treats left! Buy more with gold."); return; }
-  if (ROUND.treatsUsed >= BALANCE.MAX_TREATS_PER_ROUND) { toast("Toad's had enough (5 per round)."); return; }
-  confirmDialog("Undo the last ingredient? (1 treat) 🐸", () => {
+  if (ROUND.treatsUsed >= BALANCE.MAX_TREATS_PER_ROUND) { toast("Your pet's had enough (5 per round)."); return; }
+  confirmDialog("Undo the last ingredient? (1 treat) 🐾", () => {
     GAME.treats--; ROUND.treatsUsed++; save();
     ROUND.slots.pop();
-    toast("🐸 Removed the last ingredient.");
+    toast("🐾 Removed the last ingredient.");
     paintMix();
   });
 }

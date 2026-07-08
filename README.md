@@ -19,7 +19,14 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
-- 🐸 **Toad's "Keen Nose" (was "Charm Finder") now actually helps.** The old power
+- 🐾 **Meet your Pet.** Your little helper is now called your **Pet** (not "the
+  Toad") everywhere — since it can be reskinned as a dragon, cat, fox, unicorn and
+  more. The Toad is still one of the looks you can wear.
+- 🎯 **Less spoon-feeding.** The ingredients you're dealt are still steered toward
+  the customer's needs, but a bit less — need‑matching ingredients dropped from
+  ~67% to ~59%, so mixing takes a touch more thought (you're still always given
+  enough of the main need to work with).
+- 🐸 **Pet's "Keen Nose" (was "Charm Finder") now actually helps.** The old power
   only nudged charm luck (and quietly *reduced* ingredients). It's reworked to
   sniff out **a few more charms AND ingredients every round** — noticeably more of
   both — for players who've unlocked it.

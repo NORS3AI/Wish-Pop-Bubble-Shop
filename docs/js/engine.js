@@ -51,7 +51,7 @@ const BALANCE = {
   BONUS_MAX_FRENZY: 24,                // frenzy cap (crazy spawns, but bounded)
   BONUS_CHAIN_FRENZY: 0.5,             // frenzy re-bonus chance (super-critical → explodes to the cap)
   GOLD_MIN: 3, GOLD_MAX: 8,
-  NEED_BIAS: 0.38,               // chance a filler ingredient matches a need
+  NEED_BIAS: 0.22,               // chance a filler ingredient matches a need (lower = less spoon-fed)
   WILD_STRENGTH: 3,             // magic points the Wild charm adds
 
   // Cauldron

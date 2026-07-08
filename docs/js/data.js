@@ -113,12 +113,13 @@ const ALLERGY_IDEAS = {
   owl: "Light", gnome: "Mischief",
 };
 
-/* --- 7. Familiar (Toad) upgrade table ----------------------------------- */
+/* --- 7. Familiar (Pet) upgrade table — the pet's default look is a Toad, but it
+ * can be reskinned (dragon, cat, fox, …), so we call the creature a "Pet". ---- */
 const FAMILIAR = {
-  id: "toad", name: "Toad", emoji: "🐸",
+  id: "toad", name: "Pet", emoji: "🐸",
   abilities: {
     scoop: { name: "Better Scoop", desc: "Find more Wish Bubbles each round.", unlockCost: 100 },
-    charm: { name: "Keen Nose", desc: "Toad sniffs out a few more charms AND ingredients each round.", unlockCost: 250 },
+    charm: { name: "Keen Nose", desc: "Your pet sniffs out a few more charms AND ingredients each round.", unlockCost: 250 },
     undo:  { name: "Undo", desc: "In the cauldron, spend a treat to remove your last ingredient.", unlockCost: 500 },
   },
 };
