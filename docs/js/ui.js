@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v52"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v53"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1822,15 +1822,16 @@ function spawnBonusBubbles(cx, cy) {
   const frenzy = ROUND.bonusFrenzy;
   const cap = frenzy ? BALANCE.BONUS_MAX_FRENZY : BALANCE.BONUS_MAX_SPAWN;
   const remaining = cap - (ROUND.bonusSpawned || 0);
+  const bonusSet = ROUND.villain ? D.QUEEN_INGREDIENTS : null; // villain bonus bubbles stay in her pantry
   if (remaining <= 0) { // at the cap — don't dud; hand over one ingredient directly
-    const it = ENGINE.bonusBubbleItems(ROUND.wish, 1, 0)[0];
+    const it = ENGINE.bonusBubbleItems(ROUND.wish, 1, 0, bonusSet)[0];
     if (it && it.kind === "ingredient") { if (ROUND.stats) ROUND.stats.ingredients++; spawnFloatingIngredient(it.id, cx, cy, 850); }
     return;
   }
   const n = Math.min(R.int(BALANCE.BONUS_SPAWN_MIN, BALANCE.BONUS_SPAWN_MAX), remaining);
   ROUND.bonusSpawned = (ROUND.bonusSpawned || 0) + n;
   const chainChance = ROUND.bonusSpawned < cap ? (frenzy ? BALANCE.BONUS_CHAIN_FRENZY : BALANCE.BONUS_CHAIN_CHANCE) : 0;
-  const items = ENGINE.bonusBubbleItems(ROUND.wish, n, chainChance);
+  const items = ENGINE.bonusBubbleItems(ROUND.wish, n, chainChance, bonusSet);
   items.forEach((it, k) => {
     const idx = ROUND.haul.length; ROUND.haul.push(it);
     const holder = document.createElement("div"); holder.innerHTML = bubbleHTML(idx, true);
@@ -2162,8 +2163,9 @@ function transmuteIngredient(idx, fromEl) {
   const inst = ROUND.inventory[idx];
   if (!inst || !inst.id || inst.essence) { toast("Pick a whole ingredient to transmute."); return; }
   const needs = ROUND.wish.needs.map(n => n.type);
-  let pool = D.INGREDIENTS.filter(i => needs.includes(i.qualities[0]) && i.id !== inst.id);
-  if (!pool.length) pool = D.INGREDIENTS.filter(i => i.id !== inst.id);
+  const SET = ROUND.villain ? D.QUEEN_INGREDIENTS : D.INGREDIENTS; // villain rounds transmute within her pantry
+  let pool = SET.filter(i => needs.includes(i.qualities[0]) && i.id !== inst.id);
+  if (!pool.length) pool = SET.filter(i => i.id !== inst.id);
   const ing = R.pick(pool), oldName = D.INGREDIENT_BY_ID[inst.id].name;
   ROUND.inventory[idx] = { id: ing.id, potent: inst.potent };
   const ti = ROUND.charms.indexOf("transmute"); if (ti >= 0) ROUND.charms.splice(ti, 1);

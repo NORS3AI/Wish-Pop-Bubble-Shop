@@ -208,15 +208,16 @@ function generateHaul(wish, count, charmFinder, ingredientSet) {
 }
 /* Contents of a bonus bubble: extra ingredients (biased to the wish's needs),
  * with an occasional treat. No gold/charms — keeps the gold economy in check. */
-function bonusBubbleItems(wish, n, chainChance) {
+function bonusBubbleItems(wish, n, chainChance, ingredientSet) {
+  const SET = ingredientSet || DATA.INGREDIENTS;
   const needs = wish.needs.map(nd => nd.type);
   const out = [];
   for (let i = 0; i < n; i++) {
     if (chainChance && R.chance(chainChance)) { out.push({ kind: "bubble" }); continue; } // bonus can beget bonus (caller controls the rate + cap)
     if (R.chance(0.06)) { out.push({ kind: "treat" }); continue; }
     let ing;
-    if (R.chance(0.6)) { const t = R.pick(needs); const s = DATA.INGREDIENTS.filter(x => x.qualities[0] === t); ing = R.pick(s.length ? s : DATA.INGREDIENTS); }
-    else ing = R.pick(DATA.INGREDIENTS);
+    if (R.chance(0.6)) { const t = R.pick(needs); const s = SET.filter(x => x.qualities[0] === t); ing = R.pick(s.length ? s : SET); }
+    else ing = R.pick(SET);
     out.push({ kind: "ingredient", id: ing.id });
   }
   return out;
