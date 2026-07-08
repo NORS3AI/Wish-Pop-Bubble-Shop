@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v62"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v63"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1485,7 +1485,13 @@ const QUEEN_REQUIRED = 72, QUEEN_SKIN = "cauldron_queen", QUEEN_POISON_CHANCE = 
 // Per-piece poison: every ingredient you collect in a villain round independently rolls
 // for a hidden ☠️ taint, so even two of the SAME ingredient can differ. Rolled here at
 // collection time (only for villain rounds; normal rounds always get poison:false).
-function ingInst(id) { return { id, potent: false, poison: !!(ROUND && ROUND.villain) && R.chance(QUEEN_POISON_CHANCE) }; }
+function ingInst(id) {
+  const inst = { id, potent: false, poison: !!(ROUND && ROUND.villain) && R.chance(QUEEN_POISON_CHANCE) };
+  const ing = D.INGREDIENT_BY_ID[id];
+  // flex infused ingredients get a RANDOM magic from this round's needs — always useful
+  if (ing && ing.flex && ROUND && ROUND.wish && ROUND.wish.needs.length) inst.magic = R.pick(ROUND.wish.needs.map(n => n.type));
+  return inst;
+}
 const QUEEN_PACKAGES = [
   { gold: 50,  scoops: 2 },
   { gold: 70,  scoops: 5 },
@@ -2184,7 +2190,7 @@ function paintMixTop() {
   // quality (or a Wild charm's magic) is that need. No timers.
   w.needs.forEach(n => {
     if (n.revealed) return;
-    const found = ROUND.slots.some(inst => (inst.wild || inst.essence) ? inst.magic === n.type : D.INGREDIENT_BY_ID[inst.id].qualities[0] === n.type);
+    const found = ROUND.slots.some(inst => (inst.wild || inst.essence || inst.magic) ? inst.magic === n.type : D.INGREDIENT_BY_ID[inst.id].qualities[0] === n.type);
     if (found) n.revealed = true;
   });
   const req = w.requiredMatch, meets = score.weighted >= req;
@@ -2278,7 +2284,9 @@ function invTile(inst, idx) {
   const cuttable = ROUND.toolMode ? " cuttable" : "";
   const poisoned = ROUND.insight && inst.poison; // Insight reveals which pieces hide poison
   const infused = ing.infused ? INFUSED_LABEL[ing.infused] : "";
-  const quals = (ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0])
+  // flex infused: show its assigned (per-instance) magic, not the def's placeholder qualities
+  const quals = (inst.magic ? magicDot(inst.magic) + " " + inst.magic
+      : (ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0]))
     + (poisoned ? ` <span style="color:var(--bad)">☠️ Poison</span>` : "");
   return `<div class="inv-tile ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}${cuttable}${poisoned ? " poisoned" : ""}${ing.infused ? " infused" : ""}" id="invt-${idx}">
     <div class="emoji">${ingArt(inst.id)}${poisoned ? `<span class="poison-badge">☠️</span>` : ""}${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div><div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${ing.name}</div><div class="q">${quals}</div>${infused ? `<div class="infused-tag">${infused}</div>` : ""}</div>`;
@@ -2299,7 +2307,7 @@ const INFUSED_LABEL = { potentNext: "✨ next is Potent", lockBar: "❄️ locks
 const INFUSED_PER_ROUND = 1;   // guaranteed per round for now (prototype); tune later
 // Replace a few random ingredient slots in the haul with infused ingredients.
 function injectInfused(round) {
-  const list = D.INFUSED_INGREDIENTS || []; if (!list.length) return;
+  const list = currentRealm().infused || D.INFUSED_INGREDIENTS || []; if (!list.length) return; // realm's own reskins
   const idxs = []; round.haul.forEach((it, i) => { if (it.kind === "ingredient" && !D.INGREDIENT_BY_ID[it.id].infused) idxs.push(i); });
   for (let i = idxs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = idxs[i]; idxs[i] = idxs[j]; idxs[j] = t; }
   const n = INFUSED_PER_ROUND + (Math.random() < 0.4 ? 1 : 0); // 1, sometimes 2
@@ -2314,9 +2322,10 @@ function injectKeys(round) {
 }
 // Which need should a lockBar ingredient freeze: one it fills (by its magics), else
 // the fullest unfrozen need (so it's never wasted).
-function pickFreezeNeed(ing) {
+function pickFreezeNeed(ing, inst) {
   const needs = ROUND.wish.needs;
-  for (const q of ing.qualities) { const n = needs.find(x => x.type === q && !x.frozen); if (n) return n; }
+  const mags = (inst && inst.magic) ? [inst.magic] : ing.qualities; // flex: the bar it actually fills
+  for (const q of mags) { const n = needs.find(x => x.type === q && !x.frozen); if (n) return n; }
   const sc = scoreMix(ROUND.slots, ROUND.wish, ROUND.allergyOffset || 0);
   let best = null, bestPts = -1;
   needs.forEach((n, i) => { if (!n.frozen && sc.perNeed[i].points > bestPts) { bestPts = sc.perNeed[i].points; best = n; } });
@@ -2330,7 +2339,7 @@ function applyInfusedEffect(inst) {
     ROUND.potentNext = true; SFX.unlock(); SFX.charm();
     toast(`${ing.emoji} ${ing.name} — your next ingredient will be Potent! ✨`);
   } else if (ing.infused === "lockBar") {
-    const need = pickFreezeNeed(ing);
+    const need = pickFreezeNeed(ing, inst);
     if (need) { need.frozen = true; need.revealed = true; SFX.unlock(); SFX.charm(); toast(`${ing.emoji} ${ing.name} — ${need.type} is locked; it can't curdle! ❄️`); }
     else { toast(`${ing.emoji} ${ing.name} fizzles — nothing to lock.`); }
   }
@@ -2356,13 +2365,14 @@ function cutIngredient(idx, fromEl) {
   if (!inst || !inst.id || inst.essence) { toast("Pick a whole ingredient to cut."); return; }
   const ing = D.INGREDIENT_BY_ID[inst.id], wasPotent = !!inst.potent;
   ROUND.inventory.splice(idx, 1);
-  // a Potent ingredient cuts into Potent essences (potency carries through)
-  ing.qualities.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: wasPotent }));
+  // flex ingredients cut into their single assigned magic; normal ones into each quality
+  const cutMagics = inst.magic ? [inst.magic] : ing.qualities;
+  cutMagics.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: wasPotent }));
   const ki = ROUND.charms.indexOf("knife"); if (ki >= 0) ROUND.charms.splice(ki, 1);
   ROUND.toolMode = null;
   SFX.unlock(); SFX.chop();
   if (navigator.vibrate) navigator.vibrate([8, 30, 8]);
-  toast(`🔪 Cut ${wasPotent ? "Potent " : ""}${ing.name} into ${ing.qualities.length} ${wasPotent ? "Potent " : ""}pure magics!`);
+  toast(`🔪 Cut ${wasPotent ? "Potent " : ""}${ing.name} into ${cutMagics.length} ${wasPotent ? "Potent " : ""}pure magic${cutMagics.length > 1 ? "s" : ""}!`);
   paintMix();
 }
 // Transmute: change a whole ingredient into a random NEEDED one (keeps potent).

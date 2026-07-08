@@ -309,9 +309,9 @@ function newVillainRound(opts) {
 /* --- Triple match: 3 identical ingredients -> 1 Potent ------------------ */
 function applyTripleMatch(inventory) {
   const counts = {};
-  inventory.forEach(inst => { if (inst.id && !inst.wild && !inst.essence) counts[inst.id] = (counts[inst.id] || 0) + 1; });
+  inventory.forEach(inst => { if (inst.id && !inst.wild && !inst.essence && !inst.magic) counts[inst.id] = (counts[inst.id] || 0) + 1; });
   const out = [], merged = [];
-  inventory.filter(i => i.wild || i.essence).forEach(i => out.push(i)); // pass wild + essences through untouched
+  inventory.filter(i => i.wild || i.essence || i.magic).forEach(i => out.push(i)); // pass wild + essences + flex-magic through untouched
   Object.keys(counts).forEach(id => {
     let n = counts[id];
     while (n >= 3) { out.push({ id, potent: true }); merged.push(id); n -= 3; }
@@ -331,6 +331,7 @@ function allergyStatus(slots, allergyType, offset) {
     if (inst.poison && allergyType === "Poison") points += BALANCE.SECONDARY_POWER * pinch;
     if (inst.wild) { if (inst.magic === allergyType) points += inst.strength * pinch; return; }
     if (inst.essence) { if (inst.magic === allergyType) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; }
+    if (inst.magic) { if (inst.magic === allergyType) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; } // flex infused: single assigned magic
     const ing = DATA.INGREDIENT_BY_ID[inst.id];
     let p = ingredientPointsFor(ing, allergyType);
     if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
@@ -355,6 +356,7 @@ function pointsForNeed(slots, type) {
     const pinch = inst.shrunk ? BALANCE.PINCH_MULT : 1;
     if (inst.wild) { if (inst.magic === type) points += inst.strength * pinch; return; }
     if (inst.essence) { if (inst.magic === type) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; }
+    if (inst.magic) { if (inst.magic === type) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; } // flex infused: single assigned magic
     const ing = DATA.INGREDIENT_BY_ID[inst.id];
     let p = ingredientPointsFor(ing, type);
     if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT * 10) / 10;

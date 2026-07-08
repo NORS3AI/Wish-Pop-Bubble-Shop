@@ -108,17 +108,22 @@ const QUEEN_INGREDIENTS = [
 ];
 QUEEN_INGREDIENTS.forEach(i => { i.baseQualities = i.qualities.slice(); INGREDIENT_BY_ID[i.id] = i; });
 /* --- Infused ingredients — a normal ingredient with a built-in charm-like effect
- * that fires when you drop it in the cauldron (no charm slot needed). Introduced as
- * the new "realm mechanic". They carry their own magic too, so the effect is bundled
- * to a magic you may or may not need. The MECHANIC stays constant across realms; only
- * the name/art/magics get reskinned per realm (Dragon Egg -> Golden Goose Egg, etc.).
+ * that fires when you drop it in the cauldron (no charm slot needed). The MECHANIC
+ * stays constant across realms; only the name/art get reskinned per realm.
  *   infused: "potentNext" — your NEXT added ingredient counts double (like Potent charm)
  *   infused: "lockBar"    — locks the need bar it fills so it can't overfill/curdle
- * ---------------------------------------------------------------------------------- */
+ * flex:true → its magic is RANDOMIZED to one of the round's needs when collected (per
+ * instance, on GAME state), so it's always useful and works in every realm. -------- */
 const INFUSED_INGREDIENTS = [
-  { id: "dragon_egg", name: "Dragon Egg", qualities: ["Courage", "Strength"],  emoji: "🥚", infused: "potentNext" },
-  { id: "frost_gem",  name: "Frost Gem",  qualities: ["Calm", "Protection"],   emoji: "❄️", infused: "lockBar" },
+  { id: "dragon_egg", name: "Dragon Egg", qualities: ["Courage", "Strength"],  emoji: "🥚", infused: "potentNext", flex: true },
+  { id: "frost_gem",  name: "Frost Gem",  qualities: ["Calm", "Protection"],   emoji: "❄️", infused: "lockBar",    flex: true },
 ];
+// King's Courtyard reskins (same effects, royal flavor). Golden Goose Egg is saved for Beanstalk Bank.
+const COURT_INFUSED = [
+  { id: "kc_griffin_egg", name: "Griffin Egg", qualities: ["Valor", "Majesty"], emoji: "🪺", infused: "potentNext", flex: true },
+  { id: "kc_royal_seal",  name: "Royal Seal",  qualities: ["Honor", "Wisdom"],  emoji: "🔒", infused: "lockBar",    flex: true },
+];
+COURT_INFUSED.forEach(i => INGREDIENT_BY_ID[i.id] = i);
 INFUSED_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
 /* --- King's Courtyard pantry — the realm's own ingredients (regular 12 magics,
  * all-new royal/feast icons never used elsewhere). Covers every magic so any wish
@@ -188,7 +193,7 @@ const COURTYARD_CUSTOMERS = [
 const REALMS = [
   { id: "willow",    name: "Willow-Wish Village", icon: "🏘️", tagline: "The cozy hamlet where your bubble shop began." },
   { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.",
-    unlock: { gold: 3000, keys: 10 }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS, magics: COURT_MAGIC_TYPES },
+    unlock: { gold: 3000, keys: 10 }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS, magics: COURT_MAGIC_TYPES, infused: COURT_INFUSED },
   { id: "oasis",     name: "Forgotten Oasis",     icon: "🏜️", comingSoon: true, tagline: "Lamps, genies, and desert wishes." },
   { id: "thieves",   name: "Thieves' Corner",     icon: "🗝️", comingSoon: true, tagline: "Rogues, locks, and light fingers." },
   { id: "beanstalk", name: "Beanstalk Bank",      icon: "🌱", comingSoon: true, tagline: "Giants, gold, and golden geese." },
@@ -350,7 +355,7 @@ QUESTS.daily.concat(QUESTS.weekly).forEach(q => QUEST_BY_ID[q.id] = q);
 
 /* Expose as a single namespace */
 const DATA = {
-  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, COURT_MAGIC, COURT_MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, INFUSED_INGREDIENTS, COURTYARD_INGREDIENTS,
+  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, COURT_MAGIC, COURT_MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, INFUSED_INGREDIENTS, COURT_INFUSED, COURTYARD_INGREDIENTS,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS, REALMS, REALM_BY_ID,
   FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
   QUESTS, QUEST_BY_ID,

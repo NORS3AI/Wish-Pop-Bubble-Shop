@@ -19,6 +19,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ✨ **Infused ingredients are now flexible — their magic adapts to your wish!** Instead of
+  a fixed magic, each infused ingredient (Dragon Egg, Frost Gem, and friends) now rolls a
+  **random magic from your current needs** when you find it — so it's *always* useful, and
+  its real value is the **perk**. Two of the same can even come up as different magics.
+- 🏰 **King's Courtyard gets its own infused ingredients:** the **Griffin Egg 🪺** (your next
+  ingredient is Potent) and the **Royal Seal 🔒** (locks a bar so it can't spoil) — same
+  powers as the village's Dragon Egg / Frost Gem, just reskinned for the realm. (The Golden
+  Goose Egg is being saved for Beanstalk Bank!)
+
 - 👑 **King's Courtyard has its own MAGIC now, too!** The Courtyard no longer borrows the
   village's magics — it runs on **10 brand-new regal magics** you've never seen: **Valor,
   Majesty, Wisdom, Glamour, Mirth, Honor, Fortune, Cunning, Radiance, Serenity**, each with

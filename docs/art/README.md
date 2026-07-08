@@ -162,6 +162,8 @@ These appear when you're playing in King's Courtyard. Optional — emojis until 
 | `ing_kc_blackbird_pie.png` | 🥧 Blackbird Pie |
 | `ing_kc_silk_rosette.png` | 🏵️ Silk Rosette |
 | `ing_kc_royal_cocoa.png` | 🍫 Royal Cocoa |
+| `ing_kc_griffin_egg.png` | 🪺 Griffin Egg (infused: next ingredient is Potent) |
+| `ing_kc_royal_seal.png` | 🔒 Royal Seal (infused: locks a bar) |
 
 ### The Evil Queen's cursed pantry (villain event only)
 These only show up during the Evil Queen ransom event. Optional — they use emojis until you add art.
