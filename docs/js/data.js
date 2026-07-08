@@ -74,11 +74,14 @@ INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
  * Registered in INGREDIENT_BY_ID so the scorer resolves them, but kept OUT of
  * the normal INGREDIENTS pool so they never appear in regular rounds. Their
  * magics are hidden — the player learns them by brewing. -------------------- */
+// Base magics are all "need" magics (never Poison). Poison is added at random as a
+// HIDDEN quality to a subset of these each event (see assignQueenPoison in ui.js),
+// so which ingredients are poisonous changes every time — never a primary quality.
 const QUEEN_INGREDIENTS = [
   { id: "q_spidersilk", name: "Spider Silk",   qualities: ["Shadow", "Dread"],   emoji: "🕸️" },
-  { id: "q_venomfang",  name: "Venom Fang",    qualities: ["Poison", "Malice"],  emoji: "🐍" },
+  { id: "q_venomfang",  name: "Venom Fang",    qualities: ["Malice", "Dread"],   emoji: "🐍" },
   { id: "q_batwing",    name: "Bat Wing",      qualities: ["Dread", "Shadow"],   emoji: "🦇" },
-  { id: "q_scorpsting", name: "Scorpion Sting",qualities: ["Poison", "Rot"],     emoji: "🦂" },
+  { id: "q_scorpsting", name: "Scorpion Sting",qualities: ["Rot", "Malice"],     emoji: "🦂" },
   { id: "q_gravemoss",  name: "Grave Moss",    qualities: ["Rot", "Curse"],      emoji: "🪳" },
   { id: "q_evileye",    name: "Evil Eye",      qualities: ["Curse", "Malice"],   emoji: "🧿" },
   { id: "q_boneash",    name: "Bone Ash",      qualities: ["Frost", "Dread"],    emoji: "💀" },
@@ -86,7 +89,7 @@ const QUEEN_INGREDIENTS = [
   { id: "q_hexcrystal", name: "Hex Crystal",   qualities: ["Shadow", "Curse"],   emoji: "🔮" },
   { id: "q_creepvine",  name: "Creep Vine",    qualities: ["Frost", "Rot"],      emoji: "🕷️" },
 ];
-QUEEN_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
+QUEEN_INGREDIENTS.forEach(i => { i.baseQualities = i.qualities.slice(); INGREDIENT_BY_ID[i.id] = i; });
 
 /* --- 3. Special charms — power-ups popped from bubbles, played in the
  * cauldron (a small tray; tap to use). Mostly deterministic = skill in WHEN

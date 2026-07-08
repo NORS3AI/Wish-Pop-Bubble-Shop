@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v53"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v54"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1337,7 +1337,18 @@ function goblinFinish() {
 /* skin. First of a planned villain series.                                  */
 /* ======================================================================= */
 let QUEEN = null;
-const QUEEN_REQUIRED = 72, QUEEN_SKIN = "cauldron_queen";
+const QUEEN_REQUIRED = 72, QUEEN_SKIN = "cauldron_queen", QUEEN_POISON_FRAC = 0.4; // ~2 in 5 ingredients hide poison
+// Randomly hide Poison in a subset of the pantry, fresh each event. Poison is always
+// appended (a HIDDEN quality, never the primary), so which ingredients are toxic
+// changes every visit — you have to discover them.
+function assignQueenPoison() {
+  const list = D.QUEEN_INGREDIENTS;
+  list.forEach(i => { i.qualities = i.baseQualities.slice(); });      // reset to poison-free base
+  const order = list.slice();
+  for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); const t = order[k]; order[k] = order[j]; order[j] = t; }
+  const n = Math.max(1, Math.round(list.length * QUEEN_POISON_FRAC));
+  for (let k = 0; k < n; k++) order[k].qualities.push("Poison");      // hidden (non-primary) taint
+}
 const QUEEN_PACKAGES = [
   { gold: 50,  scoops: 2 },
   { gold: 70,  scoops: 5 },
@@ -1366,6 +1377,7 @@ function queenCustomer() {
 }
 function renderQueenIntro() {
   SFX.unlock(); SFX.fanfare();
+  assignQueenPoison();               // sprinkle hidden poison anew for this visit
   QUEEN = { wish: queenWish() };
   const w = QUEEN.wish, line = R.pick(QUEEN_LINES);
   const recipe = w.needs.map(n => `${magicDot(n.type)} ${n.type}`).join(" · ");
@@ -1380,9 +1392,9 @@ function renderQueenIntro() {
       <div class="card" style="width:100%;max-width:330px">
         <div style="font-weight:800;text-align:center;margin-bottom:4px">🧪 Ransom Recipe</div>
         <div style="text-align:center">${recipe}</div>
-        <div class="stat-line" style="margin-top:6px"><span>☠️ Hazard</span><span style="color:var(--bad)">${magicDot("Poison")} Poison — any trace fails!</span></div>
+        <div class="stat-line" style="margin-top:6px"><span>☠️ Hazard</span><span style="color:var(--bad)">${magicDot("Poison")} hidden Poison</span></div>
       </div>
-      <div class="muted" style="max-width:315px">Pay for scoops of her cursed pantry, then <b>scoop &amp; pop</b> her bubbles for ingredients (and charms!). Brew a potion matching the recipe — but some ingredients hide <b>☠️ Poison</b>, and <b>even a trace of it ruins the brew</b>. Tap an ingredient in the cauldron to pull it back out. Match <b>${w.requiredMatch}%+</b> with a <b>clean</b> potion to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
+      <div class="muted" style="max-width:315px">Pay for scoops of her cursed pantry, then <b>scoop &amp; pop</b> her bubbles for ingredients (and charms!). Brew a potion matching the recipe — but a few ingredients <b>secretly hide ☠️ Poison</b> (different ones each visit!). Keep the poison meter in the <b>green</b> — let it creep to <b>yellow</b> and the brew is ruined. Tap an ingredient in the cauldron to pull it back out. Match <b>${w.requiredMatch}%+</b> with a <b>clean</b> potion to win your Pet back <b>and</b> her ${skin.chip} <b>${skin.name}</b> skin.</div>
       <div class="muted" style="max-width:315px;font-size:12px">🐾 She's holding your Pet captive — <b>none of its abilities help you here</b>.</div>
       <div class="queen-buys">
         ${QUEEN_PACKAGES.map((pk, i) => `<button class="btn ${afford(pk.gold) ? "" : "secondary"} queen-buy" data-i="${i}" ${afford(pk.gold) ? "" : "disabled"}>🪙 ${pk.gold} → ${pk.scoops} scoops</button>`).join("")}
@@ -2528,7 +2540,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, assignQueenPoison, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
