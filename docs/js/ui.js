@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v41"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v42"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -684,15 +684,16 @@ const FAIRY_LADDER = [
 ];
 const FAIRY_SHOW = 5, FAIRY_NEED = 3, FAIRY_BASKETS = 6;
 let fairyRung = 1;
-function maybeFairyEvent() {
+function maybeEvent() {
   if (GAME.nextEventAt < 0) { GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save(); return false; }
   if (servedTotal < GAME.nextEventAt) return false;
   GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save();
-  renderFairyIntro();
+  if (Math.random() < 0.5) renderDuelIntro(); else renderFairyIntro();  // pick an event
   return true;
 }
 function renderFairyIntro() {
   fairyRung = 1;
+  SFX.unlock(); SFX.fanfare();
   html("event", `
     ${hud("A Visitor!")}
     <div class="grow center" style="gap:16px">
@@ -771,13 +772,157 @@ function fairyPayout(reward) {
 }
 
 /* ======================================================================= */
+/* DUEL — draft ingredients from a shared pool; closest to all-green wins.   */
+/* ======================================================================= */
+let DUEL = null;
+const DUEL_POOL = 16, DUEL_MISTAKE = 0.4;
+const DUEL_WIN = { gold: 80, stardust: 15 }, DUEL_DRAW = { gold: 30 };
+const DUEL_TAUNTS = ["Bet I brew a better potion than you!", "Loser buys the sprinkles!", "Prepare to be out‑mixed!", "My greens will be greener!"];
+function duelWish() {
+  const w = generateWish(R.pick(D.CUSTOMERS), "hard", false); // 3 needs
+  w.allergy = null; w.allergy2 = null;
+  return w;
+}
+function setupDuel() {
+  const challenger = R.pick(D.CUSTOMERS);
+  const you = { wish: duelWish(), slots: [] }, ai = { wish: duelWish(), slots: [] };
+  // build a shared pool relevant to BOTH sides' needs, then fill with random
+  const pool = [];
+  const needTypes = [].concat(you.wish.needs.map(n => n.type), ai.wish.needs.map(n => n.type));
+  needTypes.forEach(t => { const s = D.INGREDIENTS.filter(i => i.qualities[0] === t); if (s.length) pool.push(R.pick(s).id); });
+  while (pool.length < DUEL_POOL) pool.push(R.pick(D.INGREDIENTS).id);
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+  DUEL = { challenger, you, ai, pool: pool.slice(0, DUEL_POOL), turn: "you", first: "you", over: false, line: R.pick(DUEL_TAUNTS) };
+}
+function renderDuelIntro() {
+  SFX.unlock(); SFX.fanfare();
+  setupDuel();
+  const c = DUEL.challenger;
+  html("event", `
+    ${hud("A Challenger!")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${custArt(c, "cust-big")}</div>
+      <div style="font-weight:800;font-size:20px">${c.name} challenges you!</div>
+      <div class="speech">“${DUEL.line}”</div>
+      <div class="muted" style="max-width:310px">A <b>mixing duel</b>! Draft ingredients from the shared pile — whoever lands their three bars <b>closest to green</b> wins. Rock‑Paper‑Scissors for who drafts first!</div>
+      <div class="rps-row">
+        <button class="rps-btn" data-rps="rock">🪨</button>
+        <button class="rps-btn" data-rps="paper">📄</button>
+        <button class="rps-btn" data-rps="scissors">✂️</button>
+      </div>
+      <div id="rps-out" class="muted" style="min-height:44px"></div>
+    </div>
+    <button class="btn secondary" id="duel-skip">Not now</button>
+  `);
+  document.querySelectorAll(".rps-btn").forEach(b => b.addEventListener("click", () => duelRPS(b.dataset.rps)));
+  on("#duel-skip", "click", startRound);
+  show("event");
+}
+function duelRPS(you) {
+  const opts = ["rock", "paper", "scissors"], em = { rock: "🪨", paper: "📄", scissors: "✂️" };
+  const ai = R.pick(opts);
+  const beats = { rock: "scissors", paper: "rock", scissors: "paper" };
+  const out = $("#rps-out"); if (!out) return;
+  let verdict, first;
+  if (you === ai) { verdict = "Tie — throw again!"; first = null; }
+  else if (beats[you] === ai) { verdict = "You win the throw — you draft first!"; first = "you"; }
+  else { verdict = `${DUEL.challenger.name} wins the throw — they draft first.`; first = "ai"; }
+  SFX.pop(2);
+  out.innerHTML = `You ${em[you]} vs ${em[ai]} ${DUEL.challenger.name}<br><b>${verdict}</b>${first ? `<br><button class="btn good small" id="duel-begin" style="margin-top:8px">Begin!</button>` : ""}`;
+  if (first) { DUEL.first = first; DUEL.turn = first; on("#duel-begin", "click", () => { renderDuel(); if (first === "ai") setTimeout(duelAiTurn, 700); }); }
+}
+function duelMeter(s, hide, magicType, revealed) {
+  const MAX = BALANCE.BAR_MAX, inBand = s.pct === 100, over = s.points > s.bandHigh;
+  const fillPct = Math.min(100, s.points / MAX * 100);
+  const bandLeft = Math.max(0, s.bandLow / MAX * 100), bandW = Math.max(2, (s.bandHigh - s.bandLow) / MAX * 100);
+  const col = inBand ? "var(--good)" : over ? "var(--bad)" : (hide ? "var(--purple)" : D.MAGIC[magicType]);
+  const lbl = hide ? "❔" : (revealed ? magicType : "❔");
+  return `<div class="duel-meter"><span class="dm-lbl">${inBand ? "✓ green" : lbl}</span>
+    <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${col}"></i></div></div>`;
+}
+function duelBars(side) {
+  const d = DUEL[side], sc = scoreMix(d.slots, d.wish, 0), hide = side === "ai";
+  return d.wish.needs.map((n, i) => duelMeter(sc.perNeed[i], hide, n.type, n.revealed)).join("");
+}
+function renderDuel() {
+  const c = DUEL.challenger, yours = DUEL.turn === "you" && !DUEL.over;
+  const poolTiles = DUEL.pool.map((id, i) => `<button class="duel-tile ${yours ? "" : "off"}" data-i="${i}">${ingArt(id)}<span>${D.INGREDIENT_BY_ID[id].name}</span></button>`).join("");
+  html("event", `
+    ${hud("Mixing Duel")}
+    <div class="duel-side foe">
+      <div class="duel-name">${custArt(c)} ${c.name} ${DUEL.turn === "ai" && !DUEL.over ? `<span class="duel-think">…choosing</span>` : ""}</div>
+      ${duelBars("ai")}
+    </div>
+    <div class="duel-pool-wrap grow">
+      <div class="duel-turn ${yours ? "you" : "foe"}">${DUEL.over ? "" : yours ? "👇 Your pick — tap an ingredient" : `${c.name} is drafting…`}</div>
+      <div class="duel-pool">${DUEL.pool.length ? poolTiles : `<div class="muted">Pile's empty!</div>`}</div>
+    </div>
+    <div class="duel-side mine">
+      <div class="duel-name">🧑‍🍳 You <span class="muted" style="font-size:12px">· main: ${magicDot(DUEL.you.wish.needs[0].type)} ${DUEL.you.wish.needs[0].type}</span></div>
+      ${duelBars("you")}
+    </div>
+    <button class="btn ${yours ? "good" : "secondary"}" id="duel-done" ${yours ? "" : "disabled"}>Done — score it!</button>
+  `);
+  if (yours) document.querySelectorAll(".duel-tile").forEach(t => t.addEventListener("click", () => duelYouPick(+t.dataset.i)));
+  on("#duel-done", "click", duelResolve);
+  show("event");
+}
+function duelYouPick(idx) {
+  if (DUEL.turn !== "you" || DUEL.over) return;
+  const id = DUEL.pool.splice(idx, 1)[0]; DUEL.you.slots.push({ id, potent: false });
+  // reveal any of your mystery needs the played ingredient's main magic matches
+  const main = D.INGREDIENT_BY_ID[id].qualities[0];
+  DUEL.you.wish.needs.forEach(n => { if (!n.revealed && n.type === main) n.revealed = true; });
+  SFX.pop(3);
+  if (!DUEL.pool.length) { duelResolve(); return; }
+  DUEL.turn = "ai"; renderDuel(); setTimeout(duelAiTurn, 700);
+}
+function duelAiTurn() {
+  if (!DUEL || DUEL.over || DUEL.turn !== "ai") return;
+  const d = DUEL.ai, base = scoreMix(d.slots, d.wish, 0).weighted;
+  const ranked = DUEL.pool.map((id, idx) => ({ idx, gain: scoreMix(d.slots.concat([{ id, potent: false }]), d.wish, 0).weighted - base })).sort((a, b) => b.gain - a.gain);
+  let pick = ranked[0].idx;
+  if (Math.random() < DUEL_MISTAKE && ranked.length > 1) pick = ranked[1 + Math.floor(Math.random() * Math.min(2, ranked.length - 1))].idx; // beatable: sometimes not optimal
+  const id = DUEL.pool.splice(pick, 1)[0]; d.slots.push({ id, potent: false });
+  SFX.pop(1);
+  if (!DUEL.pool.length) { duelResolve(); return; }
+  DUEL.turn = "you"; renderDuel();
+}
+function duelResolve() {
+  if (DUEL.over) return; DUEL.over = true;
+  const you = scoreMix(DUEL.you.slots, DUEL.you.wish, 0).weighted;
+  const ai = scoreMix(DUEL.ai.slots, DUEL.ai.wish, 0).weighted;
+  const c = DUEL.challenger;
+  const win = you > ai, draw = you === ai;
+  const reward = win ? DUEL_WIN : draw ? DUEL_DRAW : null;
+  const got = reward ? grantReward(reward) : ""; save();
+  if (win) { SFX.perfect(); confettiOver($("#app")); } else if (draw) SFX.charm(); else SFX.sneeze();
+  html("event", `
+    ${hud("Duel Result")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${win ? "🏆" : draw ? "🤝" : "😅"}</div>
+      <div class="result-title ${win ? "win" : "lose"}">${win ? "You win the duel!" : draw ? "A draw!" : `${c.name} wins!`}</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>🧑‍🍳 You — closest to green</span><span><b>${you}%</b></span></div>
+        <div class="stat-line"><span>${custArt(c)} ${c.name}</span><span><b>${ai}%</b></span></div>
+        ${reward ? `<div class="stat-line"><span>Prize</span><span class="gold">${got}</span></div>` : `<div class="stat-line"><span>Prize</span><span class="muted">better luck next time!</span></div>`}
+      </div>
+      <p class="muted" style="max-width:300px">${win ? "Your potion was the greenest in the land! 🌿" : draw ? "Dead even — a rematch is surely coming." : "So close! You'll get them next time."}</p>
+    </div>
+    <button class="btn" id="duel-next">Next Customer  →</button>
+  `);
+  on("#duel-next", "click", startRound);
+  show("event");
+}
+
+/* ======================================================================= */
 /* CUSTOMER                                                                */
 /* ======================================================================= */
 function startRound() {
   SFX.unlock();
   stopRoundTimers();
   refreshQuests();
-  if (maybeFairyEvent()) return;   // a fairytale event takes this turn instead of a customer
+  if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm });
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
   // when scooping begins.
@@ -816,7 +961,7 @@ function renderCustomer() {
     </div>
     <button class="btn ${w.boss ? "good" : ""}" id="scoop-btn">Start Scoop  ✨</button>
   `);
-  if (w.boss) { SFX.unlock(); SFX.charm(); }
+  if (w.boss || ROUND.rush) { SFX.unlock(); SFX.fanfare(); } // special arrival — hard to miss
   on("#scoop-btn", "click", renderScoop);
   show("customer");
 }
@@ -1817,7 +1962,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeFairyEvent };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

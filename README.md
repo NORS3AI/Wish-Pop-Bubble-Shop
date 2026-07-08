@@ -19,6 +19,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ⚔️ **Fairytale events: the Mixing Duel!** Every so often a rival mixer struts in
+  and challenges you to a **potion duel**. Win a quick round of **rock–paper–scissors**
+  to decide who drafts first, then take turns picking from a **shared pile of
+  ingredients** — whoever's potion lands closest to all-green wins **gold + Stardust**.
+  Your rival is good but beatable most of the time, and losing costs you nothing.
+- 🎺 **A fanfare for special guests.** Bosses, "in a rush" customers, and fairytale
+  events now arrive with a little **trumpet ta-da** so you won't breeze past them.
+- ⏳ **Events are rarer now.** Special events show up roughly every 30 customers
+  (was every dozen) — a nice surprise rather than a constant interruption.
 - 🧚 **Fairytale events begin — the Fairy's Matching game!** Every so often (about
   every dozen customers) a **Fairy Godmother** drops by with a sorting game: tap
   each of 5 ingredients into the right **magic basket** (any one of its magics

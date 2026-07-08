@@ -660,3 +660,32 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .ftile.bad { border-color: var(--bad); background: rgba(255,107,107,.12); }
 .fairy-result { text-align: center; font-weight: 800; margin: 8px 0; font-size: 15px; }
 .fairy-result.win { color: var(--good); } .fairy-result.lose { color: var(--gold); }
+
+/* --- Duel event --- */
+.rps-row { display: flex; gap: 14px; justify-content: center; }
+.rps-btn { width: 64px; height: 64px; border-radius: 16px; border: 1px solid var(--line); background: var(--card2);
+  font-size: 32px; cursor: pointer; }
+.rps-btn:active { transform: scale(.9); }
+.duel-side { padding: 8px 10px; border-radius: 14px; background: var(--card2); border: 1px solid var(--line); }
+.duel-side.foe { margin-bottom: 6px; }
+.duel-side.mine { margin-top: 6px; border-color: rgba(126,224,138,.4); }
+.duel-name { font-weight: 800; font-size: 14px; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+.duel-name img.art { height: 1.2em; }
+.duel-think, .duel-turn.foe { color: var(--gold); }
+.duel-meter { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+.duel-meter .dm-lbl { font-size: 11px; font-weight: 700; width: 62px; text-align: right; color: var(--ink-dim); }
+.duel-meter .meter { flex: 1; height: 12px; }
+.duel-turn { text-align: center; font-weight: 800; font-size: 13px; margin: 6px 0; }
+.duel-turn.you { color: var(--good); }
+.duel-pool-wrap { display: flex; flex-direction: column; min-height: 0; }
+.duel-pool { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; align-content: flex-start; overflow-y: auto; }
+.duel-tile { width: 74px; padding: 7px 3px; border-radius: 11px; cursor: pointer;
+  background: var(--card2); border: 1px solid var(--line); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 700; }
+.duel-tile img.art { height: 26px; width: auto; }
+.duel-tile span { text-align: center; line-height: 1.1; }
+.duel-tile:active { transform: scale(.92); }
+.duel-tile.off { opacity: .5; pointer-events: none; }
+/* the sweet meter needs a base height in the duel (it's inline there) */
+.duel-meter .meter.sweet { border-radius: 6px; background: rgba(255,255,255,.08); position: relative; overflow: visible; }
+.duel-meter .meter.sweet > i { display: block; height: 100%; border-radius: 6px; }

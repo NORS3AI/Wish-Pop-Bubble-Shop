@@ -175,6 +175,14 @@ const SFX = (() => {
     tone(990, t + 0.09, 0.28, { type: "triangle", peak: 0.18 });
     noiseBurst(t, 0.09, { freq: 1400, q: 0.7, peak: 0.16, type: "bandpass" });
   }
+  // Trumpet fanfare — "ta-da-DAAA" — announces a special arrival (boss, event, duel).
+  function fanfare() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    [392, 523, 659].forEach((f, i) => tone(f, t + i * 0.12, 0.17, { type: "sawtooth", peak: 0.2 })); // G4 C5 E5 rising
+    tone(784, t + 0.4, 0.55, { type: "sawtooth", peak: 0.26 });   // held G5
+    tone(1046, t + 0.4, 0.55, { type: "triangle", peak: 0.14 });  // octave shimmer
+    noiseBurst(t + 0.4, 0.3, { freq: 6500, q: 0.5, peak: 0.05, type: "highpass" });
+  }
   // Perfect! — a triumphant fanfare with a shimmer sweep for the 100% celebration.
   function perfect() {
     const c = ensure(); if (!c || muted) return; const t = c.currentTime;
@@ -184,5 +192,5 @@ const SFX = (() => {
     noiseBurst(t, 1.0, { freq: 7000, q: 0.4, peak: 0.07, type: "highpass" }); // confetti shimmer
   }
 
-  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, sneeze, chop, whoosh, coin, bigCoin, perfect };
+  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, sneeze, chop, whoosh, coin, bigCoin, perfect, fanfare };
 })();
