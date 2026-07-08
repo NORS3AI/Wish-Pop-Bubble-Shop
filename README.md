@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🍯 **All 20 Willow-Wish Village ingredients now have real artwork!** Every ingredient — Honey,
+  Berries, Rose Jam, Moon Drop, Dragon Pepper, Ginger Root, Lavender, and the rest — is now a
+  hand-picked illustrated icon instead of an emoji. (I sliced them out of your art sheets, picked
+  the best of each, removed the backgrounds, and sized them to load fast.)
+
 - 👧 **Little Red now has real artwork too — all four expressions!** Friendly when she orders,
   a fist-pump grin on a win, a hand-on-hip scowl on a fail, and covered in an itchy rash on an
   allergy reaction.
