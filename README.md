@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎂 **Tap-to-place decorating!** No more poking tiny circles — just **tap the treats in order** and
+  they drop onto the cake left to right. A soft glow shows where the next one lands, and **Undo / Redo**
+  buttons flank the treat row so it's easy to fix a mistake. (The guide circles are hidden now — the
+  ones painted on the cake do the job.)
+
 - 🎂 **Curved rows + a bigger cake.** The treat spots now follow the **gentle curve** of each round
   tier (the outer spots sit a touch higher, like the real cake), the cake **fills more of the screen
   while decorating** so the spots are easier to tap, and the treat sizes got another pass (tier 2 a

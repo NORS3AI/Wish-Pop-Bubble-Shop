@@ -965,18 +965,15 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cake-img.wide { width: min(90vw, 468px); height: auto; max-height: 60vh; }
 .cake-stage2.studying .cake-img.wide { max-height: 70vh; }
 .cake-spot { position: absolute; transform: translate(-50%, -50%); aspect-ratio: 1; padding: 0; border: none; background: none;
-  display: flex; align-items: center; justify-content: center; }
-.cake-spot.live { cursor: pointer; }
-/* the dashed guide sits at circle size (~2/3 of the spot); the treat itself
-   overflows the spot so it's large and clearly covers the printed circle */
-.cake-spot-dot { width: 66%; height: 66%; border-radius: 50%; border: 3px dashed rgba(255,255,255,.95); background: rgba(60,30,80,.22); box-sizing: border-box; }
-.cake-spot.live .cake-spot-dot { border-color: #fff; background: rgba(90,50,120,.30); box-shadow: 0 0 10px rgba(255,216,107,.9), 0 0 3px rgba(0,0,0,.55), inset 0 0 6px rgba(255,216,107,.45); }
-.cake-spot.filled .cake-spot-dot { display: none; }
+  display: flex; align-items: center; justify-content: center; pointer-events: none; }
+/* treats auto-fill left to right, so the painted circles on the cake art are the
+   only guide — a soft ring just marks where the NEXT treat will land */
+.cake-spot.next::before { content: ""; position: absolute; width: 66%; height: 66%; border-radius: 50%;
+  border: 3px solid rgba(255,235,170,.95); box-shadow: 0 0 12px rgba(255,216,107,.9), 0 0 3px rgba(0,0,0,.5);
+  animation: cakePulse 1.2s ease-in-out infinite; }
+@keyframes cakePulse { 0%,100% { opacity: .5; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.08); } }
 .cake-spot-ic, .cake-spot-ic.art { width: calc(100% * var(--dsz, 1.2)); height: calc(100% * var(--dsz, 1.2)); max-width: none; max-height: none; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
 .cake-spot .art-emoji { font-size: 26px; line-height: 1; }
-.cake-spot.live:active { transform: translate(-50%, -50%) scale(.88); }
-.cake-spot.live:not(.filled) .cake-spot-dot { animation: cakePulse 1.3s ease-in-out infinite; }
-@keyframes cakePulse { 0%,100% { opacity: .45; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.06); } }
 /* finished tiers fade back while you memorise the fresh tier */
 .cake-spot.done.dim { opacity: .32; transition: opacity .3s; }
 /* the treats you're memorising get a warm glow */
@@ -985,6 +982,12 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   0%,100% { filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)) drop-shadow(0 0 4px rgba(255,225,150,.8)); }
   50%     { filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)) drop-shadow(0 0 12px rgba(255,220,120,1)) drop-shadow(0 0 18px rgba(255,200,90,.7)); }
 }
+/* undo / redo flank the treat row, just above it */
+.cake-actions { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 348px; margin-bottom: 5px; }
+.cake-act { font-family: var(--ff-display); font-size: 14px; font-weight: 800; color: #ffe6b0; background: rgba(60,30,80,.55);
+  border: 2px solid rgba(255,255,255,.3); border-radius: 11px; padding: 6px 14px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.cake-act:active { transform: scale(.94); }
+.cake-act:disabled { opacity: .35; cursor: default; }
 /* one compact row of six — small tiles, but the treat icon fills each one */
 .cake-tools2 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; width: 100%; max-width: 348px; box-sizing: border-box; }
 .cake-tool2 { aspect-ratio: 1; min-width: 0; border-radius: 13px; border: 2px solid rgba(255,255,255,.35);

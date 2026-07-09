@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v101"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v102"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2006,13 +2006,28 @@ function cakeToDecorate() {
   if (CAKE.timer) { clearTimeout(CAKE.timer); CAKE.timer = null; }
   CAKE.phase = "decorate";
   CAKE.placed[CAKE.tier] = new Array(cakeTierSlots(CAKE.tier)).fill(null);
+  CAKE.fillIdx = 0;   // next empty slot (treats auto-fill left to right)
+  CAKE.redo = [];     // undone treats, for redo
   SFX.pop(1);
   renderCake();
 }
-function cakePickTool(id) { if (!CAKE) return; CAKE.tool = id; renderCake(); }
-function cakeTapSlot(i) {
+// Tapping a treat drops it into the next open spot (left to right).
+function cakePlace(id) {
   if (!CAKE || CAKE.phase !== "decorate") return;
-  CAKE.placed[CAKE.tier][i] = CAKE.tool; SFX.pop(2); renderCake();
+  const n = cakeTierSlots(CAKE.tier);
+  if (CAKE.fillIdx >= n) { toast("This tier is full — press ✓ Present, or ↶ Undo to swap a treat."); return; }
+  CAKE.placed[CAKE.tier][CAKE.fillIdx] = id; CAKE.fillIdx++; CAKE.redo = [];
+  SFX.pop(2); renderCake();
+}
+function cakeUndo() {
+  if (!CAKE || CAKE.phase !== "decorate" || CAKE.fillIdx <= 0) return;
+  CAKE.fillIdx--; CAKE.redo.push(CAKE.placed[CAKE.tier][CAKE.fillIdx]);
+  CAKE.placed[CAKE.tier][CAKE.fillIdx] = null; SFX.pop(1); renderCake();
+}
+function cakeRedo() {
+  if (!CAKE || CAKE.phase !== "decorate" || !CAKE.redo || !CAKE.redo.length) return;
+  CAKE.placed[CAKE.tier][CAKE.fillIdx] = CAKE.redo.pop(); CAKE.fillIdx++;
+  SFX.pop(2); renderCake();
 }
 function renderCake() {
   const C = CAKE, t = C.tier, study = C.phase === "study", n = cakeTierSlots(t);
@@ -2023,24 +2038,25 @@ function renderCake() {
     const pos = CAKE_SLOTS[t][k - 1], sz = cakeSpotSizeFor(pos), dsz = cakeDecoScale(pos.length);
     for (let j = 0; j < pos.length; j++) {
       const [x, y] = pos[j];
-      let deco = null, tappable = false, cls = "";
+      let deco = null, cls = "";
       // finished tiers fade back while you memorise the new tier, so your eye lands
       // on the tier that matters right now
       if (k < t) { deco = (C.placed[k] || [])[j] || null; cls = study ? "done dim" : "done"; }
       else if (study) { deco = C.targets[t][j]; cls = "target"; }        // current tier — memorise (glows)
-      else { deco = C.placed[t][j] || null; tappable = true; cls = "live"; } // current tier — placing
-      spots.push(`<button class="cake-spot ${deco ? "filled" : ""} ${cls}" style="left:${(x * 100).toFixed(2)}%;top:${(y * 100).toFixed(2)}%;width:${sz}%;--dsz:${dsz}" ${tappable ? `data-i="${j}"` : "disabled"}>${deco ? cakeArt(deco, "cake-spot-ic") : `<span class="cake-spot-dot"></span>`}</button>`);
+      else { deco = C.placed[t][j] || null; cls = (j === C.fillIdx ? "next" : ""); } // current tier — a soft cue marks where the next treat lands
+      spots.push(`<div class="cake-spot ${deco ? "filled" : ""} ${cls}" style="left:${(x * 100).toFixed(2)}%;top:${(y * 100).toFixed(2)}%;width:${sz}%;--dsz:${dsz}">${deco ? cakeArt(deco, "cake-spot-ic") : ""}</div>`);
     }
   }
   const placedCount = study ? 0 : (C.placed[t] || []).filter(Boolean).length;
   const tools = CAKE_DECOS.map(d =>
-    `<button class="cake-tool2 ${d.id === C.tool ? "sel" : ""}" data-id="${d.id}" title="${d.name}" aria-label="${d.name}">${cakeArt(d.id, "cake-tool2-ic")}</button>`).join("");
+    `<button class="cake-tool2" data-id="${d.id}" title="${d.name}" aria-label="${d.name}">${cakeArt(d.id, "cake-tool2-ic")}</button>`).join("");
+  const canUndo = !study && C.fillIdx > 0, canRedo = !study && C.redo && C.redo.length;
   html("event", `
     ${hud(study ? "Study Tier " + t + " 👀" : "Decorate Tier " + t + " 🧁")}
     <div class="cake-stage2${study ? " studying" : ""}">
       <div class="cake-caption">${study
         ? `<b>Memorise</b> tier ${t} — where each treat sits…`
-        : `Recreate tier ${t} from memory (${placedCount}/${n})`}</div>
+        : `Tap the treats in order — they fill left to right (${placedCount}/${n})`}</div>
       <div class="cake-arena">
         <div class="cake-view">
           <img class="cake-img ${t <= 1 ? "wide" : "tall"}" src="art/cake_stage_${t}.png?v=${BUILD}" alt="cake" draggable="false">
@@ -2050,7 +2066,11 @@ function renderCake() {
       ${study
         ? `<div class="cake-study-bar"><i id="cake-study-fill"></i></div>
            <button class="btn good" id="cake-ready">I've got it! →</button>`
-        : `<div class="cake-tools2">${tools}</div>
+        : `<div class="cake-actions">
+             <button class="cake-act" id="cake-undo" ${canUndo ? "" : "disabled"}>↶ Undo</button>
+             <button class="cake-act" id="cake-redo" ${canRedo ? "" : "disabled"}>Redo ↷</button>
+           </div>
+           <div class="cake-tools2">${tools}</div>
            <button class="btn good" id="cake-done">✓ Present tier ${t}</button>`}
     </div>
   `);
@@ -2060,10 +2080,10 @@ function renderCake() {
     if (fill) { fill.style.transition = "none"; fill.style.width = "100%";
       requestAnimationFrame(() => { if (fill.isConnected) { fill.style.transition = "width " + (C.studyMs || CAKE_STUDY_MS) + "ms linear"; fill.style.width = "0%"; } }); }
   } else {
-    $("#screen-event").querySelectorAll(".cake-spot[data-i]").forEach(b =>
-      b.addEventListener("click", () => cakeTapSlot(+b.dataset.i)));
     $("#screen-event").querySelectorAll(".cake-tool2").forEach(b =>
-      b.addEventListener("click", () => cakePickTool(b.dataset.id)));
+      b.addEventListener("click", () => cakePlace(b.dataset.id)));
+    on("#cake-undo", "click", cakeUndo);
+    on("#cake-redo", "click", cakeRedo);
     on("#cake-done", "click", cakeSubmitTier);
   }
   show("event");
@@ -3486,7 +3506,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePickTool, cakeTapSlot, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
