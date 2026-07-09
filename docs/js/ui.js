@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v76"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v77"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2142,49 +2142,47 @@ function startRound() {
 function realmFrame() { return (currentRealm().custFrame) || "cframe_01"; }
 function renderCustomer() {
   const c = ROUND.customer, w = ROUND.wish, realm = currentRealm();
-  const needChips = w.needs.map(n => n.revealed
-    ? `<span class="need-chip">${magicDot(n.type)} ${n.type}</span>`
-    : `<span class="need-chip hidden-need">❔ ${n.label}</span>`).join("");
   const allergyList = [w.allergy, w.allergy2].filter(Boolean);
-  const allergyTxt = allergyList.length
-    ? allergyList.map(a => `${magicDot(a)} ${a}`).join("<br>") : "None";
+  const allergyTxt = allergyList.length ? allergyList.map(a => `${magicDot(a)} ${a}`).join(" ") : "None";
+  const needsInline = w.needs.map(n => n.revealed
+    ? `<span class="bneed">${magicDot(n.type)} ${n.type}</span>`
+    : `<span class="bneed hidden-need">❔ ${n.label}</span>`).join("");
   // baked-text title banner (VIP gets its own; others use the standard arrival banner)
   const bannerImg = ROUND.vip ? "banner_vip" : "banner_new";
   const keys = GAME.keys || 0, canWager = ROUND.vip && keys > 0;
-  // small notice line under the banner for special customers (keeps the rules visible)
-  const notice = w.boss
-    ? `<div class="cust-notice boss">👑 Extra fussy — all needs, tiny zones, ${BALANCE.BOSS_SLOTS} slots, two allergies.</div>`
+  // special-customer text lives INSIDE the wish box (no separate notice line)
+  const extra = w.boss
+    ? `<div class="cust-wish-extra boss">👑 Extra fussy — tiny green zones, only ${BALANCE.BOSS_SLOTS} slots, two allergies!</div>`
     : ROUND.rush
-    ? `<div class="cust-notice rush">⏱️ Serve before their patience runs out for a +${BALANCE.RUSH_BONUS} bonus!</div>`
+    ? `<div class="cust-wish-extra rush">⏱️ Serve fast for a +${BALANCE.RUSH_BONUS} bonus — don't dawdle!</div>`
     : ROUND.vip
-    ? `<div class="cust-notice vip">⭐ ${canWager ? `Wager a 🗝️ key for a ${BALANCE.VIP_GOLD_MULT}× reward — win keeps it, a fail loses it.` : "A special guest! Bring a 🗝️ key next time to wager."}</div>`
+    ? `<div class="cust-wish-extra vip">⭐ ${canWager ? `Wager a 🗝️ key for a ${BALANCE.VIP_GOLD_MULT}× reward — win keeps it!` : "A VIP guest — bring a 🗝️ key to wager for double!"}</div>`
     : "";
   const streakChip = GAME.streak >= 2 ? `<div class="cust-streak">🔥 ${GAME.streak}</div>` : "";
-  const stat = (icon, label, value) => `<div class="cust-stat"><img class="cust-stat-ic" src="art/ui/${icon}.png" alt=""><div class="cust-stat-lbl">${label}</div><div class="cust-stat-val">${value}</div></div>`;
+  const bcell = (icon, label, value, cls) => `<div class="bcell">${icon ? `<img class="bic" src="art/ui/${icon}.png" alt="">` : ""}<div class="bval ${cls || ""}">${value}</div><div class="blbl">${label}</div></div>`;
   html("customer", `
     <div class="cust-top">
       <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
       <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
     </div>
-    <div class="grow" style="overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:6px">
+    <div class="grow" style="overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:4px">
       <div class="cust-banner"><img src="art/ui/${bannerImg}.png" alt="A New Customer Arrives" draggable="false"></div>
-      ${notice}
       <div class="cust-portrait">
         ${streakChip}
         <div class="cust-char ${w.boss ? "boss-emoji" : ""}">${custArt(c, "cust-char-art")}</div>
         <img class="cust-frame" src="art/ui/char_arch.png" alt="" draggable="false">
       </div>
-      <div class="cust-nameplate"><img src="art/ui/name_plate.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
-      <div class="cust-card cust-wish">
+      <div class="cust-nameplate"><img src="art/ui/kit_02.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
+      <div class="cust-wishbox">
         <div class="cust-wish-text">“${c.line}”</div>
-        <div class="cust-needs">${needChips}</div>
+        ${extra}
       </div>
-      <div class="cust-card cust-stats">
-        ${stat("kit_13", "Payment", `${ROUND.payment} <span class="cust-stat-sub">gold</span>`)}
-        ${stat("kit_15", "Scoops", ROUND.scoops)}
-        ${stat("kit_16", "Match", `${w.requiredMatch}%`)}
-        ${stat("kit_17", "Allergy", `<span class="${allergyList.length ? "cust-aller" : ""}">${allergyTxt}</span>`)}
-      </div>
+    </div>
+    <div class="cust-bottombar">
+      ${bcell("", "Need", needsInline, "bneeds")}
+      ${bcell("kit_17", "Allergy", allergyTxt, allergyList.length ? "baller" : "")}
+      ${bcell("kit_13", "Payment", ROUND.payment)}
+      ${bcell("kit_16", "Target", w.requiredMatch + "%")}
     </div>
     ${canWager
       ? `<button class="cust-scoop wager" id="vip-wager"><img src="art/ui/kit_08.png" alt=""><span>🗝️ Wager a Key</span></button>
