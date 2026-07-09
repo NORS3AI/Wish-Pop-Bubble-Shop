@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v79"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v80"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2908,6 +2908,11 @@ function cutIngredient(idx, fromEl) {
 function transmuteIngredient(idx, fromEl) {
   const inst = ROUND.inventory[idx];
   if (!inst || !inst.id || inst.essence) { toast("Pick a whole ingredient to transmute."); return; }
+  // infused ingredients are special (rare + always-useful flex magic) — don't let them
+  // be silently turned into a plain ingredient. Stay in transmute mode so another can be picked.
+  if (D.INGREDIENT_BY_ID[inst.id] && D.INGREDIENT_BY_ID[inst.id].infused) {
+    toast("✨ Infused ingredients are too magical to transmute — use it as-is!"); return;
+  }
   const needs = ROUND.wish.needs.map(n => n.type);
   const SET = ROUND.ingredientSet || D.INGREDIENTS; // transmute within the current realm's pantry
   let pool = SET.filter(i => needs.includes(i.qualities[0]) && i.id !== inst.id);

@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐞 **Fix:** playing a **Transmute** charm on a rare **infused** ingredient no longer turns it into
+  a plain one. Infused ingredients are now protected — Transmute politely skips them so you can pick
+  a different ingredient instead.
+
 - 🖼️ **The customer screen is dialed in!** Characters now sit comfortably in the wide arch (no more
   clipped heads), the arrival banner lays right over the top of the arch, and the name plaque and a
   big parchment **wish** box tuck underneath. The stats are simplified to a large parchment banner
