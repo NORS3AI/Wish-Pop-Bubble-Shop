@@ -508,6 +508,9 @@ html, body {
     linear-gradient(rgba(40,26,74,.6), rgba(40,26,74,.6)) padding-box,
     conic-gradient(from 0deg, #ff6ea8, #ffd23f, #7ee08a, #6a7bd6, #c48bff, #ff6ea8) border-box;
   box-shadow: inset 0 -8px 20px rgba(0,0,0,.25), 0 0 18px rgba(196,139,255,.45); }
+.cauldron.skin-cauldron_glass    { border-color: #cfe6ff;
+  background: linear-gradient(160deg, rgba(220,240,255,.20), rgba(150,190,255,.10));
+  box-shadow: inset 0 -8px 20px rgba(120,160,220,.25), inset 0 6px 14px rgba(255,255,255,.35), 0 0 22px rgba(180,215,255,.6); }
 
 /* ==========================================================================
  * WISHING WELL

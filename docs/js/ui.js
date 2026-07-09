@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v87"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v88"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -346,7 +346,9 @@ function renderAdmin() {
         <button class="btn" id="ad-rumpel" style="margin-bottom:8px">🧵 Rumpelstiltskin</button>
         <button class="btn" id="ad-goblin" style="margin-bottom:8px">🧌 Gribble the Goblin</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen</button>
-        <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Royal Ball (Dance)</button>
+        <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Ball: Knight</button>
+        <button class="btn" id="ad-dance2" style="margin-bottom:8px">🤴 Ball: Prince</button>
+        <button class="btn" id="ad-dance3" style="margin-bottom:8px">👸 Ball: Cinderella</button>
         <button class="btn" id="ad-cake" style="margin-bottom:8px">🧁 Drury Lane Bake-Off</button>
         <button class="btn secondary" id="ad-boss" style="margin-bottom:8px">👑 VIP (Boss) Customer</button>
         <button class="btn secondary" id="ad-rush">⏱️ In‑a‑Rush Customer</button>
@@ -381,6 +383,8 @@ function renderAdmin() {
     renderQueenIntro();
   });
   on("#ad-dance", "click", () => renderDanceIntro("knight"));
+  on("#ad-dance2", "click", () => renderDanceIntro("prince"));
+  on("#ad-dance3", "click", () => renderDanceIntro("cinderella"));
   on("#ad-cake", "click", renderCakeIntro);
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
@@ -536,7 +540,7 @@ function openChest() {
 function ownedCount(kind) { return D.COSMETICS[kind].filter(c => GAME.owned[c.id]).length; }
 function allSkins() { return [].concat(D.COSMETICS.cauldron, D.COSMETICS.familiar); }
 // the Well only awards buyable skins — achievement-only skins are earned, never rolled
-function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain); }
+function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain && !c.ball); }
 // Roll a prize from the weighted tiers. Always returns a prize object.
 function rollWellPrize() {
   const rndInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -653,8 +657,8 @@ function renderWardrobe() {
   const dustCost = BALANCE.STARDUST_SKIN_COST;
   const section = (kind, title) => {
     const tiles = D.COSMETICS[kind].map(c => {
-      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain;
-      const special = ach || vil; // earned, never bought
+      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball;
+      const special = ach || vil || ball; // earned, never bought
       const canBuy = !owned && !special && GAME.stardust >= dustCost;
       const btn = equipped
         ? `<span class="skin-tag equipped">✓ On</span>`
@@ -664,13 +668,15 @@ function renderWardrobe() {
             ? `<span class="skin-tag muted">🏆 ${Math.min(GAME.recycled, ach.need)}/${ach.need}</span>`
             : vil
               ? `<span class="skin-tag muted">👑 Beat a villain</span>`
-              : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
+              : ball
+                ? `<span class="skin-tag muted">👠 Dazzle at the Ball</span>`
+                : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
       // achievement/villain skins reveal their look + how to earn; other unowned stay a mystery
       const chip = owned
         ? (kind === "familiar" ? buddyArt(c.id, "skin-art") : ART.tag("cauldron_" + c.id, c.chip, "skin-art"))
         : special ? c.chip : "❔";
       const nameShown = owned || special ? c.name : "???";
-      const hint = ach && !owned ? ach.desc : vil && !owned ? "Win a villain event" : "";
+      const hint = ach && !owned ? ach.desc : vil && !owned ? "Win a villain event" : ball && !owned ? "Dazzle Cinderella at the Royal Ball" : "";
       return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${special && !owned ? "ach" : ""}">
         <div class="skin-chip">${chip}</div>
         <div class="skin-name">${nameShown}${hint ? `<div class="muted" style="font-size:10px;font-weight:600">${hint}</div>` : ""}</div>
@@ -998,7 +1004,7 @@ function maybeEvent() {
   GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save();
   const events = [renderDuelIntro, renderFairyIntro, renderCakeIntro];
   if (GAME.gold >= QUEEN_PACKAGES[0].gold) events.push(renderQueenIntro); // Queen needs gold for her ransom
-  if (currentRealm().id === "courtyard") events.push(() => renderDanceIntro("knight")); // a royal-ball dance lesson
+  if (currentRealm().id === "courtyard") events.push(() => renderDanceIntro(pickDancePartner())); // a royal-ball dance lesson
   R.pick(events)();
   return true;
 }
@@ -1592,6 +1598,27 @@ const DANCE_PARTNERS = {
     winNote: "“I did it! Look at me twirl — right on the beat!” Sir Wobble bows and presses a key into your hand. 🗝️",
     loseNote: "“Oof — I keep losing the rhythm!” He laughs it off. Come teach him another time!",
   },
+  prince: {
+    id: "prince", emoji: "🤴", name: "Prince Featherfoot", title: "An Eager Prince",
+    poses: "prince_dance", worried: null,
+    steps: 7, beatMs: 1750, approach: 1250, passFrac: 0.62,   // quicker beat than the knight
+    keyAt: 82, starAt: 93,
+    line: "“I'm to lead the very first dance at my own ball — and I keep tangling in my cape! Coach me, please?”",
+    reward: { gold: 70, keys: 1, stardust: 8 }, prizeTxt: "🪙 gold — impress him for a 🗝️ key!",
+    winNote: "“Magnificent! I shan't trip once tonight.” The prince flourishes his cape and rewards you handsomely.",
+    loseNote: "“Blast this cape!” He laughs it off. Come drill him again another time!",
+  },
+  cinderella: {
+    id: "cinderella", emoji: "👸", name: "Cinderella", title: "Before the Stroke of Twelve",
+    poses: "cinderella_dance", worried: "cinderella_worried",   // her worried looks show on a botched move
+    steps: 8, beatMs: 1550, approach: 1100, passFrac: 0.66,     // fastest, fussiest routine
+    keyAt: 84, starAt: 94,
+    line: "“The ball is tonight and my nerves are all aflutter! Help me float across the floor like a dream?”",
+    reward: { gold: 90, keys: 2, stardust: 12 }, prizeTxt: "🪙 gold + a 🗝️ key — dazzle for a rare 👠 skin!",
+    skinPrize: "cauldron_glass",   // rare cauldron skin, earned by a graceful ball
+    winNote: "“I feel like I'm floating!” Cinderella beams and presses a shimmering glass token into your hands. 👠",
+    loseNote: "“Oh dear — two left slippers!” She giggles. Try again before midnight!",
+  },
 };
 // Timing tiers, judged by how far your tap lands from the beat (ms). Right move
 // AND on the beat scores best; drift early/late and you lose points; wrong move
@@ -1609,6 +1636,15 @@ function danceJudge(correct, offset) {
 function danceMaxScore() { return DANCE.total * DANCE_PTS.perfect; }
 function danceMeterPct() { return Math.round((DANCE.score / danceMaxScore()) * 100); }
 function danceRoutine(n) { const r = []; for (let i = 0; i < n; i++) r.push(R.pick(DANCE_MOVES).id); return r; }
+// Which courtier turns up: the knight teaches you the ropes; the eager prince
+// joins after a couple of lessons, and Cinderella (the fussiest, with a rare
+// skin prize) once you've taught a few.
+function pickDancePartner() {
+  const n = GAME.danceLessons || 0, pool = ["knight"];
+  if (n >= 2) pool.push("prince");
+  if (n >= 4) pool.push("cinderella");
+  return R.pick(pool);
+}
 function renderDanceIntro(partnerId) {
   const p = DANCE_PARTNERS[partnerId] || DANCE_PARTNERS.knight;
   SFX.unlock(); SFX.fanfare();
@@ -1819,14 +1855,23 @@ function danceFinish() {
   GAME.danceLessons = (GAME.danceLessons || 0) + 1;
   let outcome;
   if (win) {
-    const reward = danceReward(p, meterPct), got = grantReward(reward); save();
+    const reward = danceReward(p, meterPct), got = grantReward(reward);
+    // rare skin prize (Cinderella): a graceful ball earns her exclusive skin, once
+    let skinLine = "";
+    if (p.skinPrize && meterPct >= (p.keyAt || 80) && !GAME.owned[p.skinPrize]) {
+      GAME.owned[p.skinPrize] = true;
+      const cz = D.COSMETIC_BY_ID[p.skinPrize];
+      if (cz) skinLine = `<div class="stat-line"><span>🎁 Rare skin earned!</span><span class="gold">${cz.chip} ${cz.name}</span></div>`;
+    }
+    save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
     const grade = danceGrade(meterPct);
     outcome = { emoji: "🕺", title: grade + " dancing!", cls: "win",
       lines: [`<div class="stat-line"><span>On-beat steps</span><span>${nailed}/${DANCE.total}</span></div>`,
               `<div class="stat-line"><span>Rhythm score</span><span>${meterPct}%</span></div>`,
-              `<div class="stat-line"><span>Your reward</span><span class="gold">${got}</span></div>`],
-      note: reward.keys ? p.winNote : "“Not my finest… but I made it through!” Sir Wobble laughs and presses a few coins into your hand. Dance sharper next time for a 🗝️ key!" };
+              `<div class="stat-line"><span>Your reward</span><span class="gold">${got}</span></div>`,
+              skinLine],
+      note: reward.keys ? p.winNote : `“Not my finest… but I made it through!” ${p.name} laughs it off and presses a few coins into your hand. Dance sharper next time for a 🗝️ key!` };
   } else {
     save(); SFX.sneeze();
     outcome = { emoji: "😅", title: "Lost the rhythm!", cls: "lose",

@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 👑 **Two new dance partners!** Once you've taught Sir Wobble a couple of lessons, the eager
+  **Prince** joins the ball (a quicker beat), and after a few more, **Cinderella** herself (the
+  fussiest routine — and she makes worried faces when you flub a step). Dazzle her for a **rare
+  Glass Slipper cauldron skin** you can't get anywhere else.
+
 - ⚖️ **Dance rewards now match the dancing.** A sloppy just-barely pass earns a few coins and no key;
   the 🗝️ key needs a genuinely good show and the ✨ stardust bonus a near-flawless one. The pass bar
   went up a touch too, so a truly rough attempt just doesn't win.
