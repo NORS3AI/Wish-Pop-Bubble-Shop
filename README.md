@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐭 **New mouse customer!** The Tiny Mouse now has four hand-drawn moods — a friendly wave when she
+  arrives, arms-up cheering when you get her order right, arms crossed and grumpy when you miss, and
+  teary sniffles when a treat sets off her allergy.
+
 - 🦉 **New owl customer!** The sleepy wizard owl now has four hand-drawn moods — cozy and sleepy when
   they arrive, a happy wave when you nail the order, grumpy fists when you miss, and teary sniffles
   when a treat sets off their allergy.
