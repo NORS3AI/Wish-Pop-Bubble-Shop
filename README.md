@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🥨 **New Village Baker customer!** The baker now has four hand-drawn moods — a warm hands-on-hips
+  smile when she arrives, a big cheerful grin when you get her order right, a red-faced scowl when
+  you miss, and teary, blotchy sniffles when a treat sets off her allergy.
+
 - 🐭 **New mouse customer!** The Tiny Mouse now has four hand-drawn moods — a friendly wave when she
   arrives, arms-up cheering when you get her order right, arms crossed and grumpy when you miss, and
   teary sniffles when a treat sets off her allergy.
