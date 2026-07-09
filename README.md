@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ⭐ **VIP customers now ask with a pop-up!** Instead of changing the Start Scoop button, a VIP guest
+  brings up a dark overlay over the whole screen: **wager 2 keys for a 2× reward** (win keeps your
+  keys, a fail loses them) — or **play as normal**. Pick one and the overlay clears; the normal
+  screen and its big green **Start Scoop** button are untouched. Also nudged the Sleepy Owl down a
+  touch so he sits comfortably in his frame.
+
 - 🐞 **Fix:** playing a **Transmute** charm on a rare **infused** ingredient no longer turns it into
   a plain one. Infused ingredients are now protected — Transmute politely skips them so you can pick
   a different ingredient instead.

@@ -646,7 +646,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* character opening of the arch is the inner ~84% of the frame */
 .cust-char { position: absolute; left: 9%; right: 9%; top: 7%; bottom: 8%; z-index: 1; overflow: hidden;
   display: flex; align-items: flex-start; justify-content: center; }
-.cust-char img.art { height: 126%; width: auto; max-width: none; margin-top: 5%; filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+.cust-char img.art { height: calc(126% * var(--char-scale, 1)); width: auto; max-width: none; margin-top: 5%; filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
 .cust-char .art-emoji { position: absolute; top: 49%; left: 50%; transform: translate(-50%, -50%); margin: 0;
   font-size: 168px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
 .cust-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 2; pointer-events: none; }
@@ -682,6 +682,23 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cust-scoop.wager { width: 58%; max-width: 214px; margin-top: 0; }
 .cust-scoop.wager span { font-size: 18px; }
 .cust-scoop-alt { align-self: center; margin: 1px auto 0; background: none; border: none; color: #ffe6a8; font-family: var(--ff-display); font-size: 14px; text-decoration: underline; cursor: pointer; }
+/* VIP wager overlay — a dark scrim over the whole customer UI with the choice.
+   Scoped to #screen-customer so it beats the .has-realm-bg > * position:relative rule. */
+#screen-customer .vip-overlay { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
+  padding: 22px; background: rgba(12,5,26,.72); animation: fade .2s ease; }
+.vip-modal { width: 94%; max-width: 360px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.vipo-banner { width: 100%; max-width: 332px; }
+.vipo-banner img { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,.7)); }
+.vip-panel { width: 98%; max-width: 360px; padding: 26px 32px 30px;
+  background: url('../art/ui/name_plate.png') no-repeat center; background-size: 100% 100%; }
+.vip-panel-text { text-align: center; font-family: var(--ff-display); font-size: 18px; line-height: 1.42; color: #4a3212; }
+.vip-panel-text b { color: #7a3410; }
+.vip-yes { position: relative; width: 76%; max-width: 292px; margin-top: 2px; padding: 0; border: none; background: none; cursor: pointer; }
+.vip-yes img { display: block; width: 100%; height: auto; filter: drop-shadow(0 5px 12px rgba(0,0,0,.6)); }
+.vip-yes span { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center;
+  font-family: var(--ff-display); font-size: 21px; color: #fff8e0; text-shadow: 0 2px 4px rgba(20,40,10,.85); }
+.vip-yes:active { transform: scale(.98); }
+.vip-no { background: none; border: none; color: #ffe6a8; font-family: var(--ff-display); font-size: 16px; text-decoration: underline; cursor: pointer; padding: 5px 8px; }
 
 /* --- spoon resize control (scoop phase) --- */
 .spoon-size { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 2px 0 0; font-size: 12px; }

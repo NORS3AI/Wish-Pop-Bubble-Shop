@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v80"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v81"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -66,6 +66,9 @@ function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar); }
 function ingArt(id, cls)  { const ing = D.INGREDIENT_BY_ID[id]; return ART.tag("ing_" + id, ing ? ing.emoji : "❔", cls || "ing-art"); }
 function charmArt(id, cls) { const ch = D.SPECIAL_CHARMS[id]; return ART.tag("charm_" + id, ch ? ch.emoji : "❔", cls || "charm-art"); }
 function custArt(c, cls)  { return ART.tag("customer_" + c.id, c.emoji, cls || "cust-art"); }
+// Per-customer size tweaks in the arch frame (1 = default). Some art fills its
+// canvas more than others, so a few get scaled down to sit comfortably.
+const CHAR_SCALE = { owl: 0.82 };
 // A customer's face with an EXPRESSION. "normal" is the base customer_<id>.png;
 // happy / angry / allergic are customer_<id>_<mood>.png. If that art isn't there,
 // it falls back to the given emoji (the emotion face we've always shown).
@@ -2151,14 +2154,15 @@ function renderCustomer() {
     : `<span class="amark ok">✔</span>`;
   // baked-text title banner (VIP gets its own; others use the standard arrival banner)
   const bannerImg = ROUND.vip ? "banner_vip" : "banner_new";
-  const keys = GAME.keys || 0, canWager = ROUND.vip && keys > 0;
-  // special-customer text lives INSIDE the wish box (no separate notice line)
+  const keys = GAME.keys || 0, vipCost = BALANCE.VIP_KEY_COST || 1, canWager = ROUND.vip && keys >= vipCost;
+  // special-customer text lives INSIDE the wish box (no separate notice line).
+  // VIP wager is offered in an overlay now, so the wish box just gets a flavor line.
   const extra = w.boss
     ? `<div class="cust-wish-extra boss">👑 Extra fussy — tiny green zones, only ${BALANCE.BOSS_SLOTS} slots, two allergies!</div>`
     : ROUND.rush
     ? `<div class="cust-wish-extra rush">⏱️ Serve fast for a +${BALANCE.RUSH_BONUS} bonus — don't dawdle!</div>`
     : ROUND.vip
-    ? `<div class="cust-wish-extra vip">⭐ ${canWager ? `Wager a 🗝️ key for a ${BALANCE.VIP_GOLD_MULT}× reward — win keeps it!` : "A VIP guest — bring a 🗝️ key to wager for double!"}</div>`
+    ? `<div class="cust-wish-extra vip">⭐ A VIP guest — impress them for a fine reward!</div>`
     : "";
   const streakChip = GAME.streak >= 2 ? `<div class="cust-streak">🔥 ${GAME.streak}</div>` : "";
   const bcell = (icon, label, value, cls) => `<div class="bcell">${icon ? `<img class="bic" src="art/ui/${icon}.png" alt="">` : ""}<div class="bval ${cls || ""}">${value}</div><div class="blbl">${label}</div></div>`;
@@ -2171,7 +2175,7 @@ function renderCustomer() {
       <div class="cust-banner"><img src="art/ui/${bannerImg}.png" alt="A New Customer Arrives" draggable="false"></div>
       <div class="cust-portrait">
         ${streakChip}
-        <div class="cust-char ${w.boss ? "boss-emoji" : ""}">${custArt(c, "cust-char-art")}</div>
+        <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1}">${custArt(c, "cust-char-art")}</div>
         <img class="cust-frame" src="art/ui/char_arch.png" alt="" draggable="false">
       </div>
       <div class="cust-nameplate"><img src="art/ui/kit_02.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
@@ -2185,13 +2189,23 @@ function renderCustomer() {
         ${bcell("kit_17", "Allergy", allergyMark)}
       </div>
     </div>
-    ${canWager
-      ? `<button class="cust-scoop wager" id="vip-wager"><img src="art/ui/kit_08.png" alt=""><span>🗝️ Wager a Key</span></button>
-         <button class="cust-scoop-alt" id="scoop-btn">Serve normally</button>`
-      : `<button class="cust-scoop baked" id="scoop-btn"><img src="art/ui/btn_scoop.png" alt="Start Scoop" draggable="false"></button>`}
+    <button class="cust-scoop baked" id="scoop-btn"><img src="art/ui/btn_scoop.png" alt="Start Scoop" draggable="false"></button>
+    ${canWager ? `
+      <div class="vip-overlay" id="vip-overlay">
+        <div class="vip-modal">
+          <div class="vipo-banner"><img src="art/ui/banner_vip.png" alt="VIP Customer" draggable="false"></div>
+          <div class="vip-panel">
+            <div class="vip-panel-text">Wager <b>🗝️ ${vipCost} keys</b> for a <b>${BALANCE.VIP_GOLD_MULT}× reward</b>!<br>Win and you <b>keep your keys</b> — a fail loses them.</div>
+          </div>
+          <button class="vip-yes" id="vip-yes"><img src="art/ui/kit_08.png" alt="" draggable="false"><span>🗝️ Wager ${vipCost} Keys</span></button>
+          <button class="vip-no" id="vip-no">Play as normal</button>
+        </div>
+      </div>` : ""}
   `);
   if (w.boss || ROUND.rush || ROUND.vip) { SFX.unlock(); SFX.fanfare(); } // special arrival — hard to miss
-  on("#vip-wager", "click", () => { ROUND.keyStaked = true; SFX.unlock(); SFX.charm(); toast("🗝️ Key wagered — make it count!"); renderScoop(); });
+  const closeVip = () => { const o = document.getElementById("vip-overlay"); if (o) o.remove(); };
+  on("#vip-yes", "click", () => { ROUND.keyStaked = true; SFX.unlock(); SFX.charm(); toast(`🗝️ ${vipCost} keys wagered — make it count!`); closeVip(); });
+  on("#vip-no", "click", () => { SFX.unlock(); closeVip(); });
   on("#scoop-btn", "click", renderScoop);
   applyRealmBackground();
   show("customer");
@@ -2994,7 +3008,7 @@ function serve() {
       res.vipStardust = BALANCE.VIP_KEY_STARDUST; GAME.stardust += res.vipStardust;
       res.vipKept = true;
     } else {
-      GAME.keys = Math.max(0, (GAME.keys || 0) - 1);
+      GAME.keys = Math.max(0, (GAME.keys || 0) - (BALANCE.VIP_KEY_COST || 1));
       res.vipKeyLost = true;
     }
   }
@@ -3040,9 +3054,9 @@ function renderResult(res) {
   // failed wish the key is lost (handled in serve()).
   const vipWinLine = (win && res.vipKept)
     ? `<div class="stat-line"><span>⭐ VIP key bonus ×${BALANCE.VIP_GOLD_MULT}!</span><span class="gold">🪙 +${res.vipKeyBonus} · ✨ +${res.vipStardust}</span></div>
-       <div class="stat-line"><span>🗝️ Your key</span><span style="color:var(--good)">kept — nice!</span></div>` : "";
+       <div class="stat-line"><span>🗝️ Your ${BALANCE.VIP_KEY_COST} keys</span><span style="color:var(--good)">kept — nice!</span></div>` : "";
   const vipLostLine = (!win && res.vipKeyLost)
-    ? `<div class="stat-line"><span>🗝️ Wagered key</span><span style="color:var(--bad)">lost!</span></div>` : "";
+    ? `<div class="stat-line"><span>🗝️ Wagered ${BALANCE.VIP_KEY_COST} keys</span><span style="color:var(--bad)">lost!</span></div>` : "";
   const earnedRow = win
     ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}${rushLine}${streakLine}${vipWinLine}`
     : `<div class="stat-line"><span>Earned</span><span class="muted">no coins — just trash!</span></div>
