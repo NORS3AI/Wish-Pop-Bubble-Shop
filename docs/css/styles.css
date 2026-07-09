@@ -972,7 +972,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cake-spot-dot { width: 66%; height: 66%; border-radius: 50%; border: 3px dashed rgba(255,255,255,.95); background: rgba(60,30,80,.22); box-sizing: border-box; }
 .cake-spot.live .cake-spot-dot { border-color: #fff; background: rgba(90,50,120,.30); box-shadow: 0 0 10px rgba(255,216,107,.9), 0 0 3px rgba(0,0,0,.55), inset 0 0 6px rgba(255,216,107,.45); }
 .cake-spot.filled .cake-spot-dot { display: none; }
-.cake-spot-ic, .cake-spot-ic.art { width: 150%; height: 150%; max-width: none; max-height: none; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+.cake-spot-ic, .cake-spot-ic.art { width: calc(100% * var(--dsz, 1.2)); height: calc(100% * var(--dsz, 1.2)); max-width: none; max-height: none; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
 .cake-spot .art-emoji { font-size: 26px; line-height: 1; }
 .cake-spot.live:active { transform: translate(-50%, -50%) scale(.88); }
 .cake-spot.live:not(.filled) .cake-spot-dot { animation: cakePulse 1.3s ease-in-out infinite; }

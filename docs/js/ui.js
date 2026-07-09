@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v98"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v99"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1946,9 +1946,17 @@ const CAKE_TIERS = {
 function cakeArt(id, cls) { const d = CAKE_DECO_BY_ID[id]; return ART.tag("dec_" + id, d ? d.emoji : "❔", cls || "cake-deco"); }
 const CAKE_SLOT_COUNT = [3, 5, 6, 7, 8];             // spots per tier (tier 1 = 3, … tier 5 = 8)
 function cakeTierSlots(tier) { return CAKE_SLOT_COUNT[tier - 1]; }
-function cakeTarget(tier) { const n = cakeTierSlots(tier), t = []; for (let i = 0; i < n; i++) t.push(R.pick(CAKE_DECOS).id); return t; }
-// Size each placement spot as large as it can be without neighbours overlapping,
-// based on the actual measured slot spacing for this tier.
+// Symmetrical (mirrored) pattern: choose the first half, mirror it to the second.
+// Prettier, and easier to remember — the row reads the same left-to-right and back.
+function cakeTarget(tier) {
+  const n = cakeTierSlots(tier), t = new Array(n), half = Math.ceil(n / 2);
+  for (let i = 0; i < half; i++) { const d = R.pick(CAKE_DECOS).id; t[i] = d; t[n - 1 - i] = d; }
+  return t;
+}
+// Treat size (fraction of its spot): big enough to cover the printed circle,
+// shrinking on busier tiers so neighbours don't overlap much.
+function cakeDecoScale(n) { return ({ 3: 1.34, 5: 1.2, 6: 1.13, 7: 1.07, 8: 1.02 })[n] || 1.15; }
+// Each placement spot spans the slot spacing, so hit areas tile without gaps.
 function cakeSpotSizeFor(pos) {
   if (!pos || pos.length < 2) return 24;
   let gap = 1; for (let i = 1; i < pos.length; i++) gap = Math.min(gap, Math.abs(pos[i][0] - pos[i - 1][0]));
@@ -2012,7 +2020,7 @@ function renderCake() {
   // tier shows the target while studying, then empty tappable spots while decorating
   const spots = [];
   for (let k = 1; k <= t; k++) {
-    const pos = CAKE_SLOTS[t][k - 1], sz = cakeSpotSizeFor(pos);
+    const pos = CAKE_SLOTS[t][k - 1], sz = cakeSpotSizeFor(pos), dsz = cakeDecoScale(pos.length);
     for (let j = 0; j < pos.length; j++) {
       const [x, y] = pos[j];
       let deco = null, tappable = false, cls = "";
@@ -2021,7 +2029,7 @@ function renderCake() {
       if (k < t) { deco = (C.placed[k] || [])[j] || null; cls = study ? "done dim" : "done"; }
       else if (study) { deco = C.targets[t][j]; cls = "target"; }        // current tier — memorise (glows)
       else { deco = C.placed[t][j] || null; tappable = true; cls = "live"; } // current tier — placing
-      spots.push(`<button class="cake-spot ${deco ? "filled" : ""} ${cls}" style="left:${(x * 100).toFixed(2)}%;top:${(y * 100).toFixed(2)}%;width:${sz}%" ${tappable ? `data-i="${j}"` : "disabled"}>${deco ? cakeArt(deco, "cake-spot-ic") : `<span class="cake-spot-dot"></span>`}</button>`);
+      spots.push(`<button class="cake-spot ${deco ? "filled" : ""} ${cls}" style="left:${(x * 100).toFixed(2)}%;top:${(y * 100).toFixed(2)}%;width:${sz}%;--dsz:${dsz}" ${tappable ? `data-i="${j}"` : "disabled"}>${deco ? cakeArt(deco, "cake-spot-ic") : `<span class="cake-spot-dot"></span>`}</button>`);
     }
   }
   const placedCount = study ? 0 : (C.placed[t] || []).filter(Boolean).length;
