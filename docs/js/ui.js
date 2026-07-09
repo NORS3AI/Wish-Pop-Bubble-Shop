@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v75"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v76"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2148,8 +2148,8 @@ function renderCustomer() {
   const allergyList = [w.allergy, w.allergy2].filter(Boolean);
   const allergyTxt = allergyList.length
     ? allergyList.map(a => `${magicDot(a)} ${a}`).join("<br>") : "None";
-  // special-arrival ribbon shown on the title banner
-  const arrivalTxt = w.boss ? "A Picky Royal Arrives!" : ROUND.rush ? "A Customer in a Rush!" : ROUND.vip ? "A VIP Guest Arrives!" : "A New Customer Arrives!";
+  // baked-text title banner (VIP gets its own; others use the standard arrival banner)
+  const bannerImg = ROUND.vip ? "banner_vip" : "banner_new";
   const keys = GAME.keys || 0, canWager = ROUND.vip && keys > 0;
   // small notice line under the banner for special customers (keeps the rules visible)
   const notice = w.boss
@@ -2167,14 +2167,14 @@ function renderCustomer() {
       <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
     </div>
     <div class="grow" style="overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:6px">
-      <div class="cust-banner"><img src="art/ui/kit_01.png" alt=""><span>${arrivalTxt}</span></div>
+      <div class="cust-banner"><img src="art/ui/${bannerImg}.png" alt="A New Customer Arrives" draggable="false"></div>
       ${notice}
       <div class="cust-portrait">
         ${streakChip}
         <div class="cust-char ${w.boss ? "boss-emoji" : ""}">${custArt(c, "cust-char-art")}</div>
-        <img class="cust-frame" src="art/ui/${realmFrame()}.png" alt="" draggable="false">
-        <div class="cust-name">${c.name}</div>
+        <img class="cust-frame" src="art/ui/char_arch.png" alt="" draggable="false">
       </div>
+      <div class="cust-nameplate"><img src="art/ui/name_plate.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
       <div class="cust-card cust-wish">
         <div class="cust-wish-text">“${c.line}”</div>
         <div class="cust-needs">${needChips}</div>
@@ -2189,7 +2189,7 @@ function renderCustomer() {
     ${canWager
       ? `<button class="cust-scoop wager" id="vip-wager"><img src="art/ui/kit_08.png" alt=""><span>🗝️ Wager a Key</span></button>
          <button class="cust-scoop-alt" id="scoop-btn">Serve normally</button>`
-      : `<button class="cust-scoop" id="scoop-btn"><img src="art/ui/kit_08.png" alt=""><span>Start Scoop</span></button>`}
+      : `<button class="cust-scoop baked" id="scoop-btn"><img src="art/ui/btn_scoop.png" alt="Start Scoop" draggable="false"></button>`}
   `);
   if (w.boss || ROUND.rush || ROUND.vip) { SFX.unlock(); SFX.fanfare(); } // special arrival — hard to miss
   on("#vip-wager", "click", () => { ROUND.keyStaked = true; SFX.unlock(); SFX.charm(); toast("🗝️ Key wagered — make it count!"); renderScoop(); });
