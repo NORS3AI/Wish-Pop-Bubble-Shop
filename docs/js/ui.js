@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v91"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v92"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1918,100 +1918,121 @@ function danceFinish() {
 /* and three-tier rounds escalate on the same engine next.                   */
 /* ======================================================================= */
 let CAKE = null;
-// The six decorations — deliberately in look-alike pairs so memory matters.
+// The six decorations — tap one, then tap a spot on the tier to place it.
 const CAKE_DECOS = [
-  { id: "icing_swirl",      name: "Swirl",     emoji: "🍦" },
-  { id: "icing_dollop",     name: "Dollop",    emoji: "⚪" },
-  { id: "cherry",           name: "Cherry",    emoji: "🍒" },
-  { id: "strawberry",       name: "Strawberry",emoji: "🍓" },
-  { id: "choc_sprinkles",   name: "Choc",      emoji: "🍫" },
-  { id: "rainbow_sprinkles",name: "Rainbow",   emoji: "🌈" },
+  { id: "peppermint", name: "Peppermint", emoji: "🍬" },
+  { id: "strawberry", name: "Strawberry", emoji: "🍓" },
+  { id: "cherry",     name: "Cherry",     emoji: "🍒" },
+  { id: "flower",     name: "Flower",     emoji: "🌸" },
+  { id: "crown",      name: "Crown",      emoji: "👑" },
+  { id: "butterfly",  name: "Butterfly",  emoji: "🦋" },
 ];
 const CAKE_DECO_BY_ID = {}; CAKE_DECOS.forEach(d => CAKE_DECO_BY_ID[d.id] = d);
-// The treat you're decorating — flavor only; the spot mechanic is identical.
-const CAKE_CANVASES = [
-  { id: "cake",    label: "cake",    emoji: "🎂" },
-  { id: "cookie",  label: "cookie",  emoji: "🍪" },
-  { id: "cupcake", label: "cupcake", emoji: "🧁" },
-];
-const CAKE_STUDY_MS = 5000;      // time to memorise the one-tier
-const CAKE_SLOTS_1TIER = 4;      // decoration spots on the single tier
-// Accuracy (%) → competition ribbon + prize. Even a shaky 3rd place pays a little.
-const CAKE_PLACES = [
-  { min: 90, place: 1, ribbon: "🥇", title: "First Place!",  reward: { gold: 60, keys: 1, stardust: 8 } },
-  { min: 70, place: 2, ribbon: "🥈", title: "Second Place!", reward: { gold: 40, keys: 1 } },
-  { min: 50, place: 3, ribbon: "🥉", title: "Third Place!",  reward: { gold: 25 } },
-];
-// Decoration art: drop art/dec_<id>.png to replace the emoji (see art README).
+// Slot positions per stage: CAKE_SLOTS[stage][tierIndex] = [[x,y]...] as fractions
+// of the cake image (auto-measured from the art's circle guides).
+const CAKE_SLOTS = {1:[[[0.2923,0.5168],[0.4333,0.5168],[0.5743,0.5168],[0.7152,0.5168]]],2:[[[0.3144,0.2907],[0.4349,0.2907],[0.5554,0.2907],[0.6759,0.2907]],[[0.2704,0.7526],[0.3844,0.7526],[0.4984,0.7526],[0.6124,0.7526],[0.7264,0.7526]]],3:[[[0.3292,0.1988],[0.4371,0.1988],[0.545,0.1988],[0.653,0.1988]],[[0.2903,0.5146],[0.3922,0.5146],[0.494,0.5146],[0.5959,0.5146],[0.6978,0.5146]],[[0.2587,0.8073],[0.354,0.8073],[0.4494,0.8073],[0.5447,0.8073],[0.64,0.8073],[0.7354,0.8073]]],4:[[[0.3488,0.1512],[0.446,0.1512],[0.5433,0.1512],[0.6406,0.1512]],[[0.3118,0.389],[0.4041,0.389],[0.4965,0.389],[0.5888,0.389],[0.6811,0.389]],[[0.2829,0.6122],[0.3691,0.6122],[0.4552,0.6122],[0.5413,0.6122],[0.6274,0.6122],[0.7135,0.6122]],[[0.2534,0.828],[0.3344,0.828],[0.4154,0.828],[0.4965,0.828],[0.5775,0.828],[0.6585,0.828],[0.7396,0.828]]],5:[[[0.3558,0.122],[0.4465,0.122],[0.5372,0.122],[0.628,0.122]],[[0.3235,0.3159],[0.4087,0.3159],[0.4939,0.3159],[0.5791,0.3159],[0.6643,0.3159]],[[0.2964,0.4951],[0.3762,0.4951],[0.456,0.4951],[0.5358,0.4951],[0.6157,0.4951],[0.6955,0.4951]],[[0.2713,0.6695],[0.3462,0.6695],[0.421,0.6695],[0.4959,0.6695],[0.5708,0.6695],[0.6457,0.6695],[0.7206,0.6695]],[[0.248,0.8744],[0.3183,0.8744],[0.3885,0.8744],[0.4588,0.8744],[0.529,0.8744],[0.5993,0.8744],[0.6695,0.8744],[0.7398,0.8744]]]};
+const CAKE_STUDY_MS = 4500;
+const CAKE_MAX_TIER = 5;
+const CAKE_PASS = 0.7;   // fraction of a tier's spots you must match to advance
+// Ribbon + reward by the HIGHEST tier you complete. Tier 3 = first place; 4 & 5 are bonuses.
+const CAKE_TIERS = {
+  1: { ribbon: "🥉", place: "Third Place",            reward: { gold: 20 } },
+  2: { ribbon: "🥈", place: "Second Place",           reward: { gold: 40 } },
+  3: { ribbon: "🥇", place: "First Place!",           reward: { gold: 65, keys: 1, stardust: 6 } },
+  4: { ribbon: "🥇", place: "First Place — plus a Bonus!", reward: { gold: 95, keys: 1, stardust: 10 } },
+  5: { ribbon: "👑", place: "Grand Champion!",        reward: { gold: 140, keys: 2, stardust: 18 } },
+};
+// Decoration art: art/dec_<id>.png (see art README).
 function cakeArt(id, cls) { const d = CAKE_DECO_BY_ID[id]; return ART.tag("dec_" + id, d ? d.emoji : "❔", cls || "cake-deco"); }
-function cakeMakeTarget(n) { const t = []; for (let i = 0; i < n; i++) t.push(R.pick(CAKE_DECOS).id); return t; }
+function cakeTierSlots(tier) { return tier + 3; }   // tier 1 = 4 spots, tier 2 = 5, …
+function cakeTarget(tier) { const n = cakeTierSlots(tier), t = []; for (let i = 0; i < n; i++) t.push(R.pick(CAKE_DECOS).id); return t; }
+function cakeSpotSize(n) { return Math.round(66 / (n + 1)); }   // deco width % — smaller when a tier has more spots
+const CAKE_RIBBON = ["", "🥉", "🥈", "🥇", "🥇", "👑"];
 function renderCakeIntro() {
   CAKE = null;
   SFX.unlock(); SFX.fanfare();
-  const canvas = R.pick(CAKE_CANVASES);
   html("event", `
     ${hud("The Drury Lane Bake-Off!")}
     <div class="grow center" style="gap:14px">
       <div class="ph big">🧑‍🍳</div>
       <div style="font-weight:800;font-size:20px">The Bake-Off Judge</div>
-      <div class="speech">“Welcome, decorator! I'll show you a finished ${canvas.label} — study it well, then recreate it from memory. Best decorator wins a ribbon!”</div>
+      <div class="speech">“Welcome, decorator! Each tier I'll show you a decorated cake — study it, then place the treats back from memory. Nail three tiers for first place… and keep climbing for a bonus!”</div>
       <div class="card" style="width:100%;max-width:330px">
-        <div class="stat-line"><span>1 · Study</span><span>memorise the ${canvas.label} 👀</span></div>
-        <div class="stat-line"><span>2 · Decorate</span><span>place it back from memory 🧁</span></div>
-        <div class="stat-line"><span>Judged</span><span class="gold">🥇 🥈 🥉 → a prize!</span></div>
+        <div class="stat-line"><span>Study</span><span>memorise the tier 👀</span></div>
+        <div class="stat-line"><span>Decorate</span><span>place it back from memory 🧁</span></div>
+        <div class="stat-line"><span>Tier 3</span><span class="gold">🥇 First place!</span></div>
+        <div class="stat-line"><span>Tiers 4 & 5</span><span class="gold">👑 bonus prizes</span></div>
       </div>
-      <div class="muted" style="max-width:310px">Pick a decoration, then tap the spots where it belongs. Watch out — a swirl looks like a dollop, a cherry like a strawberry!</div>
     </div>
     <button class="btn good" id="cake-play">🧁 Enter the Bake-Off!</button>
     <div style="height:8px"></div>
     <button class="btn secondary" id="cake-skip">Not now</button>
   `);
   on("#cake-play", "click", () => {
-    const n = CAKE_SLOTS_1TIER;
-    CAKE = { canvas, n, target: cakeMakeTarget(n), placed: new Array(n).fill(null),
-      tool: CAKE_DECOS[0].id, phase: "study", timer: null };
-    cakeStudy();
+    CAKE = { tier: 0, passed: 0, targets: {}, placed: {}, phase: "study", tool: CAKE_DECOS[0].id, timer: null };
+    cakeStartTier(1);
   });
   on("#cake-skip", "click", startRound);
   show("event");
 }
-function cakeStudy() {
+function cakeStartTier(t) {
+  CAKE.tier = t;
+  CAKE.targets[t] = cakeTarget(t);
   CAKE.phase = "study";
+  CAKE.tool = CAKE_DECOS[0].id;
+  SFX.whoosh();
   renderCake();
   CAKE.timer = setTimeout(() => { if (CAKE) cakeToDecorate(); }, CAKE_STUDY_MS);
 }
 function cakeToDecorate() {
   if (CAKE.timer) { clearTimeout(CAKE.timer); CAKE.timer = null; }
   CAKE.phase = "decorate";
-  SFX.whoosh();
+  CAKE.placed[CAKE.tier] = new Array(cakeTierSlots(CAKE.tier)).fill(null);
+  SFX.pop(1);
   renderCake();
 }
 function cakePickTool(id) { if (!CAKE) return; CAKE.tool = id; renderCake(); }
-function cakeTapSlot(i) { if (!CAKE || CAKE.phase !== "decorate") return; CAKE.placed[i] = CAKE.tool; SFX.pop(2); renderCake(); }
-function cakeSlotMarkup(deco, idx, tappable) {
-  const inner = deco ? cakeArt(deco, "cake-slot-ic") : `<span class="cake-slot-empty">+</span>`;
-  return `<button class="cake-slot ${deco ? "filled" : ""}" ${tappable ? `data-i="${idx}"` : "disabled"}>${inner}</button>`;
+function cakeTapSlot(i) {
+  if (!CAKE || CAKE.phase !== "decorate") return;
+  CAKE.placed[CAKE.tier][i] = CAKE.tool; SFX.pop(2); renderCake();
 }
 function renderCake() {
-  const C = CAKE, study = C.phase === "study";
-  const row = (study ? C.target : C.placed)
-    .map((deco, i) => cakeSlotMarkup(deco, i, !study)).join("");
+  const C = CAKE, t = C.tier, study = C.phase === "study", n = cakeTierSlots(t);
+  // build every visible spot: finished tiers keep your placed treats; the current
+  // tier shows the target while studying, then empty tappable spots while decorating
+  const spots = [];
+  for (let k = 1; k <= t; k++) {
+    const pos = CAKE_SLOTS[t][k - 1], sz = cakeSpotSize(cakeTierSlots(k));
+    for (let j = 0; j < pos.length; j++) {
+      const [x, y] = pos[j];
+      let deco = null, tappable = false, cls = "";
+      if (k < t) deco = (C.placed[k] || [])[j] || null;                 // finished tier
+      else if (study) { deco = C.targets[t][j]; cls = "target"; }        // current tier — memorise
+      else { deco = C.placed[t][j] || null; tappable = true; cls = "live"; } // current tier — placing
+      spots.push(`<button class="cake-spot ${deco ? "filled" : ""} ${cls}" style="left:${(x * 100).toFixed(2)}%;top:${(y * 100).toFixed(2)}%;width:${sz}%" ${tappable ? `data-i="${j}"` : "disabled"}>${deco ? cakeArt(deco, "cake-spot-ic") : `<span class="cake-spot-dot"></span>`}</button>`);
+    }
+  }
+  const placedCount = study ? 0 : (C.placed[t] || []).filter(Boolean).length;
   const tools = CAKE_DECOS.map(d =>
-    `<button class="cake-tool ${d.id === C.tool ? "sel" : ""}" data-id="${d.id}">${cakeArt(d.id, "cake-tool-ic")}<span>${d.name}</span></button>`).join("");
-  const placedCount = C.placed.filter(Boolean).length;
+    `<button class="cake-tool2 ${d.id === C.tool ? "sel" : ""}" data-id="${d.id}">${cakeArt(d.id, "cake-tool2-ic")}</button>`).join("");
   html("event", `
-    ${hud(study ? "Study the " + C.canvas.label + "! 👀" : "Decorate! 🧁")}
-    <div class="cake-stage">
+    ${hud(study ? "Study Tier " + t + " 👀" : "Decorate Tier " + t + " 🧁")}
+    <div class="cake-stage2">
       <div class="cake-caption">${study
-        ? `<b>Memorise</b> where each decoration sits…`
-        : `Recreate it from memory — tap the spots (${placedCount}/${C.n} placed)`}</div>
-      <div class="cake-layer"><div class="cake-slots">${row}</div></div>
-      <div class="cake-plate"></div>
-      ${study ? `<div class="cake-study-bar"><i id="cake-study-fill"></i></div>` : ""}
+        ? `<b>Memorise</b> tier ${t} — where each treat sits…`
+        : `Recreate tier ${t} from memory (${placedCount}/${n})`}</div>
+      <div class="cake-arena">
+        <div class="cake-view">
+          <img class="cake-img" src="art/cake_stage_${t}.png?v=${BUILD}" alt="cake" draggable="false">
+          ${spots.join("")}
+        </div>
+      </div>
+      ${study
+        ? `<div class="cake-study-bar"><i id="cake-study-fill"></i></div>
+           <button class="btn good" id="cake-ready">I've got it! →</button>`
+        : `<div class="cake-tools2">${tools}</div>
+           <button class="btn good" id="cake-done">✓ Present tier ${t}</button>`}
     </div>
-    ${study
-      ? `<div class="grow"></div><button class="btn good" id="cake-ready">I've got it! →</button>`
-      : `<div class="cake-tools">${tools}</div><button class="btn good" id="cake-done">✓ Present to the judge</button>`}
   `);
   if (study) {
     on("#cake-ready", "click", cakeToDecorate);
@@ -2019,54 +2040,71 @@ function renderCake() {
     if (fill) { fill.style.transition = "none"; fill.style.width = "100%";
       requestAnimationFrame(() => { if (fill.isConnected) { fill.style.transition = "width " + CAKE_STUDY_MS + "ms linear"; fill.style.width = "0%"; } }); }
   } else {
-    $("#screen-event").querySelectorAll(".cake-slot[data-i]").forEach(b =>
+    $("#screen-event").querySelectorAll(".cake-spot[data-i]").forEach(b =>
       b.addEventListener("click", () => cakeTapSlot(+b.dataset.i)));
-    $("#screen-event").querySelectorAll(".cake-tool").forEach(b =>
+    $("#screen-event").querySelectorAll(".cake-tool2").forEach(b =>
       b.addEventListener("click", () => cakePickTool(b.dataset.id)));
-    on("#cake-done", "click", cakeSubmit);
+    on("#cake-done", "click", cakeSubmitTier);
   }
   show("event");
 }
-function cakeScore() {
-  let correct = 0;
-  for (let i = 0; i < CAKE.n; i++) if (CAKE.placed[i] === CAKE.target[i]) correct++;
-  return { correct, pct: Math.round((correct / CAKE.n) * 100) };
-}
-function cakeSubmit() {
+function cakeSubmitTier() {
   if (!CAKE) return;
   if (CAKE.timer) { clearTimeout(CAKE.timer); CAKE.timer = null; }
-  const { correct, pct } = cakeScore();
-  const place = CAKE_PLACES.find(p => pct >= p.min) || null;
-  // a little side-by-side so you can see what you missed
-  const compare = `
-    <div class="cake-compare">
-      <div class="cake-compare-row"><span class="cake-cmp-lbl">Theirs</span><div class="cake-cmp-slots">${CAKE.target.map(d => `<span class="cake-cmp-slot">${cakeArt(d, "cake-cmp-ic")}</span>`).join("")}</div></div>
-      <div class="cake-compare-row"><span class="cake-cmp-lbl">Yours</span><div class="cake-cmp-slots">${CAKE.placed.map((d, i) => `<span class="cake-cmp-slot ${d === CAKE.target[i] ? "ok" : "bad"}">${d ? cakeArt(d, "cake-cmp-ic") : "·"}</span>`).join("")}</div></div>
-    </div>`;
+  const t = CAKE.tier, n = cakeTierSlots(t), target = CAKE.targets[t], placed = CAKE.placed[t] || [];
+  let correct = 0; for (let i = 0; i < n; i++) if (placed[i] === target[i]) correct++;
+  const pct = Math.round(correct / n * 100), pass = correct / n >= CAKE_PASS;
+  if (pass) {
+    CAKE.passed = t; SFX.perfect(); SFX.charm();
+    if (t < CAKE_MAX_TIER) { cakeTierCleared(t, correct, n, pct); return; }
+  } else { SFX.sneeze(); }
+  cakeFinish(correct, n, pct);
+}
+function cakeTierCleared(t, correct, n, pct) {
+  html("event", `
+    ${hud("Tier " + t + " — Cleared! 🎂")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${CAKE_RIBBON[t]}</div>
+      <div class="result-title win">Tier ${t} decorated!</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>Treats matched</span><span>${correct}/${n} (${pct}%)</span></div>
+        <div class="stat-line"><span>Up next</span><span>Tier ${t + 1} · ${cakeTierSlots(t + 1)} treats</span></div>
+      </div>
+      <p class="muted" style="max-width:300px">“Beautiful work! Onto the next tier…”</p>
+    </div>
+    <button class="btn good" id="cake-cont">Decorate Tier ${t + 1} →</button>
+  `);
+  on("#cake-cont", "click", () => { if (CAKE) cakeStartTier(t + 1); });
+  show("event");
+}
+function cakeFinish(correct, n, pct) {
+  const best = CAKE.passed;
+  GAME.bakeoffs = (GAME.bakeoffs || 0) + 1;
   let outcome;
-  if (place) {
-    const got = grantReward(place.reward); save();
-    SFX.perfect(); SFX.bigCoin(); if (place.place === 1) confettiOver($("#app"));
-    outcome = { emoji: place.ribbon, title: place.title, cls: "win",
-      lines: [`<div class="stat-line"><span>Decorations matched</span><span>${correct}/${CAKE.n} (${pct}%)</span></div>`,
+  if (best >= 1) {
+    const info = CAKE_TIERS[best], got = grantReward(info.reward);
+    if (best >= 3) confettiOver($("#app"));
+    SFX.perfect(); SFX.bigCoin();
+    outcome = { emoji: info.ribbon, title: info.place, cls: "win",
+      lines: [`<div class="stat-line"><span>Tiers completed</span><span>${best} of 5</span></div>`,
+              `<div class="stat-line"><span>Last tier</span><span>${correct}/${n} (${pct}%)</span></div>`,
               `<div class="stat-line"><span>Your prize</span><span class="gold">${got}</span></div>`],
-      note: place.place === 1 ? "“Flawless! A blue-ribbon bake if I ever saw one!” 🎀"
-          : place.place === 2 ? "“Very nicely done — a fine second place!”"
-          : "“Not bad! A third-place ribbon for effort.”" };
+      note: best >= 5 ? "“A five-tier masterpiece — Grand Champion of the Bake-Off!” 🎀"
+          : best >= 3 ? "“Three flawless tiers — a blue-ribbon bake!” 🎀"
+          : "“A lovely effort — here's your ribbon!”" };
   } else {
-    save(); SFX.sneeze();
     outcome = { emoji: "😖", title: "No ribbon this time!", cls: "lose",
-      lines: [`<div class="stat-line"><span>Decorations matched</span><span>${correct}/${CAKE.n} (${pct}%)</span></div>`,
-              `<div class="stat-line"><span>Needed</span><span>${CAKE_PLACES[CAKE_PLACES.length - 1].min}% for a ribbon</span></div>`],
-      note: "“Ooh, close! Study a touch longer next time.” The judge waves you on with a smile." };
+      lines: [`<div class="stat-line"><span>Tier 1</span><span>${correct}/${n} (${pct}%)</span></div>`,
+              `<div class="stat-line"><span>Needed</span><span>${Math.round(CAKE_PASS * 100)}% to advance</span></div>`],
+      note: "“Ooh, so close! Study a touch longer next time.” The judge waves you on with a smile." };
   }
+  save();
   CAKE = null;
   html("event", `
     ${hud("The Drury Lane Bake-Off")}
     <div class="grow center" style="gap:12px">
       <div class="ph big">${outcome.emoji}</div>
       <div class="result-title ${outcome.cls}">${outcome.title}</div>
-      ${compare}
       <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
       <p class="muted" style="max-width:300px">${outcome.note}</p>
     </div>
@@ -3428,7 +3466,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStudy, cakeToDecorate, cakePickTool, cakeTapSlot, cakeScore, cakeSubmit, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePickTool, cakeTapSlot, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

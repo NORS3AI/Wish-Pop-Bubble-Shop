@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎂 **The Bake-Off is now a real memory game!** In the Drury Lane cake contest you build a **tiered
+  cake, one layer at a time.** Each round the judges show you a decorated tier for a few seconds —
+  then it's wiped clean and you have to place the treats back exactly where they were. Pass tier 3 to
+  win **first place**; keep your streak going through tiers 4 and 5 for bigger bonuses and the **Grand
+  Champion crown**. Six big treat buttons (peppermint, strawberry, cherry, flower, crown, butterfly)
+  and a cake that grows taller as you climb.
+
 - ⚡ **Snappier dancing.** The dancer poses are now pre-loaded when a lesson starts, so the picture
   swaps the instant you press a move (no more laggy delay on Cinderella or the prince). Also dropped
   in Cinderella's cleaner background-removed art.
