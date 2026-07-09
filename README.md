@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🦉 **New owl customer!** The sleepy wizard owl now has four hand-drawn moods — cozy and sleepy when
+  they arrive, a happy wave when you nail the order, grumpy fists when you miss, and teary sniffles
+  when a treat sets off their allergy.
+
 - 🎂 **Tap-to-place decorating!** No more poking tiny circles — just **tap the treats in order** and
   they drop onto the cake left to right. A soft glow shows where the next one lands, and **Undo / Redo**
   buttons flank the treat row so it's easy to fix a mistake. (The guide circles are hidden now — the
