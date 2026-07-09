@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v78"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v79"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2143,10 +2143,12 @@ function realmFrame() { return (currentRealm().custFrame) || "cframe_01"; }
 function renderCustomer() {
   const c = ROUND.customer, w = ROUND.wish, realm = currentRealm();
   const allergyList = [w.allergy, w.allergy2].filter(Boolean);
-  const allergyTxt = allergyList.length ? allergyList.map(a => `${magicDot(a)} ${a}`).join(" ") : "None";
-  const needsInline = w.needs.map(n => n.revealed
-    ? `<span class="bneed">${magicDot(n.type)} ${n.type}</span>`
-    : `<span class="bneed hidden-need">❔ ${n.label}</span>`).join("");
+  // allergy shows a simple mark: ✕ none, ✔ one, ✔✔ two
+  const allergyMark = allergyList.length === 0
+    ? `<span class="amark x">✕</span>`
+    : allergyList.length === 2
+    ? `<span class="amark ok">✔✔</span>`
+    : `<span class="amark ok">✔</span>`;
   // baked-text title banner (VIP gets its own; others use the standard arrival banner)
   const bannerImg = ROUND.vip ? "banner_vip" : "banner_new";
   const keys = GAME.keys || 0, canWager = ROUND.vip && keys > 0;
@@ -2177,12 +2179,11 @@ function renderCustomer() {
         <div class="cust-wish-text">“${c.line}”</div>
         ${extra}
       </div>
-    </div>
-    <div class="cust-bottombar">
-      ${bcell("", "Need", needsInline, "bneeds")}
-      ${bcell("kit_17", "Allergy", allergyTxt, allergyList.length ? "baller" : "")}
-      ${bcell("kit_13", "Payment", ROUND.payment)}
-      ${bcell("kit_16", "Target", w.requiredMatch + "%")}
+      <div class="cust-bottombar">
+        ${bcell("kit_13", "Payment", ROUND.payment)}
+        ${bcell("kit_16", "Target", w.requiredMatch + "%")}
+        ${bcell("kit_17", "Allergy", allergyMark)}
+      </div>
     </div>
     ${canWager
       ? `<button class="cust-scoop wager" id="vip-wager"><img src="art/ui/kit_08.png" alt=""><span>🗝️ Wager a Key</span></button>
