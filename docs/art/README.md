@@ -218,10 +218,12 @@ These only show up during the Evil Queen ransom event. Optional — they use emo
 
 ---
 
-## Dance minigame assets (staged — not wired into the game yet)
+## Dance minigame assets
 
-Sliced and background-removed, waiting on a ballroom background + the knight set
-before we build the minigame.
+The **knight** ("A Royal Ball") is wired up and playable: ballroom backdrop, big
+centered dancer, move announcement, beat meter, and the four big move buttons,
+with a quick fade when the pose changes on a button press. The prince and
+Cinderella sets are sliced and ready to slot in as future dance partners.
 
 | Files | What it is |
 | --- | --- |

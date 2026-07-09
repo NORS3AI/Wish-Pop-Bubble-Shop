@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v84"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v85"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1568,11 +1568,13 @@ function goblinFinish() {
 /* ======================================================================= */
 let DANCE = null;
 // The four dance moves — the shared "alphabet" every routine is built from.
+// pose = which dancer frame plays this move (frame 1 is the idle/start pose);
+// btn  = the baked move-button art in art/ui/.
 const DANCE_MOVES = [
-  { id: "left",  icon: "↩️", name: "Twirl Left" },
-  { id: "right", icon: "↪️", name: "Twirl Right" },
-  { id: "toe",   icon: "🩰", name: "Tiptoes" },
-  { id: "spin",  icon: "🌀", name: "Spin" },
+  { id: "left",    icon: "↩️", name: "Twirl Left",  pose: 2, btn: "dance_move_1" },
+  { id: "right",   icon: "↪️", name: "Twirl Right", pose: 3, btn: "dance_move_2" },
+  { id: "toe",     icon: "🩰", name: "Tiptoes",     pose: 4, btn: "dance_move_3" },
+  { id: "curtsey", icon: "💃", name: "Curtsey",     pose: 5, btn: "dance_move_4" },
 ];
 const DANCE_MOVE_BY_ID = {}; DANCE_MOVES.forEach(m => DANCE_MOVE_BY_ID[m.id] = m);
 // Dance students you teach. The knight is first; the prince and Cinderella
@@ -1582,6 +1584,7 @@ const DANCE_MOVE_BY_ID = {}; DANCE_MOVES.forEach(m => DANCE_MOVE_BY_ID[m.id] = m
 const DANCE_PARTNERS = {
   knight: {
     id: "knight", emoji: "🤺", name: "Sir Wobble", title: "A Clumsy Knight",
+    poses: "knight_dance", worried: null,   // 5 pose frames; no separate worried set yet
     steps: 6, beatMs: 2000, approach: 1400, passFrac: 0.5,   // pass = score >= passFrac of the max
     line: "“I'm to dance at the royal ball tonight and I've got two left feet! Teach me the steps, please?”",
     reward: { gold: 45, keys: 1, stardust: 6 }, prizeTxt: "🪙 gold + a 🗝️ key",
@@ -1611,7 +1614,7 @@ function renderDanceIntro(partnerId) {
   html("event", `
     ${hud("A Royal Ball!")}
     <div class="grow center" style="gap:14px">
-      <div class="ph big">${p.emoji}</div>
+      <div class="dance-hero">${p.poses ? `<img src="art/${p.poses}_1.png" alt="${p.name}" draggable="false">` : `<div class="ph big">${p.emoji}</div>`}</div>
       <div style="font-weight:800;font-size:20px">${p.name}</div>
       <div class="speech">${p.line}</div>
       <div class="card" style="width:100%;max-width:330px">
@@ -1705,6 +1708,10 @@ function danceTap(moveId, _testOffset) {
   if (j.tier === "perfect" || j.tier === "good") DANCE.nailed++;
   DANCE.feedback = { tier: j.tier };
   SFX[j.tier === "perfect" ? "coin" : j.tier === "good" || j.tier === "ok" ? "charm" : "sneeze"]();
+  // the dancer performs the move you pressed — worried face if it was botched
+  const mv = DANCE_MOVE_BY_ID[moveId];
+  const botched = !correct || j.tier === "early" || j.tier === "late";
+  danceSwapPose(mv ? mv.pose : 1, botched);
   dancePaintFeedback();   // update in place — DON'T re-render (that would restart the marker)
 }
 const DANCE_FB = {
@@ -1722,12 +1729,26 @@ function dancePaintFeedback() {
   if (fbEl) fbEl.innerHTML = DANCE.feedback ? (DANCE_FB[DANCE.feedback.tier] || "") : "";
   const gr = sc.querySelector("#dance-grace-fill");
   if (gr) gr.style.width = danceMeterPct() + "%";
-  const face = sc.querySelector(".dance-face");
-  if (face) {
+  // glow green on a good beat, shake on a botched one (applied once the pose settles in)
+  const img = sc.querySelector("#dance-dancer");
+  if (img) {
     const good = DANCE.feedback && (DANCE.feedback.tier === "perfect" || DANCE.feedback.tier === "good");
-    face.classList.remove("happy", "oops"); void face.offsetWidth;
-    face.classList.add(good ? "happy" : "oops");
+    setTimeout(() => { if (!img.isConnected) return; img.classList.remove("glow-good", "glow-bad"); void img.offsetWidth; img.classList.add(good ? "glow-good" : "glow-bad"); }, 160);
   }
+}
+// The dancer image for a pose frame (frame 1 = idle/start). On a botched move,
+// partners with a worried set show one of those faces instead.
+function danceDancerSrc(p, poseNum, worried) {
+  if (worried && p.worried) return `art/${p.worried}_${((poseNum - 1) % 4) + 1}.png`;
+  return `art/${p.poses}_${poseNum}.png`;
+}
+// Quick fade-out / fade-in when the dancer changes pose (on a button press).
+function danceSwapPose(poseNum, worried) {
+  const img = document.getElementById("dance-dancer"); if (!img || !DANCE) return;
+  const src = danceDancerSrc(DANCE.p, poseNum, worried);
+  img.classList.remove("glow-good", "glow-bad");
+  img.classList.add("swapping");                          // fade + settle out
+  setTimeout(() => { if (img.isConnected) { img.src = src; img.classList.remove("swapping"); } }, 150);
 }
 function renderDance() {
   const D0 = DANCE, p = D0.p, moveId = D0.routine[D0.idx];
@@ -1739,29 +1760,28 @@ function renderDance() {
   const fbTxt = fb ? (DANCE_FB[fb.tier] || "")
     : (rehearse ? "Tap the move on the beat!" : "Lead it from memory — on the beat!");
   const mv = DANCE_MOVE_BY_ID[moveId];
-  const bubble = rehearse
-    ? `<div class="dance-bubble"><span class="dance-cue">${mv.icon}</span><span>“${mv.name}!”</span></div>`
-    : `<div class="dance-bubble memory"><span class="dance-cue">❓</span><span>What comes next?</span></div>`;
+  const announce = rehearse
+    ? `<span class="dance-cue-ic">${mv.icon}</span> <b>${mv.name}!</b>`
+    : `<span class="dance-cue-ic">❓</span> <b>What comes next?</b>`;
   const buttons = DANCE_MOVES.map(m =>
-    `<button class="dance-btn" data-id="${m.id}"><span class="dance-btn-ic">${m.icon}</span><span class="dance-btn-nm">${m.name}</span></button>`).join("");
-  const goodFb = fb && (fb.tier === "perfect" || fb.tier === "good");
+    `<button class="dance-btn" data-id="${m.id}"><img src="art/ui/${m.btn}.png" alt="${m.name}" draggable="false"><span class="dance-btn-nm">${m.name}</span></button>`).join("");
   html("event", `
     ${hud(rehearse ? "Rehearsal 💃" : "The Ball 🎼")}
-    <div class="dance-top">
-      <div class="dance-face ${fb ? (goodFb ? "happy" : "oops") : ""}">${p.emoji}</div>
-      ${bubble}
-    </div>
-    <div class="beat-track">
-      <span class="beat-zone" style="left:${zonePct - 8}%;width:16%"></span>
-      <span class="beat-line" style="left:${zonePct}%"></span>
-      <i class="beat-marker" id="beat-marker"></i>
-    </div>
-    <div class="dance-status">
-      <div class="rumpel-stat sub">${rehearse ? "Act 1" : "Act 2"} · Step ${Math.min(D0.idx + 1, p.steps)}/${p.steps} · Nailed ${D0.nailed} · <span id="dance-fb">${fbTxt}</span></div>
-      <div class="dance-grace"><i id="dance-grace-fill" style="width:${meterPct}%"></i><span class="dance-grace-mark" style="left:${targetPct}%"></span></div>
-    </div>
-    <div class="grow center">
-      <div class="dance-grid">${buttons}</div>
+    <div class="dance-stage">
+      <div class="dance-grace top"><i id="dance-grace-fill" style="width:${meterPct}%"></i><span class="dance-grace-mark" style="left:${targetPct}%"></span></div>
+      <div class="dance-dancer">
+        <img class="dance-dancer-img" id="dance-dancer" src="${danceDancerSrc(p, 1)}" alt="${p.name}" draggable="false">
+      </div>
+      <div class="dance-announce">
+        <div class="dance-cue">${announce}</div>
+        <div class="dance-sub"><span>${rehearse ? "Act 1" : "Act 2"} · Step ${Math.min(D0.idx + 1, p.steps)}/${p.steps}</span> · <span id="dance-fb" class="dance-fb">${fbTxt}</span></div>
+      </div>
+      <div class="beat-track">
+        <span class="beat-zone" style="left:${zonePct - 8}%;width:16%"></span>
+        <span class="beat-line" style="left:${zonePct}%"></span>
+        <i class="beat-marker" id="beat-marker"></i>
+      </div>
+      <div class="dance-buttons">${buttons}</div>
     </div>
   `);
   $("#screen-event").querySelectorAll(".dance-btn").forEach(b =>

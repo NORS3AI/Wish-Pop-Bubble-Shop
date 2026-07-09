@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 💃 **The Royal Ball got a real stage!** Sir Wobble the knight now dances in a proper **ballroom**,
+  shown big in the center, with the move called out below him, the beat meter above the buttons, and
+  four big illustrated **move buttons** (Twirl Left · Twirl Right · Tiptoes · Curtsey). He strikes
+  the pose you press, with a quick fade between poses. (The prince and Cinderella are cut and ready
+  to join as future dance partners.)
+
 - ⚖️ **Charm limit:** you can now collect at most **7 charms per round** (across all the pop, jackpot
   and auto-collect ways of getting them). Also shrank the home-screen Play button a little.
 

@@ -894,38 +894,49 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .gob-count-big.go { color: var(--good); }
 @keyframes gobcd { 0% { transform: scale(1.6); opacity: 0; } 40% { transform: scale(1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 /* The Royal Ball — teach a clumsy courtier to dance (rhythm, then memory) */
-.dance-top { display: flex; align-items: center; gap: 12px; padding: 6px 2px 2px; }
-.dance-face { font-size: 60px; line-height: 1; flex: 0 0 auto; transition: transform .15s ease; }
-.dance-face.happy { animation: danceHop .5s ease; }
-.dance-face.oops { animation: danceWob .5s ease; }
-@keyframes danceHop { 0%,100% { transform: translateY(0) rotate(0); } 40% { transform: translateY(-10px) rotate(-8deg); } 70% { transform: translateY(0) rotate(6deg); } }
-@keyframes danceWob { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-12deg); } 55% { transform: rotate(10deg); } 80% { transform: rotate(-5deg); } }
-.dance-bubble { position: relative; flex: 1; background: var(--card2); border: 1px solid var(--line);
-  border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; font-weight: 800; }
-.dance-bubble::before { content: ""; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
-  border: 8px solid transparent; border-right-color: var(--card2); }
-.dance-bubble.memory { opacity: .85; font-style: italic; }
-.dance-cue { font-size: 38px; line-height: 1; }
+.dance-hero { display: flex; justify-content: center; }
+.dance-hero img { height: 190px; width: auto; filter: drop-shadow(0 8px 16px rgba(0,0,0,.4)); animation: danceIn .3s ease; }
+/* Ballroom stage: big dancer centered → move announcement → beat meter → big buttons */
+.dance-stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 8px 10px 10px; overflow: hidden; border-radius: 14px;
+  background: url('../art/ballroom_bg.jpg') no-repeat center bottom; background-size: cover; }
+.dance-stage::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(20,8,40,.32) 0%, rgba(20,8,40,.04) 26%, rgba(20,8,40,.10) 62%, rgba(20,8,40,.58) 100%); }
+.dance-stage > * { position: relative; z-index: 1; }
+.dance-dancer { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: center; width: 100%; }
+.dance-dancer-img { height: 100%; max-height: 44vh; width: auto; object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)); transition: opacity .16s ease, transform .16s ease; animation: danceIn .22s ease; }
+.dance-dancer-img.swapping { opacity: 0; transform: translateY(8px) scale(.97); }
+.dance-dancer-img.glow-good { animation: danceHop .5s ease; filter: drop-shadow(0 0 20px rgba(130,255,160,.95)) drop-shadow(0 10px 18px rgba(0,0,0,.55)); }
+.dance-dancer-img.glow-bad { animation: danceWob .5s ease; }
+@keyframes danceIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes danceHop { 0%,100% { transform: translateY(0) rotate(0); } 40% { transform: translateY(-12px) rotate(-4deg); } 70% { transform: translateY(0) rotate(3deg); } }
+@keyframes danceWob { 0%,100% { transform: rotate(0); } 25% { transform: translateX(-8px) rotate(-6deg); } 55% { transform: translateX(7px) rotate(5deg); } 80% { transform: translateX(-3px) rotate(-2deg); } }
+.dance-announce { text-align: center; font-family: var(--ff-display); color: #fff; }
+.dance-announce .dance-cue { display: inline-flex; align-items: center; gap: 6px; font-size: 24px; line-height: 1.1; text-shadow: 0 2px 5px rgba(0,0,0,.85); }
+.dance-announce .dance-cue-ic { font-size: 24px; }
+.dance-announce .dance-sub { font-size: 12.5px; color: #ffe6b0; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+.dance-fb { font-weight: 800; }
 /* The beat track: a marker slides left→right, hitting the green line on the beat */
-.beat-track { position: relative; height: 30px; border-radius: 15px; background: rgba(255,255,255,.06);
-  border: 1px solid var(--line); overflow: hidden; margin: 12px 2px 4px; }
+.beat-track { position: relative; width: 92%; max-width: 430px; height: 26px; border-radius: 13px; background: rgba(10,4,24,.5);
+  border: 1px solid rgba(255,255,255,.25); overflow: hidden; margin: 2px 0; }
 .beat-zone { position: absolute; top: 0; bottom: 0; border-radius: 4px;
-  background: linear-gradient(90deg, rgba(126,224,138,0), rgba(126,224,138,.30), rgba(126,224,138,0)); }
+  background: linear-gradient(90deg, rgba(126,224,138,0), rgba(126,224,138,.35), rgba(126,224,138,0)); }
 .beat-line { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px;
   background: #7ee08a; border-radius: 2px; box-shadow: 0 0 10px #7ee08a; }
 .beat-marker { position: absolute; top: 4px; bottom: 4px; width: 16px; margin-left: -8px; left: 0;
   border-radius: 8px; background: linear-gradient(#fff, #c58bff); box-shadow: 0 0 12px #c58bff; }
-.dance-status { padding: 0 2px 4px; text-align: center; }
-.dance-grace { position: relative; height: 12px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 6px; }
+.dance-grace { position: relative; height: 10px; border-radius: 6px; background: rgba(10,4,24,.5); overflow: hidden; border: 1px solid rgba(255,255,255,.2); }
+.dance-grace.top { width: 92%; max-width: 430px; }
 .dance-grace > i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg,#ffd76a,#ff9de0,#b98cff); transition: width .25s ease; }
 .dance-grace-mark { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1.5px; background: var(--gold); border-radius: 2px; box-shadow: 0 0 6px var(--gold); }
-.dance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 320px; padding: 8px 0; }
-.dance-btn { padding: 18px 8px; border-radius: 18px; cursor: pointer; color: var(--ink);
-  background: var(--card2); border: 1px solid var(--line);
-  display: flex; flex-direction: column; align-items: center; gap: 6px; font-weight: 800; }
-.dance-btn-ic { font-size: 40px; line-height: 1; }
-.dance-btn-nm { font-size: 13px; }
-.dance-btn:active { transform: scale(.93); background: rgba(197,139,255,.18); border-color: #c58bff; }
+.dance-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; width: 100%; max-width: 440px; }
+.dance-btn { position: relative; padding: 0; border: none; background: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.dance-btn img { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 7px rgba(0,0,0,.6)); }
+.dance-btn-nm { font-family: var(--ff-display); font-size: 11px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
+.dance-btn:active { transform: scale(.93); }
+.dance-btn:active img { filter: drop-shadow(0 0 10px rgba(255,230,150,.9)) drop-shadow(0 3px 7px rgba(0,0,0,.6)); }
 /* The Drury Lane Bake-Off — study a decorated treat, recreate it from memory */
 .cake-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px 2px; }
 .cake-caption { font-size: 13px; color: var(--ink-dim); text-align: center; margin-bottom: 4px; min-height: 18px; }
