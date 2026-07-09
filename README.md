@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎂 **Curved rows + a bigger cake.** The treat spots now follow the **gentle curve** of each round
+  tier (the outer spots sit a touch higher, like the real cake), the cake **fills more of the screen
+  while decorating** so the spots are easier to tap, and the treat sizes got another pass (tier 2 a
+  little smaller, the top tier's spots nudged up).
+
 - 🎂 **Mirrored patterns + right-sized treats.** Each tier's treats are now a **symmetrical
   pattern** — it reads the same left-to-right and back (e.g. peppermint · flower · … · flower ·
   peppermint), which looks prettier and is easier to memorise. Treats are sized to **cover the
