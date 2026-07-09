@@ -948,18 +948,22 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cd-num.go { font-size: 70px; color: #ffe08a; }
 @keyframes cdPop { 0% { transform: scale(.4); opacity: 0; } 30% { transform: scale(1.14); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 /* The Drury Lane Bake-Off — study a decorated treat, recreate it from memory */
-.cake-stage2 { display: flex; flex-direction: column; align-items: center; flex: 1; min-height: 0; gap: 6px; padding: 4px 8px 8px; }
-.cake-caption { font-size: 14px; color: #ffe6b0; font-weight: 700; text-align: center; min-height: 18px; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.cake-stage2 { display: flex; flex-direction: column; align-items: center; flex: 1; min-height: 0; gap: 6px; padding: 6px 8px 10px;
+  background: linear-gradient(180deg, rgba(30,15,45,.55) 0%, rgba(30,15,45,.12) 20%, rgba(30,15,45,.10) 66%, rgba(30,15,45,.50) 100%), url('../art/bakery_bg.jpg') center/cover;
+  border-radius: 14px; }
+.cake-caption { font-size: 14px; color: #fff3d6; font-weight: 800; text-align: center; min-height: 18px; text-shadow: 0 1px 4px rgba(0,0,0,.85), 0 0 2px rgba(0,0,0,.7); }
 .cake-arena { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; width: 100%; }
 .cake-view { position: relative; display: inline-block; }
 .cake-img { display: block; max-height: 52vh; max-width: 92vw; width: auto; height: auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
 .cake-spot { position: absolute; transform: translate(-50%, -50%); aspect-ratio: 1; padding: 0; border: none; background: none;
   display: flex; align-items: center; justify-content: center; }
 .cake-spot.live { cursor: pointer; }
-.cake-spot-dot { width: 92%; height: 92%; border-radius: 50%; border: 3px dashed rgba(255,255,255,.95); background: rgba(60,30,80,.22); box-sizing: border-box; }
-.cake-spot.live .cake-spot-dot { border-color: #fff; background: rgba(90,50,120,.28); box-shadow: 0 0 9px rgba(255,216,107,.85), 0 0 3px rgba(0,0,0,.5), inset 0 0 6px rgba(255,216,107,.4); }
+/* the dashed guide sits at circle size (~2/3 of the spot); the treat itself
+   overflows the spot so it's large and clearly covers the printed circle */
+.cake-spot-dot { width: 66%; height: 66%; border-radius: 50%; border: 3px dashed rgba(255,255,255,.95); background: rgba(60,30,80,.22); box-sizing: border-box; }
+.cake-spot.live .cake-spot-dot { border-color: #fff; background: rgba(90,50,120,.30); box-shadow: 0 0 10px rgba(255,216,107,.9), 0 0 3px rgba(0,0,0,.55), inset 0 0 6px rgba(255,216,107,.45); }
 .cake-spot.filled .cake-spot-dot { display: none; }
-.cake-spot-ic, .cake-spot-ic.art { width: 120%; height: 120%; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+.cake-spot-ic, .cake-spot-ic.art { width: 150%; height: 150%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
 .cake-spot .art-emoji { font-size: 26px; line-height: 1; }
 .cake-spot.live:active { transform: translate(-50%, -50%) scale(.88); }
 .cake-spot.live:not(.filled) .cake-spot-dot { animation: cakePulse 1.3s ease-in-out infinite; }
@@ -975,13 +979,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cake-tools2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; width: 100%; max-width: 360px; }
 .cake-tool2 { border-radius: 16px; border: 2px solid rgba(255,255,255,.35);
   background: linear-gradient(160deg,#fff3d6,#ffd9ec 55%,#e9c8ff); box-shadow: 0 3px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.7);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; padding: 8px 4px 5px; }
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; padding: 9px 4px 6px; }
 .cake-tool2.sel { border-color: var(--gold); background: linear-gradient(160deg,#fff6c9,#ffe08a 60%,#ffd76a);
   box-shadow: 0 0 16px rgba(255,216,107,.75), inset 0 1px 0 rgba(255,255,255,.8); transform: translateY(-2px); }
 .cake-tool2:active { transform: scale(.94); }
-.cake-tool2-ic, .cake-tool2-ic.art { height: 52px; width: auto; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
-.cake-tool2 .art-emoji { font-size: 40px; line-height: 1; }
-.cake-tool2-name { font-size: 11px; font-weight: 800; color: #6a3d55; letter-spacing: .2px; }
+.cake-tool2-ic, .cake-tool2-ic.art { height: 74px; width: auto; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
+.cake-tool2 .art-emoji { font-size: 56px; line-height: 1; }
+.cake-tool2-name { font-size: 12px; font-weight: 800; color: #6a3d55; letter-spacing: .2px; }
 .cake-tool2.sel .cake-tool2-name { color: #7a5200; }
 .cake-study-bar { width: 100%; max-width: 340px; height: 10px; border-radius: 6px; background: rgba(255,255,255,.15); overflow: hidden; }
 .cake-study-bar > i { display: block; height: 100%; width: 100%; border-radius: 6px; background: linear-gradient(90deg,#ffd76a,#ff9de0); }

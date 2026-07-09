@@ -19,11 +19,16 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
-- 🎂 **The Bake-Off got a big polish.** The treat spots now line up neatly on the circles drawn into
+- 🎂🏰 **Prettier Bake-Off + a real ballroom.** The cake contest now plays inside a **cozy bakery**
+  scene, the treats are **much bigger** and sit right on the circles drawn into each cake, and the
+  treat buttons have **big, clear icons**. The Royal Ball got its grand golden **ballroom** backdrop
+  too. (Sizes fine-tuned from new art the owner provided.)
+
+- 🎂 **The Bake-Off got a big polish.** The treat spots line up neatly on the circles drawn into
   each cake, everything is **bigger and easier to tap**, and the six treat buttons are large and
   clearly labelled so you can tell them apart. While you memorise a new tier the treats you need to
   remember **gently glow**, and the tiers you already finished **fade back** so your eye knows where
-  to look. Tier sizes are now 3, 5, 6, 7 and 8 treats as the cake grows.
+  to look. Tier sizes are 3, 5, 6, 7 and 8 treats as the cake grows.
 
 - 🎂 **The Bake-Off is a real memory game.** In the Drury Lane cake contest you build a **tiered
   cake, one layer at a time.** Each round the judges show you a decorated tier for a few seconds —
