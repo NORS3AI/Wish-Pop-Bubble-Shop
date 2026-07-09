@@ -181,9 +181,19 @@ function generateHaul(wish, count, charmFinder, ingredientSet, excludeCharms) {
   const ingItem = ing => ({ kind: "ingredient", id: ing.id });
   const items = [];
   // guarantee 2 main-need ingredients (attemptable + enough to build the main
-  // toward its band). Secondary/twist coverage comes from the biased draw.
+  // toward its band).
   items.push(ingItem(R.pick(mainSources)));
   items.push(ingItem(R.pick(mainSources)));
+  // Guarantee at least one PRIMARY-quality source for EVERY other need too. Hidden
+  // (mystery) needs only reveal when you play an ingredient whose main magic matches
+  // them, so without this a mystery need could be impossible to reveal or fill —
+  // you'd only be able to nudge its bar with secondary magics. Fall back to an
+  // any-quality match if the pantry carries the need only as a secondary.
+  for (let k = 1; k < needs.length; k++) {
+    let src = SET.filter(i => i.qualities[0] === needs[k]);
+    if (!src.length) src = SET.filter(i => i.qualities.includes(needs[k]));
+    if (src.length) items.push(ingItem(R.pick(src)));
+  }
   const charmChance = charmFinder ? BALANCE.CHARM_DROP_CHANCE_FINDER : BALANCE.CHARM_DROP_CHANCE;
   while (items.length < count) {
     const r = Math.random();

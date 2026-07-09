@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐞 **Fix — the stuck "mystery need" bug.** A hidden need only reveals when you play an ingredient
+  whose *main* magic matches it, but the round could deal you a mystery need with **no matching
+  ingredient in your haul** — so you could nudge its bar a little with side-magics but never reveal
+  or fill it. Every need is now guaranteed a matching ingredient in the haul, so a wish is always
+  solvable.
+
 - ⭐ **VIP customers now ask with a pop-up!** Instead of changing the Start Scoop button, a VIP guest
   brings up a dark overlay over the whole screen: **wager 2 keys for a 2× reward** (win keeps your
   keys, a fail loses them) — or **play as normal**. Pick one and the overlay clears; the normal
