@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v93"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v94"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1930,7 +1930,7 @@ const CAKE_DECOS = [
 const CAKE_DECO_BY_ID = {}; CAKE_DECOS.forEach(d => CAKE_DECO_BY_ID[d.id] = d);
 // Slot positions per stage: CAKE_SLOTS[stage][tierIndex] = [[x,y]...] as fractions
 // of the cake image (auto-measured from the art's circle guides).
-const CAKE_SLOTS = {1:[[[0.2923,0.5168],[0.4333,0.5168],[0.5743,0.5168],[0.7152,0.5168]]],2:[[[0.3144,0.2907],[0.4349,0.2907],[0.5554,0.2907],[0.6759,0.2907]],[[0.2704,0.7526],[0.3844,0.7526],[0.4984,0.7526],[0.6124,0.7526],[0.7264,0.7526]]],3:[[[0.3292,0.1988],[0.4371,0.1988],[0.545,0.1988],[0.653,0.1988]],[[0.2903,0.5146],[0.3922,0.5146],[0.494,0.5146],[0.5959,0.5146],[0.6978,0.5146]],[[0.2587,0.8073],[0.354,0.8073],[0.4494,0.8073],[0.5447,0.8073],[0.64,0.8073],[0.7354,0.8073]]],4:[[[0.3488,0.1512],[0.446,0.1512],[0.5433,0.1512],[0.6406,0.1512]],[[0.3118,0.389],[0.4041,0.389],[0.4965,0.389],[0.5888,0.389],[0.6811,0.389]],[[0.2829,0.6122],[0.3691,0.6122],[0.4552,0.6122],[0.5413,0.6122],[0.6274,0.6122],[0.7135,0.6122]],[[0.2534,0.828],[0.3344,0.828],[0.4154,0.828],[0.4965,0.828],[0.5775,0.828],[0.6585,0.828],[0.7396,0.828]]],5:[[[0.3558,0.122],[0.4465,0.122],[0.5372,0.122],[0.628,0.122]],[[0.3235,0.3159],[0.4087,0.3159],[0.4939,0.3159],[0.5791,0.3159],[0.6643,0.3159]],[[0.2964,0.4951],[0.3762,0.4951],[0.456,0.4951],[0.5358,0.4951],[0.6157,0.4951],[0.6955,0.4951]],[[0.2713,0.6695],[0.3462,0.6695],[0.421,0.6695],[0.4959,0.6695],[0.5708,0.6695],[0.6457,0.6695],[0.7206,0.6695]],[[0.248,0.8744],[0.3183,0.8744],[0.3885,0.8744],[0.4588,0.8744],[0.529,0.8744],[0.5993,0.8744],[0.6695,0.8744],[0.7398,0.8744]]]};
+const CAKE_SLOTS = {"1":[[[0.27,0.55],[0.5,0.55],[0.73,0.55]]],"2":[[[0.28,0.355],[0.5,0.355],[0.72,0.355]],[[0.15,0.785],[0.325,0.785],[0.5,0.785],[0.675,0.785],[0.85,0.785]]],"3":[[[0.31,0.235],[0.5,0.235],[0.69,0.235]],[[0.19,0.515],[0.345,0.515],[0.5,0.515],[0.655,0.515],[0.81,0.515]],[[0.15,0.82],[0.29,0.82],[0.43,0.82],[0.57,0.82],[0.71,0.82],[0.85,0.82]]],"4":[[[0.32,0.16],[0.5,0.16],[0.68,0.16]],[[0.22,0.39],[0.36,0.39],[0.5,0.39],[0.64,0.39],[0.78,0.39]],[[0.17,0.615],[0.302,0.615],[0.434,0.615],[0.566,0.615],[0.698,0.615],[0.83,0.615]],[[0.12,0.86],[0.2467,0.86],[0.3733,0.86],[0.5,0.86],[0.6267,0.86],[0.7533,0.86],[0.88,0.86]]],"5":[[[0.33,0.13],[0.5,0.13],[0.67,0.13]],[[0.25,0.29],[0.375,0.29],[0.5,0.29],[0.625,0.29],[0.75,0.29]],[[0.2,0.47],[0.32,0.47],[0.44,0.47],[0.56,0.47],[0.68,0.47],[0.8,0.47]],[[0.16,0.67],[0.2733,0.67],[0.3867,0.67],[0.5,0.67],[0.6133,0.67],[0.7267,0.67],[0.84,0.67]],[[0.13,0.89],[0.2357,0.89],[0.3414,0.89],[0.4471,0.89],[0.5529,0.89],[0.6586,0.89],[0.7643,0.89],[0.87,0.89]]]};
 const CAKE_STUDY_MS = 4500;
 const CAKE_MAX_TIER = 5;
 const CAKE_PASS = 0.7;   // fraction of a tier's spots you must match to advance
@@ -1944,9 +1944,16 @@ const CAKE_TIERS = {
 };
 // Decoration art: art/dec_<id>.png (see art README).
 function cakeArt(id, cls) { const d = CAKE_DECO_BY_ID[id]; return ART.tag("dec_" + id, d ? d.emoji : "❔", cls || "cake-deco"); }
-function cakeTierSlots(tier) { return tier + 3; }   // tier 1 = 4 spots, tier 2 = 5, …
+const CAKE_SLOT_COUNT = [3, 5, 6, 7, 8];             // spots per tier (tier 1 = 3, … tier 5 = 8)
+function cakeTierSlots(tier) { return CAKE_SLOT_COUNT[tier - 1]; }
 function cakeTarget(tier) { const n = cakeTierSlots(tier), t = []; for (let i = 0; i < n; i++) t.push(R.pick(CAKE_DECOS).id); return t; }
-function cakeSpotSize(n) { return Math.round(66 / (n + 1)); }   // deco width % — smaller when a tier has more spots
+// Size each placement spot as large as it can be without neighbours overlapping,
+// based on the actual measured slot spacing for this tier.
+function cakeSpotSizeFor(pos) {
+  if (!pos || pos.length < 2) return 18;
+  let gap = 1; for (let i = 1; i < pos.length; i++) gap = Math.min(gap, Math.abs(pos[i][0] - pos[i - 1][0]));
+  return Math.max(10, Math.min(19, Math.round(gap * 100 * 0.95)));
+}
 const CAKE_RIBBON = ["", "🥉", "🥈", "🥇", "🥇", "👑"];
 function renderCakeIntro() {
   CAKE = null;
@@ -2002,19 +2009,21 @@ function renderCake() {
   // tier shows the target while studying, then empty tappable spots while decorating
   const spots = [];
   for (let k = 1; k <= t; k++) {
-    const pos = CAKE_SLOTS[t][k - 1], sz = cakeSpotSize(cakeTierSlots(k));
+    const pos = CAKE_SLOTS[t][k - 1], sz = cakeSpotSizeFor(pos);
     for (let j = 0; j < pos.length; j++) {
       const [x, y] = pos[j];
       let deco = null, tappable = false, cls = "";
-      if (k < t) deco = (C.placed[k] || [])[j] || null;                 // finished tier
-      else if (study) { deco = C.targets[t][j]; cls = "target"; }        // current tier — memorise
+      // finished tiers fade back while you memorise the new tier, so your eye lands
+      // on the tier that matters right now
+      if (k < t) { deco = (C.placed[k] || [])[j] || null; cls = study ? "done dim" : "done"; }
+      else if (study) { deco = C.targets[t][j]; cls = "target"; }        // current tier — memorise (glows)
       else { deco = C.placed[t][j] || null; tappable = true; cls = "live"; } // current tier — placing
       spots.push(`<button class="cake-spot ${deco ? "filled" : ""} ${cls}" style="left:${(x * 100).toFixed(2)}%;top:${(y * 100).toFixed(2)}%;width:${sz}%" ${tappable ? `data-i="${j}"` : "disabled"}>${deco ? cakeArt(deco, "cake-spot-ic") : `<span class="cake-spot-dot"></span>`}</button>`);
     }
   }
   const placedCount = study ? 0 : (C.placed[t] || []).filter(Boolean).length;
   const tools = CAKE_DECOS.map(d =>
-    `<button class="cake-tool2 ${d.id === C.tool ? "sel" : ""}" data-id="${d.id}">${cakeArt(d.id, "cake-tool2-ic")}</button>`).join("");
+    `<button class="cake-tool2 ${d.id === C.tool ? "sel" : ""}" data-id="${d.id}">${cakeArt(d.id, "cake-tool2-ic")}<span class="cake-tool2-name">${d.name}</span></button>`).join("");
   html("event", `
     ${hud(study ? "Study Tier " + t + " 👀" : "Decorate Tier " + t + " 🧁")}
     <div class="cake-stage2">
