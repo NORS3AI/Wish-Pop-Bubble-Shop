@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v88"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v89"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1651,7 +1651,7 @@ function renderDanceIntro(partnerId) {
   html("event", `
     ${hud("A Royal Ball!")}
     <div class="grow center" style="gap:14px">
-      <div class="dance-hero">${p.poses ? `<img src="art/${p.poses}_1.png" alt="${p.name}" draggable="false">` : `<div class="ph big">${p.emoji}</div>`}</div>
+      <div class="dance-hero">${p.poses ? `<img src="art/${p.poses}_1.png?v=${BUILD}" alt="${p.name}" draggable="false">` : `<div class="ph big">${p.emoji}</div>`}</div>
       <div style="font-weight:800;font-size:20px">${p.name}</div>
       <div class="speech">${p.line}</div>
       <div class="card" style="width:100%;max-width:330px">
@@ -1770,8 +1770,9 @@ function dancePaintFeedback() {
 // The dancer image for a pose frame (frame 1 = idle/start). On a botched move,
 // partners with a worried set show one of those faces instead.
 function danceDancerSrc(p, poseNum, worried) {
-  if (worried && p.worried) return `art/${p.worried}_${((poseNum - 1) % 4) + 1}.png`;
-  return `art/${p.poses}_${poseNum}.png`;
+  // ?v=BUILD cache-busts replaced pose art (the art system doesn't version URLs)
+  if (worried && p.worried) return `art/${p.worried}_${((poseNum - 1) % 4) + 1}.png?v=${BUILD}`;
+  return `art/${p.poses}_${poseNum}.png?v=${BUILD}`;
 }
 // Quick fade-out / fade-in when the dancer changes pose (on a button press).
 // The pose is remembered so the dancer HOLDS it until the next button is pressed.
