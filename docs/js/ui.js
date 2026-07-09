@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v95"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v97"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1930,7 +1930,7 @@ const CAKE_DECOS = [
 const CAKE_DECO_BY_ID = {}; CAKE_DECOS.forEach(d => CAKE_DECO_BY_ID[d.id] = d);
 // Slot positions per stage: CAKE_SLOTS[stage][tierIndex] = [[x,y]...] as fractions
 // of the cake image (auto-measured from the art's circle guides).
-const CAKE_SLOTS = {"1":[[[0.26,0.544],[0.49,0.544],[0.72,0.544]]],"2":[[[0.27,0.309],[0.495,0.309],[0.72,0.309]],[[0.14,0.764],[0.32,0.764],[0.5,0.764],[0.68,0.764],[0.86,0.764]]],"3":[[[0.3,0.219],[0.5,0.219],[0.7,0.219]],[[0.18,0.529],[0.34,0.529],[0.5,0.529],[0.66,0.529],[0.82,0.529]],[[0.13,0.814],[0.276,0.814],[0.422,0.814],[0.568,0.814],[0.714,0.814],[0.86,0.814]]],"4":[[[0.31,0.169],[0.495,0.169],[0.68,0.169]],[[0.19,0.399],[0.345,0.399],[0.5,0.399],[0.655,0.399],[0.81,0.399]],[[0.15,0.629],[0.29,0.629],[0.43,0.629],[0.57,0.629],[0.71,0.629],[0.85,0.629]],[[0.1,0.859],[0.2333,0.859],[0.3667,0.859],[0.5,0.859],[0.6333,0.859],[0.7667,0.859],[0.9,0.859]]],"5":[[[0.305,0.159],[0.485,0.159],[0.665,0.159]],[[0.13,0.309],[0.3075,0.309],[0.485,0.309],[0.6625,0.309],[0.84,0.309]],[[0.11,0.499],[0.26,0.499],[0.41,0.499],[0.56,0.499],[0.71,0.499],[0.86,0.499]],[[0.08,0.699],[0.2167,0.699],[0.3533,0.699],[0.49,0.699],[0.6267,0.699],[0.7633,0.699],[0.9,0.699]],[[0.07,0.889],[0.19,0.889],[0.31,0.889],[0.43,0.889],[0.55,0.889],[0.67,0.889],[0.79,0.889],[0.91,0.889]]]};
+const CAKE_SLOTS = {"1":[[[0.26,0.544],[0.49,0.544],[0.72,0.544]]],"2":[[[0.27,0.309],[0.495,0.309],[0.72,0.309]],[[0.14,0.764],[0.32,0.764],[0.5,0.764],[0.68,0.764],[0.86,0.764]]],"3":[[[0.3,0.219],[0.5,0.219],[0.7,0.219]],[[0.18,0.529],[0.34,0.529],[0.5,0.529],[0.66,0.529],[0.82,0.529]],[[0.13,0.814],[0.276,0.814],[0.422,0.814],[0.568,0.814],[0.714,0.814],[0.86,0.814]]],"4":[[[0.31,0.169],[0.495,0.169],[0.68,0.169]],[[0.19,0.399],[0.345,0.399],[0.5,0.399],[0.655,0.399],[0.81,0.399]],[[0.15,0.629],[0.29,0.629],[0.43,0.629],[0.57,0.629],[0.71,0.629],[0.85,0.629]],[[0.11,0.873],[0.2417,0.873],[0.3733,0.873],[0.505,0.873],[0.6367,0.873],[0.7683,0.873],[0.9,0.873]]],"5":[[[0.305,0.159],[0.485,0.159],[0.665,0.159]],[[0.13,0.309],[0.3075,0.309],[0.485,0.309],[0.6625,0.309],[0.84,0.309]],[[0.11,0.499],[0.26,0.499],[0.41,0.499],[0.56,0.499],[0.71,0.499],[0.86,0.499]],[[0.105,0.706],[0.2367,0.706],[0.3683,0.706],[0.5,0.706],[0.6317,0.706],[0.7633,0.706],[0.895,0.706]],[[0.09,0.895],[0.2057,0.895],[0.3214,0.895],[0.4371,0.895],[0.5529,0.895],[0.6686,0.895],[0.7843,0.895],[0.9,0.895]]]};
 const CAKE_STUDY_MS = 4500;
 const CAKE_MAX_TIER = 5;
 const CAKE_PASS = 0.7;   // fraction of a tier's spots you must match to advance
@@ -1982,14 +1982,17 @@ function renderCakeIntro() {
   on("#cake-skip", "click", startRound);
   show("event");
 }
+// Harder tiers (more treats) get more time to memorise.
+function cakeStudyMs(t) { return 2400 + cakeTierSlots(t) * 650; }
 function cakeStartTier(t) {
   CAKE.tier = t;
   CAKE.targets[t] = cakeTarget(t);
   CAKE.phase = "study";
   CAKE.tool = CAKE_DECOS[0].id;
+  CAKE.studyMs = cakeStudyMs(t);
   SFX.whoosh();
   renderCake();
-  CAKE.timer = setTimeout(() => { if (CAKE) cakeToDecorate(); }, CAKE_STUDY_MS);
+  CAKE.timer = setTimeout(() => { if (CAKE) cakeToDecorate(); }, CAKE.studyMs);
 }
 function cakeToDecorate() {
   if (CAKE.timer) { clearTimeout(CAKE.timer); CAKE.timer = null; }
@@ -2023,16 +2026,16 @@ function renderCake() {
   }
   const placedCount = study ? 0 : (C.placed[t] || []).filter(Boolean).length;
   const tools = CAKE_DECOS.map(d =>
-    `<button class="cake-tool2 ${d.id === C.tool ? "sel" : ""}" data-id="${d.id}">${cakeArt(d.id, "cake-tool2-ic")}<span class="cake-tool2-name">${d.name}</span></button>`).join("");
+    `<button class="cake-tool2 ${d.id === C.tool ? "sel" : ""}" data-id="${d.id}" title="${d.name}" aria-label="${d.name}">${cakeArt(d.id, "cake-tool2-ic")}</button>`).join("");
   html("event", `
     ${hud(study ? "Study Tier " + t + " 👀" : "Decorate Tier " + t + " 🧁")}
-    <div class="cake-stage2">
+    <div class="cake-stage2${study ? " studying" : ""}">
       <div class="cake-caption">${study
         ? `<b>Memorise</b> tier ${t} — where each treat sits…`
         : `Recreate tier ${t} from memory (${placedCount}/${n})`}</div>
       <div class="cake-arena">
         <div class="cake-view">
-          <img class="cake-img" src="art/cake_stage_${t}.png?v=${BUILD}" alt="cake" draggable="false">
+          <img class="cake-img ${t <= 1 ? "wide" : "tall"}" src="art/cake_stage_${t}.png?v=${BUILD}" alt="cake" draggable="false">
           ${spots.join("")}
         </div>
       </div>
@@ -2047,7 +2050,7 @@ function renderCake() {
     on("#cake-ready", "click", cakeToDecorate);
     const fill = $("#cake-study-fill");
     if (fill) { fill.style.transition = "none"; fill.style.width = "100%";
-      requestAnimationFrame(() => { if (fill.isConnected) { fill.style.transition = "width " + CAKE_STUDY_MS + "ms linear"; fill.style.width = "0%"; } }); }
+      requestAnimationFrame(() => { if (fill.isConnected) { fill.style.transition = "width " + (C.studyMs || CAKE_STUDY_MS) + "ms linear"; fill.style.width = "0%"; } }); }
   } else {
     $("#screen-event").querySelectorAll(".cake-spot[data-i]").forEach(b =>
       b.addEventListener("click", () => cakeTapSlot(+b.dataset.i)));

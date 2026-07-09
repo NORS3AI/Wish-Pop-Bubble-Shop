@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎂 **Bake-Off, bigger and clearer.** The cake now **fills the screen** — the first tier is nice and
+  large, and it shrinks just a little as new tiers stack on. The treats sit **much bigger** on the
+  cake so they're easy to see, and the picker is now a **single tidy row of six** with big icons.
+  Harder (taller) tiers give you **more time to memorise**, and the treat spots on the blue and gold
+  tiers were nudged to line up exactly with the circles.
+
 - 🎂🏰 **Prettier Bake-Off + a real ballroom.** The cake contest now plays inside a **cozy bakery**
   scene, the treats are **much bigger** and sit right on the circles drawn into each cake, and the
   treat buttons have **big, clear icons**. The Royal Ball got its grand golden **ballroom** backdrop
