@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🖼️ **The customer screen got the mockup treatment!** A cozy village backdrop, a purple arrival
+  banner, a big illustrated character shown waist-up in an ornate frame, a parchment wish card,
+  and stat icons for payment, scoops, match, and allergy — plus a grand green **Start Scoop**
+  button. (The character's frame is a stand-in for now; a purpose-built one is on the way.)
+
 - 🔠 **A storybook font + beefier buttons!** The game now uses a warm fantasy font (MedievalSharp)
   on its buttons, labels, and titles, and the home screen's Play button and nav plaques are much
   bigger and chunkier — sized for thumbs on a phone.

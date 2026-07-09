@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v74"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v75"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -107,6 +107,16 @@ function applyHomeBackground() {
   const url = "art/home_bg.jpg";
   const im = new Image();
   im.onload = () => { const s = document.getElementById("screen-start"); if (s) { s.style.backgroundImage = "url('" + url + "')"; s.classList.add("has-home-bg"); } };
+  im.src = url;
+}
+// Per-realm scene background for the customer screen (Willow uses the village art).
+const REALM_BG = { willow: "art/willow_bg.jpg" };
+function applyRealmBackground() {
+  const sc = document.getElementById("screen-customer"); if (!sc) return;
+  const url = REALM_BG[GAME.realm];
+  if (!url) { sc.style.backgroundImage = ""; sc.classList.remove("has-realm-bg"); return; }
+  const im = new Image();
+  im.onload = () => { const s = document.getElementById("screen-customer"); if (s) { s.style.backgroundImage = "url('" + url + "')"; s.classList.add("has-realm-bg"); } };
   im.src = url;
 }
 // apply an optional custom cauldron-pot image over the color skin
@@ -2128,49 +2138,63 @@ function startRound() {
   ROUND.keyStaked = false;
   renderCustomer();
 }
+// Which arched portrait frame each realm uses (falls back to the gold one)
+function realmFrame() { return (currentRealm().custFrame) || "cframe_01"; }
 function renderCustomer() {
-  const c = ROUND.customer, w = ROUND.wish;
+  const c = ROUND.customer, w = ROUND.wish, realm = currentRealm();
   const needChips = w.needs.map(n => n.revealed
-    ? `<div class="need-chip">${magicDot(n.type)} ${n.type}</div>`
-    : `<div class="need-chip hidden-need">❔ ${n.label}</div>`).join("");
+    ? `<span class="need-chip">${magicDot(n.type)} ${n.type}</span>`
+    : `<span class="need-chip hidden-need">❔ ${n.label}</span>`).join("");
   const allergyList = [w.allergy, w.allergy2].filter(Boolean);
   const allergyTxt = allergyList.length
-    ? `<span style="color:var(--bad)">${allergyList.map(a => `⚠️ ${magicDot(a)} ${a}`).join(" ")}</span>` : "None";
-  const bossBanner = w.boss
-    ? `<div class="boss-banner">👑 Picky Royal — extra fussy! All three needs, tiny green zones, only ${BALANCE.BOSS_SLOTS} cauldron slots, two allergies.</div>` : "";
-  const rushBanner = ROUND.rush
-    ? `<div class="boss-banner" style="background:linear-gradient(90deg,#ff9a5a,#ff6b6b,#ff9a5a)">⏱️ In a Rush! Serve before their patience runs out for a <b>+${BALANCE.RUSH_BONUS} bonus</b> — miss it and they leave.</div>` : "";
+    ? allergyList.map(a => `${magicDot(a)} ${a}`).join("<br>") : "None";
+  // special-arrival ribbon shown on the title banner
+  const arrivalTxt = w.boss ? "A Picky Royal Arrives!" : ROUND.rush ? "A Customer in a Rush!" : ROUND.vip ? "A VIP Guest Arrives!" : "A New Customer Arrives!";
   const keys = GAME.keys || 0, canWager = ROUND.vip && keys > 0;
-  const vipBanner = ROUND.vip
-    ? `<div class="boss-banner vip-banner">⭐ VIP Guest!${canWager
-        ? ` Wager a 🗝️ key for a <b>${BALANCE.VIP_GOLD_MULT}× reward</b> — win keeps your key, but a <b>failed</b> wish loses it.`
-        : ` Bring a 🗝️ key next time to wager for a bigger reward!`}</div>` : "";
-  const streakChip = GAME.streak >= 2 ? `<div class="streak-chip">🔥 ${GAME.streak} win streak</div>` : "";
+  // small notice line under the banner for special customers (keeps the rules visible)
+  const notice = w.boss
+    ? `<div class="cust-notice boss">👑 Extra fussy — all needs, tiny zones, ${BALANCE.BOSS_SLOTS} slots, two allergies.</div>`
+    : ROUND.rush
+    ? `<div class="cust-notice rush">⏱️ Serve before their patience runs out for a +${BALANCE.RUSH_BONUS} bonus!</div>`
+    : ROUND.vip
+    ? `<div class="cust-notice vip">⭐ ${canWager ? `Wager a 🗝️ key for a ${BALANCE.VIP_GOLD_MULT}× reward — win keeps it, a fail loses it.` : "A special guest! Bring a 🗝️ key next time to wager."}</div>`
+    : "";
+  const streakChip = GAME.streak >= 2 ? `<div class="cust-streak">🔥 ${GAME.streak}</div>` : "";
+  const stat = (icon, label, value) => `<div class="cust-stat"><img class="cust-stat-ic" src="art/ui/${icon}.png" alt=""><div class="cust-stat-lbl">${label}</div><div class="cust-stat-val">${value}</div></div>`;
   html("customer", `
-    ${hud(currentRealm().name)}
-    ${bossBanner}${rushBanner}${vipBanner}
-    <div class="grow center" style="gap:16px">
-      ${streakChip}
-      <div class="ph big ${w.boss ? "boss-emoji" : ""} ${ROUND.vip ? "vip-emoji" : ""}">${custArt(c, "cust-big")}</div>
-      <div style="font-weight:800;font-size:20px">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</div>
-      <div class="speech">“${c.line}”</div>
-      <div class="needs-row">${needChips}</div>
-      <div class="card" style="width:100%;max-width:340px">
-        <div class="stat-line"><span>Payment</span><span class="gold">🪙 ${ROUND.payment}</span></div>
-        <div class="stat-line"><span>Required Match</span><span>${w.requiredMatch}%</span></div>
-        <div class="stat-line"><span>Scoops of glitter</span><span>${ROUND.scoops}</span></div>
-        <div class="stat-line"><span>Allerg${allergyList.length > 1 ? "ies" : "y"}</span><span>${allergyTxt}</span></div>
+    <div class="cust-top">
+      <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
+      <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
+    </div>
+    <div class="grow" style="overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:6px">
+      <div class="cust-banner"><img src="art/ui/kit_01.png" alt=""><span>${arrivalTxt}</span></div>
+      ${notice}
+      <div class="cust-portrait">
+        ${streakChip}
+        <div class="cust-char ${w.boss ? "boss-emoji" : ""}">${custArt(c, "cust-char-art")}</div>
+        <img class="cust-frame" src="art/ui/${realmFrame()}.png" alt="" draggable="false">
+        <div class="cust-name">${c.name}</div>
+      </div>
+      <div class="cust-card cust-wish">
+        <div class="cust-wish-text">“${c.line}”</div>
+        <div class="cust-needs">${needChips}</div>
+      </div>
+      <div class="cust-card cust-stats">
+        ${stat("kit_13", "Payment", `${ROUND.payment} <span class="cust-stat-sub">gold</span>`)}
+        ${stat("kit_15", "Scoops", ROUND.scoops)}
+        ${stat("kit_16", "Match", `${w.requiredMatch}%`)}
+        ${stat("kit_17", "Allergy", `<span class="${allergyList.length ? "cust-aller" : ""}">${allergyTxt}</span>`)}
       </div>
     </div>
     ${canWager
-      ? `<button class="btn good" id="vip-wager">🗝️ Wager a Key — ${BALANCE.VIP_GOLD_MULT}× reward!</button>
-         <div style="height:8px"></div>
-         <button class="btn secondary" id="scoop-btn">Serve normally</button>`
-      : `<button class="btn ${w.boss ? "good" : ""}" id="scoop-btn">Start Scoop  ✨</button>`}
+      ? `<button class="cust-scoop wager" id="vip-wager"><img src="art/ui/kit_08.png" alt=""><span>🗝️ Wager a Key</span></button>
+         <button class="cust-scoop-alt" id="scoop-btn">Serve normally</button>`
+      : `<button class="cust-scoop" id="scoop-btn"><img src="art/ui/kit_08.png" alt=""><span>Start Scoop</span></button>`}
   `);
   if (w.boss || ROUND.rush || ROUND.vip) { SFX.unlock(); SFX.fanfare(); } // special arrival — hard to miss
   on("#vip-wager", "click", () => { ROUND.keyStaked = true; SFX.unlock(); SFX.charm(); toast("🗝️ Key wagered — make it count!"); renderScoop(); });
   on("#scoop-btn", "click", renderScoop);
+  applyRealmBackground();
   show("customer");
 }
 
