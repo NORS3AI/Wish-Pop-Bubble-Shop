@@ -960,8 +960,8 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* widths are capped to the 520px game frame (min with a px value) so the cake never
    spills past the frame on tablets/desktop, where vw is much wider than the frame */
 .cake-img { display: block; filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
-.cake-img.tall { height: 56vh; width: auto; max-width: min(96vw, 500px); }
-.cake-stage2.studying .cake-img.tall { height: 67vh; }
+.cake-img.tall { height: 63vh; width: auto; max-width: min(96vw, 500px); }
+.cake-stage2.studying .cake-img.tall { height: 68vh; }
 .cake-img.wide { width: min(90vw, 468px); height: auto; max-height: 60vh; }
 .cake-stage2.studying .cake-img.wide { max-height: 70vh; }
 .cake-spot { position: absolute; transform: translate(-50%, -50%); aspect-ratio: 1; padding: 0; border: none; background: none;
