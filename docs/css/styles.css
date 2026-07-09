@@ -566,6 +566,11 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 #app.has-bg::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(20,10,40,.35), rgba(20,10,40,.55)); }
 #app.has-bg > .screen { position: relative; z-index: 1; }
+/* Home-screen scene background (art/home_bg.jpg) with a top/bottom readability scrim */
+#screen-start.has-home-bg { position: relative; background-size: cover; background-position: center; }
+#screen-start.has-home-bg::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(18,10,34,.58) 0%, rgba(18,10,34,.26) 34%, rgba(18,10,34,.42) 64%, rgba(18,10,34,.84) 100%); }
+#screen-start.has-home-bg > * { position: relative; z-index: 1; }
 
 /* --- spoon resize control (scoop phase) --- */
 .spoon-size { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 2px 0 0; font-size: 12px; }

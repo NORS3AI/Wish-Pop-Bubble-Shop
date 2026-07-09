@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v70"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v71"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -100,6 +100,14 @@ function trashDust(id)  { const t = D.TRASH_BY_ID[id]; return t ? Math.max(1, Ma
 // apply an optional custom background image to the whole app (once, at boot)
 function applyCustomBackground() {
   ART.ensure("background", u => { const app = document.getElementById("app"); if (app) { app.style.backgroundImage = "url(" + u + ")"; app.classList.add("has-bg"); } });
+}
+// The home/start screen gets its own scene background (art/home_bg.jpg). Scoped to
+// the start screen so it never hurts readability on the busy gameplay screens.
+function applyHomeBackground() {
+  const url = "art/home_bg.jpg";
+  const im = new Image();
+  im.onload = () => { const s = document.getElementById("screen-start"); if (s) { s.style.backgroundImage = "url('" + url + "')"; s.classList.add("has-home-bg"); } };
+  im.src = url;
 }
 // apply an optional custom cauldron-pot image over the color skin
 function applyCauldronArt() {
@@ -209,6 +217,7 @@ function renderStart() {
   on("#menu-btn", "click", renderMenu);
   on("#map-btn", "click", renderMap);
   on("#admin-btn", "click", renderAdmin);
+  applyHomeBackground();
   on("#sound-test", "click", () => {
     SFX.unlock();
     [0, 1, 2, 3].forEach((s, i) => setTimeout(() => { SFX.pop(s); SFX.reveal(i === 3 ? "charm" : "ingredient", s); }, i * 160));

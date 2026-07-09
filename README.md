@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🏠 **The home screen has a real background now — a cozy potion shop!** Your scene art sits
+  behind the main menu (with the logo floating right over the cauldron), dimmed just enough to
+  keep everything readable. It's on the home screen only for now, so it never crowds the busy
+  gameplay screens.
+
 - 🍯 **All 20 Willow-Wish Village ingredients now have real artwork!** Every ingredient — Honey,
   Berries, Rose Jam, Moon Drop, Dragon Pepper, Ginger Root, Lavender, and the rest — is now a
   hand-picked illustrated icon instead of an emoji. (I sliced them out of your art sheets, picked
