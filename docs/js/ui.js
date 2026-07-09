@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v105"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v106"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2912,6 +2912,55 @@ function shakeScreen(id) {
   sc.classList.remove("shake"); void sc.offsetWidth; sc.classList.add("shake");
   setTimeout(() => sc.classList.remove("shake"), 620);
 }
+/* --- ingredient-panel sorting + stacking ------------------------------------
+ * Panel order (top → bottom): charms, then infused, potent, normal ingredients;
+ * within the ingredient tiers, alphabetical by MAIN magical quality then name.
+ * Identical pieces pile into one tile with a ×N count — EXCEPT in villain rounds,
+ * where each piece may secretly hide poison and must stay individually tappable. */
+function instMainMagic(inst) {
+  if (inst.essence || inst.wild) return inst.magic || "";
+  const ing = D.INGREDIENT_BY_ID[inst.id];
+  return inst.magic || (ing ? ing.qualities[0] : "");
+}
+function instTier(inst) {
+  const ing = inst.id ? D.INGREDIENT_BY_ID[inst.id] : null;
+  if (ing && ing.infused) return 1;   // infused
+  if (inst.potent) return 2;          // potent
+  return 3;                           // normal
+}
+function instName(inst) {
+  if (inst.essence) return inst.magic + " Essence";
+  if (inst.wild) return "Wild";
+  const ing = D.INGREDIENT_BY_ID[inst.id]; return ing ? ing.name : "";
+}
+function instStackKey(inst) {
+  if (inst.wild) return "w|" + (inst.magic || "");
+  if (inst.essence) return "e|" + inst.magic + "|" + (inst.potent ? 1 : 0) + "|" + (inst.shrunk ? 1 : 0);
+  return "i|" + inst.id + "|" + (inst.magic || "") + "|" + (inst.potent ? 1 : 0) + "|" + (inst.shrunk ? 1 : 0);
+}
+function mixStacks() {
+  const inv = ROUND.inventory;
+  const order = inv.map((inst, idx) => ({ inst, idx }));
+  order.sort((a, b) => {
+    const ta = instTier(a.inst), tb = instTier(b.inst); if (ta !== tb) return ta - tb;
+    const ma = instMainMagic(a.inst), mb = instMainMagic(b.inst); if (ma !== mb) return ma.localeCompare(mb);
+    const na = instName(a.inst), nb = instName(b.inst); if (na !== nb) return na.localeCompare(nb);
+    return a.idx - b.idx;
+  });
+  if (ROUND.villain) return order.map(o => ({ rep: o.inst, idxs: [o.idx] }));  // no piling in villain rounds
+  const stacks = [], map = {};
+  for (const o of order) {
+    const k = instStackKey(o.inst);
+    if (map[k] != null) stacks[map[k]].idxs.push(o.idx);
+    else { map[k] = stacks.length; stacks.push({ rep: o.inst, idxs: [o.idx] }); }
+  }
+  return stacks;
+}
+// How many pet-undos are still available this round (capped, and gated by owned treats).
+function mixTreatsLeft() {
+  const cap = BALANCE.MAX_TREATS_PER_ROUND;
+  return Math.max(0, Math.min(cap - (ROUND.treatsUsed || 0), GAME.treats));
+}
 function paintMixTop() {
   const el = $("#mix-top"); if (!el) return;
   const w = ROUND.wish;
@@ -2925,112 +2974,176 @@ function paintMixTop() {
   });
   const req = w.requiredMatch, meets = score.weighted >= req;
   const MAX = BALANCE.BAR_MAX;
-  const meters = w.needs.map((n, i) => {
-    const s = score.perNeed[i];
-    const fillPct = Math.min(100, s.points / MAX * 100);
-    const inBand = s.pct === 100, over = s.points > s.bandHigh;
-    const bandLeft = Math.max(0, s.bandLow / MAX * 100), bandW = Math.max(2, (s.bandHigh - s.bandLow) / MAX * 100);
-    if (!n.revealed) {
-      // Mystery need: type/label stay hidden, but SHOW the green target band + a
-      // green glow when it's landed, so a hidden need you happen to hit reads clearly.
-      return `<div class="need-meter"><div class="lbl"><span class="muted">❔ Mystery Need</span>
-        <span class="muted" style="${inBand ? "color:var(--good);font-weight:800" : ""}">${inBand ? "✓ in the green!" : "?"}</span></div>
-        <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${inBand ? "var(--good)" : "rgba(255,255,255,0.28)"}"></i></div></div>`;
-    }
-    const frozen = !!n.frozen;
-    const fillCol = inBand ? "var(--good)" : over ? "var(--bad)" : D.MAGIC[n.type];
-    const status = frozen && s.pct === 100 ? "🔒 locked" : inBand ? "✓ in the green!" : over ? "overfilled!" : s.pct + "%";
-    const statusCol = (inBand || (frozen && s.pct === 100)) ? "var(--good)" : over ? "var(--bad)" : "var(--ink-dim)";
-    return `<div class="need-meter"><div class="lbl"><span>${magicDot(n.type)} ${n.type}${frozen ? " ❄️" : ""}</span>
-      <span style="color:${statusCol};font-weight:800">${status}</span></div>
-      <div class="meter sweet ${inBand ? "hit" : ""}"><span class="band" style="left:${bandLeft}%;width:${bandW}%"></span><i style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
-  }).join("");
+  const meters = w.needs.map((n, i) => castBar(n, score.perNeed[i], MAX)).join("");
   const needCount = w.needs.length, effLimit = needCount + 1, tipAmt = needCount * BALANCE.QUICK_TIP_PER_HIDDEN;
   const tipLine = (ROUND.slots.length <= effLimit && !ROUND.villain)
-    ? `<div class="mix-hint" style="color:var(--gold)">⚡ Serve with <b>≤${effLimit} ingredient${effLimit > 1 ? "s" : ""}</b> → <b>+${tipAmt} speed tip!</b></div>`
-    : `<div class="mix-hint muted">Land each bar in its <b style="color:var(--good)">green zone</b> — don't overfill! The zones shrink as you add.</div>`;
-  el.innerHTML = `
-    <div class="stat-line" style="padding:0 0 4px"><span>${custArt(ROUND.customer)} ${ROUND.customer.name}</span>
-      <span>Match <b style="color:${meets ? "var(--good)" : "var(--ink)"}">${score.weighted}%</b> / need ${req}%</span></div>
-    ${meters}
-    ${(score.allergies || []).map(allergyMeter).join("")}
-    ${tipLine}`;
+    ? `<div class="mix-hint gold">⚡ Serve with <b>≤${effLimit}</b> → <b>+${tipAmt} speed tip!</b></div>`
+    : `<div class="mix-hint muted">Land each bar in its <b style="color:var(--good)">green zone</b> — don't overfill.</div>`;
+  el.innerHTML = meters + (score.allergies || []).map(allergyMeter).join("") + tipLine;
+  paintServeBtn(score, req, meets);
+  // update the live liquid + pct on the cauldron as bars change
+  const cd = $("#cauldron"); if (cd) {
+    const liq = cd.querySelector(".liquid"); if (liq) liq.style.height = Math.max(6, score.weighted) + "%";
+    const pc = cd.querySelector(".pct"); if (pc) pc.textContent = score.weighted + "%";
+  }
+}
+// A reusable "cast bar": color circle (magic needed) + track (fill + green target band).
+function castBar(n, s, MAX) {
+  const fillPct = Math.min(100, s.points / MAX * 100);
+  const inBand = s.pct === 100, over = s.points > s.bandHigh;
+  const bandLeft = Math.max(0, s.bandLow / MAX * 100), bandW = Math.max(4, (s.bandHigh - s.bandLow) / MAX * 100);
+  if (!n.revealed) {
+    return `<div class="castbar mystery ${inBand ? "hit" : ""}"><div class="cb-orb myst">❔</div>
+      <div class="cb-track"><span class="cb-band" style="left:${bandLeft}%;width:${bandW}%"></span>
+        <i class="cb-fill" style="width:${fillPct}%;background:${inBand ? "var(--good)" : "rgba(255,255,255,.3)"}"></i>
+        <span class="cb-name">Mystery Need</span><span class="cb-stat">${inBand ? "✓" : "?"}</span></div></div>`;
+  }
+  const col = D.MAGIC[n.type] || D.MAGIC[n.type], frozen = !!n.frozen;
+  const fillCol = inBand ? "var(--good)" : over ? "var(--bad)" : col;
+  const stat = frozen && s.pct === 100 ? "🔒" : inBand ? "✓" : over ? "over!" : s.pct + "%";
+  const statCol = (inBand || (frozen && s.pct === 100)) ? "var(--good)" : over ? "var(--bad)" : "#efe2ff";
+  return `<div class="castbar ${inBand ? "hit" : ""}"><div class="cb-orb" style="--oc:${col}"></div>
+    <div class="cb-track"><span class="cb-band" style="left:${bandLeft}%;width:${bandW}%"></span>
+      <i class="cb-fill" style="width:${fillPct}%;background:${fillCol}"></i>
+      <span class="cb-name">${n.type}${frozen ? " ❄️" : ""}</span><span class="cb-stat" style="color:${statCol}">${stat}</span></div></div>`;
+}
+// Paint the ornate Serve button: percentage in the pill, green art when the wish is met,
+// plus an hourglass countdown for In-a-Rush customers.
+function paintServeBtn(score, req, meets) {
+  const btn = $("#serve-btn"); if (!btn) return;
+  btn.classList.toggle("met", !ROUND.villain && meets);
+  btn.disabled = ROUND.slots.length === 0;
+  const lbl = $("#serve-label"); if (!lbl) return;
+  if (ROUND.villain) { lbl.innerHTML = `<span class="serve-pct"><b>${score.weighted}%</b></span>`; return; }
+  let hg = "";
+  if (ROUND.rush && ROUND.rushStart) {
+    const left = Math.max(0, ROUND.rushMs - (Date.now() - ROUND.rushStart)), sec = Math.ceil(left / 1000);
+    hg = `<span class="serve-hg ${sec <= 10 ? "urgent" : ""}">⏳${sec}</span>`;
+  }
+  lbl.innerHTML = `${hg}<span class="serve-pct"><b>${score.weighted}%</b><span class="serve-need"> / ${req}%</span></span>`;
 }
 function paintMix() {
   const w = ROUND.wish;
   const score = scoreMix(ROUND.slots, w, ROUND.allergyOffset);
   let best = w.needs[0], bestPct = -1;
   w.needs.forEach((n, i) => { if (score.perNeed[i].pct >= bestPct) { bestPct = score.perNeed[i].pct; best = n; } });
-  const liquid = D.MAGIC[best.type];
+  const liquid = D.MAGIC[best.type] || D.MAGIC[best.type];
   const slotCells = [];
   for (let i = 0; i < ROUND.maxSlots; i++) {
     const inst = ROUND.slots[i];
     const face = !inst ? "" : inst.wild ? "🌈"
-      : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>`
+      : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic] || D.MAGIC[inst.magic]}"></span>`
       : ingArt(inst.id);
     const removable = ROUND.villain && inst;   // villain rounds have no Pet Undo — tap a slot to pull it back
     const poisonedSlot = inst && ROUND.insight && inst.poison;
     slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""} ${poisonedSlot ? "poisoned" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${poisonedSlot ? `<span class="poison-badge">☠️</span>` : ""}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
   }
-  const tray = ROUND.charms.length
-    ? `<div class="charm-tray">${ROUND.charms.map((c, i) => `<button class="charm-chip" data-charm="${i}" title="${CHARM(c).desc}">${charmArt(c)} <span>${CHARM(c).name}</span></button>`).join("")}</div>`
-    : "";
+  // pet frame + treat banner (top-left); hamburger menu (top-right)
+  const showPet = !ROUND.villain;                 // pet is captured during a villain event
+  const banner = (!ROUND.villain && GAME.unlocked.undo) ? `${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}` : `🐸${GAME.treats}`;
+  const panel = mixPanelHtml();
   html("mix", `
-    ${hud("Cauldron")}
-    <div class="card" id="mix-top" style="margin-bottom:6px;padding:12px"></div>
-    <div class="cauldron-wrap grow">
-      <div class="cauldron ${equippedCauldronClass()}" id="cauldron">
-        <div class="liquid" style="height:${Math.max(6, score.weighted)}%;background:linear-gradient(180deg, ${liquid}, ${shade(liquid)})"></div>
-        <div class="bub b1"></div><div class="bub b2"></div><div class="bub b3"></div>
-        <div class="pct">${score.weighted}%</div>
+    <div class="mixv ${ROUND.villain ? "villain" : ""}">
+      <div class="mixv-head">
+        <div class="petbadge ${showPet ? "" : "nopet"}" id="familiar">
+          ${showPet ? `<div class="petbadge-pet">${equippedFamiliarChip()}</div>` : `<div class="petbadge-pet">🔒</div>`}
+          <div class="petbadge-count">${banner}</div>
+        </div>
+        <div class="mixv-cust">${custArt(ROUND.customer)}<span>${ROUND.customer.name}</span></div>
+        <button class="mixv-menu" id="hud-menu" aria-label="Menu">☰</button>
       </div>
-      <div class="slots">${slotCells.join("")}</div>
-      ${tray}
+      <div class="mixv-body">
+        <div class="mixv-left">
+          <div class="mixv-cauldron">
+            <div class="cauldron ${equippedCauldronClass()}" id="cauldron">
+              <div class="liquid" style="height:${Math.max(6, score.weighted)}%;background:linear-gradient(180deg, ${liquid}, ${shade(liquid)})"></div>
+              <div class="bub b1"></div><div class="bub b2"></div><div class="bub b3"></div><div class="bub b4"></div><div class="bub b5"></div>
+              <div class="pct">${score.weighted}%</div>
+            </div>
+          </div>
+          <div class="slots mixv-slots">${slotCells.join("")}</div>
+          <div class="mixv-meters" id="mix-top"></div>
+          <button class="servebtn" id="serve-btn" ${ROUND.slots.length === 0 ? "disabled" : ""}>
+            <span class="serve-label" id="serve-label"></span>
+          </button>
+        </div>
+        <div class="mixv-right">
+          <div class="ipanel ${ROUND.toolMode ? "cutting" : ""}">
+            <div class="ipanel-scroll" id="inv-row">${panel}</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <button class="btn good" id="serve-btn" ${ROUND.slots.length === 0 ? "disabled" : ""}>${ROUND.villain ? "🧪 Brew the Ransom" : "✨ Serve the Wish"}</button>
-    ${ROUND.inventory.length
-      ? `<div class="inv-2row ${ROUND.toolMode ? "cutting" : ""}" id="inv-row">${ROUND.inventory.map((inst, idx) => invTile(inst, idx)).join("")}</div>`
-      : `<div class="muted" style="text-align:center;padding:12px">Bag empty — serve what's in the pot!</div>`}
-    ${familiarToken("mix")}
   `);
   paintMixTop();
   applyCauldronArt();
-  ROUND.inventory.forEach((inst, idx) => { const t = document.getElementById("invt-" + idx); if (t) t.addEventListener("click", () => addToSlot(idx, t)); });
-  ROUND.charms.forEach((c, i) => { const b = document.querySelector(`[data-charm="${i}"]`); if (b) b.addEventListener("click", () => playCharm(i)); });
+  // wire ingredient stacks + charm tiles
+  $("#screen-mix").querySelectorAll(".ptile[data-idx]").forEach(t => t.addEventListener("click", () => addToSlot(+t.dataset.idx, t)));
+  $("#screen-mix").querySelectorAll(".ptile[data-charm]").forEach(t => t.addEventListener("click", () => playCharm(+t.dataset.charm)));
   if (ROUND.villain) $("#screen-mix").querySelectorAll(".slot.removable").forEach(el => el.addEventListener("click", () => removeFromSlot(+el.dataset.slot)));
   on("#serve-btn", "click", serve);
   wireFamiliar("mix");
+  // the just-changed glow plays once on this render, then clears so it doesn't re-fire
+  ROUND.inventory.forEach(inst => { if (inst && inst._glow) delete inst._glow; });
+  const rc = document.getElementById("rush-clock"); if (rc) rc.style.display = "none";  // countdown lives on the Serve button now
 }
-function invTile(inst, idx) {
-  if (inst.wild) { // safety: a Wild instance should never reach the bag, but never crash if it does
-    return `<div class="inv-tile" id="invt-${idx}"><div class="emoji">🌈</div><div class="nm">Wild ${inst.magic || ""}</div><div class="q">any magic</div></div>`;
-  }
-  if (inst.essence) {
-    return `<div class="inv-tile essence ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}" id="invt-${idx}">
-      <div class="emoji"><span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>
-      <div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${inst.magic} Essence</div><div class="q">${magicDot(inst.magic)} pure ${inst.magic}</div></div>`;
-  }
-  const ing = D.INGREDIENT_BY_ID[inst.id];
+// Build the ingredient panel: charms first, then infused / potent / normal stacks.
+function mixPanelHtml() {
+  const charmStacks = [], cmap = {};
+  ROUND.charms.forEach((id, i) => {
+    if (cmap[id] != null) charmStacks[cmap[id]].count++;
+    else { cmap[id] = charmStacks.length; charmStacks.push({ id, firstIdx: i, count: 1 }); }
+  });
+  const stacks = mixStacks();
+  let out = "";
+  if (charmStacks.length) out += `<div class="itag itag-charms"></div><div class="igrid">${charmStacks.map(charmPanelTile).join("")}</div>`;
+  out += `<div class="itag itag-ing"></div>`;
+  out += stacks.length ? `<div class="igrid">${stacks.map(invStackTile).join("")}</div>`
+    : `<div class="ipanel-empty">Bag empty — serve what's in the pot!</div>`;
+  return out;
+}
+function charmPanelTile(cs) {
+  const ch = CHARM(cs.id);
+  const on = (cs.id === "knife" && ROUND.toolMode === "cut") || (cs.id === "transmute" && ROUND.toolMode === "transmute") || (cs.id === "pinch" && ROUND.toolMode === "pinch");
+  return `<button class="ptile charm ${on ? "toolon" : ""}" data-charm="${cs.firstIdx}" title="${ch.name} — ${ch.desc}">
+    <div class="ptile-art">${charmArt(cs.id)}</div><div class="ptile-nm">${ch.name}</div>
+    ${cs.count > 1 ? `<span class="ptile-count">×${cs.count}</span>` : ""}</button>`;
+}
+function invStackTile(st) {
+  const inst = st.rep, n = st.idxs.length, idx = st.idxs[0];
+  const glow = st.idxs.some(i => ROUND.inventory[i] && ROUND.inventory[i]._glow);
   const cuttable = ROUND.toolMode ? " cuttable" : "";
-  const poisoned = ROUND.insight && inst.poison; // Insight reveals which pieces hide poison
-  const infused = ing.infused ? INFUSED_LABEL[ing.infused] : "";
-  // flex infused: show its assigned (per-instance) magic, not the def's placeholder qualities
-  const quals = (inst.magic ? magicDot(inst.magic) + " " + inst.magic
-      : (ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0]))
-    + (poisoned ? ` <span style="color:var(--bad)">☠️ Poison</span>` : "");
-  return `<div class="inv-tile ${inst.potent ? "potent" : ""} ${inst.shrunk ? "shrunk" : ""}${cuttable}${poisoned ? " poisoned" : ""}${ing.infused ? " infused" : ""}" id="invt-${idx}">
-    <div class="emoji">${ingArt(inst.id)}${poisoned ? `<span class="poison-badge">☠️</span>` : ""}${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div><div class="nm">${inst.potent ? "✨" : ""}${inst.shrunk ? "½ " : ""}${ing.name}</div><div class="q">${quals}</div>${infused ? `<div class="infused-tag">${infused}</div>` : ""}</div>`;
+  let art, quals, cls = "";
+  if (inst.wild) {
+    art = `🌈`; quals = `any magic`; cls = "wild";
+  } else if (inst.essence) {
+    art = `<span class="orb" style="background:${D.MAGIC[inst.magic] || D.MAGIC[inst.magic]}"></span>${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}`;
+    quals = `${magicDot(inst.magic)} ${inst.shrunk ? "½ " : ""}pure ${inst.magic}`;
+    cls = "essence" + (inst.potent ? " potent" : "") + (inst.shrunk ? " shrunk" : "");
+  } else {
+    const ing = D.INGREDIENT_BY_ID[inst.id];
+    const poisoned = ROUND.insight && inst.poison;
+    const infused = ing.infused ? INFUSED_LABEL[ing.infused] : "";
+    quals = (inst.magic ? magicDot(inst.magic) + " " + inst.magic
+        : (ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0]))
+      + (poisoned ? ` <span style="color:var(--bad)">☠️</span>` : "")
+      + (infused ? ` <span class="q-infused">${infused}</span>` : "");
+    art = ingArt(inst.id) + (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
+    cls = (inst.potent ? "potent " : "") + (inst.shrunk ? "shrunk " : "") + (poisoned ? "poisoned " : "") + (ing.infused ? "infused" : "");
+  }
+  return `<button class="ptile ${cls}${cuttable}${glow ? " glow" : ""}" title="${instName(inst)}" data-idx="${idx}">
+    <div class="ptile-art">${art}</div><div class="ptile-q">${quals}</div>
+    ${inst.potent ? `<span class="ptile-star">✨</span>` : ""}${n > 1 ? `<span class="ptile-count">×${n}</span>` : ""}</button>`;
 }
 function allergyMeter(a) {
   const villain = !!(ROUND && ROUND.villain);
   const pct = Math.min(100, Math.round(a.points / BALANCE.ALLERGY_RED_AT * 100));
   // villain brews are stricter: even "yellow" is a failing taint, so paint it red
   const col = a.zone === "red" ? "var(--bad)" : a.zone === "yellow" ? (villain ? "var(--bad)" : "var(--gold)") : "var(--good)";
-  const label = villain ? `☠️ Poison` : `⚠️ Allergy: ${magicDot(a.type)} ${a.type}`;
-  const status = villain ? (a.zone === "green" ? "CLEAN ✓" : "TAINTED!") : a.zone.toUpperCase();
-  return `<div class="need-meter" style="margin-top:8px"><div class="lbl"><span>${label}</span>
-    <span style="color:${col};font-weight:800">${status}</span></div>
-    <div class="meter" style="background:rgba(255,90,90,0.12)"><i style="width:${pct}%;background:${col}"></i></div></div>`;
+  const status = villain ? (a.zone === "green" ? "CLEAN ✓" : "TAINT!") : a.zone.toUpperCase();
+  return `<div class="castbar allergy"><div class="cb-orb danger">${villain ? "☠️" : "⚠️"}</div>
+    <div class="cb-track"><i class="cb-fill" style="width:${pct}%;background:${col}"></i>
+      <span class="cb-name">${villain ? "Poison" : a.type + " allergy"}</span><span class="cb-stat" style="color:${col}">${status}</span></div></div>`;
 }
 /* --- Infused ingredients: a built-in charm-like effect that fires on drop-in ------ */
 const INFUSED_LABEL = { potentNext: "✨ next is Potent", lockBar: "❄️ locks its bar" };
@@ -3097,7 +3210,7 @@ function cutIngredient(idx, fromEl) {
   ROUND.inventory.splice(idx, 1);
   // flex ingredients cut into their single assigned magic; normal ones into each quality
   const cutMagics = inst.magic ? [inst.magic] : ing.qualities;
-  cutMagics.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: wasPotent }));
+  cutMagics.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: wasPotent, _glow: true }));
   const ki = ROUND.charms.indexOf("knife"); if (ki >= 0) ROUND.charms.splice(ki, 1);
   ROUND.toolMode = null;
   SFX.unlock(); SFX.chop();
@@ -3119,7 +3232,7 @@ function transmuteIngredient(idx, fromEl) {
   let pool = SET.filter(i => needs.includes(i.qualities[0]) && i.id !== inst.id);
   if (!pool.length) pool = SET.filter(i => i.id !== inst.id);
   const ing = R.pick(pool), oldName = D.INGREDIENT_BY_ID[inst.id].name;
-  ROUND.inventory[idx] = { id: ing.id, potent: inst.potent };
+  ROUND.inventory[idx] = { id: ing.id, potent: inst.potent, _glow: true };
   const ti = ROUND.charms.indexOf("transmute"); if (ti >= 0) ROUND.charms.splice(ti, 1);
   ROUND.toolMode = null;
   SFX.unlock(); SFX.reveal("charm", 0);
@@ -3133,7 +3246,7 @@ function pinchIngredient(idx, fromEl) {
   const inst = ROUND.inventory[idx];
   if (!inst || (!inst.id && !inst.essence)) { toast("Pick an ingredient to pinch."); return; }
   if (inst.shrunk) { toast("Already pinched — that's as small as it gets!"); return; }
-  inst.shrunk = true;
+  inst.shrunk = true; inst._glow = true;
   const pi = ROUND.charms.indexOf("pinch"); if (pi >= 0) ROUND.charms.splice(pi, 1);
   ROUND.toolMode = null;
   SFX.unlock(); SFX.reveal("treat", 0);
