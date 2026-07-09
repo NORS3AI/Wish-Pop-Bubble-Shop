@@ -19,11 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
-- 🖼️ **The customer screen is laid out the way you wanted!** The character is nice and big in the
-  wooden arch, the name sits on its own purple plaque, and the flat parchment box now holds the
-  customer's **wish** (with any VIP wager note tucked inside it). A tidy bar along the bottom shows
-  **Need · Allergy · Payment · Target %** at a glance — no repeated info, nothing scrunched — over a
-  cozy village backdrop with a grand green **Start Scoop** button.
+- 🖼️ **The customer screen now matches the mockup — big and bold!** The arch and character fill the
+  width so the customer reads large, the arrival banner overlaps the top of the arch, the name sits
+  on its own purple plaque along the arch's lower edge, and a big, tall parchment **wish** box tucks
+  up underneath (any VIP wager note sits inside it). A tidy bar shows **Need · Allergy · Payment ·
+  Target %** at a glance, over a cozy village backdrop with a grand green **Start Scoop** button.
 
 - 🔠 **A storybook font + beefier buttons!** The game now uses a warm fantasy font (MedievalSharp)
   on its buttons, labels, and titles, and the home screen's Play button and nav plaques are much
