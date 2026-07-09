@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v90"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v91"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1771,8 +1771,10 @@ function dancePaintFeedback() {
 // The dancer image for a pose frame (frame 1 = idle/start). On a botched move,
 // partners with a worried set show one of those faces instead.
 function danceDancerSrc(p, poseNum, worried) {
-  // ?v=BUILD cache-busts replaced pose art (the art system doesn't version URLs)
-  if (worried && p.worried) return `art/${p.worried}_${((poseNum - 1) % 4) + 1}.png?v=${BUILD}`;
+  // ?v=BUILD cache-busts replaced pose art (the art system doesn't version URLs).
+  // The four moves are poses 2..5; their worried faces are frames 1..4 in the same
+  // order (twirl-left, twirl-right, tiptoes, curtsey) — so worried frame = pose - 1.
+  if (worried && p.worried) return `art/${p.worried}_${Math.min(4, Math.max(1, poseNum - 1))}.png?v=${BUILD}`;
   return `art/${p.poses}_${poseNum}.png?v=${BUILD}`;
 }
 // Warm the browser cache with every pose so the swap on a button press is instant
