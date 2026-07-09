@@ -2,8 +2,11 @@
  * Wish Pop: Bubble Shop — STYLES
  * Portrait, mobile-first, large & touch-friendly, low clutter.
  * ======================================================================== */
+/* Bundled fantasy display font (offline) for buttons, headings, labels */
+@font-face { font-family: 'Wishpop'; src: url('../fonts/medievalsharp.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
 :root {
   color-scheme: dark;
+  --ff-display: 'Wishpop', 'Georgia', 'Times New Roman', serif;
   --bg1: #3a2166; --bg2: #2a1a4a; --bg3: #160c2c;
   --ink: #fff0fb; --ink-dim: rgba(255,240,251,0.72);
   --card: rgba(255,255,255,0.10); --card2: rgba(255,255,255,0.06);
@@ -571,50 +574,54 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 #screen-start.has-home-bg::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(18,10,34,.58) 0%, rgba(18,10,34,.26) 34%, rgba(18,10,34,.42) 64%, rgba(18,10,34,.84) 100%); }
 #screen-start.has-home-bg > * { position: relative; z-index: 1; }
-/* ===== Home screen layout (mockup-based) ===== */
+/* Fantasy display font on buttons and headings (body/stat text stays sans) */
+.btn, .hud .title, .result-title, .realm-here, .home-build { font-family: var(--ff-display); }
+/* ===== Home screen layout (mockup-based, beefed up for mobile) ===== */
 #screen-start { position: relative; }
-.home-bar { display: flex; align-items: center; gap: 8px; margin: 2px 6px 4px; padding: 5px 8px 5px 6px; border-radius: 18px;
+.home-bar { display: flex; align-items: center; gap: 9px; margin: 2px 6px 6px; padding: 7px 9px 7px 7px; border-radius: 22px;
   background: linear-gradient(180deg, rgba(58,38,86,.80), rgba(26,15,46,.88));
-  border: 1px solid rgba(240,200,110,.55); box-shadow: 0 2px 10px rgba(0,0,0,.45), inset 0 0 14px rgba(120,80,160,.22); }
-.home-pet { width: 50px; height: 50px; border-radius: 50%; flex: 0 0 auto; overflow: hidden;
+  border: 2px solid rgba(240,200,110,.6); box-shadow: 0 3px 12px rgba(0,0,0,.5), inset 0 0 16px rgba(120,80,160,.24); }
+.home-pet { width: 62px; height: 62px; border-radius: 50%; flex: 0 0 auto; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at 50% 35%, #43306a, #241636);
-  border: 2px solid #f0c063; box-shadow: 0 0 8px rgba(255,210,110,.5), inset 0 2px 4px rgba(0,0,0,.5); }
-.home-pet .home-pet-art, .home-pet img.art { height: 40px; width: auto; }
-.home-pet .art-emoji { font-size: 32px; line-height: 1; }
-.home-res { display: flex; gap: 7px; flex: 1; }
-.res-chip { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 13px; color: #fff; font-weight: 800; font-size: 15px;
-  background: rgba(16,10,30,.72); border: 1px solid rgba(240,200,110,.4); box-shadow: inset 0 1px 3px rgba(0,0,0,.4); }
-.res-ic { font-size: 16px; }
-.home-gear { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; color: #ffdd88; font-size: 20px;
-  background: radial-gradient(circle at 50% 35%, #3a2560, #201234); border: 1px solid rgba(240,200,110,.55); box-shadow: 0 0 6px rgba(255,210,110,.35); }
+  border: 3px solid #f0c063; box-shadow: 0 0 10px rgba(255,210,110,.55), inset 0 2px 5px rgba(0,0,0,.5); }
+.home-pet .home-pet-art, .home-pet img.art { height: 50px; width: auto; }
+.home-pet .art-emoji { font-size: 40px; line-height: 1; }
+.home-res { display: flex; gap: 8px; flex: 1; }
+.res-chip { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 15px; color: #fff; font-weight: 700; font-size: 19px;
+  font-family: var(--ff-display); background: rgba(16,10,30,.72); border: 1.5px solid rgba(240,200,110,.45); box-shadow: inset 0 1px 3px rgba(0,0,0,.4); }
+.res-ic { font-size: 20px; }
+.home-gear { flex: 0 0 auto; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; color: #ffdd88; font-size: 25px;
+  background: radial-gradient(circle at 50% 35%, #3a2560, #201234); border: 2px solid rgba(240,200,110,.6); box-shadow: 0 0 8px rgba(255,210,110,.4); }
 .home-gear:active { transform: scale(.92); }
 .home-logo { display: flex; flex-direction: column; align-items: center; }
-#screen-start .wp-logo { width: 94%; max-width: 360px; }
-#screen-start .logo-stage { padding: 14px 0 6px; }
-.home-play { position: relative; align-self: center; width: 88%; max-width: 340px; margin: 0 auto; padding: 0; border: none; background: none; cursor: pointer; }
-.home-play-bg { display: block; width: 100%; height: auto; filter: drop-shadow(0 5px 12px rgba(0,0,0,.55)); }
-.home-play-lbl { position: absolute; left: 0; right: 0; top: 57%; transform: translateY(-50%); text-align: center;
-  font-weight: 900; font-size: 36px; letter-spacing: 1px; color: #fff; text-shadow: 0 2px 5px rgba(0,10,40,.7), 0 0 3px rgba(30,80,160,.9); }
+#screen-start .wp-logo { width: 98%; max-width: 400px; }
+#screen-start .logo-stage { padding: 10px 0 4px; }
+.home-play { position: relative; align-self: center; width: 97%; max-width: 420px; margin: 0 auto; padding: 0; border: none; background: none; cursor: pointer; }
+.home-play-bg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)); }
+.home-play-lbl { position: absolute; left: 0; right: 0; top: 56%; transform: translateY(-50%); text-align: center;
+  font-family: var(--ff-display); font-weight: 700; font-size: 52px; letter-spacing: 1px; color: #fff;
+  text-shadow: 0 3px 6px rgba(0,10,40,.75), 0 0 4px rgba(30,80,160,.9); }
 .home-play:active { transform: scale(.97); }
-.home-nav { display: flex; justify-content: space-around; gap: 8px; padding: 8px 6px 0; }
-.home-nav-btn { flex: 1; max-width: 130px; display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; padding: 0; cursor: pointer; }
-.nav-plaque { position: relative; width: 104px; height: 104px; display: flex; align-items: center; justify-content: center; }
-.nav-plaque img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 7px rgba(0,0,0,.55)); }
-.nav-ic { position: relative; z-index: 1; font-size: 42px; margin-top: 16px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
-.nav-lbl { font-weight: 800; font-size: 15px; color: #ffe6a8; text-shadow: 0 1px 3px rgba(0,0,0,.8); margin-top: -3px; }
+.home-nav { display: flex; justify-content: space-between; gap: 4px; padding: 6px 2px 0; }
+.home-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; padding: 0; cursor: pointer; }
+.nav-plaque { position: relative; width: 122px; height: 122px; display: flex; align-items: center; justify-content: center; }
+.nav-plaque img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 8px rgba(0,0,0,.55)); }
+.nav-ic { position: relative; z-index: 1; font-size: 52px; margin-top: 18px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.nav-lbl { font-family: var(--ff-display); font-weight: 700; font-size: 19px; color: #ffe6a8; text-shadow: 0 1px 3px rgba(0,0,0,.85); margin-top: -4px; }
 .home-nav-btn:active .nav-plaque { transform: scale(.9); }
 /* Left-side Dailies plaque (opens the quests screen). The #screen-start prefix
    raises specificity so it beats the `.has-home-bg > *` position override. */
-#screen-start .home-daily { position: absolute; left: 4px; top: 46%; transform: translateY(-50%); z-index: 3;
+#screen-start .home-daily { position: absolute; left: 2px; top: 45%; transform: translateY(-50%); z-index: 3;
   display: flex; flex-direction: column; align-items: center; gap: 1px; background: none; border: none; padding: 0; cursor: pointer; }
-.home-daily-plaque { width: 86px; height: 86px; }
-.home-daily-plaque .nav-ic { margin-top: 13px; font-size: 36px; }
+.home-daily-plaque { width: 104px; height: 104px; }
+.home-daily-plaque .nav-ic { margin-top: 15px; font-size: 44px; }
+.home-daily .nav-lbl { font-size: 17px; }
 .home-daily:active .home-daily-plaque { transform: scale(.92); }
-.daily-badge { position: absolute; top: 4px; right: 4px; z-index: 2; min-width: 21px; height: 21px; padding: 0 5px; border-radius: 11px;
-  background: #e0455a; color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,.55); border: 1.5px solid #fff; }
-.home-build { text-align: center; font-size: 10px; color: rgba(255,255,255,.4); margin-top: 3px; }
+.daily-badge { position: absolute; top: 6px; right: 6px; z-index: 2; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px;
+  background: #e0455a; color: #fff; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.55); border: 2px solid #fff; }
+.home-build { text-align: center; font-size: 10px; color: rgba(255,255,255,.42); margin-top: 2px; }
 
 /* --- spoon resize control (scoop phase) --- */
 .spoon-size { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 2px 0 0; font-size: 12px; }

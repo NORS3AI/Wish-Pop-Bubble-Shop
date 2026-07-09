@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🔠 **A storybook font + beefier buttons!** The game now uses a warm fantasy font (MedievalSharp)
+  on its buttons, labels, and titles, and the home screen's Play button and nav plaques are much
+  bigger and chunkier — sized for thumbs on a phone.
+
 - 🎀 **The home screen got a full makeover!** New top bar with your buddy in the corner and your
   🗝️ keys and 🪙 coins on display, a bigger logo, a grand gem-and-gold **Play** button framing the
   cauldron, big nav plaques — **Shop, Realms, Collection** — and a **Dailies** plaque on the side
