@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v85"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v86"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1585,9 +1585,10 @@ const DANCE_PARTNERS = {
   knight: {
     id: "knight", emoji: "🤺", name: "Sir Wobble", title: "A Clumsy Knight",
     poses: "knight_dance", worried: null,   // 5 pose frames; no separate worried set yet
-    steps: 6, beatMs: 2000, approach: 1400, passFrac: 0.5,   // pass = score >= passFrac of the max
+    steps: 6, beatMs: 2000, approach: 1400, passFrac: 0.6,   // pass = score >= passFrac of the max
+    keyAt: 80, starAt: 92,   // the 🗝️ key + ✨ stardust need a genuinely good show
     line: "“I'm to dance at the royal ball tonight and I've got two left feet! Teach me the steps, please?”",
-    reward: { gold: 45, keys: 1, stardust: 6 }, prizeTxt: "🪙 gold + a 🗝️ key",
+    reward: { gold: 45, keys: 1, stardust: 6 }, prizeTxt: "🪙 gold — dance well for a 🗝️ key!",
     winNote: "“I did it! Look at me twirl — right on the beat!” Sir Wobble bows and presses a key into your hand. 🗝️",
     loseNote: "“Oof — I keep losing the rhythm!” He laughs it off. Come teach him another time!",
   },
@@ -1793,6 +1794,17 @@ function renderDance() {
   if (mk) { mk.style.transition = "none"; mk.style.left = "0%";
     requestAnimationFrame(() => { if (mk.isConnected) { mk.style.transition = "left " + p.beatMs + "ms linear"; mk.style.left = "100%"; } }); }
 }
+// Reward scales with how well they danced: gold is proportional to the rhythm
+// score, and the premium prizes (🗝️ key, ✨ stardust) need a genuinely good show —
+// a barely-there pass earns a few coins and nothing more.
+function danceReward(p, meterPct) {
+  const base = p.reward || {}, r = {};
+  if (base.gold) r.gold = Math.max(1, Math.round(base.gold * meterPct / 100));
+  if (base.keys && meterPct >= (p.keyAt || 80)) r.keys = base.keys;
+  if (base.stardust && meterPct >= (p.starAt || 92)) r.stardust = base.stardust;
+  return r;
+}
+function danceGrade(meterPct) { return meterPct >= 92 ? "Flawless" : meterPct >= 80 ? "Graceful" : "Passable"; }
 function danceFinish() {
   if (DANCE.timer) { clearTimeout(DANCE.timer); DANCE.timer = null; }
   const p = DANCE.p, nailed = DANCE.nailed, meterPct = danceMeterPct();
@@ -1800,13 +1812,14 @@ function danceFinish() {
   GAME.danceLessons = (GAME.danceLessons || 0) + 1;
   let outcome;
   if (win) {
-    const got = grantReward(p.reward); save();
+    const reward = danceReward(p, meterPct), got = grantReward(reward); save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
-    outcome = { emoji: "🕺", title: "A graceful dancer!", cls: "win",
+    const grade = danceGrade(meterPct);
+    outcome = { emoji: "🕺", title: grade + " dancing!", cls: "win",
       lines: [`<div class="stat-line"><span>On-beat steps</span><span>${nailed}/${DANCE.total}</span></div>`,
               `<div class="stat-line"><span>Rhythm score</span><span>${meterPct}%</span></div>`,
               `<div class="stat-line"><span>Your reward</span><span class="gold">${got}</span></div>`],
-      note: p.winNote };
+      note: reward.keys ? p.winNote : "“Not my finest… but I made it through!” Sir Wobble laughs and presses a few coins into your hand. Dance sharper next time for a 🗝️ key!" };
   } else {
     save(); SFX.sneeze();
     outcome = { emoji: "😅", title: "Lost the rhythm!", cls: "lose",

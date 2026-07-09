@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ⚖️ **Dance rewards now match the dancing.** A sloppy just-barely pass earns a few coins and no key;
+  the 🗝️ key needs a genuinely good show and the ✨ stardust bonus a near-flawless one. The pass bar
+  went up a touch too, so a truly rough attempt just doesn't win.
+
 - 💃 **The Royal Ball got a real stage!** Sir Wobble the knight now dances in a proper **ballroom**,
   shown big in the center, with the move called out below him, the beat meter above the buttons, and
   four big illustrated **move buttons** (Twirl Left · Twirl Right · Tiptoes · Curtsey). He strikes
