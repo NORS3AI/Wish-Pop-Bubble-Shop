@@ -218,5 +218,23 @@ These only show up during the Evil Queen ransom event. Optional — they use emo
 
 ---
 
+## Dance minigame assets (staged — not wired into the game yet)
+
+Sliced and background-removed, waiting on a ballroom background + the knight set
+before we build the minigame.
+
+| Files | What it is |
+| --- | --- |
+| `cinderella_dance_1..5.png` | Cinderella's graceful dance poses (shown on correct moves) |
+| `cinderella_worried_1..4.png` | Cinderella's worried/oops reactions (one shows on a wrong move) |
+| `prince_dance_1..5.png` | The clumsy prince's dance poses (one set for now) |
+| `ui/dance_move_1..4.png` | The four move buttons: 1 = twirl-left, 2 = twirl-right, 3 = leap-up, 4 = curtsy |
+
+**Planned screen layout (top → bottom):** big dancer centered → dance-move
+announcement (below the dancer) → timing/meter bar → the big move buttons pinned
+at the bottom. (Knight dance set + ballroom background still to come.)
+
+---
+
 *Tip: not sure what to name something, or want a shape supported that isn't listed
 (like the scoop or the pop bubbles)? Just ask me and I'll wire it up.*
