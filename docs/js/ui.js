@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v89"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v90"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1647,6 +1647,7 @@ function pickDancePartner() {
 }
 function renderDanceIntro(partnerId) {
   const p = DANCE_PARTNERS[partnerId] || DANCE_PARTNERS.knight;
+  dancePreload(p);   // warm every pose now so mid-dance swaps are instant
   SFX.unlock(); SFX.fanfare();
   html("event", `
     ${hud("A Royal Ball!")}
@@ -1773,6 +1774,15 @@ function danceDancerSrc(p, poseNum, worried) {
   // ?v=BUILD cache-busts replaced pose art (the art system doesn't version URLs)
   if (worried && p.worried) return `art/${p.worried}_${((poseNum - 1) % 4) + 1}.png?v=${BUILD}`;
   return `art/${p.poses}_${poseNum}.png?v=${BUILD}`;
+}
+// Warm the browser cache with every pose so the swap on a button press is instant
+// (the pose PNGs are big; without this the first show of each pose fetches/decodes
+// mid-dance and the swap feels laggy).
+function dancePreload(p) {
+  if (!p || !p.poses) return;
+  const warm = src => { const im = new Image(); im.src = src; };
+  for (let i = 1; i <= 5; i++) warm(`art/${p.poses}_${i}.png?v=${BUILD}`);
+  if (p.worried) for (let i = 1; i <= 4; i++) warm(`art/${p.worried}_${i}.png?v=${BUILD}`);
 }
 // Quick fade-out / fade-in when the dancer changes pose (on a button press).
 // The pose is remembered so the dancer HOLDS it until the next button is pressed.

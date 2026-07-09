@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ⚡ **Snappier dancing.** The dancer poses are now pre-loaded when a lesson starts, so the picture
+  swaps the instant you press a move (no more laggy delay on Cinderella or the prince). Also dropped
+  in Cinderella's cleaner background-removed art.
+
 - 👑 **Two new dance partners!** Once you've taught Sir Wobble a couple of lessons, the eager
   **Prince** joins the ball (a quicker beat), and after a few more, **Cinderella** herself (the
   fussiest routine — and she makes worried faces when you flub a step). Dazzle her for a **rare
