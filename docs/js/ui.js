@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v82"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v83"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -241,8 +241,7 @@ function renderStart() {
     </div>
     <div class="grow"></div>
     <button class="home-play" id="play-btn">
-      <img class="home-play-bg" src="art/ui/btn_05.png" alt="" draggable="false">
-      <span class="home-play-lbl">Play</span>
+      <img class="home-play-bg" src="art/ui/btn_play.png" alt="Play" draggable="false">
     </button>
     <div class="home-nav">
       ${navBtn("nav-shop", "🛍️", "Shop")}

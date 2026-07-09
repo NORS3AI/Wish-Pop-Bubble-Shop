@@ -19,6 +19,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🔵 **New Play button** on the home screen — the blue-and-gold one you sent, with its own baked
+  lettering. (Also tucked away 5 sliced poses of a clumsy dancing prince for a future feature.)
+
 - 🐞 **Fix — the stuck "mystery need" bug.** A hidden need only reveals when you play an ingredient
   whose *main* magic matches it, but the round could deal you a mystery need with **no matching
   ingredient in your haul** — so you could nudge its bar a little with side-magics but never reveal
