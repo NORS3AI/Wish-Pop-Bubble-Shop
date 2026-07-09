@@ -905,7 +905,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .dance-stage > * { position: relative; z-index: 1; }
 .dance-dancer { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: center; width: 100%; }
 .dance-dancer-img { height: 100%; max-height: 44vh; width: auto; object-fit: contain;
-  filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)); transition: opacity .16s ease, transform .16s ease; animation: danceIn .22s ease; }
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)); transition: opacity .16s ease, transform .16s ease; }
 .dance-dancer-img.swapping { opacity: 0; transform: translateY(8px) scale(.97); }
 .dance-dancer-img.glow-good { animation: danceHop .5s ease; filter: drop-shadow(0 0 20px rgba(130,255,160,.95)) drop-shadow(0 10px 18px rgba(0,0,0,.55)); }
 .dance-dancer-img.glow-bad { animation: danceWob .5s ease; }
@@ -937,6 +937,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .dance-btn-nm { font-family: var(--ff-display); font-size: 11px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 .dance-btn:active { transform: scale(.93); }
 .dance-btn:active img { filter: drop-shadow(0 0 10px rgba(255,230,150,.9)) drop-shadow(0 3px 7px rgba(0,0,0,.6)); }
+/* 3-2-1 shown as a translucent overlay so you can see the stage/buttons behind it */
+.dance-countdown { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
+  background: rgba(10,4,24,.42); pointer-events: none; }
+.cd-num { font-family: var(--ff-display); font-weight: 800; font-size: 128px; line-height: 1; color: #fff;
+  text-shadow: 0 4px 18px rgba(0,0,0,.85), 0 0 30px rgba(197,139,255,.75); animation: cdPop .8s ease; }
+.cd-num.go { font-size: 70px; color: #ffe08a; }
+@keyframes cdPop { 0% { transform: scale(.4); opacity: 0; } 30% { transform: scale(1.14); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 /* The Drury Lane Bake-Off — study a decorated treat, recreate it from memory */
 .cake-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px 2px; }
 .cake-caption { font-size: 13px; color: var(--ink-dim); text-align: center; margin-bottom: 4px; min-height: 18px; }

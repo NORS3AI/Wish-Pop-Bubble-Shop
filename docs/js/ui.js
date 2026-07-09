@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v86"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v87"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1642,18 +1642,11 @@ function danceCountdown() {
   let n = 3;
   const tick = () => {
     if (!DANCE) return;
-    html("event", `
-      ${hud("Get Ready!")}
-      <div class="grow center" style="gap:18px">
-        <div class="dance-face" style="font-size:76px">${DANCE.p.emoji}</div>
-        <div style="font-weight:800;font-size:18px">Take your positions…</div>
-        <div class="gob-count-big ${n === 0 ? "go" : ""}">${n > 0 ? n : "Dance!"}</div>
-      </div>
-    `);
-    show("event");
+    DANCE.countdown = n;    // draw the full stage (dancer, meter, buttons) with a 3-2-1 overlay on top
+    renderDance();
     SFX.pop(n > 0 ? 1 : 3);
     if (n > 0) { n--; DANCE.cdTimer = setTimeout(tick, 800); }
-    else { DANCE.cdTimer = setTimeout(() => { if (DANCE) danceStep(); }, 450); }
+    else { DANCE.cdTimer = setTimeout(() => { if (DANCE) { DANCE.countdown = null; danceStep(); } }, 450); }
   };
   tick();
 }
@@ -1685,6 +1678,7 @@ function danceAdvance() {
 }
 // The show-stopping moment: hints drop away and the real music begins.
 function danceBallTransition() {
+  DANCE.pose = 1; DANCE.poseWorried = false;   // fresh idle pose to open Act 2
   html("event", `
     ${hud("The Ball Begins!")}
     <div class="grow center" style="gap:16px">
@@ -1744,7 +1738,9 @@ function danceDancerSrc(p, poseNum, worried) {
   return `art/${p.poses}_${poseNum}.png`;
 }
 // Quick fade-out / fade-in when the dancer changes pose (on a button press).
+// The pose is remembered so the dancer HOLDS it until the next button is pressed.
 function danceSwapPose(poseNum, worried) {
+  if (DANCE) { DANCE.pose = poseNum; DANCE.poseWorried = worried; }
   const img = document.getElementById("dance-dancer"); if (!img || !DANCE) return;
   const src = danceDancerSrc(DANCE.p, poseNum, worried);
   img.classList.remove("glow-good", "glow-bad");
@@ -1754,6 +1750,7 @@ function danceSwapPose(poseNum, worried) {
 function renderDance() {
   const D0 = DANCE, p = D0.p, moveId = D0.routine[D0.idx];
   const rehearse = D0.phase === 1;
+  const counting = D0.countdown != null;            // 3-2-1 overlay drawn over the live stage
   const meterPct = danceMeterPct();
   const targetPct = Math.round(p.passFrac * 100);
   const zonePct = Math.round((p.approach / p.beatMs) * 100); // where the beat line sits on the track
@@ -1761,21 +1758,28 @@ function renderDance() {
   const fbTxt = fb ? (DANCE_FB[fb.tier] || "")
     : (rehearse ? "Tap the move on the beat!" : "Lead it from memory — on the beat!");
   const mv = DANCE_MOVE_BY_ID[moveId];
-  const announce = rehearse
+  const announce = counting
+    ? `<b>Take your positions…</b>`
+    : rehearse
     ? `<span class="dance-cue-ic">${mv.icon}</span> <b>${mv.name}!</b>`
     : `<span class="dance-cue-ic">❓</span> <b>What comes next?</b>`;
+  const subTxt = counting ? "Get ready to dance!"
+    : `${rehearse ? "Act 1" : "Act 2"} · Step ${Math.min(D0.idx + 1, p.steps)}/${p.steps} · <span id="dance-fb" class="dance-fb">${fbTxt}</span>`;
   const buttons = DANCE_MOVES.map(m =>
     `<button class="dance-btn" data-id="${m.id}"><img src="art/ui/${m.btn}.png" alt="${m.name}" draggable="false"><span class="dance-btn-nm">${m.name}</span></button>`).join("");
+  const overlay = counting
+    ? `<div class="dance-countdown"><div class="cd-num ${D0.countdown === 0 ? "go" : ""}">${D0.countdown > 0 ? D0.countdown : "Dance!"}</div></div>`
+    : "";
   html("event", `
-    ${hud(rehearse ? "Rehearsal 💃" : "The Ball 🎼")}
+    ${hud(counting ? "Get Ready!" : rehearse ? "Rehearsal 💃" : "The Ball 🎼")}
     <div class="dance-stage">
       <div class="dance-grace top"><i id="dance-grace-fill" style="width:${meterPct}%"></i><span class="dance-grace-mark" style="left:${targetPct}%"></span></div>
       <div class="dance-dancer">
-        <img class="dance-dancer-img" id="dance-dancer" src="${danceDancerSrc(p, 1)}" alt="${p.name}" draggable="false">
+        <img class="dance-dancer-img" id="dance-dancer" src="${danceDancerSrc(p, D0.pose || 1, D0.poseWorried)}" alt="${p.name}" draggable="false">
       </div>
       <div class="dance-announce">
         <div class="dance-cue">${announce}</div>
-        <div class="dance-sub"><span>${rehearse ? "Act 1" : "Act 2"} · Step ${Math.min(D0.idx + 1, p.steps)}/${p.steps}</span> · <span id="dance-fb" class="dance-fb">${fbTxt}</span></div>
+        <div class="dance-sub">${subTxt}</div>
       </div>
       <div class="beat-track">
         <span class="beat-zone" style="left:${zonePct - 8}%;width:16%"></span>
@@ -1783,16 +1787,19 @@ function renderDance() {
         <i class="beat-marker" id="beat-marker"></i>
       </div>
       <div class="dance-buttons">${buttons}</div>
+      ${overlay}
     </div>
   `);
   $("#screen-event").querySelectorAll(".dance-btn").forEach(b =>
     b.addEventListener("click", () => danceTap(b.dataset.id)));
   show("event");
   // Slide the marker across the track, reaching the beat line exactly on the beat
-  // and the far end when the metronome rolls to the next step.
-  const mk = $("#beat-marker");
-  if (mk) { mk.style.transition = "none"; mk.style.left = "0%";
-    requestAnimationFrame(() => { if (mk.isConnected) { mk.style.transition = "left " + p.beatMs + "ms linear"; mk.style.left = "100%"; } }); }
+  // and the far end when the metronome rolls to the next step. (Not during the countdown.)
+  if (!counting) {
+    const mk = $("#beat-marker");
+    if (mk) { mk.style.transition = "none"; mk.style.left = "0%";
+      requestAnimationFrame(() => { if (mk.isConnected) { mk.style.transition = "left " + p.beatMs + "ms linear"; mk.style.left = "100%"; } }); }
+  }
 }
 // Reward scales with how well they danced: gold is proportional to the rhythm
 // score, and the premium prizes (🗝️ key, ✨ stardust) need a genuinely good show —
