@@ -42,6 +42,7 @@ const BALANCE = {
   CHARM_DROP_CHANCE: 0.08, CHARM_DROP_CHANCE_FINDER: 0.16, // "Keen Nose" upgrade: double charm chance
   KEEN_NOSE_BUBBLES: 3,          // ...AND a few extra bubbles, so ingredients rise too (not just shift to charms)
   CHARM_CAPS: { cleanse: 1, insight: 1, peek: 2 },         // per-round caps (potent/wild uncapped)
+  MAX_CHARMS_PER_ROUND: 7,                                 // total charms you can gain in one round
   GOLD_DROP_CHANCE: 0.06, TREAT_DROP_CHANCE: 0.025,
   BONUS_BUBBLE_CHANCE: 0.12,            // a bubble that pops into MORE (golden) bubbles
   BONUS_SPAWN_MIN: 2, BONUS_SPAWN_MAX: 3, // how many extra golden bubbles a bonus yields (feels rewarding)

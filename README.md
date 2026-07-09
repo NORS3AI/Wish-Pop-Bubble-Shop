@@ -19,6 +19,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ⚖️ **Charm limit:** you can now collect at most **7 charms per round** (across all the pop, jackpot
+  and auto-collect ways of getting them). Also shrank the home-screen Play button a little.
+
 - 🔵 **New Play button** on the home screen — the blue-and-gold one you sent, with its own baked
   lettering. (Also tucked away 5 sliced poses of a clumsy dancing prince for a future feature.)
 

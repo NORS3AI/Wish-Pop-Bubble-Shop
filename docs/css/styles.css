@@ -597,7 +597,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .home-logo { display: flex; flex-direction: column; align-items: center; }
 #screen-start .wp-logo { width: 98%; max-width: 400px; }
 #screen-start .logo-stage { padding: 10px 0 4px; }
-.home-play { position: relative; align-self: center; width: 97%; max-width: 420px; margin: 0 auto; padding: 0; border: none; background: none; cursor: pointer; }
+.home-play { position: relative; align-self: center; width: 82%; max-width: 336px; margin: 0 auto; padding: 0; border: none; background: none; cursor: pointer; }
 .home-play-bg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)); }
 .home-play-lbl { position: absolute; left: 0; right: 0; top: 56%; transform: translateY(-50%); text-align: center;
   font-family: var(--ff-display); font-weight: 700; font-size: 52px; letter-spacing: 1px; color: #fff;

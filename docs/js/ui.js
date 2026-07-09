@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v83"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v84"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2288,10 +2288,13 @@ function renderScoop() {
     if (jackpot) {
       SFX.charm(); // fanfare
       jackCharm = ENGINE.pickCappedCharm(ROUND.charms, ROUND.villain ? ["peek"] : null);
-      ROUND.charms.push(jackCharm); jackDone[idx] = true; if (ROUND.stats) ROUND.stats.charms++; // awarded straight into the tray
+      if (gainCharm(jackCharm)) { if (ROUND.stats) ROUND.stats.charms++; } else { jackCharm = null; } // satchel full → bubbles only
+      jackDone[idx] = true;
     }
-    const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
+    const tx = $("#scoop-text"); if (tx) tx.innerHTML = (jackpot && jackCharm)
       ? `🌈 <b>Jackpot!</b> ${found} bubbles + ${CHARM(jackCharm).emoji} ${CHARM(jackCharm).name} charm!`
+      : jackpot
+      ? `🌈 <b>Jackpot!</b> ${found} bubble${found === 1 ? "" : "s"}!`
       : `✨ <b>${found}</b> bubble${found === 1 ? "" : "s"}!`;
     const rs = $("#scoop-result"); if (rs) rs.textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
     const bubs = $("#scoop-bubbles"); const kids = bubs ? [...bubs.children] : [];
@@ -2333,7 +2336,7 @@ function renderScoop() {
       if (isJackpot(i) && !jackDone[i]) {
         jackDone[i] = true;
         const ch = ENGINE.pickCappedCharm(ROUND.charms, ROUND.villain ? ["peek"] : null);
-        ROUND.charms.push(ch); if (ROUND.stats) ROUND.stats.charms++;
+        if (gainCharm(ch) && ROUND.stats) ROUND.stats.charms++;
       }
     }
     state = "done";
@@ -2496,7 +2499,8 @@ function popAt(i, el, fromCascade, power) {
 
   if (item.kind === "charm") {
     SFX.pop(popCombo, power); SFX.reveal("ingredient", popCombo);
-    spawnFloatingCharm(item.id, cx, cy);                    // fanfare happens on catch
+    if (!roundCharmsFull()) spawnFloatingCharm(item.id, cx, cy);  // fanfare happens on catch
+    else { burstAt(cx, cy, flavor); toast(`🎒 Satchel full — ${BALANCE.MAX_CHARMS_PER_ROUND} charms max!`); }
   } else if (item.kind === "bubble") {
     SFX.pop(popCombo, power); SFX.bonus(); flashScreen();
     ringAt(cx, cy); burstAt(cx, cy, flavor, 1); burstAt(cx, cy, flavor, power);
@@ -2546,9 +2550,16 @@ function spawnBonusBubbles(cx, cy) {
   refreshPop();
 }
 
+// Per-round charm cap: you can only gain up to MAX_CHARMS_PER_ROUND charms per round.
+function roundCharmsFull() { return (ROUND.charmsGained || 0) >= (BALANCE.MAX_CHARMS_PER_ROUND || Infinity); }
+function gainCharm(id) {
+  if (roundCharmsFull()) return false;
+  ROUND.charms.push(id); ROUND.charmsGained = (ROUND.charmsGained || 0) + 1;
+  return true;
+}
 // Charm floats out of the popped bubble; tap it to gather it (with the fanfare).
 function spawnFloatingCharm(id, x, y) {
-  const layer = $("#catch-layer"); if (!layer) { ROUND.charms.push(id); return; }
+  const layer = $("#catch-layer"); if (!layer) { gainCharm(id); return; }
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const tok = document.createElement("div");
   tok.className = "charm-token"; tok.dataset.charm = id;
@@ -2562,8 +2573,9 @@ function spawnFloatingCharm(id, x, y) {
 }
 function collectCharm(id, tok) {
   if (!tok || tok.classList.contains("caught")) return;
+  if (!gainCharm(id)) { tok.classList.add("caught"); setTimeout(() => tok.remove(), 200);
+    toast(`🎒 Satchel full — ${BALANCE.MAX_CHARMS_PER_ROUND} charms max per round!`); refreshPop(); return; }
   SFX.unlock(); SFX.charm();
-  ROUND.charms.push(id);
   const r = tok.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   charmCelebrate(charmArt(id, "ch-art")); flashScreen();
   burstAt(cx, cy, POP_FLAVOR.charm);
@@ -2630,7 +2642,7 @@ function popCascade() {
 // Collect every floating charm + ingredient token into the tray/bag (Pop-them-all & Continue).
 function collectAllFloating() {
   document.querySelectorAll("#catch-layer .charm-token").forEach(tok => {
-    if (!tok.classList.contains("caught")) { ROUND.charms.push(tok.dataset.charm); tok.remove(); }
+    if (!tok.classList.contains("caught")) { gainCharm(tok.dataset.charm); tok.remove(); } // respect the per-round cap
   });
   document.querySelectorAll("#catch-layer .ing-token").forEach(tok => {
     if (!tok._caught) { tok._caught = true; clearTimeout(tok._timer); ROUND.inventory.push(ingInst(tok.dataset.ing)); tok.remove(); }
