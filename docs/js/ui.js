@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v72"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v73"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -203,11 +203,22 @@ function navBtn(id, icon, label) {
     <span class="nav-lbl">${label}</span>
   </button>`;
 }
+// how many daily quests are ready to claim (drives the Dailies badge)
+function claimableDailies() {
+  try { return ((GAME.quests && GAME.quests.daily) || []).filter(e => !e.claimed && questProgress(e).claimable).length; }
+  catch (e) { return 0; }
+}
 function renderStart() {
   applyRealmTheme();
   const realm = currentRealm();
+  const ready = claimableDailies();
+  const dailyBadge = ready > 0 ? `<span class="daily-badge">${ready}</span>` : "";
   html("start", `
     ${homeBar()}
+    <button class="home-daily" id="home-daily">
+      <span class="nav-plaque home-daily-plaque"><img src="art/ui/btn_11.png" alt="" draggable="false"><span class="nav-ic">🎁</span>${dailyBadge}</span>
+      <span class="nav-lbl">Dailies</span>
+    </button>
     <div class="home-logo">
       <div class="logo-stage">
         <div class="logo-sparkles" aria-hidden="true">${logoSparkles()}</div>
@@ -222,15 +233,14 @@ function renderStart() {
     </button>
     <div class="home-nav">
       ${navBtn("nav-shop", "🛍️", "Shop")}
-      ${navBtn("nav-quests", "⭐", "Quests")}
       ${navBtn("nav-map", "🗺️", "Realms")}
       ${navBtn("nav-vault", "🧰", "Collection")}
     </div>
     <div class="home-build">Build ${BUILD}</div>
   `);
   on("#play-btn", "click", startRound);
+  on("#home-daily", "click", renderQuests);
   on("#nav-shop", "click", renderMenu);
-  on("#nav-quests", "click", renderQuests);
   on("#nav-map", "click", renderMap);
   on("#nav-vault", "click", renderVault);
   on("#home-gear", "click", renderAdmin);

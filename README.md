@@ -21,8 +21,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 - 🎀 **The home screen got a full makeover!** New top bar with your buddy in the corner and your
   🗝️ keys and 🪙 coins on display, a bigger logo, a grand gem-and-gold **Play** button framing the
-  cauldron, and four pretty nav plaques — **Shop, Quests, Realms, Collection**. Admin & testing
-  now tucks behind the ⚙️ gear in the corner.
+  cauldron, big nav plaques — **Shop, Realms, Collection** — and a **Dailies** plaque on the side
+  that opens your daily quests (with a badge when rewards are ready). Admin & testing now tucks
+  behind the ⚙️ gear in the corner.
 
 - 🏠 **The home screen has a real background now — a cozy potion shop!** Your scene art sits
   behind the main menu (with the logo floating right over the cauldron), dimmed just enough to
