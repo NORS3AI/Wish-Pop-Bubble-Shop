@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v71"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v72"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -185,45 +185,56 @@ function syncHud(id) {
 /* ======================================================================= */
 /* START                                                                   */
 /* ======================================================================= */
+// The home top bar: current pet (left), keys + coins, and a gear → Admin (right).
+function homeBar() {
+  return `<div class="home-bar">
+    <div class="home-pet" title="Your buddy">${buddyArt(GAME.equipped.familiar, "home-pet-art")}</div>
+    <div class="home-res">
+      <span class="res-chip"><span class="res-ic">🗝️</span><b>${GAME.keys || 0}</b></span>
+      <span class="res-chip"><span class="res-ic">🪙</span><b>${(GAME.gold || 0).toLocaleString()}</b></span>
+    </div>
+    <button class="home-gear" id="home-gear" aria-label="Admin &amp; Settings">⚙️</button>
+  </div>`;
+}
+// A bottom-nav plaque button: a framed wood plaque with an icon, label beneath.
+function navBtn(id, icon, label) {
+  return `<button class="home-nav-btn" id="${id}">
+    <span class="nav-plaque"><img src="art/ui/btn_11.png" alt="" draggable="false"><span class="nav-ic">${icon}</span></span>
+    <span class="nav-lbl">${label}</span>
+  </button>`;
+}
 function renderStart() {
   applyRealmTheme();
   const realm = currentRealm();
-  const cast = (realm.customers || D.CUSTOMERS).slice(0, 5).map(c => c.emoji).join(" ");
   html("start", `
-    ${hud("Bubble Shop", { noHome: true })}
-    <div class="grow center">
+    ${homeBar()}
+    <div class="home-logo">
       <div class="logo-stage">
         <div class="logo-sparkles" aria-hidden="true">${logoSparkles()}</div>
         <div class="logo-float">${logoMarkup()}</div>
       </div>
       <div class="realm-here">${realm.icon} ${realm.name}</div>
-      <p class="muted" style="max-width:300px">Fairytale folk arrive with a wish. Scoop bubbles, pop them for ingredients &amp; charms, then mix the perfect potion in your cauldron!</p>
-      <div class="bubble-emojis" style="font-size:26px">${cast}</div>
     </div>
-    <button class="btn" id="play-btn">▶  Play</button>
-    <div style="height:8px"></div>
-    <div class="row" style="gap:10px">
-      <button class="btn secondary" id="menu-btn" style="flex:1">🛍️  Shop</button>
-      <button class="btn secondary" id="map-btn" style="flex:1">🗺️  Map</button>
+    <div class="grow"></div>
+    <button class="home-play" id="play-btn">
+      <img class="home-play-bg" src="art/ui/btn_05.png" alt="" draggable="false">
+      <span class="home-play-lbl">Play</span>
+    </button>
+    <div class="home-nav">
+      ${navBtn("nav-shop", "🛍️", "Shop")}
+      ${navBtn("nav-quests", "⭐", "Quests")}
+      ${navBtn("nav-map", "🗺️", "Realms")}
+      ${navBtn("nav-vault", "🧰", "Collection")}
     </div>
-    <div style="height:8px"></div>
-    <button class="btn secondary small" id="admin-btn" style="align-self:center">⚙️ Admin &amp; Testing</button>
-    <div class="row" style="justify-content:center;gap:10px;margin-top:8px;align-items:center">
-      <button class="btn good small" id="sound-test" style="max-width:210px">🔊 Tap to test sound</button>
-      <span class="muted" style="font-size:12px">Build ${BUILD}</span>
-    </div>
+    <div class="home-build">Build ${BUILD}</div>
   `);
   on("#play-btn", "click", startRound);
-  on("#menu-btn", "click", renderMenu);
-  on("#map-btn", "click", renderMap);
-  on("#admin-btn", "click", renderAdmin);
+  on("#nav-shop", "click", renderMenu);
+  on("#nav-quests", "click", renderQuests);
+  on("#nav-map", "click", renderMap);
+  on("#nav-vault", "click", renderVault);
+  on("#home-gear", "click", renderAdmin);
   applyHomeBackground();
-  on("#sound-test", "click", () => {
-    SFX.unlock();
-    [0, 1, 2, 3].forEach((s, i) => setTimeout(() => { SFX.pop(s); SFX.reveal(i === 3 ? "charm" : "ingredient", s); }, i * 160));
-    if (navigator.vibrate) navigator.vibrate(20);
-    toast(SFX.isMuted() ? "Sound is muted — tap 🔇 to unmute" : "Hear that? 🔊");
-  });
   show("start");
 }
 
