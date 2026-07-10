@@ -93,6 +93,21 @@ unlock on that count, then allow the gold/key purchase.
   Thieves open); add more story events per realm for variety; recurring skin-event interleaving.
   Consider one more Courtyard-only core twist (e.g. the "King's Decree" rotating shift modifier).
 
+## ✅ Collection Hunts — BUILT (v137): Bo Peep's Sheep + Stepsister's Beads
+
+**Shipped as a reusable system** (`HUNTS` in ui.js). Each realm can hide N items that turn up while
+you play — a per-round roll picks a phase (**pop / scoop / knife / tip**) and reveals one there (with
+a result-screen fallback so it's never skipped). Find FX = sparkle float + chime + toast + a chip
+bump. A **"🐑 3/5" tracker chip** shows on the home + customer screens. Completing a set grants an
+**exclusive `hunt`-tagged skin** (earned, never bought/rolled — filtered out of the Well + shop, shown
+locked-with-progress in the wardrobe) and a **thank-you card** from the character on the home screen.
+- **Willow — Bo Peep** (intro): 5 sheep → 🐑 Little Lamb familiar. Higher find-rate (0.42/round).
+- **Courtyard — the Stepsister**: 8 beads → 📿 Pearl Necklace cauldron. (0.34/round.)
+- Cosmetic-only, never gates progression, can't be lost. Pacing verified (~28–42% of rounds).
+- **To add another hunt:** one entry in `HUNTS` + one `hunt`-tagged skin in `COSMETICS`. That's it.
+
+Original brainstorm below (kept for reference):
+
 ## 🆕 The Stepsister's Beads — a collection scavenger-hunt event (owner idea)
 
 **The hook:** an ugly stepsister broke her necklace and lost all the beads — she can't attend the

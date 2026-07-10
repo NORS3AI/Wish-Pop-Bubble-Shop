@@ -19,6 +19,14 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐑 **New treasure hunts!** Keep an eye out while you play — little lost treasures now turn up
+  hidden in the game: in a **bubble pop**, in the **glitter of a scoop**, tucked inside an
+  **ingredient you cut**, or in a **tip**. In **Willow-Wish Village**, help **Bo Peep** find her
+  **5 lost sheep**; in the **King's Courtyard**, help the **stepsister** recover her **8 scattered
+  necklace beads** so she can go to the ball. Find a whole set and you earn an **exclusive skin**
+  you can't get any other way — a little "🐑 3/5" tracker shows how close you are. It's a cozy
+  side-hunt: it never gets in the way of serving customers.
+
 - 🪙 **New finale — Sky-High Savings!** Up the beanstalk, gold is raining from the sky. **Swipe to
   sway your tower** (just drag or move your mouse) and **catch falling coins and gems** right on top —
   the stack grows sky-high and the taller it gets, the more it wobbles and leans, so a steady hand

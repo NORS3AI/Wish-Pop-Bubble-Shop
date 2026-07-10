@@ -297,6 +297,8 @@ const COSMETICS = {
     { id: "cauldron_queen",    name: "Queen's Mirror",   chip: "🪞", villain: true },
     // ball-only: earned by dazzling Cinderella at the Royal Ball (not buyable / not in the Well)
     { id: "cauldron_glass",    name: "Glass Slipper",    chip: "👠", ball: true },
+    // hunt-only: earned by finding all the Stepsister's beads in King's Courtyard
+    { id: "cauldron_pearl",    name: "Pearl Necklace",   chip: "📿", hunt: "courtyard" },
   ],
   familiar: [
     { id: "toad_classic", name: "Toad",    chip: "🐸", default: true },
@@ -308,6 +310,8 @@ const COSMETICS = {
     { id: "toad_bunny",   name: "Bunny",   chip: "🐰" },
     // achievement-only: the "Trash Bandit"
     { id: "toad_raccoon", name: "Trash Bandit", chip: "🦝", achievement: { stat: "recycled", need: 1000, desc: "Recycle 1000 junk" } },
+    // hunt-only: earned by finding all of Bo Peep's lost sheep in Willow-Wish Village
+    { id: "toad_lamb",    name: "Little Lamb",   chip: "🐑", hunt: "willow" },
   ],
 };
 // flat lookup by id, plus which kind each belongs to

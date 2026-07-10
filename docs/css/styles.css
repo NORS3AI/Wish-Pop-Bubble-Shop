@@ -1105,6 +1105,16 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes stackGood { 0%,100% { transform: rotate(var(--ang)) scale(1); } 45% { transform: rotate(var(--ang)) scale(1.05); } }
 @keyframes stackBad { 0%,100% { transform: rotate(var(--ang)); } 30% { transform: rotate(calc(var(--ang) - 4deg)); } 70% { transform: rotate(calc(var(--ang) + 4deg)); } }
 .stack-hint { color: #cbbdf0; }
+/* Collection hunt — tracker chip + "found one!" flourish */
+.hunt-chip { display: flex; width: fit-content; margin: 6px auto 0; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 999px;
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.30); font-size: 13px; font-weight: 800; color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.hunt-chip b { color: #ffe08a; }
+.hunt-chip.bump { animation: huntChipBump .4s ease; }
+@keyframes huntChipBump { 0%,100% { transform: scale(1); } 40% { transform: scale(1.22); } }
+.hunt-find-fx { position: fixed; transform: translate(-50%,-50%); font-size: 42px; z-index: 60; pointer-events: none;
+  filter: drop-shadow(0 0 8px rgba(255,240,150,.9)); animation: huntFindFloat 1s ease-out forwards; }
+@keyframes huntFindFloat { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.4); } 25% { opacity: 1; transform: translate(-50%,-50%) scale(1.25); } 100% { opacity: 0; transform: translate(-50%,-165%) scale(1); } }
 /* The Royal Ball — teach a clumsy courtier to dance (rhythm, then memory) */
 .dance-hero { display: flex; justify-content: center; }
 .dance-hero img { height: 190px; width: auto; filter: drop-shadow(0 8px 16px rgba(0,0,0,.4)); animation: danceIn .3s ease; }

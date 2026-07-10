@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v136"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v137"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -36,6 +36,8 @@ function normalizeGame(g) {
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
   if (!g.realmEvents || typeof g.realmEvents !== "object") g.realmEvents = {}; // realmId -> events cleared (story progress)
   if (!g.finaleWon || typeof g.finaleWon !== "object") g.finaleWon = {}; // realmId -> finale beaten (grants the Realm Key)
+  if (!g.hunts || typeof g.hunts !== "object") g.hunts = {}; // realmId -> { found, done } collection scavenger hunt
+  if (typeof g.huntCelebrate === "undefined") g.huntCelebrate = null; // realmId pending a completion thank-you card
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
   ["served", "perfect", "bossWins", "rings", "bags", "rushWins"].forEach(k => { if (typeof g.stats[k] !== "number") g.stats[k] = 0; });
   if (!g.quests || typeof g.quests !== "object") g.quests = { day: "", week: -1, daily: [], weekly: [], dailyBonus: false };
@@ -271,6 +273,7 @@ function renderStart() {
         <div class="logo-float">${logoMarkup()}</div>
       </div>
       <div class="realm-here">${realm.icon} ${realm.name}</div>
+      ${huntChipHtml()}
     </div>
     <div class="grow"></div>
     <button class="home-play" id="play-btn">
@@ -291,6 +294,86 @@ function renderStart() {
   on("#home-gear", "click", renderAdmin);
   applyHomeBackground();
   show("start");
+  maybeShowHuntCelebrate();
+}
+
+/* ======================================================================= */
+/* COLLECTION HUNTS — a cozy scavenger hunt layered over normal play.        */
+/* Each realm can hide N little items (Bo Peep's sheep, the Stepsister's     */
+/* beads) that turn up WHILE you play — in a bubble pop, a scoop, a knife    */
+/* cut, or a tip. Find the whole set to earn an exclusive skin. Purely       */
+/* cosmetic: it never gates progression and can't be lost.                   */
+/* ======================================================================= */
+const HUNTS = {
+  willow: { realm: "willow", char: "Bo Peep", charEmoji: "👧", item: "sheep", itemEmoji: "🐑",
+    need: 5, chance: 0.42, skin: "toad_lamb",
+    done: "Every last lamb is home safe — Bo Peep hugs you tight!" },
+  courtyard: { realm: "courtyard", char: "the Stepsister", charEmoji: "💃", item: "bead", itemEmoji: "📿",
+    need: 8, chance: 0.34, skin: "cauldron_pearl",
+    done: "Every bead recovered — the Stepsister can go to the royal ball after all!" },
+};
+function huntFor(realm) { return HUNTS[realm] || null; }
+function activeHunt() { return huntFor(GAME.realm); }
+function huntState(realm) { if (!GAME.hunts[realm]) GAME.hunts[realm] = { found: 0, done: false }; return GAME.hunts[realm]; }
+function huntChipHtml() {
+  const h = activeHunt(); if (!h) return ""; const st = huntState(h.realm); if (st.done) return "";
+  return `<div class="hunt-chip">${h.charEmoji} ${h.itemEmoji} <b>${st.found}/${h.need}</b></div>`;
+}
+// Once per round, decide whether (and in which phase) a hidden item turns up.
+function setupHunt(round) {
+  round.huntPending = false; round.huntFound = false;
+  const h = activeHunt(); if (!h) return; const st = huntState(h.realm); if (st.done) return;
+  if (Math.random() < (h.chance || 0.35)) { round.huntPending = true; round.huntSource = R.pick(["scoop", "pop", "knife", "tip"]); }
+}
+function tryHuntFind(source, anchorEl) {
+  if (!ROUND || !ROUND.huntPending || ROUND.huntFound) return false;
+  if (source && ROUND.huntSource !== source) return false;
+  return doHuntFind(anchorEl);
+}
+function doHuntFind(anchorEl) {
+  const h = activeHunt(); if (!h) return false; const st = huntState(h.realm); if (st.done) return false;
+  if (ROUND) ROUND.huntFound = true;
+  st.found = Math.min(h.need, (st.found || 0) + 1); save();
+  huntFindFx(h, st, anchorEl);
+  if (st.found >= h.need) huntComplete(h);
+  return true;
+}
+function huntFindFx(h, st, anchorEl) {
+  SFX.bonus();
+  toast(`${h.itemEmoji} Found a ${h.item}! ${st.found}/${h.need}`);
+  let cx = window.innerWidth / 2, cy = window.innerHeight * 0.4;
+  if (anchorEl && anchorEl.getBoundingClientRect) { const r = anchorEl.getBoundingClientRect(); if (r.width) { cx = r.left + r.width / 2; cy = r.top + r.height / 2; } }
+  const fx = document.createElement("div"); fx.className = "hunt-find-fx"; fx.textContent = h.itemEmoji;
+  fx.style.left = cx + "px"; fx.style.top = cy + "px";
+  fx.addEventListener("animationend", () => fx.remove()); document.body.appendChild(fx);
+  const chip = document.querySelector(".hunt-chip");
+  if (chip) { chip.innerHTML = `${h.charEmoji} ${h.itemEmoji} <b>${st.found}/${h.need}</b>`; chip.classList.remove("bump"); void chip.offsetWidth; chip.classList.add("bump"); }
+}
+function huntComplete(h) {
+  const st = huntState(h.realm); st.done = true;
+  GAME.owned = GAME.owned || {}; GAME.owned[h.skin] = true;
+  GAME.huntCelebrate = h.realm; save();
+  SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
+  const skin = D.COSMETIC_BY_ID[h.skin];
+  toast(`${h.itemEmoji} ${h.need}/${h.need}! ${h.char} is overjoyed — you earned the ${skin ? skin.chip + " " + skin.name : "new"} skin!`);
+}
+// One-time thank-you card, shown on the home screen after a hunt completes.
+function maybeShowHuntCelebrate() {
+  const realm = GAME.huntCelebrate; if (!realm) return;
+  const h = huntFor(realm); GAME.huntCelebrate = null; save();
+  if (!h) return;
+  const skin = D.COSMETIC_BY_ID[h.skin];
+  const ov = document.createElement("div"); ov.className = "recap-overlay";
+  ov.innerHTML = `<div class="recap-sheet" style="text-align:center">
+    <div class="ph big">${h.charEmoji}</div>
+    <div class="result-title win">${h.char} is overjoyed!</div>
+    <p class="muted" style="max-width:300px;margin:0 auto">${h.done}</p>
+    <div class="card" style="max-width:300px;margin:10px auto"><div class="stat-line"><span>${skin ? skin.chip : "🎁"} New skin: ${skin ? skin.name : "reward"}</span><span style="color:var(--gold)">earned!</span></div></div>
+    <p class="muted" style="font-size:12px">Equip it any time in 🎨 My Skins.</p>
+    <button class="btn good" id="hunt-cel-ok">Lovely! →</button></div>`;
+  const app = $("#app") || document.body; app.appendChild(ov);
+  const ok = ov.querySelector("#hunt-cel-ok"); if (ok) ok.addEventListener("click", () => ov.remove());
+  SFX.fanfare();
 }
 
 /* ======================================================================= */
@@ -603,7 +686,7 @@ function openChest() {
 function ownedCount(kind) { return D.COSMETICS[kind].filter(c => GAME.owned[c.id]).length; }
 function allSkins() { return [].concat(D.COSMETICS.cauldron, D.COSMETICS.familiar); }
 // the Well only awards buyable skins — achievement-only skins are earned, never rolled
-function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain && !c.ball); }
+function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain && !c.ball && !c.hunt); }
 // Roll a prize from the weighted tiers. Always returns a prize object.
 function rollWellPrize() {
   const rndInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -720,8 +803,9 @@ function renderWardrobe() {
   const dustCost = BALANCE.STARDUST_SKIN_COST;
   const section = (kind, title) => {
     const tiles = D.COSMETICS[kind].map(c => {
-      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball;
-      const special = ach || vil || ball; // earned, never bought
+      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball, hunt = c.hunt;
+      const hh = hunt ? huntFor(hunt) : null, hs = hunt ? huntState(hunt) : null;
+      const special = ach || vil || ball || hunt; // earned, never bought
       const canBuy = !owned && !special && GAME.stardust >= dustCost;
       const btn = equipped
         ? `<span class="skin-tag equipped">✓ On</span>`
@@ -733,13 +817,16 @@ function renderWardrobe() {
               ? `<span class="skin-tag muted">👑 Beat a villain</span>`
               : ball
                 ? `<span class="skin-tag muted">👠 Dazzle at the Ball</span>`
-                : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
-      // achievement/villain skins reveal their look + how to earn; other unowned stay a mystery
+                : hunt
+                  ? `<span class="skin-tag muted">${hh ? hh.itemEmoji : "🔎"} ${hs ? hs.found : 0}/${hh ? hh.need : "?"}</span>`
+                  : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
+      // achievement/villain/ball/hunt skins reveal their look + how to earn; other unowned stay a mystery
       const chip = owned
         ? (kind === "familiar" ? buddyArt(c.id, "skin-art") : ART.tag("cauldron_" + c.id, c.chip, "skin-art"))
         : special ? c.chip : "❔";
       const nameShown = owned || special ? c.name : "???";
-      const hint = ach && !owned ? ach.desc : vil && !owned ? "Win a villain event" : ball && !owned ? "Dazzle Cinderella at the Royal Ball" : "";
+      const hint = ach && !owned ? ach.desc : vil && !owned ? "Win a villain event" : ball && !owned ? "Dazzle Cinderella at the Royal Ball"
+        : hunt && !owned ? `Find all of ${hh ? hh.char + "'s " + hh.item + "s" : "them"} while you play` : "";
       return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${special && !owned ? "ach" : ""}">
         <div class="skin-chip">${chip}</div>
         <div class="skin-name">${nameShown}${hint ? `<div class="muted" style="font-size:10px;font-weight:600">${hint}</div>` : ""}</div>
@@ -773,6 +860,8 @@ function buySkin(id) {
   if (GAME.owned[id]) return;
   const cz = D.COSMETIC_BY_ID[id]; if (cz && cz.achievement) { toast(`🏆 Earn this one: ${cz.achievement.desc}!`); return; }
   if (cz && cz.villain) { toast("👑 Win it from a villain event!"); return; }
+  if (cz && cz.ball) { toast("👠 Dazzle Cinderella at the Royal Ball to earn this!"); return; }
+  if (cz && cz.hunt) { const hh = huntFor(cz.hunt); toast(`🔎 Find them all${hh ? ` — help ${hh.char}!` : ""}`); return; }
   const cost = BALANCE.STARDUST_SKIN_COST;
   if (GAME.stardust < cost) { toast("Not enough Stardust."); return; }
   GAME.stardust -= cost; GAME.owned[id] = true; save();
@@ -3248,6 +3337,7 @@ function startRound() {
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: currentRealm().customers, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
+  setupHunt(ROUND);       // maybe a hidden collection item (sheep/bead) turns up this round
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
   // when scooping begins.
   ROUND.rush = !ROUND.wish.boss && Math.random() < BALANCE.RUSH_CHANCE;
@@ -3289,6 +3379,7 @@ function renderCustomer() {
     </div>
     <div class="grow" style="overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:4px">
       <div class="cust-banner"><img src="art/ui/${bannerImg}.png" alt="A New Customer Arrives" draggable="false"></div>
+      ${huntChipHtml()}
       <div class="cust-portrait">
         ${streakChip}
         <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1}">${custArt(c, "cust-char-art")}</div>
@@ -3400,6 +3491,7 @@ function renderScoop() {
   function reveal() {
     if (state !== "shaking") return; state = "revealing";
     const found = split[idx], jackpot = isJackpot(idx); revealed += found;
+    tryHuntFind("scoop", $("#scoop-craft"));   // a hidden hunt item may be sitting in the glitter
     const film = $("#glitter-film"); if (film) film.style.opacity = "0";
     let jackCharm = null;
     if (jackpot) {
@@ -3636,7 +3728,7 @@ function popAt(i, el, fromCascade, power) {
 
   el.classList.add("popped");
   if (item.kind === "bubble") spawnBonusBubbles(cx, cy);
-  if (!fromCascade) refreshPop();
+  if (!fromCascade) { tryHuntFind("pop", el); refreshPop(); }
 }
 
 // A bonus bubble bursts into more bubbles that fly out into the field.
@@ -4197,6 +4289,7 @@ function cutIngredient(idx, fromEl) {
   SFX.unlock(); SFX.chop();
   if (navigator.vibrate) navigator.vibrate([8, 30, 8]);
   toast(`🔪 Cut ${wasPotent ? "Potent " : ""}${ing.name} into ${cutMagics.length} ${wasPotent ? "Potent " : ""}pure magic${cutMagics.length > 1 ? "s" : ""}!`);
+  tryHuntFind("knife", fromEl);   // a hidden hunt item may be tucked inside an ingredient
   paintMix();
 }
 // Transmute: change a whole ingredient into a random NEEDED one (keeps potent).
@@ -4385,6 +4478,9 @@ function renderResult(res) {
   on("#recap-btn", "click", showRoundRecap);
   show("result");
   if (win) wireRewardBubbles(res);
+  // fallback: if this round was meant to reveal a hunt item but its phase never happened
+  // (e.g. a fail with no tip, or no knife cut), reveal it here so it's never skipped.
+  if (ROUND && ROUND.huntPending && !ROUND.huntFound) setTimeout(() => { if (ROUND && ROUND.huntPending && !ROUND.huntFound) doHuntFind(null); }, 1300);
   else if (trashN) wireTrashBubbles(res);
   if (isPerfect) setTimeout(celebratePerfect, 260);
 }
@@ -4501,6 +4597,7 @@ function wireRewardBubbles(res) {
     else { bump(amt); if (big || flavor === "streak") SFX.bigCoin(); else SFX.coin(littleStep++); }
     const wrap = btn.parentElement;
     setTimeout(() => { if (wrap) wrap.remove(); }, 240);
+    if (btn.classList.contains("little")) tryHuntFind("tip", btn);   // a hidden hunt item may be in a tip bubble
     checkDone();
   };
   const checkDone = () => setTimeout(() => {
@@ -4660,7 +4757,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
