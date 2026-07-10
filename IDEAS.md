@@ -68,7 +68,7 @@ the first realm opens in ~1 hr and players learn early that the game opens up.
 `GAME.nextEventAt` tracks it). New parts: count events-cleared per realm, gate the realm
 unlock on that count, then allow the gold/key purchase.
 
-**Build status (WIRED END-TO-END for Willow → Courtyard, v128):**
+**Build status (WIRED END-TO-END for Willow → Courtyard, v128; Courtyard finale built v129):**
 - ✅ Events fire ~every 10 customers (`EVENT_EVERY` 30→10). First `eventsNeeded-1` are regular
   story events (count win-or-lose, capped so they can't complete the story). The last slot is
   the **finale**.
@@ -77,8 +77,11 @@ unlock on that count, then allow the gold/key purchase.
   events are done, or via Admin ("🔑 Willow Finale").
 - ✅ Map unlock now **gated on the Realm Key**: Courtyard needs gold + keys + Willow's finale
   beaten (`unlock.keyFrom`). Shown + enforced.
-- ⏳ TODO: wire finales for later realms (only Willow's is built); add more Willow story events
-  for variety; recurring skin-event interleaving; tune numbers with real play.
+- ✅ Courtyard's finale = **Rescue the Feast** (catch-and-sort, v129 — see spec below). Forced Easy,
+  must-win, retryable; winning grants `GAME.finaleWon.courtyard`. Reachable naturally once
+  Courtyard's 4-event story is done, or via Admin ("🔑 Courtyard Finale").
+- ⏳ TODO: wire finales for later realms (Willow + Courtyard built; Oasis/Thieves/Beanstalk open);
+  add more story events per realm for variety; recurring skin-event interleaving; tune with play.
 
 **Earlier build status (v120 — infrastructure only):**
 - ✅ `GAME.realmEvents` (realmId → events cleared), persisted.
@@ -199,7 +202,30 @@ the **Realm Key**. Redline the Patience bar → fail, retry (forgiving).
 
 ---
 
-## 🆕 Spilled Wishwine — King's Courtyard (candidate FINALE)
+## 🍗 Rescue the Feast — King's Courtyard FINALE ✅ BUILT (v129)
+
+**What shipped (the chosen Courtyard finale):** a **catch-and-sort** game. The clumsy jester
+bumped the banquet table and the whole feast — roast, cakes, fruit, bread, candles, wine —
+**tumbles from the top of the screen**. **Tap a falling dish to catch it, then tap its home**
+(plate, bowl, basket, stand, holder, goblet) to set it down.
+- **Right home → King's Delight ✨ rises** (your score / star rating). **Wrong home** still tidies
+  it (small credit) — the game is about *pleasing the King*, never punishing.
+- **Dish smashes on the floor → King's Temper 😠 rises.** Max it and the poor Joker is hauled to
+  the dungeon → **lose, retry.** (Reframed from a "stain meter" per owner: it's about saving the
+  feast and the Joker, not avoiding stains.)
+- **Depth to match the wolf:** one pair of hands (Easy holds **2**, Medium/Hard hold **1** — place
+  fast), attention split across many falling dishes, hazard dishes (🕯️ candle, 🍷 wine cost extra
+  Temper if smashed), a **"The King rises for the toast!" surge** (dishes rain faster), and Hard adds
+  a sixth dish/home. **Finale runs on Easy, must-win, freely retryable**; harder modes for practice.
+- **Winnability:** verified by a greedy auto-catcher bot — Easy/Medium/Hard all **12/12** in tests.
+- Admin: "🍗 Rescue the Feast (practice)" + "🔑 Courtyard Finale (Realm Key)".
+
+**Note:** the original **ripple/wine-bloom** idea below is KEPT as a lighter, lower-stakes minor
+event / practice game (it doesn't need to carry a whole finale). Spec preserved for that use.
+
+---
+
+## 🆕 Spilled Wishwine — ripple/bloom minor event (was a finale candidate)
 
 **The scene:** a droplet of enchanted crimson-purple wine falls and **splats into a tiny
 circle**. The stain slowly **"blooms" outward like watercolor soaking into parchment**.

@@ -19,6 +19,14 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🍗 **New finale — Rescue the Feast!** The clumsy jester bumped the King's banquet and the whole
+  feast is tumbling off the table. **Catch each falling dish and set it in its home** (plate, bowl,
+  basket, stand, candle-holder, goblet). Right homes **delight the King ✨**; dishes that smash on
+  the floor stoke his **Temper 😠** — let it boil over and the poor Joker's in trouble. Easy lets you
+  hold **two** dishes at once, Medium and Hard just one (so place fast!), and mid-round the King rises
+  for a **toast** and the dishes rain down faster. **Beat it to earn the Realm Key** that opens the
+  next kingdom on the map.
+
 - 🫧 **Redesigned mixing screen!** The **cauldron is now the star** — big and centered up top. You
   **double-tap the cauldron to serve** (it glows green when the wish is met), your match **%** sits
   right under it, allergy warnings curve around the sides, and any timer floats above. Ingredients
