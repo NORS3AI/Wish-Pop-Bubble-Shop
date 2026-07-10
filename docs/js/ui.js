@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v109"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v110"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3024,6 +3024,8 @@ function mixArc(a) {
 }
 function paintMix() {
   const w = ROUND.wish;
+  // remember how far the ingredient tray was scrolled so a tap doesn't snap it back to the start
+  const prevScroll = (() => { const r = document.getElementById("inv-row"); return r ? r.scrollLeft : 0; })();
   const score = scoreMix(ROUND.slots, w, ROUND.allergyOffset);
   let best = w.needs[0], bestPct = -1;
   w.needs.forEach((n, i) => { if (score.perNeed[i].pct >= bestPct) { bestPct = score.perNeed[i].pct; best = n; } });
@@ -3064,6 +3066,7 @@ function paintMix() {
       <div class="m2-readout" id="m2-readout"></div>
       <div class="slots m2-slots">${slotCells.join("")}</div>
       <div class="m2-bars" id="mix-top"></div>
+      ${mixCharmBarHtml()}
       <div class="m2-tray ${ROUND.toolMode ? "cutting" : ""}">${mixTrayHtml()}</div>
     </div>
   `);
@@ -3072,6 +3075,7 @@ function paintMix() {
   $("#screen-mix").querySelectorAll(".icard[data-idx]").forEach(t => t.addEventListener("click", () => addToSlot(+t.dataset.idx, t)));
   $("#screen-mix").querySelectorAll(".cslot[data-charm]").forEach(t => t.addEventListener("click", () => playCharm(+t.dataset.charm)));
   if (ROUND.villain) $("#screen-mix").querySelectorAll(".slot.removable").forEach(el => el.addEventListener("click", () => removeFromSlot(+el.dataset.slot)));
+  const invRow = document.getElementById("inv-row"); if (invRow) invRow.scrollLeft = prevScroll;   // keep the tray where the player left it
   wireDoubleTapServe();
   wireFamiliar("mix");
   ROUND.inventory.forEach(inst => { if (inst && inst._glow) delete inst._glow; });
@@ -3087,20 +3091,23 @@ function wireDoubleTapServe() {
     else { last = now; if (ROUND.slots.length) toast("Double-tap the cauldron to serve!"); }
   });
 }
-// Bottom tray: up to 6 pinned charm slots on the left, ingredient cards scrolling on the right.
-function mixTrayHtml() {
+// Charm row: sits just above the ingredient tray (only shown when you actually hold charms),
+// keeping the full tray width free for 3 ingredient cards across.
+function mixCharmBarHtml() {
   const charmStacks = [], cmap = {};
   ROUND.charms.forEach((id, i) => {
     if (cmap[id] != null) charmStacks[cmap[id]].count++;
     else { cmap[id] = charmStacks.length; charmStacks.push({ id, firstIdx: i, count: 1 }); }
   });
+  if (!charmStacks.length) return "";
   const shown = charmStacks.slice(0, 6);
-  const filled = shown.map(charmSlot).join("");
-  const empties = Array.from({ length: Math.max(0, 6 - shown.length) }).map(() => `<div class="cslot empty"></div>`).join("");
+  return `<div class="m2-charmbar"><span class="m2-charmbar-lbl">Charms</span>${shown.map(charmSlot).join("")}</div>`;
+}
+// Bottom tray: ingredient cards, 3 across, scrolling sideways.
+function mixTrayHtml() {
   const stacks = mixStacks();
   const cards = stacks.length ? stacks.map(ingCard).join("") : `<div class="tray-empty">Bag empty —<br>double-tap the cauldron to serve!</div>`;
-  return `<div class="m2-charms"><div class="m2-charms-grid">${filled}${empties}</div></div>
-    <div class="m2-ing" id="inv-row">${cards}</div>`;
+  return `<div class="m2-ing" id="inv-row">${cards}</div>`;
 }
 function charmSlot(cs) {
   const ch = CHARM(cs.id);
@@ -3154,7 +3161,7 @@ function ingCard(st) {
   return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}" title="${name}" data-idx="${idx}">
     <div class="icard-l"><div class="icard-art">${art}${badges}<span class="icard-gem" style="background:${D.MAGIC[mainMagic] || "#888"}"></span></div><div class="icard-nm">${name}</div></div>
     <div class="icard-r">${pills}</div>
-    ${inst.potent ? `<span class="icard-star">✨</span>` : ""}${n > 1 ? `<span class="icard-count">×${n}</span>` : ""}</button>`;
+    ${inst.potent ? `<span class="icard-star">✨</span>` : (infusedFx ? `<span class="icard-inf">💠</span>` : "")}${n > 1 ? `<span class="icard-count">×${n}</span>` : ""}</button>`;
 }
 const INFUSED_LABEL = { potentNext: "✨ Next drop counts double", lockBar: "❄️ Locks its bar — no overfill" };
 const INFUSED_PER_ROUND = 1;   // guaranteed per round for now (prototype); tune later
