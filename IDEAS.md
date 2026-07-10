@@ -129,8 +129,7 @@ is its own row of **distraction** items (Song/Story/Joke/Posy) you feed to *lowe
 rises passively. Allergens are drawn only from real food rows. **Column-lockout is Hard-only**:
 feeding a food briefly locks that whole column across every row (🔒). Re-verified winnable:
 greedy solver **15/15 on all three modes** (and it caught + fixed Easy being accidentally the
-hardest — a lone row couldn't out-feed the drain). Rows/amounts in `WOLF_ROWS`, tuning in
-`WOLF_MODES`.
+hardest — a lone row couldn't out-feed the drain). Rows/amounts in `WOLF_ROWS`, tuning in `WOLF_MODES`. Allergen counts: **Easy 1 / Medium 2 / Hard 3** (v126), still 15/15 winnable.
 
 **(v123 note, superseded by v124's per-bar rows)** intro offers **Easy / Medium / Hard**:
 - **Easy** — 1 bar (Patience). ~32s.

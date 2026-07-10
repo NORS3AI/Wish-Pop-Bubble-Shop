@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v125"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v126"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1615,9 +1615,9 @@ const WOLF_TICK = 100;              // ms per simulation tick
 // Numbers verified winnable by a greedy solver in the tests.
 const WOLF_MODES = {
   easy:   { label: "Easy",   bars: ["patience"],                          winMs: 30000, cooldown: 2300,
-            drain: { patience: 4.0 }, allergenMax: 2, extraFood: 5 },
+            drain: { patience: 4.0 }, allergenMax: 1, extraFood: 5 },
   medium: { label: "Medium", bars: ["patience", "fullness"],              winMs: 38000, cooldown: 2100,
-            drain: { patience: 3.0, fullness: 2.8 }, allergenMax: 3, extraFood: 4 },
+            drain: { patience: 3.0, fullness: 2.8 }, allergenMax: 2, extraFood: 4 },
   hard:   { label: "Hard",   bars: ["patience", "fullness", "suspicion"], winMs: 44000, cooldown: 1900,
             drain: { patience: 2.3, fullness: 2.1, suspRise: 2.5 }, allergenMax: 3, extraFood: 5,
             colLock: true, colLockMs: 3100 },
@@ -1650,14 +1650,16 @@ function wolfBarFoods(bar) { return WOLF_ROWS[bar]; }
 // Only real foods (patience/fullness rows) can be an allergen — not the suspicion "distractions".
 function wolfAllergenPool(mode) { return WOLF_MODES[mode].bars.filter(b => b !== "suspicion").flatMap(b => WOLF_ROWS[b].map(f => f.id)); }
 function wolfFeedsAvailable(m) { return Math.floor(m.winMs / (m.cooldown * 1.2)); }
-function wolfAllergenCap(m) { return Math.max(1, Math.floor(wolfFeedsAvailable(m) * 0.32)); } // ≤~⅓ of feeds → winnable
+function wolfAllergenCap(m) { return Math.max(1, Math.floor(wolfFeedsAvailable(m) * 0.5)); } // total allergen items ≤ half your feeds → winnable
 function wolfPickAllergens(stock, mode) {
   const m = WOLF_MODES[mode];
   const pool = wolfAllergenPool(mode).filter(id => (stock[id] || 0) > 0);
+  // shuffle for variety, then prefer lower-stock types so we reliably hit the target count within the cap
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+  pool.sort((a, b) => stock[a] - stock[b]);
   const cap = wolfAllergenCap(m); let total = 0; const picks = [];
   for (const id of pool) { if (picks.length >= m.allergenMax) break; if (total + stock[id] <= cap) { picks.push(id); total += stock[id]; } }
-  if (!picks.length && pool.length) picks.push(pool.sort((a, b) => stock[a] - stock[b])[0]);
+  if (!picks.length && pool.length) picks.push(pool[0]);
   return picks;
 }
 function wolfAllergenLeft() { return WOLF ? WOLF.allergens.reduce((s, id) => s + (WOLF.stock[id] || 0), 0) : 0; }
