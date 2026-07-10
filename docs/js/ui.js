@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v106"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v107"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2965,8 +2965,7 @@ function paintMixTop() {
   const el = $("#mix-top"); if (!el) return;
   const w = ROUND.wish;
   const score = scoreMix(ROUND.slots, w, ROUND.allergyOffset);
-  // DISCOVERY: a mystery need reveals when you play an ingredient whose MAIN
-  // quality (or a Wild charm's magic) is that need. No timers.
+  // DISCOVERY: a mystery need reveals when you play an ingredient whose MAIN quality matches.
   w.needs.forEach(n => {
     if (n.revealed) return;
     const found = ROUND.slots.some(inst => (inst.wild || inst.essence || inst.magic) ? inst.magic === n.type : D.INGREDIENT_BY_ID[inst.id].qualities[0] === n.type);
@@ -2974,178 +2973,176 @@ function paintMixTop() {
   });
   const req = w.requiredMatch, meets = score.weighted >= req;
   const MAX = BALANCE.BAR_MAX;
-  const meters = w.needs.map((n, i) => castBar(n, score.perNeed[i], MAX)).join("");
-  const needCount = w.needs.length, effLimit = needCount + 1, tipAmt = needCount * BALANCE.QUICK_TIP_PER_HIDDEN;
-  const tipLine = (ROUND.slots.length <= effLimit && !ROUND.villain)
-    ? `<div class="mix-hint gold">⚡ Serve with <b>≤${effLimit}</b> → <b>+${tipAmt} speed tip!</b></div>`
-    : `<div class="mix-hint muted">Land each bar in its <b style="color:var(--good)">green zone</b> — don't overfill.</div>`;
-  el.innerHTML = meters + (score.allergies || []).map(allergyMeter).join("") + tipLine;
-  paintServeBtn(score, req, meets);
-  // update the live liquid + pct on the cauldron as bars change
-  const cd = $("#cauldron"); if (cd) {
-    const liq = cd.querySelector(".liquid"); if (liq) liq.style.height = Math.max(6, score.weighted) + "%";
-    const pc = cd.querySelector(".pct"); if (pc) pc.textContent = score.weighted + "%";
+  el.innerHTML = w.needs.map((n, i) => mixBar(n, score.perNeed[i], MAX)).join("");
+  // have / need readout
+  const ro = $("#m2-readout");
+  if (ro) { ro.className = "m2-readout" + (meets ? " met" : ""); ro.innerHTML = `<b>${score.weighted}%</b><span>/${req}%</span>`; }
+  // cauldron ready glow + double-tap hint
+  const cd = $("#cauldron-tap"); if (cd) cd.classList.toggle("ready", meets);
+  const hint = $("#serve-hint"); if (hint) hint.textContent = meets ? (ROUND.villain ? "double-tap to brew!" : "double-tap to serve!") : "";
+  const cl = $("#cauldron"); if (cl) { const liq = cl.querySelector(".liquid"); if (liq) liq.style.height = Math.max(14, score.weighted) + "%"; }
+  // allergy / poison arcs beside the cauldron (only when present)
+  const al = score.allergies || [];
+  const L = $("#m2-arc-l"), Rr = $("#m2-arc-r");
+  if (L) L.innerHTML = al[0] ? mixArc(al[0]) : "";
+  if (Rr) Rr.innerHTML = al[1] ? mixArc(al[1]) : "";
+  // timer badge above the cauldron (only for In-a-Rush)
+  const tm = $("#m2-timer");
+  if (tm) {
+    if (ROUND.rush && ROUND.rushStart) {
+      const left = Math.max(0, ROUND.rushMs - (Date.now() - ROUND.rushStart)), sec = Math.ceil(left / 1000);
+      tm.innerHTML = `<div class="m2-timer-badge ${sec <= 10 ? "urgent" : ""}"><b>${sec}</b><span>seconds</span></div>`;
+    } else tm.innerHTML = "";
   }
 }
-// A reusable "cast bar": color circle (magic needed) + track (fill + green target band).
-function castBar(n, s, MAX) {
+// One horizontal need bar: colored label pill + track with fill + green target band.
+function mixBar(n, s, MAX) {
   const fillPct = Math.min(100, s.points / MAX * 100);
   const inBand = s.pct === 100, over = s.points > s.bandHigh;
   const bandLeft = Math.max(0, s.bandLow / MAX * 100), bandW = Math.max(4, (s.bandHigh - s.bandLow) / MAX * 100);
   if (!n.revealed) {
-    return `<div class="castbar mystery ${inBand ? "hit" : ""}"><div class="cb-orb myst">❔</div>
-      <div class="cb-track"><span class="cb-band" style="left:${bandLeft}%;width:${bandW}%"></span>
-        <i class="cb-fill" style="width:${fillPct}%;background:${inBand ? "var(--good)" : "rgba(255,255,255,.3)"}"></i>
-        <span class="cb-name">Mystery Need</span><span class="cb-stat">${inBand ? "✓" : "?"}</span></div></div>`;
+    return `<div class="mbar mystery"><span class="mbar-lbl" style="--lc:#7a6b95">? ? ?</span>
+      <div class="mbar-track"><span class="mbar-band" style="left:${bandLeft}%;width:${bandW}%"></span>
+        <i class="mbar-fill" style="width:${fillPct}%;background:${inBand ? "var(--good)" : "rgba(255,255,255,.28)"}"></i></div></div>`;
   }
-  const col = D.MAGIC[n.type] || D.MAGIC[n.type], frozen = !!n.frozen;
+  const col = D.MAGIC[n.type] || "#c48bff", frozen = !!n.frozen;
   const fillCol = inBand ? "var(--good)" : over ? "var(--bad)" : col;
-  const stat = frozen && s.pct === 100 ? "🔒" : inBand ? "✓" : over ? "over!" : s.pct + "%";
-  const statCol = (inBand || (frozen && s.pct === 100)) ? "var(--good)" : over ? "var(--bad)" : "#efe2ff";
-  return `<div class="castbar ${inBand ? "hit" : ""}"><div class="cb-orb" style="--oc:${col}"></div>
-    <div class="cb-track"><span class="cb-band" style="left:${bandLeft}%;width:${bandW}%"></span>
-      <i class="cb-fill" style="width:${fillPct}%;background:${fillCol}"></i>
-      <span class="cb-name">${n.type}${frozen ? " ❄️" : ""}</span><span class="cb-stat" style="color:${statCol}">${stat}</span></div></div>`;
+  return `<div class="mbar ${inBand ? "hit" : ""}"><span class="mbar-lbl" style="--lc:${col}">${n.type}${frozen ? " ❄️" : ""}</span>
+    <div class="mbar-track"><span class="mbar-band" style="left:${bandLeft}%;width:${bandW}%"></span>
+      <i class="mbar-fill" style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
 }
-// Paint the ornate Serve button: percentage in the pill, green art when the wish is met,
-// plus an hourglass countdown for In-a-Rush customers.
-function paintServeBtn(score, req, meets) {
-  const btn = $("#serve-btn"); if (!btn) return;
-  btn.classList.toggle("met", !ROUND.villain && meets);
-  btn.disabled = ROUND.slots.length === 0;
-  const lbl = $("#serve-label"); if (!lbl) return;
-  if (ROUND.villain) { lbl.innerHTML = `<span class="serve-pct"><b>${score.weighted}%</b></span>`; return; }
-  let hg = "";
-  if (ROUND.rush && ROUND.rushStart) {
-    const left = Math.max(0, ROUND.rushMs - (Date.now() - ROUND.rushStart)), sec = Math.ceil(left / 1000);
-    hg = `<span class="serve-hg ${sec <= 10 ? "urgent" : ""}">⏳${sec}</span>`;
-  }
-  lbl.innerHTML = `${hg}<span class="serve-pct"><b>${score.weighted}%</b><span class="serve-need"> / ${req}%</span></span>`;
+// An allergy/poison arc that hugs one side of the cauldron; fills + colors by danger zone.
+function mixArc(a) {
+  const villain = !!(ROUND && ROUND.villain);
+  const pct = Math.min(100, Math.round(a.points / BALANCE.ALLERGY_RED_AT * 100));
+  const col = a.zone === "red" ? "#ff6b6b" : a.zone === "yellow" ? (villain ? "#ff6b6b" : "#ffd86b") : "#7ee08a";
+  const label = villain ? "Poison" : a.type;
+  return `<svg class="arc-svg" viewBox="0 0 70 150" width="44" height="122" aria-hidden="true">
+      <path d="M58 16 A 54 54 0 0 0 58 134" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="9" stroke-linecap="round"/>
+      <path d="M58 16 A 54 54 0 0 0 58 134" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" pathLength="100" stroke-dasharray="${pct} 100"/>
+    </svg><div class="arc-lbl" style="--ac:${col}">${villain ? "☠️" : "⚠️"} ${label}</div>`;
 }
 function paintMix() {
   const w = ROUND.wish;
   const score = scoreMix(ROUND.slots, w, ROUND.allergyOffset);
   let best = w.needs[0], bestPct = -1;
   w.needs.forEach((n, i) => { if (score.perNeed[i].pct >= bestPct) { bestPct = score.perNeed[i].pct; best = n; } });
-  const liquid = D.MAGIC[best.type] || D.MAGIC[best.type];
+  const liquid = D.MAGIC[best.type] || "#c48bff";
   const slotCells = [];
   for (let i = 0; i < ROUND.maxSlots; i++) {
     const inst = ROUND.slots[i];
     const face = !inst ? "" : inst.wild ? "🌈"
-      : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic] || D.MAGIC[inst.magic]}"></span>`
-      : ingArt(inst.id);
-    const removable = ROUND.villain && inst;   // villain rounds have no Pet Undo — tap a slot to pull it back
+      : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>` : ingArt(inst.id);
+    const removable = ROUND.villain && inst;
     const poisonedSlot = inst && ROUND.insight && inst.poison;
     slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""} ${poisonedSlot ? "poisoned" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${poisonedSlot ? `<span class="poison-badge">☠️</span>` : ""}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
   }
-  // pet frame + treat banner (top-left); hamburger menu (top-right)
-  const showPet = !ROUND.villain;                 // pet is captured during a villain event
+  const showPet = !ROUND.villain;
   const banner = (!ROUND.villain && GAME.unlocked.undo) ? `${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}` : `🐸${GAME.treats}`;
-  const panel = mixPanelHtml();
   html("mix", `
-    <div class="mixv ${ROUND.villain ? "villain" : ""}">
-      <div class="mixv-head">
+    <div class="mixv2 ${ROUND.villain ? "villain" : ""}">
+      <div class="m2-head">
         <div class="petbadge ${showPet ? "" : "nopet"}" id="familiar">
-          ${showPet ? `<div class="petbadge-pet">${equippedFamiliarChip()}</div>` : `<div class="petbadge-pet">🔒</div>`}
+          <div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>
           <div class="petbadge-count">${banner}</div>
         </div>
-        <div class="mixv-cust">${custArt(ROUND.customer)}<span>${ROUND.customer.name}</span></div>
+        <div class="m2-cust">${custArt(ROUND.customer)}<span>${ROUND.customer.name}</span></div>
         <button class="mixv-menu" id="hud-menu" aria-label="Menu">☰</button>
       </div>
-      <div class="mixv-body">
-        <div class="mixv-left">
-          <div class="mixv-cauldron">
-            <div class="cauldron ${equippedCauldronClass()}" id="cauldron">
-              <div class="liquid" style="height:${Math.max(6, score.weighted)}%;background:linear-gradient(180deg, ${liquid}, ${shade(liquid)})"></div>
-              <div class="bub b1"></div><div class="bub b2"></div><div class="bub b3"></div><div class="bub b4"></div><div class="bub b5"></div>
-              <div class="pct">${score.weighted}%</div>
-            </div>
+      <div class="m2-timer" id="m2-timer"></div>
+      <div class="m2-stage">
+        <div class="m2-arc-slot left" id="m2-arc-l"></div>
+        <div class="m2-cauldron" id="cauldron-tap">
+          <div class="cauldron ${equippedCauldronClass()}" id="cauldron">
+            <div class="liquid" style="height:${Math.max(14, score.weighted)}%;background:linear-gradient(180deg, ${liquid}, ${shade(liquid)})"></div>
+            <div class="bub b1"></div><div class="bub b2"></div><div class="bub b3"></div><div class="bub b4"></div><div class="bub b5"></div>
           </div>
-          <div class="slots mixv-slots">${slotCells.join("")}</div>
-          <div class="mixv-meters" id="mix-top"></div>
-          <button class="servebtn" id="serve-btn" ${ROUND.slots.length === 0 ? "disabled" : ""}>
-            <span class="serve-label" id="serve-label"></span>
-          </button>
+          <div class="serve-hint" id="serve-hint"></div>
         </div>
-        <div class="mixv-right">
-          <div class="ipanel ${ROUND.toolMode ? "cutting" : ""}">
-            <div class="ipanel-scroll" id="inv-row">${panel}</div>
-          </div>
-        </div>
+        <div class="m2-arc-slot right" id="m2-arc-r"></div>
       </div>
+      <div class="m2-readout" id="m2-readout"></div>
+      <div class="slots m2-slots">${slotCells.join("")}</div>
+      <div class="m2-bars" id="mix-top"></div>
+      <div class="m2-tray ${ROUND.toolMode ? "cutting" : ""}">${mixTrayHtml()}</div>
     </div>
   `);
   paintMixTop();
   applyCauldronArt();
-  // wire ingredient stacks + charm tiles
-  $("#screen-mix").querySelectorAll(".ptile[data-idx]").forEach(t => t.addEventListener("click", () => addToSlot(+t.dataset.idx, t)));
-  $("#screen-mix").querySelectorAll(".ptile[data-charm]").forEach(t => t.addEventListener("click", () => playCharm(+t.dataset.charm)));
+  $("#screen-mix").querySelectorAll(".icard[data-idx]").forEach(t => t.addEventListener("click", () => addToSlot(+t.dataset.idx, t)));
+  $("#screen-mix").querySelectorAll(".cslot[data-charm]").forEach(t => t.addEventListener("click", () => playCharm(+t.dataset.charm)));
   if (ROUND.villain) $("#screen-mix").querySelectorAll(".slot.removable").forEach(el => el.addEventListener("click", () => removeFromSlot(+el.dataset.slot)));
-  on("#serve-btn", "click", serve);
+  wireDoubleTapServe();
   wireFamiliar("mix");
-  // the just-changed glow plays once on this render, then clears so it doesn't re-fire
   ROUND.inventory.forEach(inst => { if (inst && inst._glow) delete inst._glow; });
-  const rc = document.getElementById("rush-clock"); if (rc) rc.style.display = "none";  // countdown lives on the Serve button now
+  const rc = document.getElementById("rush-clock"); if (rc) rc.style.display = "none";
 }
-// Build the ingredient panel: charms first, then infused / potent / normal stacks.
-function mixPanelHtml() {
+// Two quick taps on the cauldron serves — deliberate, so no accidental serves.
+function wireDoubleTapServe() {
+  const el = $("#cauldron-tap"); if (!el) return;
+  let last = 0;
+  el.addEventListener("click", () => {
+    const now = Date.now();
+    if (now - last < 350) { last = 0; if (ROUND.slots.length === 0) { toast("Add some ingredients first!"); return; } serve(); }
+    else { last = now; if (ROUND.slots.length) toast("Double-tap the cauldron to serve!"); }
+  });
+}
+// Bottom tray: up to 6 pinned charm slots on the left, ingredient cards scrolling on the right.
+function mixTrayHtml() {
   const charmStacks = [], cmap = {};
   ROUND.charms.forEach((id, i) => {
     if (cmap[id] != null) charmStacks[cmap[id]].count++;
     else { cmap[id] = charmStacks.length; charmStacks.push({ id, firstIdx: i, count: 1 }); }
   });
+  const shown = charmStacks.slice(0, 6);
+  const filled = shown.map(charmSlot).join("");
+  const empties = Array.from({ length: Math.max(0, 6 - shown.length) }).map(() => `<div class="cslot empty"></div>`).join("");
   const stacks = mixStacks();
-  let out = "";
-  if (charmStacks.length) out += `<div class="itag itag-charms"></div><div class="igrid">${charmStacks.map(charmPanelTile).join("")}</div>`;
-  out += `<div class="itag itag-ing"></div>`;
-  out += stacks.length ? `<div class="igrid">${stacks.map(invStackTile).join("")}</div>`
-    : `<div class="ipanel-empty">Bag empty — serve what's in the pot!</div>`;
-  return out;
+  const cards = stacks.length ? stacks.map(ingCard).join("") : `<div class="tray-empty">Bag empty —<br>double-tap the cauldron to serve!</div>`;
+  return `<div class="m2-charms"><div class="m2-charms-grid">${filled}${empties}</div></div>
+    <div class="m2-ing" id="inv-row">${cards}</div>`;
 }
-function charmPanelTile(cs) {
+function charmSlot(cs) {
   const ch = CHARM(cs.id);
   const on = (cs.id === "knife" && ROUND.toolMode === "cut") || (cs.id === "transmute" && ROUND.toolMode === "transmute") || (cs.id === "pinch" && ROUND.toolMode === "pinch");
-  return `<button class="ptile charm ${on ? "toolon" : ""}" data-charm="${cs.firstIdx}" title="${ch.name} — ${ch.desc}">
-    <div class="ptile-art">${charmArt(cs.id)}</div><div class="ptile-nm">${ch.name}</div>
-    ${cs.count > 1 ? `<span class="ptile-count">×${cs.count}</span>` : ""}</button>`;
+  return `<button class="cslot ${on ? "on" : ""}" data-charm="${cs.firstIdx}" title="${ch.name} — ${ch.desc}">
+    <span class="cslot-ic">${charmArt(cs.id)}</span>${cs.count > 1 ? `<span class="cslot-n">×${cs.count}</span>` : ""}</button>`;
 }
-function invStackTile(st) {
+// Big ingredient card: art + name (left), up to 3 magic labels (right). Hidden magics show
+// a faint "?" until Insight; the card always reserves space for 3 so it never resizes.
+function ingCard(st) {
   const inst = st.rep, n = st.idxs.length, idx = st.idxs[0];
   const glow = st.idxs.some(i => ROUND.inventory[i] && ROUND.inventory[i]._glow);
   const cuttable = ROUND.toolMode ? " cuttable" : "";
-  let art, quals, cls = "";
-  if (inst.wild) {
-    art = `🌈`; quals = `any magic`; cls = "wild";
-  } else if (inst.essence) {
-    art = `<span class="orb" style="background:${D.MAGIC[inst.magic] || D.MAGIC[inst.magic]}"></span>${inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}`;
-    quals = `${magicDot(inst.magic)} ${inst.shrunk ? "½ " : ""}pure ${inst.magic}`;
-    cls = "essence" + (inst.potent ? " potent" : "") + (inst.shrunk ? " shrunk" : "");
+  const insight = !!ROUND.insight;
+  let art, list, name, cls = "", mainMagic = "";
+  if (inst.wild) { art = "🌈"; list = ["any"]; name = "Wild"; cls = "wild"; mainMagic = inst.magic || "Love"; }
+  else if (inst.essence) {
+    art = `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>`; list = [inst.magic];
+    name = (inst.shrunk ? "½ " : "") + inst.magic + " Essence"; cls = "essence" + (inst.potent ? " potent" : "") + (inst.shrunk ? " shrunk" : ""); mainMagic = inst.magic;
   } else {
     const ing = D.INGREDIENT_BY_ID[inst.id];
-    const poisoned = ROUND.insight && inst.poison;
-    const infused = ing.infused ? INFUSED_LABEL[ing.infused] : "";
-    quals = (inst.magic ? magicDot(inst.magic) + " " + inst.magic
-        : (ROUND.insight ? ing.qualities.map(q => magicDot(q)).join("") + " " + ing.qualities.join(", ") : magicDot(ing.qualities[0]) + " " + ing.qualities[0]))
-      + (poisoned ? ` <span style="color:var(--bad)">☠️</span>` : "")
-      + (infused ? ` <span class="q-infused">${infused}</span>` : "");
-    art = ingArt(inst.id) + (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
-    cls = (inst.potent ? "potent " : "") + (inst.shrunk ? "shrunk " : "") + (poisoned ? "poisoned " : "") + (ing.infused ? "infused" : "");
+    name = (inst.shrunk ? "½ " : "") + ing.name;
+    list = inst.magic ? [inst.magic] : ing.qualities.slice();
+    mainMagic = list[0]; cls = (inst.potent ? "potent " : "") + (inst.shrunk ? "shrunk " : "") + (ing.infused ? "infused" : "");
+    art = ingArt(inst.id);
   }
-  return `<button class="ptile ${cls}${cuttable}${glow ? " glow" : ""}" title="${instName(inst)}" data-idx="${idx}">
-    <div class="ptile-art">${art}</div><div class="ptile-q">${quals}</div>
-    ${inst.potent ? `<span class="ptile-star">✨</span>` : ""}${n > 1 ? `<span class="ptile-count">×${n}</span>` : ""}</button>`;
+  const singleKnown = inst.essence || inst.wild || !!inst.magic;   // these items only ever have one magic
+  let pills = "";
+  for (let r = 0; r < 3; r++) {
+    if (r < list.length) {
+      const reveal = r === 0 || insight || singleKnown;
+      if (reveal) { const q = list[r]; pills += `<span class="mp" style="--mc:${D.MAGIC[q] || "#888"}">${q}</span>`; }
+      else pills += `<span class="mp hidden">?</span>`;
+    } else pills += `<span class="mp blank"></span>`;
+  }
+  const poisoned = ROUND.insight && inst.poison;
+  const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
+  return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}" title="${name}" data-idx="${idx}">
+    <div class="icard-l"><div class="icard-art">${art}${badges}<span class="icard-gem" style="background:${D.MAGIC[mainMagic] || "#888"}"></span></div><div class="icard-nm">${name}</div></div>
+    <div class="icard-r">${pills}</div>
+    ${inst.potent ? `<span class="icard-star">✨</span>` : ""}${n > 1 ? `<span class="icard-count">×${n}</span>` : ""}</button>`;
 }
-function allergyMeter(a) {
-  const villain = !!(ROUND && ROUND.villain);
-  const pct = Math.min(100, Math.round(a.points / BALANCE.ALLERGY_RED_AT * 100));
-  // villain brews are stricter: even "yellow" is a failing taint, so paint it red
-  const col = a.zone === "red" ? "var(--bad)" : a.zone === "yellow" ? (villain ? "var(--bad)" : "var(--gold)") : "var(--good)";
-  const status = villain ? (a.zone === "green" ? "CLEAN ✓" : "TAINT!") : a.zone.toUpperCase();
-  return `<div class="castbar allergy"><div class="cb-orb danger">${villain ? "☠️" : "⚠️"}</div>
-    <div class="cb-track"><i class="cb-fill" style="width:${pct}%;background:${col}"></i>
-      <span class="cb-name">${villain ? "Poison" : a.type + " allergy"}</span><span class="cb-stat" style="color:${col}">${status}</span></div></div>`;
-}
-/* --- Infused ingredients: a built-in charm-like effect that fires on drop-in ------ */
 const INFUSED_LABEL = { potentNext: "✨ next is Potent", lockBar: "❄️ locks its bar" };
 const INFUSED_PER_ROUND = 1;   // guaranteed per round for now (prototype); tune later
 // Replace a few random ingredient slots in the haul with infused ingredients.

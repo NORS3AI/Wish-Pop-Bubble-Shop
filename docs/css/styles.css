@@ -1156,3 +1156,99 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .mix-hint { text-align: center; font-size: 12px; margin: 2px auto 0; flex: 0 0 auto; }
 .mix-hint.gold { color: var(--gold); }
 .mix-hint.muted { color: var(--ink-dim); }
+
+/* =======================================================================
+ * MIXING SCREEN v2 — cauldron-hero layout (art-light placeholder pass).
+ * Vertical stack: header · cauldron(+arcs,timer) · have/need · slots ·
+ * bars · bottom tray (pinned charms + scrolling ingredient cards).
+ * ===================================================================== */
+.mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
+  margin: -8px -14px -12px; padding: 6px 10px 8px;
+  background: radial-gradient(ellipse at 50% 8%, #3a2358 0%, #241338 48%, #160c26 100%); }
+.m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-weight: 800; font-size: 14px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+.m2-cust span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m2-cust img.art { width: 26px !important; height: 26px !important; max-width: none; max-height: none; object-fit: contain; }
+/* stage: arcs flank the cauldron, timer floats above */
+.m2-stage { position: relative; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 0; padding-top: 6px; }
+.m2-timer { flex: 0 0 auto; display: flex; justify-content: center; min-height: 0; margin-bottom: 1px; z-index: 6; }
+.m2-timer-badge { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 74px; height: 74px;
+  border-radius: 50%; background: radial-gradient(circle at 50% 34%, #ff5a5a, #c62828); border: 4px solid var(--gold);
+  color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+.m2-timer-badge b { font-size: 26px; line-height: 1; font-weight: 900; }
+.m2-timer-badge span { font-size: 10px; letter-spacing: .5px; opacity: .95; }
+.m2-timer-badge.urgent { animation: hgpulse .6s infinite; }
+.m2-arc-slot { width: 46px; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; z-index: 4; }
+.m2-arc-slot.right .arc-svg { transform: scaleX(-1); }
+.arc-lbl { font-size: 11px; font-weight: 800; color: var(--ac, #fff); margin-top: -8px; text-shadow: 0 1px 3px rgba(0,0,0,.8); white-space: nowrap; text-transform: capitalize; }
+.m2-cauldron { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; z-index: 3; }
+.mixv2 .cauldron { width: min(60vw, 244px); height: min(29vh, 188px); position: relative; overflow: hidden;
+  border-radius: 42% 42% 46% 46% / 26% 26% 74% 74%; border: 4px solid rgba(255,214,110,.6); border-top-width: 8px;
+  background: radial-gradient(ellipse at 50% 26%, #462c68, #241436 72%);
+  box-shadow: inset 0 -16px 34px rgba(0,0,0,.55), inset 0 4px 12px rgba(255,214,110,.14), 0 10px 26px rgba(0,0,0,.45); }
+.m2-cauldron.ready .cauldron { animation: cauldronReady 1.1s ease-in-out infinite; border-color: var(--good); }
+@keyframes cauldronReady { 0%,100% { box-shadow: inset 0 -16px 34px rgba(0,0,0,.55), 0 0 10px rgba(126,224,138,.5); } 50% { box-shadow: inset 0 -16px 34px rgba(0,0,0,.55), 0 0 26px 6px rgba(126,224,138,.8); } }
+.serve-hint { height: 15px; margin-top: 3px; font-size: 12px; font-weight: 800; color: var(--good); text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.m2-cauldron.ready .serve-hint { animation: hgpulse 1s infinite; }
+/* have / need readout — this IS the serve button now */
+.m2-readout { flex: 0 0 auto; text-align: center; font-weight: 900; color: #fff; letter-spacing: .5px; line-height: 1; }
+.m2-readout b { font-size: clamp(26px, 8vw, 38px); }
+.m2-readout span { font-size: .6em; opacity: .75; margin-left: 2px; }
+.m2-readout.met b { color: var(--good); text-shadow: 0 0 12px rgba(126,224,138,.6); }
+/* slots row */
+.m2-slots { flex: 0 0 auto; justify-content: center; gap: 6px; }
+.m2-slots .slot { width: 38px; height: 38px; border-radius: 10px; font-size: 20px; border-color: rgba(255,214,110,.4); }
+.m2-slots .slot .orb { width: 22px; height: 22px; }
+.m2-slots .slot img.art { max-width: 1.1em; }
+/* bars panel */
+.m2-bars { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; padding: 6px 8px; border-radius: 14px;
+  background: rgba(18,10,30,.5); border: 1px solid rgba(255,214,110,.22); }
+.mbar { display: flex; align-items: center; gap: 7px; }
+.mbar-lbl { flex: 0 0 74px; font-size: 12px; font-weight: 800; text-align: center; color: #fff; padding: 3px 4px; border-radius: 8px;
+  background: var(--lc, #888); box-shadow: inset 0 -2px 4px rgba(0,0,0,.3); text-transform: capitalize; text-shadow: 0 1px 2px rgba(0,0,0,.4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mbar-track { flex: 1; position: relative; height: 16px; border-radius: 9px; overflow: hidden; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.12); }
+.mbar-band { position: absolute; top: 0; bottom: 0; z-index: 1; background: rgba(126,224,138,.4); }
+.mbar-fill { position: absolute; left: 0; top: 0; bottom: 0; z-index: 2; border-radius: 9px 0 0 9px; transition: width .35s ease, background .35s; }
+.mbar.hit .mbar-track { box-shadow: 0 0 8px var(--good); }
+/* bottom tray */
+.m2-tray { flex: 0 0 auto; margin-top: auto; height: clamp(178px, 25vh, 212px); display: flex; gap: 7px; padding: 7px; border-radius: 14px;
+  background: rgba(14,8,24,.62); border: 1px solid rgba(255,214,110,.25); }
+.m2-charms { flex: 0 0 auto; }
+.m2-charms-grid { display: grid; grid-template-columns: repeat(2, 38px); grid-auto-rows: 38px; gap: 5px; }
+.cslot { width: 38px; height: 38px; border-radius: 10px; position: relative; cursor: pointer;
+  background: rgba(60,30,86,.7); border: 1.5px solid rgba(255,214,110,.55); display: flex; align-items: center; justify-content: center; }
+.cslot.empty { background: rgba(0,0,0,.25); border-style: dashed; border-color: rgba(255,255,255,.12); cursor: default; }
+.cslot-ic { font-size: 20px; display: flex; }
+.cslot-ic img.art { width: 26px !important; height: 26px !important; max-width: none; max-height: none; object-fit: contain; }
+.cslot-n { position: absolute; bottom: -3px; right: -3px; background: rgba(0,0,0,.7); color: #fff; font-size: 10px; font-weight: 800; border-radius: 7px; padding: 0 3px; }
+.cslot.on { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); }
+.cslot:active { transform: scale(.92); }
+/* ingredient cards — 2 rows, scroll sideways, ~2 visible across */
+.m2-ing { flex: 1; min-width: 0; display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, 1fr); grid-auto-columns: 47%;
+  gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 1px 2px 4px; scroll-snap-type: x proximity; }
+.m2-ing::-webkit-scrollbar { height: 5px; } .m2-ing::-webkit-scrollbar-thumb { background: rgba(255,214,110,.4); border-radius: 3px; }
+.icard { scroll-snap-align: start; position: relative; display: flex; align-items: center; gap: 5px; min-width: 0; text-align: left;
+  padding: 5px 6px; border-radius: 11px; cursor: pointer; background: rgba(46,24,64,.7); border: 1.5px solid rgba(255,214,110,.5); }
+.icard:active { transform: scale(.96); }
+.icard-l { flex: 0 0 auto; width: 46px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.icard-art { position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+.icard-art img.art { width: 38px !important; height: 38px !important; max-width: none; max-height: none; object-fit: contain; }
+.icard-gem { position: absolute; bottom: -1px; left: -2px; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.7); box-shadow: 0 0 4px rgba(0,0,0,.5); }
+.icard-nm { font-size: 10px; font-weight: 700; line-height: 1.05; color: #efe2ff; text-align: center; max-width: 48px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.icard-r { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+.mp { font-size: 11px; font-weight: 800; color: #fff; text-align: center; padding: 2px 4px; border-radius: 6px; height: 18px; line-height: 14px;
+  background: var(--mc, #888); box-shadow: inset 0 -1px 3px rgba(0,0,0,.3); text-transform: uppercase; letter-spacing: .3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp.hidden { background: rgba(255,255,255,.1); color: rgba(255,255,255,.55); border: 1px dashed rgba(255,255,255,.25); box-shadow: none; }
+.mp.blank { background: transparent; box-shadow: none; }
+.icard-count { position: absolute; top: 3px; right: 4px; background: rgba(0,0,0,.7); color: #fff; font-size: 11px; font-weight: 800; border-radius: 8px; padding: 0 5px; z-index: 3; }
+.icard-star { position: absolute; top: 2px; left: 3px; font-size: 12px; z-index: 3; }
+.icard.potent { border-color: var(--gold); box-shadow: 0 0 9px rgba(255,216,107,.5); }
+.icard.infused { border-color: #c9a0ff; box-shadow: 0 0 9px rgba(185,140,255,.5); }
+.icard.essence { border-style: dashed; }
+.icard.poisoned { border-color: var(--bad); }
+.m2-tray.cutting .icard.cuttable { outline: 2px solid var(--gold); outline-offset: 1px; animation: cutpulse 1s ease-in-out infinite; }
+.icard.glow { animation: tileGlow 1.6s ease; }
+.icard .poison-badge { position: absolute; top: -3px; right: -3px; font-size: 13px; }
+.icard .pinch-badge { position: absolute; bottom: -3px; right: -3px; font-size: 12px; }
+.tray-empty { margin: auto; text-align: center; color: var(--ink-dim); font-size: 13px; line-height: 1.5; }

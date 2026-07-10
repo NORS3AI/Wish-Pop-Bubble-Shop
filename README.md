@@ -19,13 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
-- 🫧 **Brand-new mixing screen!** The cauldron page got a big makeover: a bigger cauldron that will
-  soon show off collectible skins, a scrollable **ingredient panel** on the right where your **charms
-  sit right on top** (no more digging), ingredients that **auto-sort** and **pile up with a ×count**
-  so five of the same treat no longer hog the space, pretty gold cast-bars for each magic, and an
-  ornate **Serve** button that shows your match **%** and turns **green** the moment the wish is met
-  (with an hourglass for customers in a hurry). Your pet sits up in the corner with a **treats-left**
-  counter for undos.
+- 🫧 **Redesigned mixing screen!** The **cauldron is now the star** — big and centered up top. You
+  **double-tap the cauldron to serve** (it glows green when the wish is met), your match **%** sits
+  right under it, allergy warnings curve around the sides, and any timer floats above. Ingredients
+  live in a roomy **bottom tray** with **big, easy-to-read cards** (magic labels on each, hidden ones
+  shown as **?** until Insight reveals them, and a **×count** when they stack). Your **charms are
+  pinned** right there so they're always one tap away. (Still getting a fresh coat of paint!)
 
 - 🥨 **New Village Baker customer!** The baker now has four hand-drawn moods — a warm hands-on-hips
   smile when she arrives, a big cheerful grin when you get her order right, a red-faced scowl when
