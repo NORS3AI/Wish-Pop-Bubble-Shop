@@ -6,6 +6,43 @@ Newest ideas near the top. When something ships, move it to "Done / shipped".
 
 ---
 
+## 🆕 Realm progression = clear N events, THEN pay to unlock (pacing backbone)
+
+**The structure (owner's):** regular customers flow, and every **~8–12 customers** an
+**event** fires (villain / hazard / minigame / crash — whatever the realm offers). Each
+realm has a set number of events (**X**) you must play through. Clear all X → the next
+realm **"opens up"** → *then* you spend saved **keys + gold** to actually enter it.
+
+**Why it works:** paces the realm by *content experienced*, not a gold grind. Players
+can't rush past a realm before seeing it (event gate), and can't get stuck grinding long
+after boredom (the currency you'll have saved by clearing X events ≈ the unlock cost, so
+it's a satisfying "spend your savings" moment, not a wall). The event tally IS the
+"novelty meter."
+
+**Details / refinements:**
+- **Scale X per realm.** Fewer to clear the *first* realm (~3 → opens in ~1 hr, the hook),
+  more later (~5 → 7 → …). Matches "fast first door, escalate later."
+- **Last event = a realm finale/boss** (Cursed King, Evil Queen ransom, etc.). Gives each
+  realm an arc: meet the locals → escalating events → boss finale → door opens.
+- **Vary events within a realm** — 5 events should be 5 *different* ones, not the same
+  crash ×5. Each realm gets a themed event pool.
+- **"Must play," not "must win"** (except maybe the finale, with retries). Cozy game —
+  don't hard-lock progression behind winning a tricky minigame; attempting counts.
+- **Show progress** — a "⚡ 3 / 5 events" tracker on the map next to the locked realm.
+  Visible goal = anticipation = anti-boredom.
+- **Event spacing** jittered within the window (~8–12 customers), not a rigid metronome.
+
+**Current numbers for reference (to tune against):** customers pay ~20–60 gold (+tips/
+streak), Courtyard currently gates at 3,000 gold + 10 keys ≈ ~65–75 customers ≈ ~2–3 hrs.
+For a *first* unlock that's a touch slow — nudge it down (~1,800–2,000 gold / 5–6 keys) so
+the first realm opens in ~1 hr and players learn early that the game opens up.
+
+**Build note:** the event scheduler already exists (`maybeEvent()` fires on a timer,
+`GAME.nextEventAt` tracks it). New parts: count events-cleared per realm, gate the realm
+unlock on that count, then allow the gold/key purchase.
+
+---
+
 ## 🆕 "Catch the ripples" — tap falling drops in order (minigame / event)
 
 **The gist:** drops land all over the screen. Each landing spot shows a small circle
