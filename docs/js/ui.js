@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v129"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v130"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2077,7 +2077,7 @@ function feastSpawn() {
     const el = document.createElement("button");
     el.className = "feast-item" + (k.hazard ? " hazard" : "");
     el.dataset.uid = it.uid;
-    el.style.left = (8 + it.col * (84 / (FEAST_COLS - 1))) + "%";
+    el.style.left = (13 + it.col * (74 / (FEAST_COLS - 1))) + "%";
     el.style.top = "0%";
     el.innerHTML = `<span class="feast-emoji">${k.emoji}</span>`;
     el.addEventListener("click", () => feastCatch(it.uid));
