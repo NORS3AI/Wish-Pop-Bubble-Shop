@@ -99,6 +99,9 @@ html, body {
    keep the framed box. */
 .ph.big:has(img.art) { width: auto; height: auto; min-width: 118px; background: none; border: none; }
 .ph.big img.art { height: 128px; width: auto; max-width: 150px; }
+/* Result-screen customer is shown bigger now that Round Recap is tucked behind a
+   button (freeing vertical room). Goal is eventually as big as the arrival portrait. */
+.ph.big img.result-face { height: 176px; max-width: 230px; }
 
 /* --- Start screen --- */
 #screen-start .logo { font-size: 44px; font-weight: 900; letter-spacing: .5px;
@@ -450,6 +453,15 @@ html, body {
 .streak-badge .sb-gain { position: absolute; top: -9px; right: -6px; background: #c48bff; color: #2a0f45;
   font-size: 12px; font-weight: 900; padding: 1px 7px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.4);
   animation: sbpop .5s .15s cubic-bezier(.2,1.5,.4,1) backwards; }
+/* Result bottom actions: a small Round Recap button stacked above Next Customer */
+.result-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.recap-btn { background: var(--card); color: var(--ink); box-shadow: none; border: 1px solid var(--line); font-size: 15px; padding: 11px 18px; }
+/* Round Recap overlay (tucked behind the button to keep the result screen roomy) */
+.recap-overlay { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
+  background: rgba(8,4,16,.72); padding: 20px; animation: recapfade .18s ease; }
+@keyframes recapfade { from { opacity: 0; } to { opacity: 1; } }
+.recap-sheet { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; animation: sbpop .28s cubic-bezier(.2,1.4,.4,1); }
+.recap-sheet .card { width: 100%; max-width: none; }
 
 /* Result-screen reward bubbles — a header that stays put, and bubbles that
    FLOAT freely all over the screen in their own overlay. */

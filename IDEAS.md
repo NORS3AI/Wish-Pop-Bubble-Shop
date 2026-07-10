@@ -6,6 +6,45 @@ Newest ideas near the top. When something ships, move it to "Done / shipped".
 
 ---
 
+## 🆕 Scoop-phase overhaul — catch bubbles off the spoon
+
+**The problem:** the scoop phase is pretty and calm but low-interaction — you
+mostly shake and hit Continue. The bubble-pop phase is the fun part; scoop should
+have a little of that catch-the-reward energy without stealing its thunder.
+
+**The idea (owner's):** as you shake/disturb the glitter dust, bubbles fly up off
+the spoon. Pop them before they drift off-screen to capture what's inside. Not
+every bubble has something. Possible contents:
+- Nothing (empty — most common)
+- Coins
+- Stardust ✨
+- A rare Treasure Key 🗝️
+- **Very** rarely, a skin
+- A **Wish Bubble** — a special carry-over that can be used in the *next* round
+
+**Why it's good:** adds skill + surprise to a dead moment, reuses the pop-to-catch
+mechanic players already love, and gives another trickle of Stardust/keys. The
+"escapes off-screen if you miss" bit adds gentle tension that fits the theme
+(glitter scattering).
+
+**Things to design carefully:**
+- **Don't overshadow the main pop phase.** Keep scoop bubbles occasional and fast,
+  more "ooh a bonus" than "second minigame." Frequency + speed are the dials.
+- **Rarity tiers matter.** Coins common, Stardust uncommon, key rare, skin ultra-rare.
+  Keep the drop table honest so it feels lucky, not routine.
+- **Wish Bubble needs a definition.** What does it *do* next round? Options: a free
+  Wild-magic add, a guaranteed charm, a head-start on one need bar, or a "reroll".
+  Pick one clear effect so it's not confusing.
+- **Accessibility:** the existing "pop all for me" convenience should have a scoop
+  equivalent (auto-catch) so it never becomes mandatory dexterity.
+- **Feedback:** each catch bursts like the reward bubbles; a miss gives a soft
+  "poof" so it's clear you lost it (but never punishing).
+
+**Build note:** the scoop screen already spawns/reveals bubbles (`renderScoop`,
+`#scoop-bubbles`), so there's a foundation to build the fly-up + catch on.
+
+---
+
 ## 🅰️ Realm hazard events (weather / location modifiers)
 
 **The gist:** short, themed events that shake up the rules for a handful of
@@ -37,6 +76,13 @@ reason for it ("of course things are unstable — it's a dust storm").
 (`maybeEvent`), so a timed "weather event" is buildable when we're ready.
 
 ---
+
+---
+
+## 🔧 Small follow-ups
+- **Result-screen customer → arrival size.** Now that Round Recap is a button +
+  overlay (shipped v118), the result customer was bumped bigger (176px). Eventually
+  make it as large as the New-Customer arrival portrait for a strong "hero" look.
 
 ---
 

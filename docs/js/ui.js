@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v117"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v118"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3122,6 +3122,10 @@ function mixCharmBarHtml() {
     else { cmap[id] = charmStacks.length; charmStacks.push({ id, firstIdx: i, count: 1 }); }
   });
   if (!charmStacks.length) return "";
+  // STABLE ORDER: sort by the canonical charm list so a slot never jumps when you
+  // spend one of a stack (otherwise double-tapping a 2-use charm hits the wrong slot).
+  const order = D.SPECIAL_CHARM_IDS;
+  charmStacks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   const shown = charmStacks.slice(0, 6);
   return `<div class="m2-charmbar"><span class="m2-charmbar-lbl">Charms</span>${shown.map(charmSlot).join("")}</div>`;
 }
@@ -3439,11 +3443,14 @@ function renderResult(res) {
         ${earnedRow}
       </div>
       <p class="muted" style="max-width:300px">${blurb}</p>
-      ${roundRecap()}
     </div>
-    <button class="btn" id="next-btn">Next Customer  →</button>
+    <div class="result-actions">
+      <button class="btn recap-btn" id="recap-btn">📋 Round Recap</button>
+      <button class="btn" id="next-btn">Next Customer  →</button>
+    </div>
   `);
   on("#next-btn", "click", startRound);
+  on("#recap-btn", "click", showRoundRecap);
   show("result");
   if (win) wireRewardBubbles(res);
   else if (trashN) wireTrashBubbles(res);
@@ -3636,6 +3643,16 @@ function roundRecap() {
     <div class="stat-line"><span>🪙 Gold · 🐸 Treats gained</span><span><b>${s.gold}</b> · <b>${s.treats}</b></span></div>
     <div class="stat-line"><span>🔺 Triples made</span><span><b>${s.triples}</b></span></div>
   </div>`;
+}
+// Round Recap is tucked behind a button now — pop it up as an overlay on demand.
+function showRoundRecap() {
+  const inner = roundRecap(); if (!inner) { toast("No recap this round."); return; }
+  const ov = document.createElement("div"); ov.className = "recap-overlay";
+  ov.innerHTML = `<div class="recap-sheet">${inner}<button class="btn" id="recap-close">Close</button></div>`;
+  document.getElementById("app").appendChild(ov);
+  const close = () => ov.remove();
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  ov.querySelector("#recap-close").addEventListener("click", close);
 }
 
 /* ======================================================================= */
