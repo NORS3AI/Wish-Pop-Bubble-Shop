@@ -1105,6 +1105,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes stackGood { 0%,100% { transform: rotate(var(--ang)) scale(1); } 45% { transform: rotate(var(--ang)) scale(1.05); } }
 @keyframes stackBad { 0%,100% { transform: rotate(var(--ang)); } 30% { transform: rotate(calc(var(--ang) - 4deg)); } 70% { transform: rotate(calc(var(--ang) + 4deg)); } }
 .stack-hint { color: #cbbdf0; }
+.stack-best { font-size: 11px; font-weight: 700; color: #ffd76a; opacity: .9; margin-left: 4px; }
 /* Collection hunt — tracker chip + "found one!" flourish */
 .hunt-chip { display: flex; width: fit-content; margin: 6px auto 0; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 999px;
   background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.30); font-size: 13px; font-weight: 800; color: #fff;

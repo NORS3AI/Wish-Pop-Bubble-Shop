@@ -273,6 +273,9 @@ per bump (clang + shake + spark + floating −5) — never a topple, just a scor
   speed the drops; the plate **narrows** each difficulty (Easy 30% → Hard 17%).
 - **Modes:** Easy (wide plate, no wind, goal 20) / Medium (goal 26, 1 gust) / Hard (narrow, goal 36,
   2 gusts). **Finale runs on Easy, must-win, freely retryable.**
+- **♾️ Infinite mode (v139):** endless high-score chase — no timer/goal, difficulty ramps with height
+  (faster falls + more junk). OUT on 5 bumps OR catching a 💣/🪨 on top of the stack (instant).
+  Keeps GAME.stackBest top-3; game-over shows a 🥇🥈🥉 board. HUD swaps to Height + Bumps (0/5).
 - **Winnability:** greedy auto-catcher bot — Easy/Medium/Hard all **12/12** in tests.
 - Admin: "🪙 Sky-High Savings (practice)" + "🔑 Beanstalk Finale (Realm Key)".
 

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v138"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v139"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -36,6 +36,7 @@ function normalizeGame(g) {
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
   if (!g.realmEvents || typeof g.realmEvents !== "object") g.realmEvents = {}; // realmId -> events cleared (story progress)
   if (!g.finaleWon || typeof g.finaleWon !== "object") g.finaleWon = {}; // realmId -> finale beaten (grants the Realm Key)
+  if (!Array.isArray(g.stackBest)) g.stackBest = []; // top-3 Sky-High Savings Infinite scores
   if (!g.hunts || typeof g.hunts !== "object") g.hunts = {}; // realmId -> { found, done } collection scavenger hunt
   if (typeof g.huntCelebrate === "undefined") g.huntCelebrate = null; // realmId pending a completion thank-you card
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
@@ -2331,11 +2332,26 @@ const STACK_MODES = {
             spawn: [["coin", 66], ["gem", 10], ["rock", 15], ["bomb", 9]], wobDecay: 7, windWob: 7 },
   hard:   { label: "Hard",   catchTol: 8,  sway: 0.42, fall: 29, spawnEvery: 700, dur: 42000, goal: 30, winds: 2,
             spawn: [["coin", 62], ["gem", 8], ["rock", 18], ["bomb", 12]], wobDecay: 6, windWob: 9, bodyHit: true },
+  // Endless high-score chase: no goal, no timer. Difficulty ramps with height. You're out on
+  // 5 BUMPS (swinging the tower into junk) or the instant you catch a 💣/🪨 on TOP of the stack.
+  infinite: { label: "Infinite", catchTol: 11, sway: 0.28, fall: 18, spawnEvery: 920,
+            spawn: [["coin", 76], ["gem", 10], ["rock", 9], ["bomb", 5]], wobDecay: 6, windWob: 8,
+            bodyHit: true, endless: true, maxBumps: 5 },
 };
 function stackMode() { return STACK_MODES[STACK.mode]; }
-function stackWinding() { return !!(STACK && STACK.windWindows.some(at => STACK.elapsed >= at && STACK.elapsed < at + STACK_WIND_LEN)); }
+function stackWinding() {
+  if (!STACK) return false;
+  if (STACK_MODES[STACK.mode].endless) return STACK.elapsed > 9000 && (STACK.elapsed % 15000) < STACK_WIND_LEN; // recurring gusts
+  return STACK.windWindows.some(at => STACK.elapsed >= at && STACK.elapsed < at + STACK_WIND_LEN);
+}
 function stackPick() {
-  const table = stackMode().spawn; let tot = 0; table.forEach(t => tot += t[1]);
+  const m = stackMode();
+  let table = m.spawn;
+  if (m.endless) {   // Infinite: start gentle, rain more junk the higher you climb
+    const lvl = Math.min(10, Math.floor(STACK.height / 10)), extra = lvl * 1.3;
+    table = [["coin", Math.max(40, 76 - extra)], ["gem", 10], ["rock", 9 + extra * 0.55], ["bomb", 5 + extra * 0.45]];
+  }
+  let tot = 0; table.forEach(t => tot += t[1]);
   let r = Math.random() * tot;
   for (const [k, w] of table) { if ((r -= w) < 0) return k; }
   return table[0][0];
@@ -2386,11 +2402,14 @@ function renderStackIntro() {
       <button class="btn" id="stack-hard">🔴 Hard · narrow + wind</button>
     </div>
     <div style="height:8px"></div>
+    <button class="btn" id="stack-infinite" style="width:100%;max-width:340px">♾️ Infinite${(GAME.stackBest && GAME.stackBest[0]) ? ` · best ${GAME.stackBest[0]} 🪙` : " · high score"}</button>
+    <div style="height:8px"></div>
     <button class="btn secondary" id="stack-skip">Not now</button>
   `);
   on("#stack-easy", "click", () => stackStart("easy"));
   on("#stack-medium", "click", () => stackStart("medium"));
   on("#stack-hard", "click", () => stackStart("hard"));
+  on("#stack-infinite", "click", () => stackStart("infinite"));
   on("#stack-skip", "click", startRound);
   show("event");
 }
@@ -2418,22 +2437,25 @@ function stackTowerHtml() {
   return s;
 }
 function stackPlay() {
-  const m = stackMode();
+  const m = stackMode(), endless = m.endless, best = (GAME.stackBest && GAME.stackBest[0]) || 0;
+  const hLabel = endless ? `🪙 Height <b id="stack-hnum">0</b>${best ? ` <span class="stack-best">best ${best}</span>` : ""}` : `🪙 Stack Height <b id="stack-hnum">0 / ${m.goal}</b>`;
+  const wLabel = endless ? `💥 Bumps <b id="stack-wnum">0/${m.maxBumps}</b>` : `🗼 Wobble <b id="stack-wnum">0%</b>`;
+  const hint = endless ? "Stack as high as you can — 5 💥 bumps or a 💣 on top = out!" : "Swipe to sway the tower • catch 🪙💎 • dodge 💣🪨";
   html("event", `
     ${hud("Sky-High Savings!")}
     <div class="feast-hud">
       <div class="feast-king-wrap"><span id="stack-face">🪙</span></div>
       <div class="feast-meters">
-        <div class="feast-mrow"><span class="feast-mlbl">🪙 Stack Height <b id="stack-hnum">0 / ${m.goal}</b></span><div class="feast-track"><i class="feast-dfill" id="stack-height"></i></div></div>
-        <div class="feast-mrow"><span class="feast-mlbl">🗼 Wobble <b id="stack-wnum">0%</b></span><div class="feast-track"><i class="feast-tfill ok" id="stack-wobble"></i></div></div>
+        <div class="feast-mrow"><span class="feast-mlbl">${hLabel}</span><div class="feast-track"><i class="feast-dfill" id="stack-height"></i></div></div>
+        <div class="feast-mrow"><span class="feast-mlbl">${wLabel}</span><div class="feast-track"><i class="feast-tfill ok" id="stack-wobble"></i></div></div>
       </div>
     </div>
-    <div class="feast-timerbar"><i id="stack-timer"></i></div>
+    ${endless ? "" : '<div class="feast-timerbar"><i id="stack-timer"></i></div>'}
     <div class="feast-sky stack-sky" id="stack-sky">
       <div class="feast-toast" id="stack-wind">🌬️ A gust of wind! The tower sways…</div>
       <div class="stack-tower" id="stack-tower">${stackTowerHtml()}</div>
     </div>
-    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Swipe to sway the tower • catch 🪙💎 • dodge 💣🪨</p>
+    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">${hint}</p>
   `);
   const sky = $("#stack-sky");
   const move = clientX => {
@@ -2448,9 +2470,10 @@ function stackPlay() {
   stackPaint();
 }
 function stackSpawn() {
-  const kind = stackPick(), k = STACK_KINDS[kind], wind = stackWinding();
+  const m = stackMode(), kind = stackPick(), k = STACK_KINDS[kind], wind = stackWinding();
+  const lvl = m.endless ? Math.min(12, Math.floor(STACK.height / 12)) : 0;  // Infinite: falls speed up as you climb
   const it = { uid: ++STACK.uid, kind, x: 12 + Math.random() * 76, y: 0, spawnAt: STACK.elapsed,
-    fall: stackMode().fall * (wind ? 1.3 : 1) * (0.92 + Math.random() * 0.16), passed: false, el: null };
+    fall: (m.fall + lvl * 1.2) * (wind ? 1.3 : 1) * (0.92 + Math.random() * 0.16), passed: false, el: null };
   STACK.items.push(it);
   const sky = $("#stack-sky");
   if (sky) {
@@ -2463,6 +2486,11 @@ function stackSpawn() {
 }
 function stackCatch(it) {
   const k = STACK_KINDS[it.kind];
+  if (stackMode().endless && !k.good) {   // Infinite: catching a bomb/rock on TOP ends the run
+    if (it.el) it.el.remove(); SFX.clang(); SFX.sneeze();
+    const tw = $("#stack-tower"); if (tw) { tw.classList.remove("catch-bad"); void tw.offsetWidth; tw.classList.add("catch-bad"); }
+    return stackFinish(false, "badtop");
+  }
   // an off-centre catch shoves the tower sideways — worse the taller you are
   const off = it.x - STACK.towerX;
   STACK.towerVX += off * (0.7 + Math.min(STACK.height, 45) * 0.03);
@@ -2478,29 +2506,41 @@ function stackCatch(it) {
 // HARD only: the tower body bumped a bomb/rock. No topple — just docks the final coin score,
 // with an impact sound + a shake + a spark/−5 flourish so the bump reads clearly.
 function stackBodyHit(it) {
+  const m = stackMode();
   STACK.penalty++;
-  STACK.towerVX += (it.x - STACK.towerX) * 0.8;   // a jolt, but no Wobble → can't end the round
+  STACK.towerVX += (it.x - STACK.towerX) * 0.8;   // a jolt, but no Wobble → can't topple
   SFX.clang();
   if (it.el) it.el.remove();
   const sky = $("#stack-sky");
   if (sky) {
     const burst = document.createElement("div"); burst.className = "stack-spark"; burst.style.left = it.x.toFixed(1) + "%"; burst.style.top = it.y.toFixed(1) + "%"; burst.textContent = "💥";
     burst.addEventListener("animationend", () => burst.remove()); sky.appendChild(burst);
-    const pen = document.createElement("div"); pen.className = "stack-pen"; pen.style.left = it.x.toFixed(1) + "%"; pen.style.top = it.y.toFixed(1) + "%"; pen.textContent = "−" + STACK_BUMP_COST;
+    const pen = document.createElement("div"); pen.className = "stack-pen"; pen.style.left = it.x.toFixed(1) + "%"; pen.style.top = it.y.toFixed(1) + "%";
+    pen.textContent = m.endless ? `💥 ${STACK.penalty}/${m.maxBumps}` : "−" + STACK_BUMP_COST;
     pen.addEventListener("animationend", () => pen.remove()); sky.appendChild(pen);
     sky.classList.remove("bump"); void sky.offsetWidth; sky.classList.add("bump");   // a jolt of the whole play area
   }
   const tower = $("#stack-tower"); if (tower) { tower.classList.remove("catch-bad"); void tower.offsetWidth; tower.classList.add("catch-bad"); }
+  if (m.endless && STACK.penalty >= (m.maxBumps || 5)) return stackFinish(false, "bumps");
 }
 function stackPaint() {
   if (!STACK) return;
   const m = stackMode();
-  const t = $("#stack-timer"); if (t) t.style.width = Math.min(100, STACK.elapsed / m.dur * 100) + "%";
-  const h = $("#stack-height"); if (h) h.style.width = Math.min(100, STACK.height / m.goal * 100) + "%";
-  const hn = $("#stack-hnum"); if (hn) hn.textContent = STACK.height + " / " + m.goal;
-  const w = $("#stack-wobble"); if (w) { w.style.width = STACK.wobble + "%"; w.className = "feast-tfill " + (STACK.wobble >= 75 ? "danger" : STACK.wobble >= 45 ? "amber" : "ok"); }
-  const wn = $("#stack-wnum"); if (wn) wn.textContent = Math.round(STACK.wobble) + "%";
-  const face = $("#stack-face"); if (face) face.textContent = STACK.wobble >= 75 ? "😰" : STACK.wobble >= 45 ? "😅" : "🪙";
+  if (m.endless) {
+    const best = (GAME.stackBest && GAME.stackBest[0]) || 0, bumps = STACK.penalty, mx = m.maxBumps || 5;
+    const hn = $("#stack-hnum"); if (hn) hn.textContent = STACK.height;
+    const h = $("#stack-height"); if (h) h.style.width = Math.min(100, STACK.height / Math.max(best, 10) * 100) + "%";
+    const w = $("#stack-wobble"); if (w) { w.style.width = (bumps / mx * 100) + "%"; w.className = "feast-tfill " + (bumps >= mx - 1 ? "danger" : bumps >= mx - 2 ? "amber" : "ok"); }
+    const wn = $("#stack-wnum"); if (wn) wn.textContent = bumps + "/" + mx;
+    const face = $("#stack-face"); if (face) face.textContent = bumps >= mx - 1 ? "😰" : bumps >= 2 ? "😅" : "🪙";
+  } else {
+    const t = $("#stack-timer"); if (t) t.style.width = Math.min(100, STACK.elapsed / m.dur * 100) + "%";
+    const h = $("#stack-height"); if (h) h.style.width = Math.min(100, STACK.height / m.goal * 100) + "%";
+    const hn = $("#stack-hnum"); if (hn) hn.textContent = STACK.height + " / " + m.goal;
+    const w = $("#stack-wobble"); if (w) { w.style.width = STACK.wobble + "%"; w.className = "feast-tfill " + (STACK.wobble >= 75 ? "danger" : STACK.wobble >= 45 ? "amber" : "ok"); }
+    const wn = $("#stack-wnum"); if (wn) wn.textContent = Math.round(STACK.wobble) + "%";
+    const face = $("#stack-face"); if (face) face.textContent = STACK.wobble >= 75 ? "😰" : STACK.wobble >= 45 ? "😅" : "🪙";
+  }
   const tower = $("#stack-tower");
   if (tower) { tower.style.setProperty("--tx", STACK.towerX.toFixed(2) + "%"); tower.style.setProperty("--ang", STACK.angle.toFixed(2) + "deg"); }
 }
@@ -2514,7 +2554,12 @@ function stackTick() {
   const banner = $("#stack-wind"); if (banner) banner.classList.toggle("show", wind);
   // Wobble meter (the topple gauge): rises with wind, steadies as you catch clean.
   STACK.wobble = Math.max(0, Math.min(100, STACK.wobble + (wind ? m.windWob : -m.wobDecay) * dt));
-  if (STACK.elapsed >= STACK.nextSpawnAt) { stackSpawn(); STACK.nextSpawnAt = STACK.elapsed + (wind ? m.spawnEvery * 0.7 : m.spawnEvery); }
+  if (STACK.elapsed >= STACK.nextSpawnAt) {
+    stackSpawn();
+    let se = m.spawnEvery;
+    if (m.endless) se = Math.max(500, m.spawnEvery - Math.floor(STACK.height / 12) * 35); // Infinite: rain faster as you climb
+    STACK.nextSpawnAt = STACK.elapsed + (wind ? se * 0.7 : se);
+  }
   // Spring the tower toward where you're swiping — looser (more sway) the taller it gets.
   const hf = 1 + Math.min(STACK.height, 50) * m.sway * 0.05;
   const k = 30, damp = Math.max(2.6, 10 / hf);
@@ -2529,18 +2574,19 @@ function stackTick() {
     const it = STACK.items[i], prevY = it.y;
     it.y = (STACK.elapsed - it.spawnAt) / 1000 * it.fall;
     if (!it.hazard && !it.missed && prevY < STACK_CATCH_Y && it.y >= STACK_CATCH_Y) {
-      if (Math.abs(it.x - STACK.towerX) <= m.catchTol) { STACK.items.splice(i, 1); stackCatch(it); continue; }
+      if (Math.abs(it.x - STACK.towerX) <= m.catchTol) { STACK.items.splice(i, 1); stackCatch(it); if (!STACK) return; continue; }
       STACK.missed++;
       // Missed the top — it keeps falling (behind the tower) down to the bottom of the screen.
       // On HARD a missed bomb/rock becomes a hazard you can still swing the tower into.
       if (m.bodyHit && !STACK_KINDS[it.kind].good) it.hazard = true;
       else { it.missed = true; if (it.el) it.el.classList.add("miss"); }
     }
-    if (it.hazard && Math.abs(it.x - STACK.towerX) <= STACK_COLLIDE_W && it.y >= STACK_SURFACE) { STACK.items.splice(i, 1); stackBodyHit(it); continue; }
+    if (it.hazard && Math.abs(it.x - STACK.towerX) <= STACK_COLLIDE_W && it.y >= STACK_SURFACE) { STACK.items.splice(i, 1); stackBodyHit(it); if (!STACK) return; continue; }
     if (it.y >= 104) { STACK.items.splice(i, 1); if (it.el) it.el.remove(); continue; }
     if (it.el) it.el.style.top = it.y + "%";
   }
   stackPaint();
+  if (m.endless) return;   // Infinite ends only via a bad catch on top or 5 bumps (handled in catch/bodyHit)
   if (STACK.wobble >= 100) return stackFinish(false, "topple");
   if (STACK.height >= m.goal) return stackFinish(true);
   if (STACK.elapsed >= m.dur) return stackFinish(STACK.height >= m.goal);
@@ -2551,6 +2597,7 @@ function stackFinish(win, why) {
   const finale = STACK_FINALE; STACK_FINALE = false;
   STACK.over = true;
   if (STACK.tickTimer) { clearInterval(STACK.tickTimer); STACK.tickTimer = null; }
+  if (m.endless) { STACK = null; return stackFinishInfinite(height, why); }
   const stars = win ? Math.max(1, Math.min(3, 1 + Math.floor((height - m.goal) / Math.max(4, m.goal * 0.25)))) : 0;
   let outcome;
   if (win) {
@@ -2588,6 +2635,44 @@ function stackFinish(win, why) {
     <button class="btn ${retry ? "good" : ""}" id="stack-next">${retry ? "🔁 Try the finale again" : "Continue  →"}</button>
   `);
   on("#stack-next", "click", retry ? renderStackFinale : startRound);
+  show("event");
+}
+// Infinite-mode game over: record the top-3 high scores and show the score card.
+function stackFinishInfinite(height, why) {
+  const prev = (GAME.stackBest || []).slice();
+  GAME.stackBest = prev.concat(height).sort((a, b) => b - a).slice(0, 3);
+  const isNewBest = height > 0 && height > (prev[0] || 0);
+  const madeTop3 = height > 0 && GAME.stackBest.includes(height);
+  const gold = Math.max(5, Math.round(height * 1.5));
+  grantReward({ gold }); save();
+  if (isNewBest) { SFX.perfect(); SFX.bigCoin(); confettiOver($("#app")); } else { SFX.sneeze(); }
+  const reason = why === "badtop"
+    ? { emoji: "💣", note: "You caught a bomb right on the peak — one bad thing on top and the whole stack is ruined!" }
+    : { emoji: "💥", note: "Five bumps and the tower gives out. Mind your swing past the falling junk!" };
+  const medals = ["🥇", "🥈", "🥉"];
+  let flag = false; // mark just one row as "this run" even if scores tie
+  const bestRows = GAME.stackBest.map((s, i) => {
+    const isThis = !flag && s === height && madeTop3; if (isThis) flag = true;
+    return `<div class="stat-line"><span>${medals[i] || "•"} #${i + 1}</span><span class="${isThis ? "gold" : "muted"}">${s} 🪙${isThis ? " ← you" : ""}</span></div>`;
+  }).join("");
+  html("event", `
+    ${hud("Sky-High Savings!")}
+    <div class="grow center" style="gap:12px">
+      <div class="ph big">${isNewBest ? "🏆" : reason.emoji}</div>
+      <div class="result-title ${isNewBest ? "win" : "lose"}">${isNewBest ? "New best!" : "Timber!"}</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>You stacked</span><span><b>${height}</b> 🪙 high</span></div>
+        <div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold}</span></div>
+      </div>
+      <div class="card" style="width:100%;max-width:320px"><div style="font-weight:800;margin-bottom:4px">🏆 Top 3</div>${bestRows}</div>
+      <p class="muted" style="max-width:300px">${reason.note}</p>
+    </div>
+    <button class="btn good" id="stack-again">🔁 Stack again</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="stack-done">Done</button>
+  `);
+  on("#stack-again", "click", () => stackStart("infinite"));
+  on("#stack-done", "click", renderStackIntro);
   show("event");
 }
 
@@ -4757,7 +4842,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

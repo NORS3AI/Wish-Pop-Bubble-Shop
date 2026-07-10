@@ -27,6 +27,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   you can't get any other way — a little "🐑 3/5" tracker shows how close you are. It's a cozy
   side-hunt: it never gets in the way of serving customers.
 
+- ♾️ **Sky-High Savings — Infinite mode!** A new endless high-score chase: no timer, no goal — just
+  **stack as high as you can**. It slowly rains faster and junkier the higher you climb. You're out
+  the instant you catch a **💣 bomb or 🪨 rock on top of your stack**, or after **5 bumps** (swinging
+  your tower into falling junk). The game keeps your **top 3 high scores** — beat your best! Find it
+  on the Sky-High Savings mode picker.
+
 - 🪙 **New finale — Sky-High Savings!** Up the beanstalk, gold is raining from the sky. **Swipe to
   sway your tower** (just drag or move your mouse) and **catch falling coins and gems** right on top —
   the stack grows sky-high and the taller it gets, the more it wobbles and leans, so a steady hand
