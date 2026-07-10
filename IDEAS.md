@@ -6,13 +6,69 @@ Newest ideas near the top. When something ships, move it to "Done / shipped".
 
 ---
 
+## 🆕 "Catch the ripples" — tap falling drops in order (minigame / event)
+
+**The gist:** drops land all over the screen. Each landing spot shows a small circle
+that **expands in rings** (small dot → ring → bigger ring → fade out, ~3 pulses). You
+must **tap the spots in the order they landed, as fast as you can**, before they fade.
+Multiple are on screen at once, so it's a speed + prioritization test (tap the oldest/
+about-to-fade one first).
+
+**Theme is flexible — pick to match the realm.** Doesn't have to be rain. Options:
+- **Falling wishing stars** ⭐ — very on-brand for *Wish Pop*; catch wishes as they fall.
+- **Rain** 🌧️ — for a stormy/rainy realm (pairs with the dust-storm hazard family).
+- **Blossoms/petals** 🌸 — spring garden.
+- **Snowflakes** ❄️ — winter/holiday realm.
+- **Fireflies** ✨ — evening garden (blink instead of ripple).
+
+**Notes:** easy to build; the design work is mostly (a) picking theme + realm home, and
+(b) tuning fade speed / how many are on screen at once for difficulty. Good candidate
+for a realm event AND for the practice-shop idea below.
+
+---
+
+## 🆕 Practice shops — replay favorite minigames (+ finally a gold sink)
+
+**The question (owner's):** if players love a specific minigame, should there be shops
+on the map to replay them any time after unlocking — e.g. all bakery-type games at the
+**Bakery**, all ballroom/courtly games at the **Castle** — or keep them limited?
+
+**My take: yes, open practice shops — it solves two problems at once.**
+1. Gives beloved minigames a permanent home + replay value (retention).
+2. **Charging gold to play is a real gold sink** — which the game badly needs, since gold
+   currently piles up and stops mattering. Owner's instinct (≈50 gold per dance / per cake)
+   is exactly right.
+
+**How to keep the economy healthy:**
+- **Gold to play, Stardust stays for cosmetics.** Clean split: gold = play/practice sink,
+  Stardust = earned through real play (streaks, wells, quests). Practice replays should
+  NOT hand out Stardust freely, or cosmetics stop feeling earned.
+- **Reward = mastery, not currency.** Give replays a **score + personal best / star rating**
+  (and maybe a high-score board). The pull is "beat my best," not farming prizes.
+- **Optional carrot:** a *small* one-time reward the first time you clear a new difficulty
+  tier — replays after that pay nothing (or trivial gold), so it can't be farmed.
+- **Unlock gating:** a shop opens after you've played that minigame in a real event first
+  ("met the baker → the Bakery opens"). Ties into map progression.
+
+**Why I like it:** it finally gives gold a purpose (re-motivating the whole gold economy),
+adds cozy "just for fun" content, and doesn't touch the cosmetic economy. Strong yes.
+
+---
+
 ## 🆕 Thieves' Corner — VIP heist (thieves steal your ingredients)
 
 **The gist:** occasionally in **Thieves' Corner**, when the customer is a **VIP**,
 the thieves come running (a flashy guest is a juicy target). While the heist is on,
-**every time you add an ingredient to the cauldron, one of your other ingredients
-gets stolen** from your hand. Only VIPs, and only *sometimes* — VIPs bring a big
-haul (extra scoops/bubbles), so they can absorb the losses; regular customers can't.
+a thief **shows up at random moments throughout the mixing phase** and tries to grab
+one of your ingredients. Only VIPs, and only *sometimes* — VIPs bring a big haul
+(extra scoops/bubbles), so they can absorb the losses; regular customers can't.
+
+**Trigger timing (updated):** NOT tied to placing an ingredient — the thief appears
+at **random intervals during mixing**, so you have to stay alert the whole round
+(not just when you act). Each appearance is preceded by:
+- an **audio cue** a moment before he peeks in (a little sting / rustle), and
+- a **visual cue** for players with sound off (e.g. a shadow/sparkle at the edge he'll
+  come from), so it's fair either way.
 
 **Why it's great:** thematically airtight (thieves, in Thieves' Corner, robbing the
 rich VIP), and it turns a placement into a real decision — spend efficiently, use
@@ -24,10 +80,17 @@ gated to VIP + occasional. Pairs perfectly with the VIP's existing high risk/rew
   ingredient you use, they'll grab another. Spend wisely!" Player plans around it.
 - **Make the theft visible.** Show the ingredient being snatched (a thief sprite grabs
   a card and runs), not a silent disappearance — transparency keeps it fair.
-- **Best version = catch-the-thief.** When they grab a card, give a split second to
-  tap the fleeing thief to stop the steal (reuses the pop/catch skill players love).
-  Miss = it's gone. Turns punishment into a skill moment. (Simpler v1: no catch, just
-  the loss.)
+- **Catch-the-thief (the fun core).** He **slides in from a random edge** (top/bottom/
+  left/right), peeks, and slides back off. **Tap him while he's on screen → caught**,
+  he drops the loot and scurries off empty-handed. Miss → he grabs a card and it flies
+  off-screen *with* him (so you see what you lost).
+  - **On-screen window ~1s** (slide in, linger ~0.6s, slide out) — a strict half-second
+    is faster than people can react + move their thumb on a phone. Tune live.
+  - **Bias his spawn toward the top half** so he isn't popping up under your thumb at
+    the tray.
+  - **One thief at a time** — appearances never overlap; each resolves before the next.
+  - Simpler v1 could skip the catch and just take one, but the catch is what makes it
+    *fun* rather than punishing — worth doing.
 - **Never softlock.** Don't steal your last ingredient(s); only steal while the hand
   is comfortably above what's needed. Steal from the hand, never from the cauldron.
 - **Hazard pay.** Surviving a heist VIP should pay a bonus (gold/Stardust) so the risk
