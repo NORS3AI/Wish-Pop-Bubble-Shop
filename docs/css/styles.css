@@ -1203,7 +1203,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .allerg-meter i { display: block; height: 100%; border-radius: 4px; transition: width .3s ease, background .3s; }
 .allerg-chip.zone-red { animation: hgpulse .9s infinite; }
 /* slots row */
-.m2-slots { flex: 0 0 auto; justify-content: center; gap: 6px; }
+.m2-slots { flex: 0 0 auto; margin-top: auto; justify-content: center; gap: 6px; }
 .m2-slots .slot { width: 38px; height: 38px; border-radius: 10px; font-size: 20px; border-color: rgba(255,214,110,.4); }
 .m2-slots .slot .orb { width: 22px; height: 22px; }
 .m2-slots .slot img.art { max-width: 1.1em; }
@@ -1230,6 +1230,8 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .cslot-ic img.art { width: 26px !important; height: 26px !important; max-width: none; max-height: none; object-fit: contain; }
 .cslot-n { position: absolute; bottom: -3px; right: -3px; background: rgba(0,0,0,.7); color: #fff; font-size: 10px; font-weight: 800; border-radius: 7px; padding: 0 3px; }
 .cslot.on { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); }
+.cslot.cleanse-glow { border-color: #7ee08a; animation: cleansePulse 1s ease-in-out infinite; }
+@keyframes cleansePulse { 0%,100% { box-shadow: 0 0 6px rgba(126,224,138,.7); } 50% { box-shadow: 0 0 15px 3px rgba(126,224,138,.95); } }
 .cslot:active { transform: scale(.92); }
 /* ingredient cards — 2 rows, scroll sideways, ~3 visible across */
 .m2-ing { flex: 1; min-width: 0; display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, 1fr); grid-auto-columns: 31.5%;

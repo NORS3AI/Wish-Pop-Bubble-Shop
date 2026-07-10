@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v111"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v112"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2985,6 +2985,9 @@ function paintMixTop() {
   const al = score.allergies || [];
   const ag = $("#m2-allergs");
   if (ag) ag.innerHTML = al.length ? al.map(mixAllergyChip).join("") : "";
+  // a held Cleanse charm lights up green the moment an allergy climbs into the yellow/red zone
+  const allergyHot = al.some(a => a.zone === "yellow" || a.zone === "red");
+  document.querySelectorAll('.cslot[data-charmid="cleanse"]').forEach(el => el.classList.toggle("cleanse-glow", allergyHot));
   // timer badge above the cauldron (only for In-a-Rush)
   const tm = $("#m2-timer");
   if (tm) {
@@ -3075,7 +3078,16 @@ function paintMix() {
   $("#screen-mix").querySelectorAll(".icard[data-idx]").forEach(t => t.addEventListener("click", () => addToSlot(+t.dataset.idx, t)));
   $("#screen-mix").querySelectorAll(".cslot[data-charm]").forEach(t => t.addEventListener("click", () => playCharm(+t.dataset.charm)));
   if (ROUND.villain) $("#screen-mix").querySelectorAll(".slot.removable").forEach(el => el.addEventListener("click", () => removeFromSlot(+el.dataset.slot)));
-  const invRow = document.getElementById("inv-row"); if (invRow) invRow.scrollLeft = prevScroll;   // keep the tray where the player left it
+  const invRow = document.getElementById("inv-row");
+  if (invRow) {
+    invRow.scrollLeft = prevScroll;   // keep the tray where the player left it
+    // desktop: let a vertical mouse wheel scroll the ingredient tray sideways
+    invRow.addEventListener("wheel", e => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;   // real horizontal scroll: leave it alone
+      invRow.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }, { passive: false });
+  }
   wireDoubleTapServe();
   wireFamiliar("mix");
   ROUND.inventory.forEach(inst => { if (inst && inst._glow) delete inst._glow; });
@@ -3112,7 +3124,7 @@ function mixTrayHtml() {
 function charmSlot(cs) {
   const ch = CHARM(cs.id);
   const on = (cs.id === "knife" && ROUND.toolMode === "cut") || (cs.id === "transmute" && ROUND.toolMode === "transmute") || (cs.id === "pinch" && ROUND.toolMode === "pinch");
-  return `<button class="cslot ${on ? "on" : ""}" data-charm="${cs.firstIdx}" title="${ch.name} — ${ch.desc}">
+  return `<button class="cslot ${on ? "on" : ""}" data-charm="${cs.firstIdx}" data-charmid="${cs.id}" title="${ch.name} — ${ch.desc}">
     <span class="cslot-ic">${charmArt(cs.id)}</span>${cs.count > 1 ? `<span class="cslot-n">×${cs.count}</span>` : ""}</button>`;
 }
 // Big ingredient card: art + name (left), up to 3 magic labels (right). Hidden magics show
