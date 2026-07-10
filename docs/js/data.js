@@ -198,8 +198,8 @@ const COURTYARD_CUSTOMERS = [
 // "veryhard" tier (80%) after ~10 customers, so this bonus mostly shifts the STEADY-STATE target.
 // Steady-state (veryhard) target per realm = 80 + reqBonus. Willow 75, Courtyard 85, escalating up.
 const REALMS = [
-  { id: "willow",    name: "Willow-Wish Village", icon: "🏘️", tagline: "The cozy hamlet where your bubble shop began.", eventsNeeded: 3, reqBonus: -5 },
-  { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.", eventsNeeded: 4, reqBonus: 5,
+  { id: "willow",    name: "Willow-Wish Village", icon: "🏘️", tagline: "The cozy hamlet where your bubble shop began.", eventsNeeded: 5, reqBonus: -5 },
+  { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.", eventsNeeded: 8, reqBonus: 5,
     unlock: { gold: 3000, keys: 10, keyFrom: "willow" }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS, magics: COURT_MAGIC_TYPES, infused: COURT_INFUSED },
   { id: "oasis",     name: "Forgotten Oasis",     icon: "🏜️", comingSoon: true, tagline: "Lamps, genies, and desert wishes.", eventsNeeded: 5, reqBonus: 8 },
   { id: "thieves",   name: "Thieves' Corner",     icon: "🗝️", comingSoon: true, tagline: "Rogues, locks, and light fingers.", eventsNeeded: 5, reqBonus: 10 },
