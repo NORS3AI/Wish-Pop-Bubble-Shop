@@ -212,6 +212,9 @@ junk **rain from the top**; **swipe to sway your tower** (drag / mouse-move) and
 The tower **stacks infinitely** — its top stays parked mid-screen while the stack scrolls down and the
 plate sinks off the bottom. Catches register **on the tip** (the moment a coin meets the top), and the
 tower **springs & leans** as you move — wobblier the taller it grows, and off-centre catches shove it.
+**Gems stack as their own 💎 discs** (worth 3 to the score but one visible slot). **Hard adds body-hits**
+(v134): a bomb/rock that slips past the top keeps falling, and swinging the tower into it docks −5 from the
+final coin reward per bonk (impact clang + spark + floating −5) — never a topple, just a score ding.
 - **Gold coin 🪙 → +1 height, gem 💎 → +3.** Reach the **goal height before time's up → win.**
 - **Bomb 💣 (−4) and rock 🪨 (−1)** knock coins off AND spike a **Wobble** meter; **Wobble maxes → the
   tower topples → lose.** Catching clean lets Wobble steady back down. (Doom bar = Wobble, mirroring

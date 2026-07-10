@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v133"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v134"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2220,6 +2220,8 @@ const STACK_CATCH_Y = STACK_SURFACE - STACK_COIN_R; // y% at which a falling coi
 const STACK_PITCH = 4.6;            // vertical spacing between stacked coins (y%)
 const STACK_FLOOR = 108;            // y% at which an uncaught item is gone
 const STACK_WIND_LEN = 4500;       // ms a wind gust lasts
+const STACK_COLLIDE_W = 6;          // half-width (%) of the tower body for Hard-mode side collisions
+const STACK_BONK_COST = 5;          // coins docked from the final reward per Hard-mode body hit
 // Falling items. good coins/gems ADD height; bad bombs/rocks SUBTRACT height and add Wobble.
 const STACK_KINDS = {
   coin: { name: "Coin", emoji: "🪙", good: true,  height: 1,  wob: 0 },
@@ -2237,7 +2239,7 @@ const STACK_MODES = {
   medium: { label: "Medium", catchTol: 10, sway: 0.26, fall: 24, spawnEvery: 800, dur: 36000, goal: 22, winds: 1,
             spawn: [["coin", 66], ["gem", 10], ["rock", 15], ["bomb", 9]], wobDecay: 7, windWob: 7 },
   hard:   { label: "Hard",   catchTol: 8,  sway: 0.42, fall: 29, spawnEvery: 700, dur: 42000, goal: 30, winds: 2,
-            spawn: [["coin", 62], ["gem", 8], ["rock", 18], ["bomb", 12]], wobDecay: 6, windWob: 9 },
+            spawn: [["coin", 62], ["gem", 8], ["rock", 18], ["bomb", 12]], wobDecay: 6, windWob: 9, bodyHit: true },
 };
 function stackMode() { return STACK_MODES[STACK.mode]; }
 function stackWinding() { return !!(STACK && STACK.windWindows.some(at => STACK.elapsed >= at && STACK.elapsed < at + STACK_WIND_LEN)); }
@@ -2305,8 +2307,8 @@ function stackStart(mode) {
   mode = STACK_MODES[mode] ? mode : "easy";
   const m = STACK_MODES[mode];
   const windWindows = m.winds === 2 ? [Math.round(0.36 * m.dur), Math.round(0.68 * m.dur)] : m.winds === 1 ? [Math.round(0.52 * m.dur)] : [];
-  STACK = { mode, items: [], uid: 0, targetX: 50, towerX: 50, towerVX: 0, angle: 0, elapsed: 0, nextSpawnAt: 500,
-    height: 0, wobble: 0, caught: 0, missed: 0, windWindows, windOn: false, over: false, tickTimer: null };
+  STACK = { mode, items: [], pile: [], uid: 0, targetX: 50, towerX: 50, towerVX: 0, angle: 0, elapsed: 0, nextSpawnAt: 500,
+    height: 0, wobble: 0, caught: 0, missed: 0, penalty: 0, windWindows, windOn: false, over: false, tickTimer: null };
   stackPlay();
   STACK.tickTimer = setInterval(stackTick, STACK_TICK);
 }
@@ -2314,9 +2316,13 @@ function stackStart(mode) {
 // sinks below the screen — so we only ever draw the coins that are still on-screen.
 function stackTowerHtml() {
   const visible = Math.ceil((STACK_FLOOR - STACK_SURFACE) / STACK_PITCH) + 1;
-  const n = STACK.height, show = Math.min(n, visible);
+  const pile = STACK.pile, n = pile.length, show = Math.min(n, visible);
   let s = "";
-  for (let i = 0; i < show; i++) s += `<span class="stack-coin2" style="top:${STACK_SURFACE + i * STACK_PITCH}%">🪙</span>`;
+  // topmost (i=0, parked at the surface) = the most recent catch
+  for (let i = 0; i < show; i++) {
+    const emoji = pile[n - 1 - i], gem = emoji === "💎";
+    s += `<span class="stack-coin2${gem ? " gem" : ""}" style="top:${STACK_SURFACE + i * STACK_PITCH}%">${emoji}</span>`;
+  }
   if (n <= visible) s += `<div class="stack-base" style="top:${(STACK_SURFACE + n * STACK_PITCH).toFixed(2)}%"></div>`;
   return s;
 }
@@ -2370,12 +2376,29 @@ function stackCatch(it) {
   const off = it.x - STACK.towerX;
   STACK.towerVX += off * (0.7 + Math.min(STACK.height, 45) * 0.03);
   STACK.height = Math.max(0, STACK.height + k.height);
-  if (!k.good) STACK.wobble = Math.min(100, STACK.wobble + k.wob);
+  if (k.good) { STACK.pile.push(k.emoji); }             // stack the actual thing you caught (coin OR gem)
+  else { STACK.wobble = Math.min(100, STACK.wobble + k.wob); for (let p = (it.kind === "bomb" ? 3 : 1); p > 0 && STACK.pile.length; p--) STACK.pile.pop(); }
   STACK.caught++;
   if (it.el) it.el.remove();
   SFX[k.good ? (it.kind === "gem" ? "charm" : "coin") : "chop"]();
   const tower = $("#stack-tower");
   if (tower) { tower.innerHTML = stackTowerHtml(); const cls = k.good ? "catch-good" : "catch-bad"; tower.classList.remove(cls); void tower.offsetWidth; tower.classList.add(cls); }
+}
+// HARD only: the tower body swung into a bomb/rock. No topple — just docks the final coin score,
+// with an impact sound + a spark/−5 flourish so the hit reads clearly.
+function stackBodyHit(it) {
+  STACK.penalty++;
+  STACK.towerVX += (it.x - STACK.towerX) * 0.8;   // a jolt, but no Wobble → can't end the round
+  SFX.clang();
+  if (it.el) it.el.remove();
+  const sky = $("#stack-sky");
+  if (sky) {
+    const burst = document.createElement("div"); burst.className = "stack-spark"; burst.style.left = it.x.toFixed(1) + "%"; burst.style.top = it.y.toFixed(1) + "%"; burst.textContent = "💥";
+    burst.addEventListener("animationend", () => burst.remove()); sky.appendChild(burst);
+    const pen = document.createElement("div"); pen.className = "stack-pen"; pen.style.left = it.x.toFixed(1) + "%"; pen.style.top = it.y.toFixed(1) + "%"; pen.textContent = "−" + STACK_BONK_COST;
+    pen.addEventListener("animationend", () => pen.remove()); sky.appendChild(pen);
+  }
+  const tower = $("#stack-tower"); if (tower) { tower.classList.remove("catch-bad"); void tower.offsetWidth; tower.classList.add("catch-bad"); }
 }
 function stackPaint() {
   if (!STACK) return;
@@ -2413,12 +2436,21 @@ function stackTick() {
   for (let i = STACK.items.length - 1; i >= 0; i--) {
     const it = STACK.items[i], prevY = it.y;
     it.y = (STACK.elapsed - it.spawnAt) / 1000 * it.fall;
-    if (prevY < STACK_CATCH_Y && it.y >= STACK_CATCH_Y) {
+    if (!it.hazard && prevY < STACK_CATCH_Y && it.y >= STACK_CATCH_Y) {
       if (Math.abs(it.x - STACK.towerX) <= m.catchTol) { STACK.items.splice(i, 1); stackCatch(it); continue; }
-      // just missed the top — peel it away to the side so it never appears to slide through the stack
-      STACK.items.splice(i, 1); STACK.missed++;
-      if (it.el) { const el = it.el; el.style.setProperty("--drift", ((it.x < STACK.towerX ? -1 : 1) * (18 + Math.random() * 12)).toFixed(0) + "px"); el.classList.add("slip"); el.addEventListener("animationend", () => el.remove()); }
-      continue;
+      STACK.missed++;
+      // HARD: a missed bomb/rock keeps falling as a hazard you can still swing into.
+      if (m.bodyHit && !STACK_KINDS[it.kind].good) { it.hazard = true; }
+      else {
+        // otherwise peel it away to the side so it never appears to slide through the stack
+        STACK.items.splice(i, 1);
+        if (it.el) { const el = it.el; el.style.setProperty("--drift", ((it.x < STACK.towerX ? -1 : 1) * (18 + Math.random() * 12)).toFixed(0) + "px"); el.classList.add("slip"); el.addEventListener("animationend", () => el.remove()); }
+        continue;
+      }
+    }
+    if (it.hazard) {
+      if (Math.abs(it.x - STACK.towerX) <= STACK_COLLIDE_W && it.y >= STACK_SURFACE) { STACK.items.splice(i, 1); stackBodyHit(it); continue; }
+      if (it.y >= 104) { STACK.items.splice(i, 1); if (it.el) it.el.remove(); continue; }
     }
     if (it.el) it.el.style.top = it.y + "%";
   }
@@ -2429,21 +2461,24 @@ function stackTick() {
 }
 function stackFinish(win, why) {
   if (!STACK) return;
-  const m = stackMode(), secs = Math.round(STACK.elapsed / 1000), height = STACK.height;
+  const m = stackMode(), secs = Math.round(STACK.elapsed / 1000), height = STACK.height, bonks = STACK.penalty;
   const finale = STACK_FINALE; STACK_FINALE = false;
   STACK.over = true;
   if (STACK.tickTimer) { clearInterval(STACK.tickTimer); STACK.tickTimer = null; }
   const stars = win ? Math.max(1, Math.min(3, 1 + Math.floor((height - m.goal) / Math.max(4, m.goal * 0.25)))) : 0;
   let outcome;
   if (win) {
-    const gold = 60 + stars * 12, dust = 6 + stars * 2;
+    const bonkCost = bonks * STACK_BONK_COST;
+    const gold = Math.max(10, 60 + stars * 12 - bonkCost), dust = 6 + stars * 2;
     grantReward({ gold, stardust: dust });
     if (finale) markRealmFinaleWon();
     save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
     const keyLine = finale ? `<div class="stat-line"><span>🗝️ Realm Key</span><span style="color:var(--gold)">earned — next realm unlocked to buy!</span></div>` : "";
+    const bonkLine = bonks > 0 ? `<div class="stat-line"><span>Bonks (−${STACK_BONK_COST} each)</span><span style="color:var(--bad)">${bonks} · −${bonkCost}🪙</span></div>` : "";
     outcome = { emoji: finale ? "🗝️" : "🪙", title: finale ? "Sky-high fortune!" : "A tidy tower of gold!", cls: "win",
       lines: [`<div class="stat-line"><span>Stack height</span><span>${height} 🪙 · ${"⭐".repeat(stars)}</span></div>`,
+              bonkLine,
               `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`, keyLine],
       note: finale ? "You stacked the gold to the sky before the giant noticed — and earned the 🗝️ Realm Key! Head to the map to open the next realm." : "You caught enough falling gold to build a proper little fortune. Well stacked!" };
   } else {

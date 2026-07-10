@@ -1087,6 +1087,15 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   --tx: 50%; --ang: 0deg; transform: rotate(var(--ang)); transform-origin: var(--tx) 46%; will-change: transform; }
 .stack-coin2 { position: absolute; left: var(--tx); transform: translate(-50%,-50%); font-size: 40px; line-height: 1;
   filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.stack-coin2.gem { filter: drop-shadow(0 0 7px rgba(120,220,255,.85)) drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+/* Hard-mode body-hit flourish: an impact spark + a floating −5 */
+.stack-spark { position: absolute; transform: translate(-50%,-50%); font-size: 40px; z-index: 4; pointer-events: none;
+  animation: stackSpark .4s ease-out forwards; }
+@keyframes stackSpark { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.5); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.5); } }
+.stack-pen { position: absolute; transform: translate(-50%,-50%); z-index: 5; pointer-events: none;
+  font-family: var(--ff-display); font-weight: 800; font-size: 22px; color: #ff6a6a; text-shadow: 0 2px 5px rgba(0,0,0,.85);
+  animation: stackPen .8s ease-out forwards; }
+@keyframes stackPen { 0% { opacity: 0; transform: translate(-50%,-50%); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%,-140%); } }
 .stack-base { position: absolute; left: var(--tx); transform: translate(-50%,-50%); width: 96px; height: 16px; border-radius: 9px;
   background: linear-gradient(180deg, #ffe488, #e0a92e); box-shadow: 0 3px 7px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.65);
   border: 1px solid rgba(120,80,10,.5); }

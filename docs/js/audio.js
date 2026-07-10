@@ -192,5 +192,13 @@ const SFX = (() => {
     noiseBurst(t, 1.0, { freq: 7000, q: 0.4, peak: 0.07, type: "highpass" }); // confetti shimmer
   }
 
-  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, sneeze, chop, whoosh, coin, bigCoin, perfect, fanfare };
+  // Heavy impact — the tower body bonking into junk. A low metallic thud + a gritty clank.
+  function clang() {
+    const c = ensure(); if (!c || muted) return; const t = c.currentTime;
+    tone(150, t, 0.2, { type: "square", peak: 0.26, glideTo: 70 });        // low thud body
+    tone(300, t, 0.12, { type: "triangle", peak: 0.16, glideTo: 150 });    // clank overtone
+    noiseBurst(t, 0.16, { freq: 2200, q: 0.7, peak: 0.24, type: "bandpass" }); // metallic grit
+  }
+
+  return { unlock, setMuted, isMuted, toggle, pop, reveal, bonus, charm, sift, lift, scoop, count, holdStart, holdStop, sneeze, chop, whoosh, coin, bigCoin, perfect, fanfare, clang };
 })();
