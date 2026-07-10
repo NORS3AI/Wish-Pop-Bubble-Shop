@@ -1172,7 +1172,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .m2-cust img.art { width: 26px !important; height: 26px !important; max-width: none; max-height: none; object-fit: contain; }
 /* stage: arcs flank the cauldron, timer floats above */
 .m2-stage { position: relative; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 0; padding-top: 6px; }
-.m2-timer { flex: 0 0 auto; display: flex; justify-content: center; min-height: 0; margin-bottom: 1px; z-index: 6; }
+.m2-timer { flex: 0 0 auto; margin-top: auto; display: flex; justify-content: center; min-height: 0; margin-bottom: 1px; z-index: 6; }
 .m2-timer-badge { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 74px; height: 74px;
   border-radius: 50%; background: radial-gradient(circle at 50% 34%, #ff5a5a, #c62828); border: 4px solid var(--gold);
   color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
@@ -1207,12 +1207,12 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .mbar { display: flex; align-items: center; gap: 7px; }
 .mbar-lbl { flex: 0 0 74px; font-size: 12px; font-weight: 800; text-align: center; color: #fff; padding: 3px 4px; border-radius: 8px;
   background: var(--lc, #888); box-shadow: inset 0 -2px 4px rgba(0,0,0,.3); text-transform: capitalize; text-shadow: 0 1px 2px rgba(0,0,0,.4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mbar-track { flex: 1; position: relative; height: 16px; border-radius: 9px; overflow: hidden; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.12); }
+.mbar-track { flex: 1; position: relative; height: 22px; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.12); }
 .mbar-band { position: absolute; top: 0; bottom: 0; z-index: 1; background: rgba(126,224,138,.4); }
-.mbar-fill { position: absolute; left: 0; top: 0; bottom: 0; z-index: 2; border-radius: 9px 0 0 9px; transition: width .35s ease, background .35s; }
+.mbar-fill { position: absolute; left: 0; top: 0; bottom: 0; z-index: 2; border-radius: 12px 0 0 12px; transition: width .35s ease, background .35s; }
 .mbar.hit .mbar-track { box-shadow: 0 0 8px var(--good); }
 /* bottom tray */
-.m2-tray { flex: 0 0 auto; margin-top: auto; height: clamp(178px, 25vh, 212px); display: flex; gap: 7px; padding: 7px; border-radius: 14px;
+.m2-tray { flex: 0 0 auto; height: clamp(178px, 25vh, 212px); display: flex; gap: 7px; padding: 7px; border-radius: 14px;
   background: rgba(14,8,24,.62); border: 1px solid rgba(255,214,110,.25); }
 .m2-charms { flex: 0 0 auto; }
 .m2-charms-grid { display: grid; grid-template-columns: repeat(2, 38px); grid-auto-rows: 38px; gap: 5px; }
