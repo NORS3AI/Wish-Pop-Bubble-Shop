@@ -14,12 +14,14 @@ must **tap the spots in the order they landed, as fast as you can**, before they
 Multiple are on screen at once, so it's a speed + prioritization test (tap the oldest/
 about-to-fade one first).
 
-**Theme is flexible — pick to match the realm.** Doesn't have to be rain. Options:
-- **Falling wishing stars** ⭐ — very on-brand for *Wish Pop*; catch wishes as they fall.
-- **Rain** 🌧️ — for a stormy/rainy realm (pairs with the dust-storm hazard family).
-- **Blossoms/petals** 🌸 — spring garden.
-- **Snowflakes** ❄️ — winter/holiday realm.
-- **Fireflies** ✨ — evening garden (blink instead of ripple).
+**Theme is flexible — pick to match the realm.** Doesn't have to be rain. Front-runners:
+- **Falling wishing stars** ⭐ — LIKED. Very on-brand for *Wish Pop* (catch wishes as they
+  fall). Realm/map home still TBD.
+- **Spilled wine at the King's feast** 🍷 — LIKED. Someone knocks over their goblet and it's
+  about to splatter the King's cloak; tap the droplets in order before they stain it.
+  Perfect fit for the **Castle / Royal Court** realm.
+- Others if useful: rain 🌧️ (stormy realm), blossoms 🌸 (spring), snowflakes ❄️ (winter),
+  fireflies ✨ (evening garden, blink instead of ripple).
 
 **Notes:** easy to build; the design work is mostly (a) picking theme + realm home, and
 (b) tuning fade speed / how many are on screen at once for difficulty. Good candidate
@@ -39,19 +41,29 @@ on the map to replay them any time after unlocking — e.g. all bakery-type game
    currently piles up and stops mattering. Owner's instinct (≈50 gold per dance / per cake)
    is exactly right.
 
-**How to keep the economy healthy:**
-- **Gold to play, Stardust stays for cosmetics.** Clean split: gold = play/practice sink,
-  Stardust = earned through real play (streaks, wells, quests). Practice replays should
-  NOT hand out Stardust freely, or cosmetics stop feeling earned.
-- **Reward = mastery, not currency.** Give replays a **score + personal best / star rating**
-  (and maybe a high-score board). The pull is "beat my best," not farming prizes.
-- **Optional carrot:** a *small* one-time reward the first time you clear a new difficulty
-  tier — replays after that pay nothing (or trivial gold), so it can't be farmed.
-- **Unlock gating:** a shop opens after you've played that minigame in a real event first
-  ("met the baker → the Bakery opens"). Ties into map progression.
+**Reward model (owner's final call):**
+- **No per-play rewards at all.** You play because you *like* it, and you **pay gold each
+  time** (e.g. ~50 gold per dance / per cake). Pure gold sink — exactly what the game needs.
+- **Personal best + star ratings** for the mastery pull ("beat my record").
+- **Easy / Medium / Hard modes for each minigame.** Owner: easy to add given what's built.
+  Difficulty just scales the existing knobs, e.g.:
+  - **Cake decorating:** Hard = go back to **fully random charms** (no mirroring — the
+    mirroring made it much easier; random was the old brutal version).
+  - **Dancing:** Hard = **longer dances** (more steps / faster calls).
+  - (Every minigame has a natural dial like this.)
+- **Capstone prize = a location skin.** Beat **all Hard modes at a location** (e.g. clear
+  every Hard game at the Bakery) → unlock a **special skin themed to that place**. One-time,
+  skill-earned — so it's a cosmetic you *can't* buy or farm, only master. Clean, and it
+  doesn't touch the Stardust economy.
 
-**Why I like it:** it finally gives gold a purpose (re-motivating the whole gold economy),
-adds cozy "just for fun" content, and doesn't touch the cosmetic economy. Strong yes.
+**Keep the split clean:** gold = *playing* (practice sink), Stardust = cosmetics from real
+play, capstone skins = skill mastery. Three separate lanes, none inflating the others.
+
+**Unlock gating:** a shop opens after you've played that minigame in a real event first
+("met the baker → the Bakery opens"). Ties into map progression.
+
+**Why I like it:** finally gives gold a purpose (re-motivating the whole gold economy), adds
+cozy replayable content, and the capstone skins reward true mastery without farming. Strong yes.
 
 ---
 
