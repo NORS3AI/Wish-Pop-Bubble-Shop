@@ -68,7 +68,19 @@ the first realm opens in ~1 hr and players learn early that the game opens up.
 `GAME.nextEventAt` tracks it). New parts: count events-cleared per realm, gate the realm
 unlock on that count, then allow the gold/key purchase.
 
-**Build status (started v120 — infrastructure only):**
+**Build status (WIRED END-TO-END for Willow → Courtyard, v128):**
+- ✅ Events fire ~every 10 customers (`EVENT_EVERY` 30→10). First `eventsNeeded-1` are regular
+  story events (count win-or-lose, capped so they can't complete the story). The last slot is
+  the **finale**.
+- ✅ Willow's finale = the **wolf** (forced Easy, must-win, freely retryable). Winning grants a
+  **Realm Key** (`GAME.finaleWon.willow`) + completes the story. Reachable naturally once story
+  events are done, or via Admin ("🔑 Willow Finale").
+- ✅ Map unlock now **gated on the Realm Key**: Courtyard needs gold + keys + Willow's finale
+  beaten (`unlock.keyFrom`). Shown + enforced.
+- ⏳ TODO: wire finales for later realms (only Willow's is built); add more Willow story events
+  for variety; recurring skin-event interleaving; tune numbers with real play.
+
+**Earlier build status (v120 — infrastructure only):**
 - ✅ `GAME.realmEvents` (realmId → events cleared), persisted.
 - ✅ `eventsNeeded` per realm in data (willow 3, courtyard 4, oasis/thieves 5, beanstalk 6).
 - ✅ `markRealmEventCleared()` — counts win-or-lose, capped; hooked into `maybeEvent()`.

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v127"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v128"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -35,6 +35,7 @@ function normalizeGame(g) {
   if (!g.unlockedRealms || typeof g.unlockedRealms !== "object") g.unlockedRealms = {};
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
   if (!g.realmEvents || typeof g.realmEvents !== "object") g.realmEvents = {}; // realmId -> events cleared (story progress)
+  if (!g.finaleWon || typeof g.finaleWon !== "object") g.finaleWon = {}; // realmId -> finale beaten (grants the Realm Key)
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
   ["served", "perfect", "bossWins", "rings", "bags", "rushWins"].forEach(k => { if (typeof g.stats[k] !== "number") g.stats[k] = 0; });
   if (!g.quests || typeof g.quests !== "object") g.quests = { day: "", week: -1, daily: [], weekly: [], dailyBonus: false };
@@ -59,11 +60,22 @@ function realmUnlocked(id) { return !!GAME.unlockedRealms[id]; }
 function realmEventsNeeded(id) { const r = D.REALM_BY_ID[id]; return (r && r.eventsNeeded) || 0; }
 function realmEventsCleared(id) { const need = realmEventsNeeded(id); return Math.min(need, (GAME.realmEvents && GAME.realmEvents[id]) || 0); }
 function realmStoryComplete(id) { const need = realmEventsNeeded(id); return need > 0 && realmEventsCleared(id) >= need; }
-// Call when an event is played through in the current realm (win OR lose — attempting counts).
-// Capped at the realm's eventsNeeded so it can't overcount.
+function realmFinaleWon(id) { return !!(GAME.finaleWon && GAME.finaleWon[id]); }
+// Each realm's culminating finale (a must-win event that drops the Realm Key). Only Willow is
+// wired so far (the wolf); returns null for realms whose finale isn't built yet.
+function realmFinale(id) { return id === "willow" ? renderWolfFinale : null; }
+// A regular story event was played (win OR lose — attempting counts). Caps at need-1, so the
+// LAST slot is reserved for the must-win finale.
 function markRealmEventCleared() {
   const id = GAME.realm, need = realmEventsNeeded(id); if (!need) return;
-  GAME.realmEvents[id] = Math.min(need, ((GAME.realmEvents && GAME.realmEvents[id]) || 0) + 1);
+  GAME.realmEvents[id] = Math.min(need - 1, ((GAME.realmEvents && GAME.realmEvents[id]) || 0) + 1);
+  save();
+}
+// The finale was WON → completes the story and grants the Realm Key for the next realm.
+function markRealmFinaleWon() {
+  const id = GAME.realm, need = realmEventsNeeded(id);
+  if (need) GAME.realmEvents[id] = need;
+  GAME.finaleWon[id] = true;
   save();
 }
 // Apply the current realm's palette theme to the page (a body class).
@@ -301,9 +313,12 @@ function renderMap() {
     else if (r.comingSoon) { cls = "locked"; statusRow = `<span class="realm-tag muted">🔒 Coming soon</span>`; }
     else if (r.unlock) {
       cls = "locked";
-      const canGold = GAME.gold >= r.unlock.gold, canKeys = (GAME.keys || 0) >= r.unlock.keys, can = canGold && canKeys;
+      const canGold = GAME.gold >= r.unlock.gold, canKeys = (GAME.keys || 0) >= r.unlock.keys;
+      const keyFrom = r.unlock.keyFrom, hasKey = !keyFrom || realmFinaleWon(keyFrom), can = canGold && canKeys && hasKey;
+      const keyRow = keyFrom ? `<span style="color:${hasKey ? "var(--good)" : "var(--bad)"}">🔑 Realm Key ${hasKey ? "✓" : `— beat ${(D.REALM_BY_ID[keyFrom] || {}).name || keyFrom}'s finale`}</span>` : "";
       statusRow = `<div class="realm-cost"><span style="color:${canGold ? "var(--good)" : "var(--bad)"}">🪙 ${r.unlock.gold}</span>
         <span style="color:${canKeys ? "var(--good)" : "var(--bad)"}">🗝️ ${r.unlock.keys}</span></div>
+        ${keyRow ? `<div class="realm-cost" style="font-size:11px">${keyRow}</div>` : ""}
         <button class="btn ${can ? "" : "secondary"} small realm-unlock" data-id="${r.id}" ${can ? "" : "disabled"}>Unlock</button>`;
     } else { cls = "locked"; statusRow = `<span class="realm-tag muted">🔒 Locked</span>`; }
     return `<div class="realm-card ${cls}">
@@ -338,6 +353,7 @@ function travelRealm(id) {
 }
 function unlockRealm(id) {
   const r = D.REALM_BY_ID[id]; if (!r || !r.unlock || realmUnlocked(id)) return;
+  if (r.unlock.keyFrom && !realmFinaleWon(r.unlock.keyFrom)) { toast(`🔑 Beat ${(D.REALM_BY_ID[r.unlock.keyFrom] || {}).name || "the previous realm"}'s finale to earn the Realm Key first!`); return; }
   if (GAME.gold < r.unlock.gold || (GAME.keys || 0) < r.unlock.keys) { toast("Not enough gold or keys yet."); return; }
   confirmDialog(`Unlock ${r.name} for 🪙${r.unlock.gold} + 🗝️${r.unlock.keys}?`, () => {
     GAME.gold -= r.unlock.gold; GAME.keys -= r.unlock.keys; GAME.unlockedRealms[id] = true; save();
@@ -374,7 +390,8 @@ function renderAdmin() {
         <button class="btn" id="ad-fairy" style="margin-bottom:8px">🧚 Fairy's Matching Boon</button>
         <button class="btn" id="ad-rumpel" style="margin-bottom:8px">🧵 Rumpelstiltskin</button>
         <button class="btn" id="ad-goblin" style="margin-bottom:8px">🧌 Gribble the Goblin</button>
-        <button class="btn" id="ad-wolf" style="margin-bottom:8px">🐺 Feed the Wolf (Willow finale)</button>
+        <button class="btn" id="ad-wolf" style="margin-bottom:8px">🐺 Feed the Wolf (practice)</button>
+        <button class="btn" id="ad-wolf-finale" style="margin-bottom:8px">🔑 Willow Finale (Realm Key)</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen</button>
         <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Ball: Knight</button>
         <button class="btn" id="ad-dance2" style="margin-bottom:8px">🤴 Ball: Prince</button>
@@ -409,6 +426,7 @@ function renderAdmin() {
     renderGoblinIntro();
   });
   on("#ad-wolf", "click", renderWolfIntro);
+  on("#ad-wolf-finale", "click", renderWolfFinale);
   on("#ad-queen", "click", () => {
     if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); } // need gold to pay her ransom
     renderQueenIntro();
@@ -1039,11 +1057,18 @@ function maybeEvent() {
   if (GAME.nextEventAt < 0) { GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save(); return false; }
   if (servedTotal < GAME.nextEventAt) return false;
   GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save();
+  const realm = currentRealm(), need = realmEventsNeeded(realm.id), finale = realmFinale(realm.id);
+  // FINALE: once the story events are done, the realm's must-win finale appears (drops a Realm Key).
+  // It keeps re-appearing until you win it.
+  if (need && finale && !realmFinaleWon(realm.id) && realmEventsCleared(realm.id) >= need - 1) {
+    finale();
+    return true;
+  }
+  // otherwise a regular story event (counts win-or-lose, capped at need-1)
   const events = [renderDuelIntro, renderFairyIntro, renderCakeIntro];
   if (GAME.gold >= QUEEN_PACKAGES[0].gold) events.push(renderQueenIntro); // Queen needs gold for her ransom
-  if (currentRealm().id === "courtyard") events.push(() => renderDanceIntro(pickDancePartner())); // a royal-ball dance lesson
-  if (currentRealm().id === "willow") events.push(renderWolfIntro); // Little Red's wolf: stall it for the huntsman
-  markRealmEventCleared();   // playing an event advances this realm's story (win or lose)
+  if (realm.id === "courtyard") events.push(() => renderDanceIntro(pickDancePartner())); // a royal-ball dance lesson
+  markRealmEventCleared();   // advances this realm's story (win or lose), reserving the finale slot
   R.pick(events)();
   return true;
 }
@@ -1607,6 +1632,7 @@ function goblinFinish() {
 /* huntsman arrives. A feed cooldown makes each choice deliberate.           */
 /* ======================================================================= */
 let WOLF = null;
+let WOLF_FINALE = false;            // true when this run is Willow's Realm-Key finale (forces Easy, grants the key)
 const WOLF_TICK = 100;              // ms per simulation tick
 // Difficulty modes. patience/fullness must stay ABOVE 0; suspicion must stay BELOW 100.
 // Each bar has its OWN row of foods (feed the bar from the row under it). One shared feed
@@ -1670,7 +1696,33 @@ function wolfBuildStock(mode) {
   for (let i = 0; i < m.extraFood; i++) stock[R.pick(ids)]++;
   return stock;
 }
+// Willow-Wish Village FINALE — the must-win Realm-Key encounter. Forces Easy (finales stay
+// accessible), and winning grants the Realm Key that opens King's Courtyard. Freely retryable.
+function renderWolfFinale() {
+  WOLF_FINALE = true;
+  SFX.unlock(); SFX.fanfare();
+  html("event", `
+    ${hud("The Wolf at Grandma's!")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">🐺</div>
+      <div class="result-title" style="color:var(--gold)">Willow's Finale</div>
+      <div class="speech">“Come a little closer, dearie… Grandma's been waiting for you…”</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>Stall the wolf</span><span>until the huntsman comes 🏹</span></div>
+        <div class="stat-line"><span>Win to earn</span><span class="gold">🗝️ a Realm Key!</span></div>
+      </div>
+      <div class="muted" style="max-width:300px">Beat this to earn the <b>Realm Key</b> that opens <b>King's Courtyard</b>. Keep his Patience up until rescue — and don't worry, you can retry as many times as it takes.</div>
+    </div>
+    <button class="btn good" id="wolf-finale-go">🧺 Save Grandma!</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="wolf-finale-skip">Not yet</button>
+  `);
+  on("#wolf-finale-go", "click", () => wolfStart("easy"));
+  on("#wolf-finale-skip", "click", () => { WOLF_FINALE = false; startRound(); });
+  show("event");
+}
 function renderWolfIntro() {
+  WOLF_FINALE = false;   // the free-play / practice entry (mode picker, no Realm Key)
   SFX.unlock(); SFX.fanfare();
   html("event", `
     ${hud("Grandma's Cottage")}
@@ -1810,18 +1862,21 @@ function wolfFinish(result) {
   if (!WOLF) return;
   const win = result === true, secs = Math.round(WOLF.elapsed / 1000);
   const greenPct = Math.round(WOLF.inGreen / Math.max(1, WOLF.elapsed) * 100);
+  const finale = WOLF_FINALE; WOLF_FINALE = false;
   WOLF.over = true;
   if (WOLF.tickTimer) { clearInterval(WOLF.tickTimer); WOLF.tickTimer = null; }
   let outcome;
   if (win) {
     const gold = 60, dust = 8;
-    grantReward({ gold, stardust: dust }); save();
+    grantReward({ gold, stardust: dust });
+    if (finale) markRealmFinaleWon();   // grant the Realm Key + complete the realm story
+    save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
-    outcome = { emoji: "🏹", title: "The huntsman arrives!", cls: "win",
+    const keyLine = finale ? `<div class="stat-line"><span>🗝️ Realm Key</span><span style="color:var(--gold)">earned — Courtyard unlocked to buy!</span></div>` : "";
+    outcome = { emoji: finale ? "🗝️" : "🏹", title: finale ? "Grandma is saved!" : "The huntsman arrives!", cls: "win",
       lines: [`<div class="stat-line"><span>You stalled him</span><span>${secs}s · ${WOLF_MODES[WOLF.mode].label}</span></div>`,
-              `<div class="stat-line"><span>Patience kept comfy</span><span>${greenPct}%</span></div>`,
-              `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`],
-      note: "You kept the wolf busy long enough — the huntsman bursts in and rescues Grandma! 🎉" };
+              `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`, keyLine],
+      note: finale ? "You beat Willow's finale! The huntsman saves Grandma, and you've earned the 🗝️ Realm Key — head to the map to open King's Courtyard." : "You kept the wolf busy long enough — the huntsman bursts in and rescues Grandma! 🎉" };
   } else {
     save(); SFX.sneeze();
     const why = result === "allergen"
@@ -1833,10 +1888,11 @@ function wolfFinish(result) {
       : { emoji: "🐺", title: "The wolf pounced!", note: "His patience ran out. Feed the 😤 Patience row before it dips into the red!" };
     outcome = { emoji: why.emoji, title: why.title, cls: "lose",
       lines: [`<div class="stat-line"><span>You lasted</span><span>${secs}s · ${WOLF_MODES[WOLF.mode].label}</span></div>`,
-              `<div class="stat-line"><span>Reward</span><span class="muted">none — try again!</span></div>`],
-      note: why.note };
+              `<div class="stat-line"><span>Reward</span><span class="muted">${finale ? "no key yet — retry!" : "none — try again!"}</span></div>`],
+      note: finale ? why.note + " The finale is freely retryable — give it another go for the Realm Key." : why.note };
   }
   WOLF = null;
+  const retry = finale && !win;
   html("event", `
     ${hud("Grandma's Cottage")}
     <div class="grow center" style="gap:14px">
@@ -1845,9 +1901,9 @@ function wolfFinish(result) {
       <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
       <p class="muted" style="max-width:300px">${outcome.note}</p>
     </div>
-    <button class="btn" id="wolf-next">Continue  →</button>
+    <button class="btn ${retry ? "good" : ""}" id="wolf-next">${retry ? "🔁 Try the finale again" : "Continue  →"}</button>
   `);
-  on("#wolf-next", "click", startRound);
+  on("#wolf-next", "click", retry ? renderWolfFinale : startRound);
   show("event");
 }
 
@@ -4009,7 +4065,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, markRealmEventCleared, realmEventsCleared, realmEventsNeeded, realmStoryComplete, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

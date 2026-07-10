@@ -99,7 +99,7 @@ const BALANCE = {
   VIP_KEY_COST: 2,             // keys wagered on a VIP (win keeps them, fail loses them)
   VIP_KEY_STARDUST: 12,        // wagered-key VIP win: bonus Stardust on top
 
-  EVENT_EVERY: 30,             // a fairytale event appears roughly every N customers
+  EVENT_EVERY: 10,             // a fairytale event appears roughly every N customers (paces the realm story)
 };
 
 const R = {
