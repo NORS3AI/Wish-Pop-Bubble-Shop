@@ -19,6 +19,8 @@ const BALANCE = {
 
   // Difficulty by customers served
   REQUIRED_MATCH: { easy: 50, medium: 60, hard: 68, veryhard: 80 },
+  REQUIRED_MATCH_CAP: 92,       // per-realm fussiness (reqBonus) can raise the bar up to here
+
   PAYMENT_RANGE:  { easy: [20, 30], medium: [20, 40], hard: [30, 50], veryhard: [40, 60] },
   CONSOLATION_FRACTION: 0.35,   // partial-credit gold on a miss (scaled to match)
 
@@ -250,6 +252,8 @@ function newRound(state) {
   const diff = difficultyFor(state.servedTotal);
   const isBoss = !!state.forceBoss || ((state.servedTotal || 0) + 1) % BALANCE.BOSS_EVERY === 0;
   const wish = generateWish(customer, diff, isBoss, state.magicPool);
+  // per-realm fussiness: fancier realms demand a higher match to please the customer
+  if (state.reqBonus) wish.requiredMatch = Math.min(BALANCE.REQUIRED_MATCH_CAP, wish.requiredMatch + state.reqBonus);
   const [pmin, pmax] = BALANCE.PAYMENT_RANGE[diff];
   let payment = R.int(pmin / 10, pmax / 10) * 10;
   const scoops = Math.max(1, Math.round(payment / 10));   // scoop COUNT from base payment (boss keeps a normal count)

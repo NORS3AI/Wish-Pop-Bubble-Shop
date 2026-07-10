@@ -193,13 +193,15 @@ const COURTYARD_CUSTOMERS = [
 // eventsNeeded = how many events make up a realm's "story" (the pacing backbone: you play
 // through these before its finale/next realm opens). Scales up per realm (fast first, longer
 // later). Tracked in GAME.realmEvents; shown on the map as a story path. See IDEAS.md.
+// reqBonus = per-realm "fussiness": added to each wish's requiredMatch (the % needed to please
+// the customer), capped at BALANCE.REQUIRED_MATCH_CAP. Fancier realms are harder to satisfy.
 const REALMS = [
-  { id: "willow",    name: "Willow-Wish Village", icon: "🏘️", tagline: "The cozy hamlet where your bubble shop began.", eventsNeeded: 3 },
-  { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.", eventsNeeded: 4,
+  { id: "willow",    name: "Willow-Wish Village", icon: "🏘️", tagline: "The cozy hamlet where your bubble shop began.", eventsNeeded: 3, reqBonus: 13 },
+  { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.", eventsNeeded: 4, reqBonus: 23,
     unlock: { gold: 3000, keys: 10, keyFrom: "willow" }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS, magics: COURT_MAGIC_TYPES, infused: COURT_INFUSED },
-  { id: "oasis",     name: "Forgotten Oasis",     icon: "🏜️", comingSoon: true, tagline: "Lamps, genies, and desert wishes.", eventsNeeded: 5 },
-  { id: "thieves",   name: "Thieves' Corner",     icon: "🗝️", comingSoon: true, tagline: "Rogues, locks, and light fingers.", eventsNeeded: 5 },
-  { id: "beanstalk", name: "Beanstalk Bank",      icon: "🌱", comingSoon: true, tagline: "Giants, gold, and golden geese.", eventsNeeded: 6 },
+  { id: "oasis",     name: "Forgotten Oasis",     icon: "🏜️", comingSoon: true, tagline: "Lamps, genies, and desert wishes.", eventsNeeded: 5, reqBonus: 28 },
+  { id: "thieves",   name: "Thieves' Corner",     icon: "🗝️", comingSoon: true, tagline: "Rogues, locks, and light fingers.", eventsNeeded: 5, reqBonus: 31 },
+  { id: "beanstalk", name: "Beanstalk Bank",      icon: "🌱", comingSoon: true, tagline: "Giants, gold, and golden geese.", eventsNeeded: 6, reqBonus: 34 },
 ];
 const REALM_BY_ID = {}; REALMS.forEach(r => REALM_BY_ID[r.id] = r);
 

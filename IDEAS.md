@@ -83,8 +83,38 @@ unlock on that count, then allow the gold/key purchase.
 - ✅ Beanstalk's finale = **Sky-High Savings** (Sky-Burger-style coin stacker, v131 — spec below).
   Forced Easy, must-win, retryable; winning grants `GAME.finaleWon.beanstalk`. Admin: "🔑 Beanstalk
   Finale". (Beanstalk realm itself is still `comingSoon`, so this is ready-and-waiting.)
+- ✅ Realm differentiation (v136): each realm now has its own identity in the CORE loop, not just
+  new content. (1) **Per-realm fussiness** — a `reqBonus` raises the match-% needed to please a
+  customer (Willow +13, Courtyard +23, later realms more; capped at 92). So the court is genuinely
+  harder to satisfy, not just reskinned. (2) **Infused ingredients now DEBUT in the Courtyard** —
+  removed from Willow entirely (Willow = learn the basics; Courtyard = the crafting layer arrives).
+  Admin "🏰 Go to King's Courtyard (test)" jumps there to test.
 - ⏳ TODO: wire finales for the remaining realms (Willow + Courtyard + Beanstalk built; Oasis &
   Thieves open); add more story events per realm for variety; recurring skin-event interleaving.
+  Consider one more Courtyard-only core twist (e.g. the "King's Decree" rotating shift modifier).
+
+## 🆕 The Stepsister's Beads — a collection scavenger-hunt event (owner idea)
+
+**The hook:** an ugly stepsister broke her necklace and lost all the beads — she can't attend the
+royal ball without it! **Find all N beads**, which are **hidden throughout the normal wish-mixing
+loop**: a chance to find one in a **bubble pop**, inside an **ingredient (revealed by the knife)**,
+in a **tip bubble**, in a **scoop** — the whole process has a small chance to cough one up.
+Collect the set → complete the quest → reward (a cosmetic: her necklace as a wearable skin, or a
+Cinderella-adjacent unlockable).
+
+**Owner's own worry — "doesn't affect gameplay though… hmmm":** correct, and that's actually FINE —
+it's a **cozy collectathon / Easter-egg hunt**, a different pleasure from the skill minigames. It
+doesn't need to test skill; it rewards *attention* and gives a reason to savour every phase. Keep it
+as a **light, opt-in collection meta** layered over normal play, NOT a timed challenge.
+- Make it **feel** good with juice: a bead **sparkles** when it appears, a satisfying **collect
+  chime**, and a little **"3 / 8 beads"** tracker so progress is visible.
+- **Don't gate anything important behind luck** — the reward is a cosmetic, so a random hunt is fine;
+  never put progression (keys/realms) behind RNG finds.
+- Could be a **recurring skin-event** template: swap the character + the cosmetic (stepsister's
+  beads, then a knight's lost medals, etc.) so one system powers many little hunts.
+- Scope note: this is a NEW cross-cutting system (hooks into pop/knife/tip/scoop reward rolls +
+  a persistent collection tracker + a completion reward). Medium build. Confirm the vision before
+  building.
 
 **Earlier build status (v120 — infrastructure only):**
 - ✅ `GAME.realmEvents` (realmId → events cleared), persisted.
