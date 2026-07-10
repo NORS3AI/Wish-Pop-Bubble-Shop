@@ -1071,6 +1071,28 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .feast-home.meh-pop { animation: feastMeh .35s ease; }
 @keyframes feastGood { 0% { transform: scale(1); box-shadow: 0 0 0 rgba(126,224,138,0); } 45% { transform: scale(1.12); box-shadow: 0 0 16px rgba(126,224,138,.9); border-color: #7ee08a; } 100% { transform: scale(1); } }
 @keyframes feastMeh { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-5px); } 60% { transform: translateX(5px); } }
+/* Sky-High Savings — slide a plate to catch falling coins (Beanstalk finale) */
+.stack-sky { touch-action: none; cursor: grab; }
+.stack-sky:active { cursor: grabbing; }
+.stack-sky.swaying { animation: stackSway 1.6s ease-in-out infinite; }
+@keyframes stackSway { 0%,100% { transform: rotate(-.5deg); } 50% { transform: rotate(.5deg); } }
+.stack-item { position: absolute; transform: translateX(-50%); top: 0; will-change: top; z-index: 2; pointer-events: none; }
+.stack-item .stack-emoji { font-size: 46px; line-height: 1; filter: drop-shadow(0 4px 6px rgba(0,0,0,.55)); display: inline-block; }
+.stack-item.bad .stack-emoji { animation: stackBadGlow 1s ease-in-out infinite; border-radius: 50%; }
+@keyframes stackBadGlow { 0%,100% { filter: drop-shadow(0 4px 6px rgba(0,0,0,.55)); } 50% { filter: drop-shadow(0 0 9px rgba(255,90,60,.95)); } }
+.stack-plate { position: absolute; left: 50%; top: 80%; transform: translate(-50%,-100%); width: 30%; z-index: 3; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; transition: left .06s linear; }
+.stack-pile { display: flex; align-items: flex-end; justify-content: center; min-height: 12px; }
+.stack-pile-coins { display: flex; flex-direction: column-reverse; align-items: center; }
+.stack-coin { font-size: 20px; line-height: .62; filter: drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+.stack-base { width: 100%; height: 15px; border-radius: 9px; margin-top: 1px;
+  background: linear-gradient(180deg, #ffe488, #e0a92e); box-shadow: 0 3px 7px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.65);
+  border: 1px solid rgba(120,80,10,.5); }
+.stack-plate.catch-good { animation: stackGood .3s ease; }
+.stack-plate.catch-bad { animation: stackBad .35s ease; }
+@keyframes stackGood { 0%,100% { transform: translate(-50%,-100%) scale(1); } 45% { transform: translate(-50%,-100%) scale(1.14); } }
+@keyframes stackBad { 0%,100% { transform: translate(-50%,-100%) translateX(0); } 25% { transform: translate(-50%,-100%) translateX(-8px); } 75% { transform: translate(-50%,-100%) translateX(8px); } }
+.stack-hint { color: #cbbdf0; }
 /* The Royal Ball — teach a clumsy courtier to dance (rhythm, then memory) */
 .dance-hero { display: flex; justify-content: center; }
 .dance-hero img { height: 190px; width: auto; filter: drop-shadow(0 8px 16px rgba(0,0,0,.4)); animation: danceIn .3s ease; }

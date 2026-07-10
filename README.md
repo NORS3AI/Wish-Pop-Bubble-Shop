@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🪙 **New finale — Sky-High Savings!** Up the beanstalk, gold is raining from the sky. **Slide the
+  golden plate** (just drag or move your mouse) to **catch falling coins and gems** and stack your
+  tower as high as you can — but **dodge the giant's bombs and rocks**, which knock coins off and set
+  the whole stack wobbling. Let the wobble boil over and the tower topples! Reach the goal height
+  before time runs out to win. Easy has a nice wide plate; Hard gives you a skinny one and gusts of
+  wind. **Beat it to earn the Realm Key.**
+
 - 🍗 **New finale — Rescue the Feast!** The clumsy jester bumped the King's banquet and the whole
   feast is tumbling off the table. **Catch each falling dish and set it in its home** (plate, bowl,
   basket, stand, candle-holder, goblet). Right homes **delight the King ✨**; dishes that smash on

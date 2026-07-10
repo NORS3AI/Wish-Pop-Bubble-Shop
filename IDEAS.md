@@ -80,8 +80,11 @@ unlock on that count, then allow the gold/key purchase.
 - ✅ Courtyard's finale = **Rescue the Feast** (catch-and-sort, v129 — see spec below). Forced Easy,
   must-win, retryable; winning grants `GAME.finaleWon.courtyard`. Reachable naturally once
   Courtyard's 4-event story is done, or via Admin ("🔑 Courtyard Finale").
-- ⏳ TODO: wire finales for later realms (Willow + Courtyard built; Oasis/Thieves/Beanstalk open);
-  add more story events per realm for variety; recurring skin-event interleaving; tune with play.
+- ✅ Beanstalk's finale = **Sky-High Savings** (Sky-Burger-style coin stacker, v131 — spec below).
+  Forced Easy, must-win, retryable; winning grants `GAME.finaleWon.beanstalk`. Admin: "🔑 Beanstalk
+  Finale". (Beanstalk realm itself is still `comingSoon`, so this is ready-and-waiting.)
+- ⏳ TODO: wire finales for the remaining realms (Willow + Courtyard + Beanstalk built; Oasis &
+  Thieves open); add more story events per realm for variety; recurring skin-event interleaving.
 
 **Earlier build status (v120 — infrastructure only):**
 - ✅ `GAME.realmEvents` (realmId → events cleared), persisted.
@@ -199,6 +202,24 @@ brutal 3-bar version lives in the **practice shop as Hard mode**. Same game, two
 
 **Win/lose:** keep the bar(s) out of the fail zone until the huntsman-arrives timer fills → win
 the **Realm Key**. Redline the Patience bar → fail, retry (forgiving).
+
+---
+
+## 🪙 Sky-High Savings — Beanstalk Bank FINALE ✅ BUILT (v131)
+
+**What shipped (a Sky-Burger-style stacker, owner's idea):** coins and junk **rain from the top**;
+**slide the golden plate** along the bottom (drag / mouse-move) to catch them onto your tower.
+- **Gold coin 🪙 → +1 height, gem 💎 → +3.** Reach the **goal height before time's up → win.**
+- **Bomb 💣 (−4) and rock 🪨 (−1)** knock coins off AND spike a **Wobble** meter; **Wobble maxes → the
+  tower topples → lose.** Catching clean lets Wobble steady back down. (Doom bar = Wobble, mirroring
+  the wolf's Suspicion / feast's Temper.)
+- **Depth to match the others:** you can only be in one place, so two coins at once = a real choice;
+  bombs force you to abandon a coin to dodge; **wind gusts** (Hard: two of them) rise the Wobble and
+  speed the drops; the plate **narrows** each difficulty (Easy 30% → Hard 17%).
+- **Modes:** Easy (wide plate, no wind, goal 20) / Medium (goal 26, 1 gust) / Hard (narrow, goal 36,
+  2 gusts). **Finale runs on Easy, must-win, freely retryable.**
+- **Winnability:** greedy auto-catcher bot — Easy/Medium/Hard all **12/12** in tests.
+- Admin: "🪙 Sky-High Savings (practice)" + "🔑 Beanstalk Finale (Realm Key)".
 
 ---
 
