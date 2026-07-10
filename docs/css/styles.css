@@ -1267,3 +1267,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .icard .poison-badge { position: absolute; top: -3px; right: -3px; font-size: 13px; }
 .icard .pinch-badge { position: absolute; bottom: -3px; right: -3px; font-size: 12px; }
 .tray-empty { margin: auto; text-align: center; color: var(--ink-dim); font-size: 13px; line-height: 1.5; }
+/* Thin black outline so light-colored magic labels stay readable on light pills
+   (e.g. white "Light" on a pale-yellow chip). Skips small descriptions like .icard-fx. */
+.mp, .mbar-lbl, .allerg-nm, .icard-nm, .m2-readout b, .m2-readout span,
+.m2-charmbar-lbl, .cslot-n, .icard-count, .m2-timer-badge b, .m2-timer-badge span {
+  -webkit-text-stroke: .8px rgba(0,0,0,.92); paint-order: stroke fill;
+  text-shadow: 0 1px 1px rgba(0,0,0,.5);
+}

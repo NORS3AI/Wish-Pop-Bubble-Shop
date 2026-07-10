@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v112"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v113"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3052,7 +3052,7 @@ function paintMix() {
           <div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>
           <div class="petbadge-count">${banner}</div>
         </div>
-        <div class="m2-cust">${custArt(ROUND.customer)}</div>
+        <div class="m2-cust"></div>
         <button class="mixv-menu" id="hud-menu" aria-label="Menu">☰</button>
       </div>
       <div class="m2-timer" id="m2-timer"></div>
