@@ -26,11 +26,29 @@ it's a satisfying "spend your savings" moment, not a wall). The event tally IS t
   realm an arc: meet the locals → escalating events → boss finale → door opens.
 - **Vary events within a realm** — 5 events should be 5 *different* ones, not the same
   crash ×5. Each realm gets a themed event pool.
-- **"Must play," not "must win"** (except maybe the finale, with retries). Cozy game —
-  don't hard-lock progression behind winning a tricky minigame; attempting counts.
-- **Show progress** — a "⚡ 3 / 5 events" tracker on the map next to the locked realm.
-  Visible goal = anticipation = anti-boredom.
+- **"Must play," not "must win"** for regular events — attempting counts toward the tally
+  win or lose. The ONE exception is the **finale boss**, which drops a **Realm Key** (see
+  unlock model below) and must be won — but it's **freely retryable**, no lost progress,
+  beatable with persistence. "Must win *eventually*," never "win first try or you're stuck."
+- **Three-part unlock ritual:** open a realm with **gold** (the grind) + **gold keys**
+  (exploration/bubbles) + a **Realm Key** (from the must-win finale = mastery). Keep the
+  gold/key cost modest so the finale is the real gate, not a double-wall.
+- **Progress tracker — keep it OFF the gameplay screen.** A naked "3/5 events" bar during
+  play reframes serving customers as boring filler between events (the thing we must avoid).
+  Instead: show progress **on the map**, framed as **story/chapters or an illustrated path
+  that fills in** as you experience events — discovery, not a quota. Could even hide the
+  exact count and just tease "keep serving to uncover its secrets." The core loop being fun
+  on its own is what keeps events a *spice*, not a leash.
 - **Event spacing** jittered within the window (~8–12 customers), not a rigid metronome.
+
+**Missable event skins (e.g. Cinderella at King's Courtyard) — never permanently lost.**
+Two-layer safety net so a loss is "not yet," never "gone forever":
+1. **The event reliably recurs until you win its skin.** After a loss, bump its reappearance
+   odds (or guarantee it returns within X customers) so it's a few tries, not RNG grinding.
+   Once won, it stops being a stakes-event (may still visit for flavor).
+2. **Stardust pity path.** Once you've encountered the event, the skin becomes buyable for
+   Stardust (`STARDUST_SKIN_COST` already exists) — so no cosmetic is ever permanently
+   missable. Skin events count toward the event tally win-or-lose.
 
 **Current numbers for reference (to tune against):** customers pay ~20–60 gold (+tips/
 streak), Courtyard currently gates at 3,000 gold + 10 keys ≈ ~65–75 customers ≈ ~2–3 hrs.
