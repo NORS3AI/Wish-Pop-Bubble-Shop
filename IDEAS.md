@@ -122,7 +122,17 @@ a future personal-best. Reachable via Admin ("🐺 Feed the Wolf") and as a natu
   red-outlined allergen tiles show progress.
 - Drain 6→7/sec.
 
-**v123 difficulty modes (BUILT):** intro now offers **Easy / Medium / Hard**:
+**v124 restructure — PER-BAR ROWS (owner's vision):** each bar now has its OWN row of foods
+sitting directly under it — feed a bar from its row (no memorizing which food does what). One
+shared feed-cooldown couples the rows, so you triage which bar to feed each window. Suspicion
+is its own row of **distraction** items (Song/Story/Joke/Posy) you feed to *lower* it while it
+rises passively. Allergens are drawn only from real food rows. **Column-lockout is Hard-only**:
+feeding a food briefly locks that whole column across every row (🔒). Re-verified winnable:
+greedy solver **15/15 on all three modes** (and it caught + fixed Easy being accidentally the
+hardest — a lone row couldn't out-feed the drain). Rows/amounts in `WOLF_ROWS`, tuning in
+`WOLF_MODES`.
+
+**(v123 note, superseded by v124's per-bar rows)** intro offers **Easy / Medium / Hard**:
 - **Easy** — 1 bar (Patience). ~32s.
 - **Medium** — 2 bars (Patience + **Fullness**). Items fill each differently (Roast fills the
   belly a lot / calms little; Tart the reverse) → you juggle. ~38s.
