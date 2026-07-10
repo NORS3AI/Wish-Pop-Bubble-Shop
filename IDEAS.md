@@ -6,6 +6,41 @@ Newest ideas near the top. When something ships, move it to "Done / shipped".
 
 ---
 
+## 🆕 Thieves' Corner — VIP heist (thieves steal your ingredients)
+
+**The gist:** occasionally in **Thieves' Corner**, when the customer is a **VIP**,
+the thieves come running (a flashy guest is a juicy target). While the heist is on,
+**every time you add an ingredient to the cauldron, one of your other ingredients
+gets stolen** from your hand. Only VIPs, and only *sometimes* — VIPs bring a big
+haul (extra scoops/bubbles), so they can absorb the losses; regular customers can't.
+
+**Why it's great:** thematically airtight (thieves, in Thieves' Corner, robbing the
+rich VIP), and it turns a placement into a real decision — spend efficiently, use
+your best ingredients before they're snatched. Naturally self-balancing because it's
+gated to VIP + occasional. Pairs perfectly with the VIP's existing high risk/reward.
+
+**Design calls to make it fair AND fun (not just punishing):**
+- **Telegraph it.** Announce at round start: "🦹 Thieves are casing this VIP — every
+  ingredient you use, they'll grab another. Spend wisely!" Player plans around it.
+- **Make the theft visible.** Show the ingredient being snatched (a thief sprite grabs
+  a card and runs), not a silent disappearance — transparency keeps it fair.
+- **Best version = catch-the-thief.** When they grab a card, give a split second to
+  tap the fleeing thief to stop the steal (reuses the pop/catch skill players love).
+  Miss = it's gone. Turns punishment into a skill moment. (Simpler v1: no catch, just
+  the loss.)
+- **Never softlock.** Don't steal your last ingredient(s); only steal while the hand
+  is comfortably above what's needed. Steal from the hand, never from the cauldron.
+- **Hazard pay.** Surviving a heist VIP should pay a bonus (gold/Stardust) so the risk
+  feels brave, not taxing. (VIP already pays more — lean into that.)
+- **Frequency = three gates:** realm is Thieves' Corner → customer is VIP → then a %
+  roll. Keeps it a rare "oh no, here they come!" moment.
+
+**Relation to the realm-hazard idea (below):** this is basically a Thieves'-Corner
+hazard, but triggered by a VIP guest instead of a timed weather event. Could share
+the same "hazard round" plumbing.
+
+---
+
 ## 🆕 Scoop-phase overhaul — catch bubbles off the spoon
 
 **The problem:** the scoop phase is pretty and calm but low-interaction — you
