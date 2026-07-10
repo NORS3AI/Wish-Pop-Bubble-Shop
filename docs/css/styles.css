@@ -1058,13 +1058,13 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   background: linear-gradient(rgba(24,10,34,.5), rgba(24,10,34,.66)), url('../art/mix_bg.jpg') center/cover no-repeat; }
 /* header: pet badge (left), customer (center), menu (right) */
 .mixv-head { display: flex; align-items: center; gap: 8px; padding: 2px 2px 4px; }
-.petbadge { position: relative; width: 74px; height: 81px; flex: 0 0 auto; cursor: pointer;
+.petbadge { position: relative; width: 92px; height: 101px; flex: 0 0 auto; cursor: pointer;
   background: url('../art/pet_frame.png') center/contain no-repeat; }
-.petbadge-pet { position: absolute; left: 50%; top: 33%; transform: translate(-50%,-50%);
-  width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 38px; }
-.petbadge-pet img.art { width: 48px !important; height: 48px !important; max-width: none; max-height: none; object-fit: contain; }
-.petbadge-count { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%);
-  font-weight: 800; font-size: 13px; color: #4a2f0c; white-space: nowrap; letter-spacing: .3px; }
+.petbadge-pet { position: absolute; left: 50%; top: 32%; transform: translate(-50%,-50%);
+  width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; font-size: 46px; }
+.petbadge-pet img.art { width: 60px !important; height: 60px !important; max-width: none; max-height: none; object-fit: contain; }
+.petbadge-count { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+  font-weight: 900; font-size: 14px; color: #4a2f0c; white-space: nowrap; letter-spacing: .3px; }
 .mixv-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 5px;
   font-weight: 700; font-size: 13px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
 .mixv-cust span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1166,11 +1166,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   margin: -8px -14px -12px; padding: 6px 10px 8px;
   background: radial-gradient(ellipse at 50% 8%, #3a2358 0%, #241338 48%, #160c26 100%); }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px;
-  font-weight: 800; font-size: 14px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
-.m2-cust span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.m2-cust img.art { width: 26px !important; height: 26px !important; max-width: none; max-height: none; object-fit: contain; }
-/* stage: arcs flank the cauldron, timer floats above */
+.m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+/* stage: cauldron centered, timer floats above */
 .m2-stage { position: relative; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 0; padding-top: 6px; }
 .m2-timer { flex: 0 0 auto; margin-top: auto; display: flex; justify-content: center; min-height: 0; margin-bottom: 1px; z-index: 6; }
 .m2-timer-badge { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 74px; height: 74px;
@@ -1179,11 +1178,8 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .m2-timer-badge b { font-size: 26px; line-height: 1; font-weight: 900; }
 .m2-timer-badge span { font-size: 10px; letter-spacing: .5px; opacity: .95; }
 .m2-timer-badge.urgent { animation: hgpulse .6s infinite; }
-.m2-arc-slot { width: 46px; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; z-index: 4; }
-.m2-arc-slot.right .arc-svg { transform: scaleX(-1); }
-.arc-lbl { font-size: 11px; font-weight: 800; color: var(--ac, #fff); margin-top: -8px; text-shadow: 0 1px 3px rgba(0,0,0,.8); white-space: nowrap; text-transform: capitalize; }
 .m2-cauldron { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; z-index: 3; }
-.mixv2 .cauldron { width: min(60vw, 244px); height: min(29vh, 188px); position: relative; overflow: hidden;
+.mixv2 .cauldron { width: min(66vw, 264px); height: min(30vh, 198px); position: relative; overflow: hidden;
   border-radius: 42% 42% 46% 46% / 26% 26% 74% 74%; border: 4px solid rgba(255,214,110,.6); border-top-width: 8px;
   background: radial-gradient(ellipse at 50% 26%, #462c68, #241436 72%);
   box-shadow: inset 0 -16px 34px rgba(0,0,0,.55), inset 0 4px 12px rgba(255,214,110,.14), 0 10px 26px rgba(0,0,0,.45); }
@@ -1194,8 +1190,18 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* have / need readout — this IS the serve button now */
 .m2-readout { flex: 0 0 auto; text-align: center; font-weight: 900; color: #fff; letter-spacing: .5px; line-height: 1; }
 .m2-readout b { font-size: clamp(26px, 8vw, 38px); }
-.m2-readout span { font-size: .6em; opacity: .75; margin-left: 2px; }
+.m2-readout span { font-size: .82em; opacity: .9; margin-left: 3px; }
 .m2-readout.met b { color: var(--good); text-shadow: 0 0 12px rgba(126,224,138,.6); }
+/* compact allergy danger chips — one short row under the readout */
+.m2-allergs { flex: 0 0 auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; min-height: 0; }
+.m2-allergs:empty { display: none; }
+.allerg-chip { display: flex; align-items: center; gap: 5px; padding: 3px 9px 3px 7px; border-radius: 999px;
+  background: rgba(30,14,20,.7); border: 1.5px solid var(--ac, #ff6b6b); box-shadow: 0 0 8px rgba(0,0,0,.4); }
+.allerg-ic { font-size: 15px; line-height: 1; }
+.allerg-nm { font-size: 13px; font-weight: 800; color: #fff; text-transform: capitalize; text-shadow: 0 1px 2px rgba(0,0,0,.6); white-space: nowrap; }
+.allerg-meter { width: 44px; height: 7px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,.5); }
+.allerg-meter i { display: block; height: 100%; border-radius: 4px; transition: width .3s ease, background .3s; }
+.allerg-chip.zone-red { animation: hgpulse .9s infinite; }
 /* slots row */
 .m2-slots { flex: 0 0 auto; justify-content: center; gap: 6px; }
 .m2-slots .slot { width: 38px; height: 38px; border-radius: 10px; font-size: 20px; border-color: rgba(255,214,110,.4); }

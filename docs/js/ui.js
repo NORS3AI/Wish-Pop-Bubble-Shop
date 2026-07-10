@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v110"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v111"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2981,11 +2981,10 @@ function paintMixTop() {
   const cd = $("#cauldron-tap"); if (cd) cd.classList.toggle("ready", meets);
   const hint = $("#serve-hint"); if (hint) hint.textContent = meets ? (ROUND.villain ? "double-tap to brew!" : "double-tap to serve!") : "";
   const cl = $("#cauldron"); if (cl) { const liq = cl.querySelector(".liquid"); if (liq) liq.style.height = Math.max(14, score.weighted) + "%"; }
-  // allergy / poison arcs beside the cauldron (only when present)
+  // allergy / poison danger chips — one compact row under the readout (only when present)
   const al = score.allergies || [];
-  const L = $("#m2-arc-l"), Rr = $("#m2-arc-r");
-  if (L) L.innerHTML = al[0] ? mixArc(al[0]) : "";
-  if (Rr) Rr.innerHTML = al[1] ? mixArc(al[1]) : "";
+  const ag = $("#m2-allergs");
+  if (ag) ag.innerHTML = al.length ? al.map(mixAllergyChip).join("") : "";
   // timer badge above the cauldron (only for In-a-Rush)
   const tm = $("#m2-timer");
   if (tm) {
@@ -3011,16 +3010,18 @@ function mixBar(n, s, MAX) {
     <div class="mbar-track"><span class="mbar-band" style="left:${bandLeft}%;width:${bandW}%"></span>
       <i class="mbar-fill" style="width:${fillPct}%;background:${fillCol}"></i></div></div>`;
 }
-// An allergy/poison arc that hugs one side of the cauldron; fills + colors by danger zone.
-function mixArc(a) {
+// A compact allergy/poison "danger" chip: warning icon + readable name + a slim meter that
+// fills and reddens as you get closer to spoiling the wish. Keep it low to stay safe.
+function mixAllergyChip(a) {
   const villain = !!(ROUND && ROUND.villain);
   const pct = Math.min(100, Math.round(a.points / BALANCE.ALLERGY_RED_AT * 100));
   const col = a.zone === "red" ? "#ff6b6b" : a.zone === "yellow" ? (villain ? "#ff6b6b" : "#ffd86b") : "#7ee08a";
   const label = villain ? "Poison" : a.type;
-  return `<svg class="arc-svg" viewBox="0 0 70 150" width="44" height="122" aria-hidden="true">
-      <path d="M58 16 A 54 54 0 0 0 58 134" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="9" stroke-linecap="round"/>
-      <path d="M58 16 A 54 54 0 0 0 58 134" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" pathLength="100" stroke-dasharray="${pct} 100"/>
-    </svg><div class="arc-lbl" style="--ac:${col}">${villain ? "☠️" : "⚠️"} ${label}</div>`;
+  return `<div class="allerg-chip zone-${a.zone}" style="--ac:${col}">
+      <span class="allerg-ic">${villain ? "☠️" : "⚠️"}</span>
+      <span class="allerg-nm">${label}</span>
+      <span class="allerg-meter"><i style="width:${pct}%;background:${col}"></i></span>
+    </div>`;
 }
 function paintMix() {
   const w = ROUND.wish;
@@ -3048,12 +3049,11 @@ function paintMix() {
           <div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>
           <div class="petbadge-count">${banner}</div>
         </div>
-        <div class="m2-cust">${custArt(ROUND.customer)}<span>${ROUND.customer.name}</span></div>
+        <div class="m2-cust">${custArt(ROUND.customer)}</div>
         <button class="mixv-menu" id="hud-menu" aria-label="Menu">☰</button>
       </div>
       <div class="m2-timer" id="m2-timer"></div>
       <div class="m2-stage">
-        <div class="m2-arc-slot left" id="m2-arc-l"></div>
         <div class="m2-cauldron" id="cauldron-tap">
           <div class="cauldron ${equippedCauldronClass()}" id="cauldron">
             <div class="liquid" style="height:${Math.max(14, score.weighted)}%;background:linear-gradient(180deg, ${liquid}, ${shade(liquid)})"></div>
@@ -3061,9 +3061,9 @@ function paintMix() {
           </div>
           <div class="serve-hint" id="serve-hint"></div>
         </div>
-        <div class="m2-arc-slot right" id="m2-arc-r"></div>
       </div>
       <div class="m2-readout" id="m2-readout"></div>
+      <div class="m2-allergs" id="m2-allergs"></div>
       <div class="slots m2-slots">${slotCells.join("")}</div>
       <div class="m2-bars" id="mix-top"></div>
       ${mixCharmBarHtml()}
