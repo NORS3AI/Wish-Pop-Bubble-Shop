@@ -89,15 +89,56 @@ about-to-fade one first).
 **Theme is flexible — pick to match the realm.** Doesn't have to be rain. Front-runners:
 - **Falling wishing stars** ⭐ — LIKED. Very on-brand for *Wish Pop* (catch wishes as they
   fall). Realm/map home still TBD.
-- **Spilled wine at the King's feast** 🍷 — LIKED. Someone knocks over their goblet and it's
-  about to splatter the King's cloak; tap the droplets in order before they stain it.
-  Perfect fit for the **Castle / Royal Court** realm.
+- **Spilled Wishwine** 🍷 — LIKED, fleshed out below as its own spec. King's Courtyard.
 - Others if useful: rain 🌧️ (stormy realm), blossoms 🌸 (spring), snowflakes ❄️ (winter),
   fireflies ✨ (evening garden, blink instead of ripple).
 
 **Notes:** easy to build; the design work is mostly (a) picking theme + realm home, and
 (b) tuning fade speed / how many are on screen at once for difficulty. Good candidate
 for a realm event AND for the practice-shop idea below.
+
+---
+
+## 🆕 Spilled Wishwine — King's Courtyard (candidate FINALE)
+
+**The scene:** a droplet of enchanted crimson-purple wine falls and **splats into a tiny
+circle**. The stain slowly **"blooms" outward like watercolor soaking into parchment**.
+- **Tap it before the bloom finishes → it sparkles away** (saved).
+- **Miss it → it stays as a permanent stain** on the King's cloak until the round ends.
+
+**Why it works as a FINALE (not just a skin event):** the permanent stains give it a real
+**lose condition**, which a must-win realm-key finale needs. Wine keeps spilling; misses
+accumulate visibly on the cloak; if too many stains land (a threshold) you've ruined it →
+**fail, retry**. Keep stains under the threshold until the spill ends → **save the cloak →
+win the Realm Key.** Mounting stains = mounting tension = a genuine climax.
+- **Bloom speed = the difficulty dial** (how long you have to tap before it's permanent).
+- **Multiple droplets at once** = prioritization (tap the one closest to finishing first).
+- **Escalate toward the end** (faster / more droplets) for a climactic ramp.
+- Retryable, forgiving on retry (cozy game) — but a clear, winnable challenge.
+- Could ALSO exist as a lower-stakes practice-shop game (easy/med/hard) later.
+
+---
+
+## 🆕 Fairy Flower Garden — leave flowers, cull thorns (minigame / event)
+
+**The gist:** a sibling of the ripple game but with a *discrimination* twist. **Fairies drop
+seeds** all over the screen; each seed **grows** in place (like the ripples/drops).
+- If it grows into a **flower → LEAVE it** (tapping a flower **loses** points).
+- If it grows into a **thorn → tap it away** (tapping a thorn **gains** points).
+- Runs until the **screen is full of flowers** or the fairies **run out of seeds**.
+
+**Why it's good variety:** the ripple game is "tap everything, in order" (pure speed). This
+one is **restraint + accuracy** — identify friend vs foe and *resist* tapping the good ones.
+Different mental muscle, so it doesn't feel like a reskin. Fits a **spring/garden or fairy**
+event (ties to the existing fairy event).
+
+**The one real gotcha (owner flagged):** because things grow and **touch/overlap**, taps get
+ambiguous. Handling:
+- Give each grown item a **centered hit-zone smaller than its full bloom** (tap must land near
+  the center, not the outer petals/overlap), and/or resolve an overlapping tap to the **closest
+  center** (or topmost/newest item).
+- **Spawn with minimum spacing** so seeds don't start fully on top of each other.
+- Tune density so the screen fills satisfyingly without becoming an unreadable overlap mess.
 
 ---
 
