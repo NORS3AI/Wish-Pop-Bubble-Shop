@@ -122,11 +122,20 @@ a future personal-best. Reachable via Admin ("🐺 Feed the Wolf") and as a natu
   red-outlined allergen tiles show progress.
 - Drain 6→7/sec.
 
-Tuning constants at top of the WOLF block in ui.js (`WOLF_WIN_MS`, `WOLF_DRAIN`,
-`WOLF_COOLDOWN_MS`, `WOLF_REPEAT_PENALTY_MS`, `WOLF_START`, `WOLF_GREEN`, item amounts, basket).
-NOT yet wired as the gated Realm-Key finale. TODO: multi-bar Hard mode (Hunger + Suspicion) for
-the practice shop; short first-time tutorial; personal-best display; hook win → Realm Key once
-the unlock gate is built.
+**v123 difficulty modes (BUILT):** intro now offers **Easy / Medium / Hard**:
+- **Easy** — 1 bar (Patience). ~32s.
+- **Medium** — 2 bars (Patience + **Fullness**). Items fill each differently (Roast fills the
+  belly a lot / calms little; Tart the reverse) → you juggle. ~38s.
+- **Hard** — 3 bars (+ **Suspicion**, "keep low"): rises slowly and **spikes when you repeat a
+  treat**, so running low late (forced repeats) can blow your cover. ~44s.
+- Basket + timer scale with bar count; **allergen totals are capped** (≤~40% of your available
+  feeds) so it's always winnable. **Verified:** a near-optimal greedy solver wins **12/12 on all
+  three modes** — human challenge is real-time execution, not an impossible board.
+- Tuning all lives in `WOLF_MODES` / `WOLF_BAR_META` / `WOLF_ITEMS` at the top of the WOLF block.
+
+NOT yet wired as the gated Realm-Key finale (the finale would force Easy). Practice shop would
+expose Medium/Hard. TODO: short first-time tutorial; personal-best per mode; hook win → Realm Key
+once the unlock gate is built.
 
 **The premise:** you KNOW it's the wolf in Grandma's clothes. It's hungry and impatient, and
 the huntsman is on his way. **Ration the picnic basket to keep the wolf calm until rescue

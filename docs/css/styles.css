@@ -944,10 +944,15 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .wolf-hlbl { font-size: 12px; font-weight: 800; color: #d8c6ff; }
 .wolf-hbar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.09); overflow: hidden; margin-top: 4px; border: 1px solid rgba(255,255,255,.14); }
 .wolf-hbar > i { display: block; height: 100%; width: 0%; border-radius: 6px; background: linear-gradient(90deg,#8fd0ff,#4f9cff); transition: width .12s linear; }
+.wolf-modes { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.wolf-bars { display: flex; flex-direction: column; gap: 6px; padding: 2px 2px 4px; }
+.wolf-bar { }
 .wolf-patience { padding: 2px 2px 6px; }
 .wolf-plabel { font-size: 12px; font-weight: 800; color: #ffd0d0; margin-bottom: 3px; }
-.wolf-ptrack { position: relative; height: 22px; border-radius: 12px; background: rgba(0,0,0,.4); overflow: hidden; border: 1px solid rgba(255,255,255,.14); }
+.wolf-sublbl { font-size: 10px; font-weight: 700; color: #c9b8ea; opacity: .85; }
+.wolf-ptrack { position: relative; height: 20px; border-radius: 11px; background: rgba(0,0,0,.4); overflow: hidden; border: 1px solid rgba(255,255,255,.14); }
 .wolf-green { position: absolute; top: 0; bottom: 0; background: rgba(126,224,138,.22); border-left: 2px solid rgba(126,224,138,.5); border-right: 2px solid rgba(126,224,138,.5); }
+.wolf-green.lowzone { background: rgba(126,224,138,.16); }
 .wolf-pfill { position: absolute; left: 0; top: 0; bottom: 0; width: 60%; border-radius: 12px 0 0 12px; transition: width .12s linear, background .3s; }
 .wolf-pfill.green { background: linear-gradient(90deg,#5fbf6e,#7ee08a); }
 .wolf-pfill.amber { background: linear-gradient(90deg,#e0a94f,#ffce6b); }
@@ -974,7 +979,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   display: flex; flex-direction: column; align-items: center; gap: 1px; font-weight: 700; }
 .wolf-tile .wolf-emoji { font-size: 22px; line-height: 1; }
 .wolf-tname { font-size: 8px; font-weight: 800; text-align: center; line-height: 1; }
-.wolf-tfx { font-size: 8px; font-weight: 800; color: #ffd86b; }
+.wolf-tfx { font-size: 8px; font-weight: 800; color: #ffd86b; text-align: center; line-height: 1.1; white-space: normal; }
 .wolf-count { position: absolute; top: 1px; right: 3px; font-size: 9px; font-weight: 800; color: var(--ink-dim); }
 .wolf-tile.allergen { border-color: rgba(255,120,120,.75); box-shadow: 0 0 7px rgba(255,90,90,.4); }
 .wolf-allergen { position: absolute; top: -6px; left: -4px; font-size: 13px; z-index: 3; filter: drop-shadow(0 0 2px rgba(0,0,0,.8)); }
