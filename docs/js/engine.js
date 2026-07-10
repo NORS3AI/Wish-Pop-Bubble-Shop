@@ -86,6 +86,11 @@ const BALANCE = {
   // Win streak (boosts PAY only — never the Wishing Well) + In-a-Rush customers.
   STREAK_BONUS_PER: 4,         // gold per streak step
   STREAK_BONUS_CAP: 10,        // max steps counted (so bonus caps at CAP*PER)
+  // Allergy-free streak: consecutive ALLERGY-RISK wishes granted clean (green) pay Stardust.
+  // Customers with no allergy don't count (they pause the streak, never break it).
+  CLEAN_STREAK_MIN: 3,         // streak length before Stardust starts paying out
+  CLEAN_STREAK_DUST_BASE: 5,   // Stardust at the first paying step (streak == MIN)
+  CLEAN_STREAK_DUST_STEP: 4,   // extra Stardust per step beyond MIN (3→5, 4→9, 5→13, …)
   RUSH_CHANCE: 0.15,           // chance a (non-boss) customer is In a Rush
   RUSH_MS: 60000,              // patience before they leave
   RUSH_BONUS: 25,              // extra gold for serving an In-a-Rush customer in time

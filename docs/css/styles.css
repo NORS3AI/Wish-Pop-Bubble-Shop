@@ -433,6 +433,24 @@ html, body {
 @keyframes perfectshine { 0% { background-position: 0% 0; } 100% { background-position: 300% 0; } }
 @keyframes perfectpop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.18); } 100% { transform: scale(1); opacity: 1; } }
 
+/* Two large streak badges on the result screen: overall Win Streak + Allergy-Free */
+.result-streaks { display: flex; gap: 12px; justify-content: center; width: 100%; max-width: 340px; }
+.streak-badge { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; position: relative;
+  padding: 9px 8px 8px; border-radius: 16px; border: 2px solid; background: rgba(20,12,32,.55); }
+.streak-badge .sb-ico { font-size: 22px; line-height: 1; }
+.streak-badge .sb-n { font-size: 30px; font-weight: 900; line-height: 1; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.5); }
+.streak-badge .sb-lbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; opacity: .95; }
+.streak-badge.fire { border-color: #ff8a3d; box-shadow: 0 0 12px rgba(255,138,61,.35); }
+.streak-badge.fire .sb-lbl { color: #ffb680; }
+.streak-badge.clean { border-color: #7ee08a; box-shadow: 0 0 12px rgba(126,224,138,.35); }
+.streak-badge.clean .sb-lbl { color: #a7ecb0; }
+.streak-badge.dim { opacity: .4; filter: saturate(.5); box-shadow: none; }
+.streak-badge.pop { animation: sbpop .5s cubic-bezier(.2,1.5,.4,1); }
+@keyframes sbpop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.streak-badge .sb-gain { position: absolute; top: -9px; right: -6px; background: #c48bff; color: #2a0f45;
+  font-size: 12px; font-weight: 900; padding: 1px 7px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.4);
+  animation: sbpop .5s .15s cubic-bezier(.2,1.5,.4,1) backwards; }
+
 /* Result-screen reward bubbles — a header that stays put, and bubbles that
    FLOAT freely all over the screen in their own overlay. */
 .reward-bubbles { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -460,6 +478,14 @@ html, body {
 .rbub.big .rb-amt { text-shadow: 0 1px 2px rgba(255,255,255,.5); }
 .rbub.little { width: 36px; height: 36px; font-size: 17px;
   background: radial-gradient(circle at 38% 30%, #fff3c0, #ffd86b 60%, #f0b53c); }
+/* stardust reward bubble — smaller than the big coin, purple, shows its amount */
+.rbub.dust { width: 58px; height: 58px; font-size: 14px; color: #2a0f45;
+  background: radial-gradient(circle at 38% 30%, #f3e0ff, #c48bff 58%, #9a5be0);
+  box-shadow: inset 0 3px 8px rgba(255,255,255,.6), 0 4px 12px rgba(120,60,200,.5), 0 0 12px rgba(196,139,255,.6); }
+.rbub.dust .rb-amt { text-shadow: 0 1px 2px rgba(255,255,255,.5); white-space: nowrap; }
+.rb-total .dust { color: #c48bff; margin-left: 8px; }
+.rb-total #rb-dust { font-size: 20px; display: inline-block; }
+.rb-total #rb-dust.bumped { animation: rbbump .3s ease; }
 .rbub:active { transform: scale(.88); }
 .rbub.popped { animation: rbpop .24s ease-out forwards; pointer-events: none; }
 @keyframes rbin { 0% { transform: scale(0); } 100% { transform: scale(1); } }

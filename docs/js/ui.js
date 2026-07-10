@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v116"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v117"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -25,6 +25,8 @@ function normalizeGame(g) {
   if (typeof g.recycled !== "number") g.recycled = 0; // lifetime junk recycled (drives achievements)
   if (typeof g.streak !== "number") g.streak = 0;
   if (typeof g.bestStreak !== "number") g.bestStreak = 0;
+  if (typeof g.cleanStreak !== "number") g.cleanStreak = 0;         // allergy-free streak (risky wishes granted clean)
+  if (typeof g.bestCleanStreak !== "number") g.bestCleanStreak = 0;
   if (typeof g.nextEventAt !== "number") g.nextEventAt = -1; // -1 = uninitialized (set on first play)
   if (typeof g.rumpelSeen !== "boolean") g.rumpelSeen = false; // offered a junk visitor while bin full?
   if (typeof g.goblinTurn !== "boolean") g.goblinTurn = false; // alternate Rumpelstiltskin <-> the goblin
@@ -940,6 +942,12 @@ function renderQuests() {
 
 /* --- win streak: consecutive happy customers boost PAY (never the Well) --- */
 function streakBonusFor(streak) { return Math.min(Math.max(0, streak - 1), BALANCE.STREAK_BONUS_CAP) * BALANCE.STREAK_BONUS_PER; }
+/* --- allergy-free streak: Stardust once you've cleanly granted MIN risky wishes in a row.
+   3→5, 4→9, 5→13, … (escalating). Below MIN pays nothing. --- */
+function cleanStreakDust(streak) {
+  if (streak < BALANCE.CLEAN_STREAK_MIN) return 0;
+  return BALANCE.CLEAN_STREAK_DUST_BASE + (streak - BALANCE.CLEAN_STREAK_MIN) * BALANCE.CLEAN_STREAK_DUST_STEP;
+}
 
 /* --- In-a-Rush customer: a patience clock across the round; serve in time for a
  * bonus, or they leave and you get nothing (and the streak breaks). ---------- */
@@ -3333,6 +3341,25 @@ function serve() {
     res.gold += res.streakBonus;
   } else { GAME.streak = 0; res.streakBonus = 0; }
   res.streak = GAME.streak;
+  // ALLERGY-FREE STREAK: only wishes that ACTUALLY had an allergy to dodge qualify.
+  // Grant one cleanly (served, allergy stayed green) → extend + pay Stardust.
+  // Trigger the allergy or fail the wish → reset. No-allergy customers don't count
+  // either way (they just pause the streak).
+  const hadAllergy = (res.allergies || []).length > 0;
+  const reacted = res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red");
+  res.cleanDust = 0;
+  if (hadAllergy) {
+    if (res.success && !reacted) {
+      GAME.cleanStreak = (GAME.cleanStreak || 0) + 1;
+      if (GAME.cleanStreak > (GAME.bestCleanStreak || 0)) GAME.bestCleanStreak = GAME.cleanStreak;
+      const dust = cleanStreakDust(GAME.cleanStreak);
+      if (dust > 0) { GAME.stardust += dust; res.cleanDust = dust; }
+    } else {
+      GAME.cleanStreak = 0;
+    }
+  }
+  res.cleanStreak = GAME.cleanStreak;
+  res.hadAllergy = hadAllergy;
   // In-a-Rush: bonus for serving one in time
   if (ROUND.rush && res.success) { res.rushBonus = BALANCE.RUSH_BONUS; res.gold += res.rushBonus; }
   // VIP key wager: win → multiply the whole payout + bonus Stardust (key kept);
@@ -3403,6 +3430,7 @@ function renderResult(res) {
     <div class="grow center" style="gap:14px">
       <div class="ph big">${custMoodArt(c, mood, emoji, "cust-big result-face")}</div>
       <div class="result-title ${win ? "win" : "lose"} ${isPerfect ? "perfect" : ""}">${title}</div>
+      ${resultStreaksMarkup(res)}
       ${win ? rewardBubblesMarkup(res) : (trashN ? trashInfoMarkup(res) : "")}
       <div class="card" style="width:100%;max-width:320px">
         <div class="stat-line"><span>Your Match</span><span><b>${res.weighted}%</b></span></div>
@@ -3469,65 +3497,87 @@ function wireTrashBubbles(res) {
 // LITTLE bubble per tip coin. They FLOAT freely all over the result screen
 // (drifting up/down/side to side); tap them wherever they wander. Pop the big one
 // first and it auto-pops the little ones; or pop the little ones and save it. ---
+// Two big streak badges on the result screen: the overall Win Streak and the
+// Allergy-Free streak. A freshly-earned Stardust payout shows as a "+N ✨" tag.
+function resultStreaksMarkup(res) {
+  const ws = GAME.streak || 0, cs = GAME.cleanStreak || 0;
+  const gain = res.cleanDust > 0 ? `<span class="sb-gain">+${res.cleanDust}✨</span>` : "";
+  const grew = res.hadAllergy && res.success && !(res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red"));
+  return `<div class="result-streaks">
+    <div class="streak-badge fire${ws >= 1 ? "" : " dim"}"><span class="sb-ico">🔥</span><b class="sb-n">${ws}</b><span class="sb-lbl">Win Streak</span></div>
+    <div class="streak-badge clean${cs >= 1 ? "" : " dim"}${grew ? " pop" : ""}"><span class="sb-ico">💚</span><b class="sb-n">${cs}</b><span class="sb-lbl">Allergy‑Free</span>${gain}</div>
+  </div>`;
+}
 function rewardBubblesMarkup(res) {
   const tips = Math.max(0, res.tip);
+  const dust = res.cleanDust > 0 ? ` <span class="dust">✨ <b id="rb-dust">0</b></span>` : "";
   return `<div class="reward-bubbles" id="reward-bubbles">
-    <div class="rb-total">Collected <span class="gold">🪙 <b id="rb-count">0</b></span></div>
-    <div class="rb-hint muted" id="rb-hint">${tips > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧"}</div>
+    <div class="rb-total">Collected <span class="gold">🪙 <b id="rb-count">0</b></span>${dust}</div>
+    <div class="rb-hint muted" id="rb-hint">${res.cleanDust > 0 ? "Pop for coins — and your allergy‑free Stardust! 🫧" : tips > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧"}</div>
   </div>`;
 }
 function wireRewardBubbles(res) {
   const sc = screen("result"); if (!sc) return;
   const countEl = document.querySelector("#screen-result #rb-count");
+  const dustEl = document.querySelector("#screen-result #rb-dust");
   const hintEl = document.querySelector("#screen-result #rb-hint");
-  const base = Math.max(0, res.gold - res.tip), tips = Math.max(0, res.tip);
+  const base = Math.max(0, res.gold - res.tip), tips = Math.max(0, res.tip), dustAmt = res.cleanDust || 0;
   const layer = document.createElement("div"); layer.className = "rb-float-layer";
   sc.appendChild(layer);
-  let collected = 0, littleStep = 0;
+  let collected = 0, dustGot = 0, littleStep = 0;
   const rnd = (a, b) => a + Math.random() * (b - a);
   const bump = amt => {
     collected += amt;
     if (countEl) { countEl.textContent = collected; countEl.classList.remove("bumped"); void countEl.offsetWidth; countEl.classList.add("bumped"); }
   };
+  const bumpDust = amt => {
+    dustGot += amt;
+    if (dustEl) { dustEl.textContent = dustGot; dustEl.classList.remove("bumped"); void dustEl.offsetWidth; dustEl.classList.add("bumped"); }
+  };
   // build one drifting bubble; the wrap wanders (translate), the button pops (scale)
-  const makeBubble = (cls, amt, big) => {
+  const makeBubble = (cls, amt, opts = {}) => {
+    const big = !!opts.big, wide = big || cls === "dust";
     const wrap = document.createElement("div"); wrap.className = "rbub-wrap";
-    wrap.style.left = rnd(6, big ? 58 : 78) + "%";
+    wrap.style.left = rnd(6, wide ? 58 : 78) + "%";
     wrap.style.top = rnd(14, 72) + "%";
     for (let k = 1; k <= 3; k++) { wrap.style.setProperty("--dx" + k, rnd(-46, 46).toFixed(0) + "px"); wrap.style.setProperty("--dy" + k, rnd(-46, 46).toFixed(0) + "px"); }
     wrap.style.animationDuration = rnd(5, 9).toFixed(2) + "s";
     wrap.style.animationDelay = "-" + rnd(0, 5).toFixed(2) + "s"; // desync so they don't move in lockstep
     const btn = document.createElement("button");
-    btn.className = "rbub " + cls; btn.dataset.amt = amt; if (big) btn.dataset.big = "1";
-    btn.setAttribute("aria-label", big ? "gold reward" : "tip coin");
-    btn.innerHTML = big ? `<span class="rb-amt">🪙 ${amt}</span>` : "🪙";
+    btn.className = "rbub " + cls; btn.dataset.amt = amt; if (big) btn.dataset.big = "1"; btn.dataset.flavor = opts.flavor || (big ? "gold" : "coin");
+    btn.setAttribute("aria-label", cls === "dust" ? "stardust reward" : big ? "gold reward" : "tip coin");
+    btn.innerHTML = cls === "dust" ? `<span class="rb-amt">✨ ${amt}</span>` : big ? `<span class="rb-amt">🪙 ${amt}</span>` : "🪙";
     wrap.appendChild(btn); layer.appendChild(wrap);
     return btn;
   };
   const popBub = btn => {
     if (!btn || btn.classList.contains("popped")) return;
     btn.classList.add("popped");
-    const amt = +btn.dataset.amt || 0, big = btn.dataset.big;
+    const amt = +btn.dataset.amt || 0, big = btn.dataset.big, flavor = btn.dataset.flavor;
     const r = btn.getBoundingClientRect();
-    resultBurst(r.left + r.width / 2, r.top + r.height / 2, big ? "gold" : "coin");
-    bump(amt);
-    if (big) SFX.bigCoin(); else SFX.coin(littleStep++);
+    resultBurst(r.left + r.width / 2, r.top + r.height / 2, flavor === "stardust" ? "stardust" : big ? "gold" : "coin");
+    if (flavor === "stardust") { bumpDust(amt); SFX.bigCoin(); }
+    else { bump(amt); if (big) SFX.bigCoin(); else SFX.coin(littleStep++); }
     const wrap = btn.parentElement;
     setTimeout(() => { if (wrap) wrap.remove(); }, 240);
     checkDone();
   };
   const checkDone = () => setTimeout(() => {
-    if (!layer.querySelector(".rbub:not(.popped)") && hintEl) hintEl.textContent = `All collected! 🪙 ${res.gold}`;
+    if (!layer.querySelector(".rbub:not(.popped)") && hintEl) hintEl.textContent = `All collected! 🪙 ${res.gold}${dustAmt ? ` · ✨ ${dustAmt}` : ""}`;
   }, 260);
-  const bigBtn = makeBubble("big", base, true);
+  const bigBtn = makeBubble("big", base, { big: true });
   const littleBtns = [];
-  for (let i = 0; i < tips; i++) littleBtns.push(makeBubble("little", 1, false));
+  for (let i = 0; i < tips; i++) littleBtns.push(makeBubble("little", 1));
+  const dustBtn = dustAmt > 0 ? makeBubble("dust", dustAmt, { flavor: "stardust" }) : null;
   bigBtn.addEventListener("click", () => {
     SFX.unlock(); popBub(bigBtn);
-    // popping the big bubble first cascades all remaining tip bubbles
-    [...layer.querySelectorAll(".rbub.little:not(.popped)")].forEach((b, i) => setTimeout(() => popBub(b), 90 * (i + 1)));
+    // popping the big bubble cascades the stardust bubble FIRST (so it feels linked to the
+    // big pop), then all remaining tip coins
+    const cascade = [...layer.querySelectorAll(".rbub.dust:not(.popped)"), ...layer.querySelectorAll(".rbub.little:not(.popped)")];
+    cascade.forEach((b, i) => setTimeout(() => popBub(b), 90 * (i + 1)));
   });
   littleBtns.forEach(b => b.addEventListener("click", () => { SFX.unlock(); popBub(b); }));
+  if (dustBtn) dustBtn.addEventListener("click", () => { SFX.unlock(); popBub(dustBtn); });
 }
 // A confetti/sparkle burst for a 100% "Perfect!" win, drawn over the result screen.
 function celebratePerfect() {
@@ -3558,16 +3608,18 @@ function celebratePerfect() {
 // Self-contained particle burst for the result screen (its own layer).
 function resultBurst(x, y, flavor) {
   const sc = screen("result"); if (!sc) return;
-  const parts = flavor === "gold" ? POP_FLAVOR.gold.parts : POP_FLAVOR.bubble.parts;
-  const n = flavor === "gold" ? 16 : 9;
+  const parts = flavor === "stardust" ? ["#c48bff", "#e6b3ff", "#8fe9ff", "#ffffff"]
+    : flavor === "gold" ? POP_FLAVOR.gold.parts : POP_FLAVOR.bubble.parts;
+  const n = flavor === "gold" || flavor === "stardust" ? 16 : 9;
   for (let i = 0; i < n; i++) {
     const p = document.createElement("i"); p.className = "particle";
-    const ang = (Math.PI * 2 * i) / n + (i % 2) * 0.4, dist = flavor === "gold" ? 46 + (i % 4) * 16 : 30 + (i % 3) * 12;
+    const wide = flavor === "gold" || flavor === "stardust";
+    const ang = (Math.PI * 2 * i) / n + (i % 2) * 0.4, dist = wide ? 46 + (i % 4) * 16 : 30 + (i % 3) * 12;
     p.style.left = x + "px"; p.style.top = y + "px";
     p.style.setProperty("--dx", Math.cos(ang) * dist + "px");
     p.style.setProperty("--dy", (Math.sin(ang) * dist - 8) + "px");
     p.style.background = parts[i % parts.length];
-    p.style.width = p.style.height = (flavor === "gold" ? 7 : 5) + (i % 3) * 3 + "px";
+    p.style.width = p.style.height = (wide ? 7 : 5) + (i % 3) * 3 + "px";
     p.style.zIndex = "60";
     sc.appendChild(p);
     setTimeout(() => p.remove(), 700);

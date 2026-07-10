@@ -38,39 +38,24 @@ reason for it ("of course things are unstable — it's a dust storm").
 
 ---
 
-## 🅱️ Clean-streak Stardust reward (no-allergy bonus)
-
-**The gist:** reward players with Stardust ✨ for a streak of wishes granted
-*without triggering the allergy*. Escalating: e.g. 3 clean in a row → 5 dust,
-4 in a row → 8–10 dust, and so on. Breaking the streak (any allergy reaction)
-resets it.
-
-**Why:** right now the only downside of triggering an allergy is a gold hit, and
-gold stops mattering once you're rich. Stardust always matters (there's always
-another skin to want), so tying clean play to Stardust gives the allergy system
-real teeth again — as a *carrot*, which suits a cozy game better than a bigger
-*stick*.
-
-**Open questions / things to tune:**
-- **What counts as "clean"?** Probably: served with the allergy meter in the
-  green (no yellow/red reaction). A fully-green serve extends the streak.
-- **Balance risk:** clean wishes might be *easier* than they feel — lots of
-  customers have no allergy at all, and allergic ones are often avoidable. If
-  streaks are easy, the reward inflates. Two levers to fix that:
-  - Only count wishes that *actually had an allergy risk* (customer had an
-    allergy and you kept it green). Rewards genuine restraint/skill, not just
-    getting lucky with no-allergy customers.
-  - Keep the per-step numbers modest and let the escalation do the exciting part.
-- **Feedback:** show a streak counter (🔥 ×3) so the run feels alive and losing
-  it stings a little (in a good way).
-- Possibly make Stardust a bit harder to get elsewhere so this becomes a
-  meaningful primary path to cosmetics.
-
-**Build note:** "dust" = the existing **Stardust** currency (`GAME.stardust`).
-Skins cost ~120; quests give 15–55; well drops 10–45 — so streak rewards in the
-~5–15 range fit the existing economy.
-
 ---
 
 ## Done / shipped
-- _(nothing moved here yet)_
+
+### ✅ Clean-streak Stardust reward (no-allergy bonus) — shipped v117
+Reward Stardust ✨ for consecutive **allergy-risk** wishes granted *clean* (meter
+stayed green). As built:
+- Only customers who **have an allergy** count. No-allergy customers **pause** the
+  streak (never build it, never break it). Triggering the allergy (yellow/red) or
+  failing the wish **resets** it.
+- Escalating payout: 3 in a row → 5 ✨, 4 → 9 ✨, 5 → 13 ✨, … (tunable in
+  `BALANCE.CLEAN_STREAK_*`).
+- Result screen shows **two large badges**: 🔥 Win Streak and 💚 Allergy-Free,
+  with a "+N ✨" tag when dust is earned.
+- The Stardust drops as its own **purple poppable bubble**; popping the big coin
+  bubble cascades it too.
+- Stored in `GAME.cleanStreak` / `GAME.bestCleanStreak`.
+
+**Possible follow-ups:** make Stardust a bit harder to get elsewhere so this
+becomes a primary path to cosmetics; maybe a lifetime "best allergy-free streak"
+shown on a stats/achievements screen.
