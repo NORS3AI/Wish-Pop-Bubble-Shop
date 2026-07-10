@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v115"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v116"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3152,12 +3152,12 @@ function ingCard(st) {
   // infused ingredients carry a built-in charm effect — spell it out under the magic label
   const ingDef = (!inst.wild && !inst.essence) ? D.INGREDIENT_BY_ID[inst.id] : null;
   const infusedFx = ingDef && ingDef.infused ? INFUSED_LABEL[ingDef.infused] : "";
-  // flag any magic that matches this customer's allergy so you don't have to scan back to the bars
-  const allergens = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
-  const warnIco = ROUND.villain ? "☠️" : "⚠️";
+  // flag any magic that matches this customer's allergy so you don't have to scan back to the bars —
+  // but NOT on the villain's ransom round, where spotting the hidden poison is the whole challenge
+  const allergens = ROUND.villain ? [] : [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
   const mkPill = q => {
     const warn = allergens.includes(q);
-    return `<span class="mp${warn ? " allergen" : ""}" style="--mc:${D.MAGIC[q] || "#888"}">${warn ? `<span class="mp-warn">${warnIco}</span>` : ""}${q}</span>`;
+    return `<span class="mp${warn ? " allergen" : ""}" style="--mc:${D.MAGIC[q] || "#888"}">${warn ? `<span class="mp-warn">⚠️</span>` : ""}<span class="mp-txt">${q}</span></span>`;
   };
   let pills = "";
   if (infusedFx) {
