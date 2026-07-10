@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v108"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v109"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3128,13 +3128,26 @@ function ingCard(st) {
     art = ingArt(inst.id);
   }
   const singleKnown = inst.essence || inst.wild || !!inst.magic;   // these items only ever have one magic
+  // infused ingredients carry a built-in charm effect — spell it out under the magic label
+  const ingDef = (!inst.wild && !inst.essence) ? D.INGREDIENT_BY_ID[inst.id] : null;
+  const infusedFx = ingDef && ingDef.infused ? INFUSED_LABEL[ingDef.infused] : "";
   let pills = "";
-  for (let r = 0; r < 3; r++) {
-    if (r < list.length) {
+  if (infusedFx) {
+    // infused shows its real magic pill(s) then a plain-language effect line (no blank reserves)
+    for (let r = 0; r < list.length; r++) {
       const reveal = r === 0 || insight || singleKnown;
       if (reveal) { const q = list[r]; pills += `<span class="mp" style="--mc:${D.MAGIC[q] || "#888"}">${q}</span>`; }
       else pills += `<span class="mp hidden">?</span>`;
-    } else pills += `<span class="mp blank"></span>`;
+    }
+    pills += `<span class="icard-fx">${infusedFx}</span>`;
+  } else {
+    for (let r = 0; r < 3; r++) {
+      if (r < list.length) {
+        const reveal = r === 0 || insight || singleKnown;
+        if (reveal) { const q = list[r]; pills += `<span class="mp" style="--mc:${D.MAGIC[q] || "#888"}">${q}</span>`; }
+        else pills += `<span class="mp hidden">?</span>`;
+      } else pills += `<span class="mp blank"></span>`;
+    }
   }
   const poisoned = ROUND.insight && inst.poison;
   const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
@@ -3143,7 +3156,7 @@ function ingCard(st) {
     <div class="icard-r">${pills}</div>
     ${inst.potent ? `<span class="icard-star">✨</span>` : ""}${n > 1 ? `<span class="icard-count">×${n}</span>` : ""}</button>`;
 }
-const INFUSED_LABEL = { potentNext: "✨ next is Potent", lockBar: "❄️ locks its bar" };
+const INFUSED_LABEL = { potentNext: "✨ Next drop counts double", lockBar: "❄️ Locks its bar — no overfill" };
 const INFUSED_PER_ROUND = 1;   // guaranteed per round for now (prototype); tune later
 // Replace a few random ingredient slots in the haul with infused ingredients.
 function injectInfused(round) {
