@@ -1078,6 +1078,9 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .stack-item .stack-emoji { font-size: 46px; line-height: 1; filter: drop-shadow(0 4px 6px rgba(0,0,0,.55)); display: inline-block; }
 .stack-item.bad .stack-emoji { animation: stackBadGlow 1s ease-in-out infinite; border-radius: 50%; }
 @keyframes stackBadGlow { 0%,100% { filter: drop-shadow(0 4px 6px rgba(0,0,0,.55)); } 50% { filter: drop-shadow(0 0 9px rgba(255,90,60,.95)); } }
+/* An item that just missed the top of the tower peels off to the side and fades (never slides through the stack) */
+.stack-item.slip { animation: stackSlip .4s ease-out forwards; z-index: 1; }
+@keyframes stackSlip { to { opacity: 0; transform: translateX(calc(-50% + var(--drift, 0px))) translateY(30px) scale(.65) rotate(20deg); } }
 /* The tower: coins are positioned by top%, share a horizontal position (--tx), and the whole
    thing leans (--ang) around its top so the catch point never moves. */
 .stack-tower { position: absolute; inset: 0; z-index: 3; pointer-events: none;

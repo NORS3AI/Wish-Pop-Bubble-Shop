@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v132"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v133"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2413,12 +2413,13 @@ function stackTick() {
   for (let i = STACK.items.length - 1; i >= 0; i--) {
     const it = STACK.items[i], prevY = it.y;
     it.y = (STACK.elapsed - it.spawnAt) / 1000 * it.fall;
-    if (!it.passed && prevY < STACK_CATCH_Y && it.y >= STACK_CATCH_Y) {
+    if (prevY < STACK_CATCH_Y && it.y >= STACK_CATCH_Y) {
       if (Math.abs(it.x - STACK.towerX) <= m.catchTol) { STACK.items.splice(i, 1); stackCatch(it); continue; }
-      it.passed = true;   // missed the top — let it keep falling past the tower
+      // just missed the top — peel it away to the side so it never appears to slide through the stack
+      STACK.items.splice(i, 1); STACK.missed++;
+      if (it.el) { const el = it.el; el.style.setProperty("--drift", ((it.x < STACK.towerX ? -1 : 1) * (18 + Math.random() * 12)).toFixed(0) + "px"); el.classList.add("slip"); el.addEventListener("animationend", () => el.remove()); }
+      continue;
     }
-    if (it.passed && it.y >= STACK_SURFACE + 12) { STACK.items.splice(i, 1); STACK.missed++; if (it.el) it.el.remove(); continue; }
-    if (it.y >= STACK_FLOOR) { STACK.items.splice(i, 1); if (it.el) it.el.remove(); continue; }
     if (it.el) it.el.style.top = it.y + "%";
   }
   stackPaint();
