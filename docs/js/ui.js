@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v113"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v114"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3066,9 +3066,11 @@ function paintMix() {
         </div>
       </div>
       <div class="m2-readout" id="m2-readout"></div>
-      <div class="m2-allergs" id="m2-allergs"></div>
       <div class="slots m2-slots">${slotCells.join("")}</div>
-      <div class="m2-bars" id="mix-top"></div>
+      <div class="m2-bars">
+        <div class="m2-needs" id="mix-top"></div>
+        <div class="m2-allergs" id="m2-allergs"></div>
+      </div>
       ${mixCharmBarHtml()}
       <div class="m2-tray ${ROUND.toolMode ? "cutting" : ""}">${mixTrayHtml()}</div>
     </div>

@@ -1192,14 +1192,16 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .m2-readout b { font-size: clamp(26px, 8vw, 38px); }
 .m2-readout span { font-size: .82em; opacity: .9; margin-left: 3px; }
 .m2-readout.met b { color: var(--good); text-shadow: 0 0 12px rgba(126,224,138,.6); }
-/* compact allergy danger chips — one short row under the readout */
-.m2-allergs { flex: 0 0 auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; min-height: 0; }
+/* allergy danger chips — sit inside the bars panel, right under the need bars,
+   stretched side by side to span the same full width so they read as one system */
+.m2-allergs { flex: 0 0 auto; display: flex; gap: 6px; min-height: 0; }
+.m2-allergs:not(:empty) { margin-top: 1px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,.14); }
 .m2-allergs:empty { display: none; }
-.allerg-chip { display: flex; align-items: center; gap: 5px; padding: 3px 9px 3px 7px; border-radius: 999px;
+.allerg-chip { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 3px 9px 3px 8px; border-radius: 999px;
   background: rgba(30,14,20,.7); border: 1.5px solid var(--ac, #ff6b6b); box-shadow: 0 0 8px rgba(0,0,0,.4); }
-.allerg-ic { font-size: 15px; line-height: 1; }
-.allerg-nm { font-size: 13px; font-weight: 800; color: #fff; text-transform: capitalize; text-shadow: 0 1px 2px rgba(0,0,0,.6); white-space: nowrap; }
-.allerg-meter { width: 44px; height: 7px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,.5); }
+.allerg-ic { flex: 0 0 auto; font-size: 15px; line-height: 1; }
+.allerg-nm { flex: 0 0 auto; font-size: 13px; font-weight: 800; color: #fff; text-transform: capitalize; text-shadow: 0 1px 2px rgba(0,0,0,.6); white-space: nowrap; }
+.allerg-meter { flex: 1; min-width: 20px; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,.5); }
 .allerg-meter i { display: block; height: 100%; border-radius: 4px; transition: width .3s ease, background .3s; }
 .allerg-chip.zone-red { animation: hgpulse .9s infinite; }
 /* slots row */
@@ -1207,9 +1209,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .m2-slots .slot { width: 38px; height: 38px; border-radius: 10px; font-size: 20px; border-color: rgba(255,214,110,.4); }
 .m2-slots .slot .orb { width: 22px; height: 22px; }
 .m2-slots .slot img.art { max-width: 1.1em; }
-/* bars panel */
+/* bars panel — need bars up top, allergy bars grouped underneath */
 .m2-bars { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; padding: 6px 8px; border-radius: 14px;
   background: rgba(18,10,30,.5); border: 1px solid rgba(255,214,110,.22); }
+.m2-needs { display: flex; flex-direction: column; gap: 5px; }
 .mbar { display: flex; align-items: center; gap: 7px; }
 .mbar-lbl { flex: 0 0 74px; font-size: 12px; font-weight: 800; text-align: center; color: #fff; padding: 3px 4px; border-radius: 8px;
   background: var(--lc, #888); box-shadow: inset 0 -2px 4px rgba(0,0,0,.3); text-transform: capitalize; text-shadow: 0 1px 2px rgba(0,0,0,.4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
