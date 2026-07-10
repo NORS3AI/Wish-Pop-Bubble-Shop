@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v126"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v127"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3810,7 +3810,8 @@ function wireRewardBubbles(res) {
   const countEl = document.querySelector("#screen-result #rb-count");
   const dustEl = document.querySelector("#screen-result #rb-dust");
   const hintEl = document.querySelector("#screen-result #rb-hint");
-  const base = Math.max(0, res.gold - res.tip), tips = Math.max(0, res.tip), dustAmt = res.cleanDust || 0;
+  const streakAmt = Math.max(0, res.streakBonus || 0), dustAmt = res.cleanDust || 0;
+  const base = Math.max(0, res.gold - res.tip - streakAmt), tips = Math.max(0, res.tip);
   const layer = document.createElement("div"); layer.className = "rb-float-layer";
   sc.appendChild(layer);
   let collected = 0, dustGot = 0, littleStep = 0;
@@ -3825,7 +3826,7 @@ function wireRewardBubbles(res) {
   };
   // build one drifting bubble; the wrap wanders (translate), the button pops (scale)
   const makeBubble = (cls, amt, opts = {}) => {
-    const big = !!opts.big, wide = big || cls === "dust";
+    const big = !!opts.big, wide = big || cls === "dust" || cls === "streak";
     const wrap = document.createElement("div"); wrap.className = "rbub-wrap";
     wrap.style.left = rnd(6, wide ? 58 : 78) + "%";
     wrap.style.top = rnd(14, 72) + "%";
@@ -3834,8 +3835,8 @@ function wireRewardBubbles(res) {
     wrap.style.animationDelay = "-" + rnd(0, 5).toFixed(2) + "s"; // desync so they don't move in lockstep
     const btn = document.createElement("button");
     btn.className = "rbub " + cls; btn.dataset.amt = amt; if (big) btn.dataset.big = "1"; btn.dataset.flavor = opts.flavor || (big ? "gold" : "coin");
-    btn.setAttribute("aria-label", cls === "dust" ? "stardust reward" : big ? "gold reward" : "tip coin");
-    btn.innerHTML = cls === "dust" ? `<span class="rb-amt">✨ ${amt}</span>` : big ? `<span class="rb-amt">🪙 ${amt}</span>` : "🪙";
+    btn.setAttribute("aria-label", cls === "dust" ? "stardust reward" : cls === "streak" ? "win-streak bonus" : big ? "gold reward" : "tip coin");
+    btn.innerHTML = cls === "dust" ? `<span class="rb-amt">✨ ${amt}</span>` : cls === "streak" ? `<span class="rb-amt">🔥 ${amt}</span>` : big ? `<span class="rb-amt">🪙 ${amt}</span>` : "🪙";
     wrap.appendChild(btn); layer.appendChild(wrap);
     return btn;
   };
@@ -3844,9 +3845,9 @@ function wireRewardBubbles(res) {
     btn.classList.add("popped");
     const amt = +btn.dataset.amt || 0, big = btn.dataset.big, flavor = btn.dataset.flavor;
     const r = btn.getBoundingClientRect();
-    resultBurst(r.left + r.width / 2, r.top + r.height / 2, flavor === "stardust" ? "stardust" : big ? "gold" : "coin");
+    resultBurst(r.left + r.width / 2, r.top + r.height / 2, flavor === "stardust" ? "stardust" : (big || flavor === "streak") ? "gold" : "coin");
     if (flavor === "stardust") { bumpDust(amt); SFX.bigCoin(); }
-    else { bump(amt); if (big) SFX.bigCoin(); else SFX.coin(littleStep++); }
+    else { bump(amt); if (big || flavor === "streak") SFX.bigCoin(); else SFX.coin(littleStep++); }
     const wrap = btn.parentElement;
     setTimeout(() => { if (wrap) wrap.remove(); }, 240);
     checkDone();
@@ -3857,15 +3858,17 @@ function wireRewardBubbles(res) {
   const bigBtn = makeBubble("big", base, { big: true });
   const littleBtns = [];
   for (let i = 0; i < tips; i++) littleBtns.push(makeBubble("little", 1));
+  const streakBtn = streakAmt > 0 ? makeBubble("streak", streakAmt, { flavor: "streak" }) : null;
   const dustBtn = dustAmt > 0 ? makeBubble("dust", dustAmt, { flavor: "stardust" }) : null;
   bigBtn.addEventListener("click", () => {
     SFX.unlock(); popBub(bigBtn);
-    // popping the big bubble cascades the stardust bubble FIRST (so it feels linked to the
-    // big pop), then all remaining tip coins
-    const cascade = [...layer.querySelectorAll(".rbub.dust:not(.popped)"), ...layer.querySelectorAll(".rbub.little:not(.popped)")];
+    // popping the big bubble cascades the medium bonus bubbles (streak 🔥 + stardust ✨) FIRST
+    // so they feel linked to the big pop, then all remaining tip coins
+    const cascade = [...layer.querySelectorAll(".rbub.streak:not(.popped), .rbub.dust:not(.popped)"), ...layer.querySelectorAll(".rbub.little:not(.popped)")];
     cascade.forEach((b, i) => setTimeout(() => popBub(b), 90 * (i + 1)));
   });
   littleBtns.forEach(b => b.addEventListener("click", () => { SFX.unlock(); popBub(b); }));
+  if (streakBtn) streakBtn.addEventListener("click", () => { SFX.unlock(); popBub(streakBtn); });
   if (dustBtn) dustBtn.addEventListener("click", () => { SFX.unlock(); popBub(dustBtn); });
 }
 // A confetti/sparkle burst for a 100% "Perfect!" win, drawn over the result screen.
