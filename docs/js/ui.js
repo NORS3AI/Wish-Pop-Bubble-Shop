@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v118"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v119"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3415,8 +3415,7 @@ function renderResult(res) {
     : res.qualityTip > 0 ? c.name + " loves it — that potion was practically perfect!" : res.quickTip > 0 ? c.name + " is thrilled with the speedy service!" : c.name + " is happy with their wish!";
   const rushLine = (win && res.rushBonus > 0)
     ? `<div class="stat-line"><span>⏱️ Beat the clock!</span><span class="gold">🪙 +${res.rushBonus}</span></div>` : "";
-  const streakLine = (win && res.streakBonus > 0)
-    ? `<div class="stat-line"><span>🔥 Win streak ×${res.streak}</span><span class="gold">🪙 +${res.streakBonus}</span></div>` : "";
+  // (Win-streak bonus is shown as a "+N 🪙" tag on the big Win Streak badge, not here.)
   // VIP key wager: on a win the staked key is kept and pays a big bonus; on a
   // failed wish the key is lost (handled in serve()).
   const vipWinLine = (win && res.vipKept)
@@ -3425,7 +3424,7 @@ function renderResult(res) {
   const vipLostLine = (!win && res.vipKeyLost)
     ? `<div class="stat-line"><span>🗝️ Wagered ${BALANCE.VIP_KEY_COST} keys</span><span style="color:var(--bad)">lost!</span></div>` : "";
   const earnedRow = win
-    ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}${rushLine}${streakLine}${vipWinLine}`
+    ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}${rushLine}${vipWinLine}`
     : `<div class="stat-line"><span>Earned</span><span class="muted">no coins — just trash!</span></div>
        <div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${trashN}</b> piece${trashN === 1 ? "" : "s"}</span></div>${vipLostLine}
        <div class="stat-line"><span>🔥 Win streak</span><span class="muted">broken</span></div>`;
@@ -3508,11 +3507,12 @@ function wireTrashBubbles(res) {
 // Allergy-Free streak. A freshly-earned Stardust payout shows as a "+N ✨" tag.
 function resultStreaksMarkup(res) {
   const ws = GAME.streak || 0, cs = GAME.cleanStreak || 0;
-  const gain = res.cleanDust > 0 ? `<span class="sb-gain">+${res.cleanDust}✨</span>` : "";
-  const grew = res.hadAllergy && res.success && !(res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red"));
+  const goldGain = res.streakBonus > 0 ? `<span class="sb-gain gold">+${res.streakBonus}🪙</span>` : "";
+  const dustGain = res.cleanDust > 0 ? `<span class="sb-gain">+${res.cleanDust}✨</span>` : "";
+  const cleanGrew = res.hadAllergy && res.success && !(res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red"));
   return `<div class="result-streaks">
-    <div class="streak-badge fire${ws >= 1 ? "" : " dim"}"><span class="sb-ico">🔥</span><b class="sb-n">${ws}</b><span class="sb-lbl">Win Streak</span></div>
-    <div class="streak-badge clean${cs >= 1 ? "" : " dim"}${grew ? " pop" : ""}"><span class="sb-ico">💚</span><b class="sb-n">${cs}</b><span class="sb-lbl">Allergy‑Free</span>${gain}</div>
+    <div class="streak-badge fire${ws >= 1 ? "" : " dim"}${res.success ? " pop" : ""}"><span class="sb-ico">🔥</span><b class="sb-n">${ws}</b><span class="sb-lbl">Win Streak</span>${goldGain}</div>
+    <div class="streak-badge clean${cs >= 1 ? "" : " dim"}${cleanGrew ? " pop" : ""}"><span class="sb-ico">💚</span><b class="sb-n">${cs}</b><span class="sb-lbl">Allergy‑Free</span>${dustGain}</div>
   </div>`;
 }
 function rewardBubblesMarkup(res) {

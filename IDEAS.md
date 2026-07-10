@@ -20,7 +20,9 @@ every bubble has something. Possible contents:
 - Stardust ✨
 - A rare Treasure Key 🗝️
 - **Very** rarely, a skin
-- A **Wish Bubble** — a special carry-over that can be used in the *next* round
+- A **Wish Bubble** — just an ordinary *extra* wish bubble, same as the ones you
+  scoop normally. Nothing special about it; it's simply one more. (NOT a free
+  wild-magic / power-up.)
 
 **Why it's good:** adds skill + surprise to a dead moment, reuses the pop-to-catch
 mechanic players already love, and gives another trickle of Stardust/keys. The
@@ -32,13 +34,10 @@ mechanic players already love, and gives another trickle of Stardust/keys. The
   more "ooh a bonus" than "second minigame." Frequency + speed are the dials.
 - **Rarity tiers matter.** Coins common, Stardust uncommon, key rare, skin ultra-rare.
   Keep the drop table honest so it feels lucky, not routine.
-- **Wish Bubble needs a definition.** What does it *do* next round? Options: a free
-  Wild-magic add, a guaranteed charm, a head-start on one need bar, or a "reroll".
-  Pick one clear effect so it's not confusing.
-- **Accessibility:** the existing "pop all for me" convenience should have a scoop
-  equivalent (auto-catch) so it never becomes mandatory dexterity.
+- **No auto-catch.** Miss it and it's gone — players already get plenty, so this
+  is a "reward for paying attention," not a freebie. (No "catch all for me".)
 - **Feedback:** each catch bursts like the reward bubbles; a miss gives a soft
-  "poof" so it's clear you lost it (but never punishing).
+  "poof"/pop-off-screen so it's clear you lost it (but no penalty beyond the miss).
 
 **Build note:** the scoop screen already spawns/reveals bubbles (`renderScoop`,
 `#scoop-bubbles`), so there's a foundation to build the fly-up + catch on.

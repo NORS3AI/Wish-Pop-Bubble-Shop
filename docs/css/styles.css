@@ -453,6 +453,7 @@ html, body {
 .streak-badge .sb-gain { position: absolute; top: -9px; right: -6px; background: #c48bff; color: #2a0f45;
   font-size: 12px; font-weight: 900; padding: 1px 7px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.4);
   animation: sbpop .5s .15s cubic-bezier(.2,1.5,.4,1) backwards; }
+.streak-badge .sb-gain.gold { background: var(--gold); color: #4a2e00; }
 /* Result bottom actions: a small Round Recap button stacked above Next Customer */
 .result-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .recap-btn { background: var(--card); color: var(--ink); box-shadow: none; border: 1px solid var(--line); font-size: 15px; padding: 11px 18px; }
