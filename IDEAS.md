@@ -24,6 +24,9 @@ it's a satisfying "spend your savings" moment, not a wall). The event tally IS t
   more later (~5 → 7 → …). Matches "fast first door, escalate later."
 - **Last event = a realm finale/boss** (Cursed King, Evil Queen ransom, etc.). Gives each
   realm an arc: meet the locals → escalating events → boss finale → door opens.
+- **PRINCIPLE — finales are NOT hard mode** (owner, confirmed). A must-win gate must stay
+  beatable by casual players (accessible difficulty). The brutal/hard versions of a minigame
+  live in the **practice shops** (easy/med/hard), never in the finale itself.
 - **Vary events within a realm** — 5 events should be 5 *different* ones, not the same
   crash ×5. Each realm gets a themed event pool.
 - **"Must play," not "must win"** for regular events — attempting counts toward the tally
@@ -99,39 +102,49 @@ for a realm event AND for the practice-shop idea below.
 
 ---
 
-## 🆕 "Grandma… or the Wolf?" — Willow-Wish Village FINALE
+## 🆕 "Buy Time: Feed the Wolf" — Willow-Wish Village FINALE (CHOSEN)
 
-**The premise:** Little Red arrives at Grandma's cottage. Is it really Grandma, or the wolf
-in her nightcap? A **deduction** game built from the fairytale's own iconic beats.
+_(Earlier "spot-the-tells / is-it-Grandma?" deduction was rejected — too obvious: one glance
+at an eye or one whiff of the roast solves it, no gameplay in between.)_
 
-**Recommended design — spot-the-tells (using the story's lines as the UI):** inspect
-"Grandma" feature by feature; each is an innocent Grandma trait OR a wolf tell:
-- 👀 *"What big eyes you have…"* — warm, or wolf-yellow & hungry?
-- 👂 *"What big ears…"* — soft & floppy, or pointed & furry?
-- 🦷 *"What big teeth…"* — dentures, or fangs?
-- 🐾 hands — wrinkled, or clawed/hairy?  · 🗣️ voice — sweet warble, or a growl underneath?
+**The premise:** you KNOW it's the wolf in Grandma's clothes. It's hungry and impatient, and
+the huntsman is on his way. **Ration the picnic basket to keep the wolf calm until rescue
+arrives** (~30–45s). It's the **goblin-feeding minigame's skeleton** with new rules — each
+picnic item does something different to the wolf's meter(s).
 
-Flag the suspicious traits, then make the call. **The deduction twist:** sometimes it really
-IS Grandma (all traits innocent — falsely accusing her should FAIL you), sometimes it's the
-wolf (several tells to catch). So you're reading evidence, not coin-flipping.
+**Core mechanic — keep the needle in the GREEN (danger at BOTH ends):**
+- A **Patience** bar drifts DOWN over time (wolf gets antsy).
+- **Too low → he pounces (hard fail).** **Too high → overfed/greedy** — for the FINALE this is
+  just *wasteful* (bar caps, item wasted); in Hard mode it's a real penalty.
+- Item *size* is the skill: a **berry** = small nudge (fine-tuning), a **roast** = big jump
+  (risks overshoot). Pick the right-sized item to hold the green as it drains.
 
-**The basket = your investigation tools (ties in the picnic ingredients).** Offer items to
-probe reactions: Grandma coos over flowers/tea; the wolf can't hide itself near the roast, or
-sniffs at *you* too hungrily. Offering items surfaces tells.
+**Item types — two kinds of decisions:**
+- **Instant items** = reactive spikes ("emergency, top him up NOW").
+- **Over-time items (owner's add)** = e.g. a **bunch of grapes = +5/sec for 5s** — a slow drip
+  you set going, then turn your attention elsewhere. Proactive investment vs reactive patch.
+  Mixing the two is where the depth lives (like cooking-over-time vs instant-plating in
+  Overcooked).
+- A special **sleeping-tonic cake** (limited) → big drowse / slows the drain briefly.
 
-**Why it's finale-safe (must-win + retryable):**
-- **Solvable by observation** — a careful player can ALWAYS tell. Critical for a must-win
-  gate: skill wins, never unfair RNG. (Difficulty = how *subtle* the tells are.)
-- Clean win/lose: catch the wolf OR correctly clear Grandma → win the **Realm Key**. Wrong
-  accusation, or dawdle too long and the wolf pounces → fail, retry (forgiving).
+**Replayability:**
+- **Randomize the basket** each run (which items + how many). Lots of little berries = fine
+  control but do they add up? A few roasts = powerful but overshoot-prone. Fresh puzzle each time.
+- **Multiple bars = the harder modes** (items affect each bar DIFFERENTLY, so you must juggle):
+  - **Easy:** 1 bar (Patience).
+  - **Medium:** + **Hunger** (roast fills Hunger lots / Patience little; sweet tart the reverse).
+  - **Hard:** + **Suspicion** (creeps up if you feed too fast or repeat the same item — forces
+    variety). Each bar drains at its own rate → constant triage. THIS is the game.
 
-**Alternates if we want a different flavor:**
-- **Read-the-reaction (basket-first):** the whole game is offering picnic items and reading
-  micro-reactions to deduce. Simpler, leans fully on the basket idea.
-- **Spot-the-difference memory:** flash the real Grandma, then the current one — tap what
-  changed. Classic/readable, but less on-theme than "what big teeth you have."
+**Finale stays accessible (confirmed):** the finale itself is the **1-bar (maybe gentle 2-bar)**
+version — a must-win gate can't demand Overcooked-level juggling or it walls casual players. The
+brutal 3-bar version lives in the **practice shop as Hard mode**. Same game, two homes.
 
-Pick: **spot-the-tells + basket-as-probes.** Most iconic, most "aha," and genuinely solvable.
+**Tutorial:** show each item → "this calms him a little" → tap it → watch the bar move. Short,
+**first-time only** (auto-skip on replays, "view again" option), always skippable.
+
+**Win/lose:** keep the bar(s) out of the fail zone until the huntsman-arrives timer fills → win
+the **Realm Key**. Redline the Patience bar → fail, retry (forgiving).
 
 ---
 
@@ -175,6 +188,12 @@ ambiguous. Handling:
   center** (or topmost/newest item).
 - **Spawn with minimum spacing** so seeds don't start fully on top of each other.
 - Tune density so the screen fills satisfyingly without becoming an unreadable overlap mess.
+
+**Harder-mode addition (owner) — over-time sprouts.** Some grown items aren't one-tap results
+but tick over time, so it's not "one throw, one result." E.g. a **spreading thornbush** that
+grows/expands every second until you cut it (prioritize before it takes over), or a
+**continuously-scoring flower** that pays points each second it's left alive (so protecting the
+good ones is actively rewarding). Same "over-time vs instant" depth idea as the wolf feed game.
 
 ---
 
