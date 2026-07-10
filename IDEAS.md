@@ -102,10 +102,20 @@ for a realm event AND for the practice-shop idea below.
 
 ---
 
-## 🆕 "Buy Time: Feed the Wolf" — Willow-Wish Village FINALE (CHOSEN)
+## 🆕 "Buy Time: Feed the Wolf" — Willow-Wish Village FINALE (CHOSEN · BUILT v121)
 
 _(Earlier "spot-the-tells / is-it-Grandma?" deduction was rejected — too obvious: one glance
 at an eye or one whiff of the roast solves it, no gameplay in between.)_
+
+**BUILT (v121) — playable v1:** single Patience bar with a green sweet-spot; randomized picnic
+basket (8 treats: instant nudges, over-time grapes/honey, drowsy Nana's cake); ~2.5s feed
+cooldown with a visible "Ready" bar; a huntsman timer (~32s) to survive; win/lose screens;
+reward 🪙60 + ✨8; scores "time kept in green" for a future personal-best. Reachable via Admin
+("🐺 Feed the Wolf") and as a natural Willow event. Tuning constants at top of the WOLF block
+in ui.js (`WOLF_WIN_MS`, `WOLF_DRAIN`, `WOLF_COOLDOWN_MS`, `WOLF_START`, `WOLF_GREEN`, item
+amounts). NOT yet wired as the gated Realm-Key finale. TODO: multi-bar Hard mode (Hunger +
+Suspicion) for the practice shop; short first-time tutorial; personal-best display; hook the
+win to the Realm Key once the unlock gate is built.
 
 **The premise:** you KNOW it's the wolf in Grandma's clothes. It's hungry and impatient, and
 the huntsman is on his way. **Ration the picnic basket to keep the wolf calm until rescue

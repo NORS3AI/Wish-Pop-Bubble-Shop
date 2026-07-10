@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v120"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v121"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -197,8 +197,10 @@ function stopEventTimers() {
   if (typeof GOBLIN !== "undefined" && GOBLIN) { if (GOBLIN.timer) clearTimeout(GOBLIN.timer); if (GOBLIN.cdTimer) clearTimeout(GOBLIN.cdTimer); }
   if (typeof DANCE !== "undefined" && DANCE) { if (DANCE.timer) clearTimeout(DANCE.timer); if (DANCE.cdTimer) clearTimeout(DANCE.cdTimer); if (DANCE.tTimer) clearTimeout(DANCE.tTimer); }
   if (typeof CAKE !== "undefined" && CAKE && CAKE.timer) clearTimeout(CAKE.timer);
+  if (typeof WOLF !== "undefined" && WOLF && WOLF.tickTimer) clearInterval(WOLF.tickTimer);
   if (typeof RUMPEL !== "undefined") RUMPEL = null;
   if (typeof GOBLIN !== "undefined") GOBLIN = null;
+  if (typeof WOLF !== "undefined") WOLF = null;
   if (typeof DANCE !== "undefined") DANCE = null;
   if (typeof CAKE !== "undefined") CAKE = null;
   if (typeof DUEL !== "undefined") DUEL = null;
@@ -372,6 +374,7 @@ function renderAdmin() {
         <button class="btn" id="ad-fairy" style="margin-bottom:8px">🧚 Fairy's Matching Boon</button>
         <button class="btn" id="ad-rumpel" style="margin-bottom:8px">🧵 Rumpelstiltskin</button>
         <button class="btn" id="ad-goblin" style="margin-bottom:8px">🧌 Gribble the Goblin</button>
+        <button class="btn" id="ad-wolf" style="margin-bottom:8px">🐺 Feed the Wolf (Willow finale)</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen</button>
         <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Ball: Knight</button>
         <button class="btn" id="ad-dance2" style="margin-bottom:8px">🤴 Ball: Prince</button>
@@ -405,6 +408,7 @@ function renderAdmin() {
     }
     renderGoblinIntro();
   });
+  on("#ad-wolf", "click", renderWolfIntro);
   on("#ad-queen", "click", () => {
     if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); } // need gold to pay her ransom
     renderQueenIntro();
@@ -1038,6 +1042,7 @@ function maybeEvent() {
   const events = [renderDuelIntro, renderFairyIntro, renderCakeIntro];
   if (GAME.gold >= QUEEN_PACKAGES[0].gold) events.push(renderQueenIntro); // Queen needs gold for her ransom
   if (currentRealm().id === "courtyard") events.push(() => renderDanceIntro(pickDancePartner())); // a royal-ball dance lesson
+  if (currentRealm().id === "willow") events.push(renderWolfIntro); // Little Red's wolf: stall it for the huntsman
   markRealmEventCleared();   // playing an event advances this realm's story (win or lose)
   R.pick(events)();
   return true;
@@ -1592,6 +1597,169 @@ function goblinFinish() {
     <button class="btn" id="gob-next">Next Customer  →</button>
   `);
   on("#gob-next", "click", startRound);
+  show("event");
+}
+
+/* ======================================================================= */
+/* BUY TIME: FEED THE WOLF — Willow-Wish Village finale minigame.            */
+/* The wolf's in Grandma's clothes; keep its Patience out of the red by      */
+/* feeding picnic treats (instant nudges + over-time drips) until the        */
+/* huntsman arrives. A feed cooldown makes each choice deliberate.           */
+/* ======================================================================= */
+let WOLF = null;
+const WOLF_WIN_MS = 32000;        // the huntsman arrives after this long — survive until then
+const WOLF_DRAIN = 6;             // patience lost per second
+const WOLF_COOLDOWN_MS = 2500;    // min time between feeds, so each choice is deliberate
+const WOLF_START = 60;            // starting patience
+const WOLF_GREEN = [38, 80];      // the comfy "green" sweet spot (score for time spent here)
+const WOLF_TICK = 100;            // ms per simulation tick
+const WOLF_ITEMS = {
+  berry:  { name: "Berries",    emoji: "🫐", kind: "instant",  amt: 8 },
+  cheese: { name: "Cheese",     emoji: "🧀", kind: "instant",  amt: 12 },
+  bread:  { name: "Bread",      emoji: "🍞", kind: "instant",  amt: 16 },
+  tart:   { name: "Berry Tart", emoji: "🥧", kind: "instant",  amt: 20 },
+  roast:  { name: "Roast",      emoji: "🍖", kind: "instant",  amt: 32 },
+  grapes: { name: "Grapes",     emoji: "🍇", kind: "overtime", perSec: 5, dur: 5 },
+  honey:  { name: "Honeycomb",  emoji: "🍯", kind: "overtime", perSec: 4, dur: 6 },
+  tonic:  { name: "Nana's Cake",emoji: "🧁", kind: "tonic",    amt: 10, slow: 6 }, // +10 now, drain −50% for 6s
+};
+const WOLF_ITEM_IDS = Object.keys(WOLF_ITEMS);
+function wolfFxLabel(it) { return it.kind === "overtime" ? `+${it.perSec}/s · ${it.dur}s` : it.kind === "tonic" ? `😴 drowsy` : `+${it.amt}`; }
+function wolfBasket() {
+  // a randomized picnic — a base spread plus a few random extras, so each run plays differently
+  const b = { berry: 3, cheese: 2, bread: 2, tart: 2, roast: 1, grapes: 1, honey: 1, tonic: 1 };
+  for (let i = 0; i < 4; i++) b[R.pick(WOLF_ITEM_IDS)]++;
+  return b;
+}
+function renderWolfIntro() {
+  SFX.unlock(); SFX.fanfare();
+  html("event", `
+    ${hud("Grandma's Cottage")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">🐺</div>
+      <div style="font-weight:800;font-size:20px">It's the Wolf!</div>
+      <div class="speech">“My, what a delicious-looking basket you've brought, dearie…”</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>Keep him calm</span><span>until the huntsman comes 🏹</span></div>
+        <div class="stat-line"><span>Feed picnic treats</span><span class="gold">to top up Patience</span></div>
+        <div class="stat-line"><span>Patience hits empty</span><span style="color:var(--bad)">he pounces! 🐺</span></div>
+      </div>
+      <div class="muted" style="max-width:300px">Tap treats to feed him — but only every couple seconds, so <b>choose wisely</b>. Small treats nudge, big ones fill fast; 🍇🍯 feed <b>slowly over time</b>, and Nana's cake 🧁 makes him <b>drowsy</b>.</div>
+    </div>
+    <button class="btn good" id="wolf-play">🧺 Distract the wolf!</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="wolf-skip">Not now</button>
+  `);
+  on("#wolf-play", "click", wolfStart);
+  on("#wolf-skip", "click", startRound);
+  show("event");
+}
+function wolfStart() {
+  WOLF = { patience: WOLF_START, basket: wolfBasket(), effects: [], slowUntil: 0, cooldownUntil: 0, elapsed: 0, inGreen: 0, over: false, tickTimer: null };
+  wolfPlay();
+  WOLF.tickTimer = setInterval(wolfTick, WOLF_TICK);
+}
+function wolfTick() {
+  if (!WOLF || WOLF.over) return;
+  const dt = WOLF_TICK / 1000, now = Date.now();
+  let p = WOLF.patience - WOLF_DRAIN * dt * (now < WOLF.slowUntil ? 0.5 : 1);
+  WOLF.effects.forEach(e => { p += e.perSec * dt; e.remaining -= dt; });
+  WOLF.effects = WOLF.effects.filter(e => e.remaining > 0);
+  p = Math.max(0, Math.min(100, p));
+  WOLF.patience = p;
+  WOLF.elapsed += WOLF_TICK;
+  if (p >= WOLF_GREEN[0] && p <= WOLF_GREEN[1]) WOLF.inGreen += WOLF_TICK;
+  wolfPaint();
+  if (p <= 0) return wolfFinish(false);
+  if (WOLF.elapsed >= WOLF_WIN_MS) return wolfFinish(true);
+}
+function wolfPlay() {
+  const tiles = WOLF_ITEM_IDS.map(id => {
+    const it = WOLF_ITEMS[id], n = WOLF.basket[id] || 0;
+    return `<button class="wolf-tile ${n <= 0 ? "empty" : ""}" data-id="${id}" ${n <= 0 ? "disabled" : ""}>
+      <span class="wolf-emoji">${it.emoji}</span><span class="wolf-tname">${it.name}</span>
+      <span class="wolf-tfx">${wolfFxLabel(it)}</span><span class="wolf-count" id="wolf-n-${id}">×${n}</span></button>`;
+  }).join("");
+  html("event", `
+    ${hud("Feed the Wolf!")}
+    <div class="wolf-top">
+      <div class="wolf-face" id="wolf-face">🐺</div>
+      <div class="wolf-huntsman"><span class="wolf-hlbl">🏹 Huntsman on the way…</span><div class="wolf-hbar"><i id="wolf-hbar"></i></div></div>
+    </div>
+    <div class="wolf-patience">
+      <div class="wolf-plabel">😤 Patience</div>
+      <div class="wolf-ptrack"><span class="wolf-green" style="left:${WOLF_GREEN[0]}%;width:${WOLF_GREEN[1] - WOLF_GREEN[0]}%"></span><i class="wolf-pfill" id="wolf-pfill"></i></div>
+    </div>
+    <div class="wolf-effects" id="wolf-effects"></div>
+    <div class="grow" style="overflow-y:auto"><div class="wolf-grid" id="wolf-grid">${tiles}</div></div>
+    <div class="wolf-cd" id="wolf-cd"><i id="wolf-cdbar"></i><span id="wolf-cdtxt">Ready — feed him!</span></div>
+  `);
+  $("#screen-event").querySelectorAll(".wolf-tile").forEach(b => b.addEventListener("click", () => wolfFeed(b.dataset.id)));
+  show("event");
+  wolfPaint();
+}
+function wolfPaint() {
+  if (!WOLF) return;
+  const p = WOLF.patience, now = Date.now();
+  const fill = $("#wolf-pfill");
+  if (fill) { fill.style.width = p + "%"; fill.className = "wolf-pfill " + (p < 22 ? "danger" : (p >= WOLF_GREEN[0] && p <= WOLF_GREEN[1]) ? "green" : "amber"); }
+  const hb = $("#wolf-hbar"); if (hb) hb.style.width = Math.min(100, WOLF.elapsed / WOLF_WIN_MS * 100) + "%";
+  const face = $("#wolf-face"); if (face) face.classList.toggle("angry", p < 22);
+  const fx = $("#wolf-effects");
+  if (fx) fx.innerHTML = WOLF.effects.map(e => `<span class="wolf-chip">⏳ +${e.perSec}/s · ${Math.ceil(e.remaining)}s</span>`).join("") + (now < WOLF.slowUntil ? `<span class="wolf-chip slow">😴 drowsy ${Math.ceil((WOLF.slowUntil - now) / 1000)}s</span>` : "");
+  const cd = WOLF.cooldownUntil - now, cdbar = $("#wolf-cdbar"), cdtxt = $("#wolf-cdtxt"), grid = $("#wolf-grid");
+  if (cd > 0) { if (cdbar) cdbar.style.width = (cd / WOLF_COOLDOWN_MS * 100) + "%"; if (cdtxt) cdtxt.textContent = "Wait…"; if (grid) grid.classList.add("cooling"); }
+  else { if (cdbar) cdbar.style.width = "0%"; if (cdtxt) cdtxt.textContent = "Ready — feed him!"; if (grid) grid.classList.remove("cooling"); }
+}
+function wolfFeed(id) {
+  if (!WOLF || WOLF.over) return;
+  const now = Date.now();
+  if (now < WOLF.cooldownUntil) return;         // still cooling down — deliberate play
+  const n = WOLF.basket[id] || 0; if (n <= 0) return;
+  const it = WOLF_ITEMS[id];
+  WOLF.basket[id] = n - 1;
+  if (it.kind === "overtime") { WOLF.effects.push({ perSec: it.perSec, remaining: it.dur }); SFX.charm(); }
+  else { WOLF.patience = Math.min(100, WOLF.patience + it.amt); if (it.kind === "tonic") { WOLF.slowUntil = now + it.slow * 1000; SFX.charm(); } else SFX.coin(); }
+  WOLF.cooldownUntil = now + WOLF_COOLDOWN_MS;
+  const cnt = $("#wolf-n-" + id); if (cnt) cnt.textContent = "×" + WOLF.basket[id];
+  const tile = $("#screen-event") && $("#screen-event").querySelector(`.wolf-tile[data-id="${id}"]`);
+  if (tile) { if (WOLF.basket[id] <= 0) { tile.classList.add("empty"); tile.disabled = true; } tile.classList.remove("pop"); void tile.offsetWidth; tile.classList.add("pop"); }
+  wolfPaint();
+}
+function wolfFinish(win) {
+  if (!WOLF) return;
+  WOLF.over = true;
+  if (WOLF.tickTimer) { clearInterval(WOLF.tickTimer); WOLF.tickTimer = null; }
+  const secs = Math.round(WOLF.elapsed / 1000), greenPct = Math.round(WOLF.inGreen / Math.max(1, WOLF.elapsed) * 100);
+  let outcome;
+  if (win) {
+    const gold = 60, dust = 8;
+    grantReward({ gold, stardust: dust }); save();
+    SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
+    outcome = { emoji: "🏹", title: "The huntsman arrives!", cls: "win",
+      lines: [`<div class="stat-line"><span>You stalled him</span><span>${secs}s</span></div>`,
+              `<div class="stat-line"><span>Time kept comfy (green)</span><span>${greenPct}%</span></div>`,
+              `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`],
+      note: "You kept the wolf busy long enough — the huntsman bursts in and rescues Grandma! 🎉" };
+  } else {
+    save(); SFX.sneeze();
+    outcome = { emoji: "🐺", title: "The wolf pounced!", cls: "lose",
+      lines: [`<div class="stat-line"><span>You lasted</span><span>${secs}s</span></div>`,
+              `<div class="stat-line"><span>Reward</span><span class="muted">none — try again!</span></div>`],
+      note: "His patience ran out before the huntsman came. Keep the Patience bar out of the red — feed a bigger treat before it dips too low!" };
+  }
+  WOLF = null;
+  html("event", `
+    ${hud("Grandma's Cottage")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${outcome.emoji}</div>
+      <div class="result-title ${outcome.cls}">${outcome.title}</div>
+      <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
+      <p class="muted" style="max-width:300px">${outcome.note}</p>
+    </div>
+    <button class="btn" id="wolf-next">Continue  →</button>
+  `);
+  on("#wolf-next", "click", startRound);
   show("event");
 }
 
@@ -3750,7 +3918,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, markRealmEventCleared, realmEventsCleared, realmEventsNeeded, realmStoryComplete, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, markRealmEventCleared, realmEventsCleared, realmEventsNeeded, realmStoryComplete, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
