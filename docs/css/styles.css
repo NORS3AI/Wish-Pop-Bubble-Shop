@@ -1080,6 +1080,13 @@ body.villain .scoop-instr, body.villain .pop-sub { color: #c9f5b0; }
 .realm-body { flex: 1; min-width: 0; }
 .realm-name { font-weight: 800; font-size: 16px; }
 .realm-cast { font-size: 17px; margin-top: 4px; letter-spacing: 2px; }
+/* realm "story path" — chapters uncovered as you play events (framed as story, not a quota) */
+.realm-story { display: flex; align-items: center; gap: 7px; margin-top: 6px; flex-wrap: wrap; }
+.story-lbl { font-size: 11px; font-weight: 800; color: #d8c6ff; letter-spacing: .3px; }
+.story-pips { display: inline-flex; gap: 5px; align-items: center; }
+.story-pip { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); }
+.story-pip.on { background: radial-gradient(circle at 35% 30%, #ffe9a8, #ffce54 60%, #f0a93c); border-color: #ffd86b; box-shadow: 0 0 6px rgba(255,206,84,.6); }
+.realm-story.done .story-lbl { color: var(--gold); }
 .realm-status { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
 .realm-tag { font-size: 12px; font-weight: 700; }
 .realm-tag.here { color: var(--good); }

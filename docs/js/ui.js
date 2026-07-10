@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v119"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v120"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -34,6 +34,7 @@ function normalizeGame(g) {
   if (typeof g.realm !== "string" || !D.REALM_BY_ID[g.realm]) g.realm = "willow"; // current location
   if (!g.unlockedRealms || typeof g.unlockedRealms !== "object") g.unlockedRealms = {};
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
+  if (!g.realmEvents || typeof g.realmEvents !== "object") g.realmEvents = {}; // realmId -> events cleared (story progress)
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
   ["served", "perfect", "bossWins", "rings", "bags", "rushWins"].forEach(k => { if (typeof g.stats[k] !== "number") g.stats[k] = 0; });
   if (!g.quests || typeof g.quests !== "object") g.quests = { day: "", week: -1, daily: [], weekly: [], dailyBonus: false };
@@ -53,6 +54,18 @@ function currentRealm() { return D.REALM_BY_ID[GAME.realm] || D.REALM_BY_ID.will
 function realmIngredients() { return currentRealm().ingredients || D.INGREDIENTS; }
 function realmCustomers() { return currentRealm().customers || D.CUSTOMERS; }
 function realmUnlocked(id) { return !!GAME.unlockedRealms[id]; }
+/* --- Realm story progress: events cleared per realm (the pacing backbone). Infrastructure
+   for the "clear N events → next realm opens" loop; not yet enforced on unlock. --- */
+function realmEventsNeeded(id) { const r = D.REALM_BY_ID[id]; return (r && r.eventsNeeded) || 0; }
+function realmEventsCleared(id) { const need = realmEventsNeeded(id); return Math.min(need, (GAME.realmEvents && GAME.realmEvents[id]) || 0); }
+function realmStoryComplete(id) { const need = realmEventsNeeded(id); return need > 0 && realmEventsCleared(id) >= need; }
+// Call when an event is played through in the current realm (win OR lose — attempting counts).
+// Capped at the realm's eventsNeeded so it can't overcount.
+function markRealmEventCleared() {
+  const id = GAME.realm, need = realmEventsNeeded(id); if (!need) return;
+  GAME.realmEvents[id] = Math.min(need, ((GAME.realmEvents && GAME.realmEvents[id]) || 0) + 1);
+  save();
+}
 // Apply the current realm's palette theme to the page (a body class).
 function applyRealmTheme() {
   const cls = document.body.className.split(/\s+/).filter(c => c && !c.startsWith("realm-"));
@@ -265,6 +278,17 @@ function renderStart() {
 /* ======================================================================= */
 /* WORLD MAP — travel between realms; unlock new ones with gold + keys.     */
 /* ======================================================================= */
+// A realm's "story path" for the map — filled pips for events experienced, empty for the
+// rest. Framed as story/chapters (no "3/5" quota text), kept OFF the gameplay screen so
+// serving customers never feels like filler between events.
+function realmStoryHtml(r) {
+  const need = realmEventsNeeded(r.id); if (!need) return "";
+  const done = realmEventsCleared(r.id), complete = done >= need;
+  const pips = Array.from({ length: need }, (_, i) => `<i class="story-pip ${i < done ? "on" : ""}"></i>`).join("");
+  return `<div class="realm-story ${complete ? "done" : ""}">
+    <span class="story-lbl">${complete ? "✨ Story complete" : "📖 Realm story"}</span>
+    <span class="story-pips">${pips}</span></div>`;
+}
 function renderMap() {
   const cards = D.REALMS.map(r => {
     const here = GAME.realm === r.id, unlocked = realmUnlocked(r.id);
@@ -286,6 +310,7 @@ function renderMap() {
         <div class="realm-name">${r.name}</div>
         <div class="muted" style="font-size:12px">${r.tagline}</div>
         ${cast ? `<div class="realm-cast">${cast}</div>` : ""}
+        ${(here || unlocked) ? realmStoryHtml(r) : ""}
       </div>
       <div class="realm-status">${statusRow}</div></div>`;
   }).join("");
@@ -1013,6 +1038,7 @@ function maybeEvent() {
   const events = [renderDuelIntro, renderFairyIntro, renderCakeIntro];
   if (GAME.gold >= QUEEN_PACKAGES[0].gold) events.push(renderQueenIntro); // Queen needs gold for her ransom
   if (currentRealm().id === "courtyard") events.push(() => renderDanceIntro(pickDancePartner())); // a royal-ball dance lesson
+  markRealmEventCleared();   // playing an event advances this realm's story (win or lose)
   R.pick(events)();
   return true;
 }
@@ -3724,7 +3750,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, markRealmEventCleared, realmEventsCleared, realmEventsNeeded, realmStoryComplete, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

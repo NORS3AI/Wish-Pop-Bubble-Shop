@@ -46,6 +46,12 @@ Two-layer safety net so a loss is "not yet," never "gone forever":
 1. **The event reliably recurs until you win its skin.** After a loss, bump its reappearance
    odds (or guarantee it returns within X customers) so it's a few tries, not RNG grinding.
    Once won, it stops being a stakes-event (may still visit for flavor).
+   - **Balance (owner):** a recurring skin event must NOT crowd out the other events the
+     player still needs to complete the realm. Don't let "keep retrying Cinderella" starve
+     their progress toward the realm finale. So: interleave — recurring skin events share the
+     event slots with required story events, never monopolize them (e.g. a required story
+     event always takes priority when one is still unplayed, or they alternate). Don't punish
+     the player for chasing a skin.
 2. **Stardust pity path.** Once you've encountered the event, the skin becomes buyable for
    Stardust (`STARDUST_SKIN_COST` already exists) — so no cosmetic is ever permanently
    missable. Skin events count toward the event tally win-or-lose.
@@ -58,6 +64,17 @@ the first realm opens in ~1 hr and players learn early that the game opens up.
 **Build note:** the event scheduler already exists (`maybeEvent()` fires on a timer,
 `GAME.nextEventAt` tracks it). New parts: count events-cleared per realm, gate the realm
 unlock on that count, then allow the gold/key purchase.
+
+**Build status (started v120 — infrastructure only):**
+- ✅ `GAME.realmEvents` (realmId → events cleared), persisted.
+- ✅ `eventsNeeded` per realm in data (willow 3, courtyard 4, oasis/thieves 5, beanstalk 6).
+- ✅ `markRealmEventCleared()` — counts win-or-lose, capped; hooked into `maybeEvent()`.
+- ✅ Map "story path" tracker (gold pips + "Realm story" / "✨ Story complete"), shown only
+  on visited realms; hidden on locked ones (mystery). Kept OFF the gameplay screen.
+- ⏳ TODO when the full loop is built: actually GATE realm unlock on story-complete + Realm
+  Key; the must-win retryable finale that drops the Realm Key; per-realm themed event pools;
+  recurring skin-event interleaving (balance note above); tune `EVENT_EVERY` (currently 30 —
+  owner wants ~8–12 so events land a few times per realm).
 
 ---
 
