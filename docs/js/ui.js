@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v124"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v125"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1723,9 +1723,9 @@ function wolfTick() {
 function wolfGroupsHtml() {
   return WOLF_MODES[WOLF.mode].bars.map(key => {
     const meta = WOLF_BAR_META[key], g = meta.green;
-    const tiles = WOLF_ROWS[key].map(f => {
+    const tiles = WOLF_ROWS[key].map((f, col) => {
       const n = WOLF.stock[f.id] || 0, allergen = WOLF.allergens.includes(f.id);
-      return `<button class="wolf-tile ${n <= 0 ? "empty" : ""} ${allergen ? "allergen" : ""}" data-id="${f.id}" data-col="${f.col}" ${n <= 0 ? "disabled" : ""}>
+      return `<button class="wolf-tile ${n <= 0 ? "empty" : ""} ${allergen ? "allergen" : ""}" data-id="${f.id}" data-col="${col}" ${n <= 0 ? "disabled" : ""}>
         ${allergen ? `<span class="wolf-allergen">🤧</span>` : ""}
         <span class="wolf-emoji">${f.emoji}</span><span class="wolf-tname">${f.name}</span>
         <span class="wolf-tfx">${meta.keep === "low" ? "−" : "+"}${f.amt}</span><span class="wolf-count" id="wolf-n-${f.id}">×${n}</span></button>`;
