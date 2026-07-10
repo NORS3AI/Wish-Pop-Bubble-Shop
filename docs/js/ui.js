@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v134"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v135"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2221,7 +2221,7 @@ const STACK_PITCH = 4.6;            // vertical spacing between stacked coins (y
 const STACK_FLOOR = 108;            // y% at which an uncaught item is gone
 const STACK_WIND_LEN = 4500;       // ms a wind gust lasts
 const STACK_COLLIDE_W = 6;          // half-width (%) of the tower body for Hard-mode side collisions
-const STACK_BONK_COST = 5;          // coins docked from the final reward per Hard-mode body hit
+const STACK_BUMP_COST = 5;          // coins docked from the final reward per Hard-mode tower bump
 // Falling items. good coins/gems ADD height; bad bombs/rocks SUBTRACT height and add Wobble.
 const STACK_KINDS = {
   coin: { name: "Coin", emoji: "🪙", good: true,  height: 1,  wob: 0 },
@@ -2384,8 +2384,8 @@ function stackCatch(it) {
   const tower = $("#stack-tower");
   if (tower) { tower.innerHTML = stackTowerHtml(); const cls = k.good ? "catch-good" : "catch-bad"; tower.classList.remove(cls); void tower.offsetWidth; tower.classList.add(cls); }
 }
-// HARD only: the tower body swung into a bomb/rock. No topple — just docks the final coin score,
-// with an impact sound + a spark/−5 flourish so the hit reads clearly.
+// HARD only: the tower body bumped a bomb/rock. No topple — just docks the final coin score,
+// with an impact sound + a shake + a spark/−5 flourish so the bump reads clearly.
 function stackBodyHit(it) {
   STACK.penalty++;
   STACK.towerVX += (it.x - STACK.towerX) * 0.8;   // a jolt, but no Wobble → can't end the round
@@ -2395,8 +2395,9 @@ function stackBodyHit(it) {
   if (sky) {
     const burst = document.createElement("div"); burst.className = "stack-spark"; burst.style.left = it.x.toFixed(1) + "%"; burst.style.top = it.y.toFixed(1) + "%"; burst.textContent = "💥";
     burst.addEventListener("animationend", () => burst.remove()); sky.appendChild(burst);
-    const pen = document.createElement("div"); pen.className = "stack-pen"; pen.style.left = it.x.toFixed(1) + "%"; pen.style.top = it.y.toFixed(1) + "%"; pen.textContent = "−" + STACK_BONK_COST;
+    const pen = document.createElement("div"); pen.className = "stack-pen"; pen.style.left = it.x.toFixed(1) + "%"; pen.style.top = it.y.toFixed(1) + "%"; pen.textContent = "−" + STACK_BUMP_COST;
     pen.addEventListener("animationend", () => pen.remove()); sky.appendChild(pen);
+    sky.classList.remove("bump"); void sky.offsetWidth; sky.classList.add("bump");   // a jolt of the whole play area
   }
   const tower = $("#stack-tower"); if (tower) { tower.classList.remove("catch-bad"); void tower.offsetWidth; tower.classList.add("catch-bad"); }
 }
@@ -2436,22 +2437,16 @@ function stackTick() {
   for (let i = STACK.items.length - 1; i >= 0; i--) {
     const it = STACK.items[i], prevY = it.y;
     it.y = (STACK.elapsed - it.spawnAt) / 1000 * it.fall;
-    if (!it.hazard && prevY < STACK_CATCH_Y && it.y >= STACK_CATCH_Y) {
+    if (!it.hazard && !it.missed && prevY < STACK_CATCH_Y && it.y >= STACK_CATCH_Y) {
       if (Math.abs(it.x - STACK.towerX) <= m.catchTol) { STACK.items.splice(i, 1); stackCatch(it); continue; }
       STACK.missed++;
-      // HARD: a missed bomb/rock keeps falling as a hazard you can still swing into.
-      if (m.bodyHit && !STACK_KINDS[it.kind].good) { it.hazard = true; }
-      else {
-        // otherwise peel it away to the side so it never appears to slide through the stack
-        STACK.items.splice(i, 1);
-        if (it.el) { const el = it.el; el.style.setProperty("--drift", ((it.x < STACK.towerX ? -1 : 1) * (18 + Math.random() * 12)).toFixed(0) + "px"); el.classList.add("slip"); el.addEventListener("animationend", () => el.remove()); }
-        continue;
-      }
+      // Missed the top — it keeps falling (behind the tower) down to the bottom of the screen.
+      // On HARD a missed bomb/rock becomes a hazard you can still swing the tower into.
+      if (m.bodyHit && !STACK_KINDS[it.kind].good) it.hazard = true;
+      else { it.missed = true; if (it.el) it.el.classList.add("miss"); }
     }
-    if (it.hazard) {
-      if (Math.abs(it.x - STACK.towerX) <= STACK_COLLIDE_W && it.y >= STACK_SURFACE) { STACK.items.splice(i, 1); stackBodyHit(it); continue; }
-      if (it.y >= 104) { STACK.items.splice(i, 1); if (it.el) it.el.remove(); continue; }
-    }
+    if (it.hazard && Math.abs(it.x - STACK.towerX) <= STACK_COLLIDE_W && it.y >= STACK_SURFACE) { STACK.items.splice(i, 1); stackBodyHit(it); continue; }
+    if (it.y >= 104) { STACK.items.splice(i, 1); if (it.el) it.el.remove(); continue; }
     if (it.el) it.el.style.top = it.y + "%";
   }
   stackPaint();
@@ -2468,17 +2463,17 @@ function stackFinish(win, why) {
   const stars = win ? Math.max(1, Math.min(3, 1 + Math.floor((height - m.goal) / Math.max(4, m.goal * 0.25)))) : 0;
   let outcome;
   if (win) {
-    const bonkCost = bonks * STACK_BONK_COST;
-    const gold = Math.max(10, 60 + stars * 12 - bonkCost), dust = 6 + stars * 2;
+    const bumpCost = bonks * STACK_BUMP_COST;
+    const gold = Math.max(10, 60 + stars * 12 - bumpCost), dust = 6 + stars * 2;
     grantReward({ gold, stardust: dust });
     if (finale) markRealmFinaleWon();
     save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
     const keyLine = finale ? `<div class="stat-line"><span>🗝️ Realm Key</span><span style="color:var(--gold)">earned — next realm unlocked to buy!</span></div>` : "";
-    const bonkLine = bonks > 0 ? `<div class="stat-line"><span>Bonks (−${STACK_BONK_COST} each)</span><span style="color:var(--bad)">${bonks} · −${bonkCost}🪙</span></div>` : "";
+    const bumpLine = bonks > 0 ? `<div class="stat-line"><span>Bumps (−${STACK_BUMP_COST} each)</span><span style="color:var(--bad)">${bonks} · −${bumpCost}🪙</span></div>` : "";
     outcome = { emoji: finale ? "🗝️" : "🪙", title: finale ? "Sky-high fortune!" : "A tidy tower of gold!", cls: "win",
       lines: [`<div class="stat-line"><span>Stack height</span><span>${height} 🪙 · ${"⭐".repeat(stars)}</span></div>`,
-              bonkLine,
+              bumpLine,
               `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`, keyLine],
       note: finale ? "You stacked the gold to the sky before the giant noticed — and earned the 🗝️ Realm Key! Head to the map to open the next realm." : "You caught enough falling gold to build a proper little fortune. Well stacked!" };
   } else {
