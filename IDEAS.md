@@ -107,15 +107,26 @@ for a realm event AND for the practice-shop idea below.
 _(Earlier "spot-the-tells / is-it-Grandma?" deduction was rejected — too obvious: one glance
 at an eye or one whiff of the roast solves it, no gameplay in between.)_
 
-**BUILT (v121) — playable v1:** single Patience bar with a green sweet-spot; randomized picnic
-basket (8 treats: instant nudges, over-time grapes/honey, drowsy Nana's cake); ~2.5s feed
-cooldown with a visible "Ready" bar; a huntsman timer (~32s) to survive; win/lose screens;
-reward 🪙60 + ✨8; scores "time kept in green" for a future personal-best. Reachable via Admin
-("🐺 Feed the Wolf") and as a natural Willow event. Tuning constants at top of the WOLF block
-in ui.js (`WOLF_WIN_MS`, `WOLF_DRAIN`, `WOLF_COOLDOWN_MS`, `WOLF_START`, `WOLF_GREEN`, item
-amounts). NOT yet wired as the gated Realm-Key finale. TODO: multi-bar Hard mode (Hunger +
-Suspicion) for the practice shop; short first-time tutorial; personal-best display; hook the
-win to the Realm Key once the unlock gate is built.
+**BUILT (v121, tuned harder v122) — playable v1:** single Patience bar with a green sweet-spot;
+huntsman survival timer (~32s); win/lose screens; reward 🪙60 + ✨8; scores "time in green" for
+a future personal-best. Reachable via Admin ("🐺 Feed the Wolf") and as a natural Willow event.
+
+**v122 difficulty pass (owner feedback — was too easy):**
+- **6 treats, one row**, ordered **most-potent → weakest L→R** (Roast +32 … Berries +8), like
+  normal-round ingredients.
+- **Same-treat-twice-in-a-row penalty:** repeating an item adds +2s to the feed cooldown
+  (`WOLF_REPEAT_PENALTY_MS`), so you must vary your feeding.
+- **Tighter basket** that runs low late → forces repeats (→ the penalty) as the huntsman nears.
+- **Huntsman's allergens:** 1–2 treats are flagged 🤧 — you must **use them ALL up before he
+  arrives**, or he "can't come in" (a second, telegraphed fail condition). Objective banner +
+  red-outlined allergen tiles show progress.
+- Drain 6→7/sec.
+
+Tuning constants at top of the WOLF block in ui.js (`WOLF_WIN_MS`, `WOLF_DRAIN`,
+`WOLF_COOLDOWN_MS`, `WOLF_REPEAT_PENALTY_MS`, `WOLF_START`, `WOLF_GREEN`, item amounts, basket).
+NOT yet wired as the gated Realm-Key finale. TODO: multi-bar Hard mode (Hunger + Suspicion) for
+the practice shop; short first-time tutorial; personal-best display; hook win → Realm Key once
+the unlock gate is built.
 
 **The premise:** you KNOW it's the wolf in Grandma's clothes. It's hungry and impatient, and
 the huntsman is on his way. **Ration the picnic basket to keep the wolf calm until rescue

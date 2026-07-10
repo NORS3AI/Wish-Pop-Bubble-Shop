@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v121"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v122"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1608,27 +1608,28 @@ function goblinFinish() {
 /* ======================================================================= */
 let WOLF = null;
 const WOLF_WIN_MS = 32000;        // the huntsman arrives after this long — survive until then
-const WOLF_DRAIN = 6;             // patience lost per second
+const WOLF_DRAIN = 7;             // patience lost per second
 const WOLF_COOLDOWN_MS = 2500;    // min time between feeds, so each choice is deliberate
+const WOLF_REPEAT_PENALTY_MS = 2000; // feeding the SAME treat twice in a row = a longer wait
 const WOLF_START = 60;            // starting patience
 const WOLF_GREEN = [38, 80];      // the comfy "green" sweet spot (score for time spent here)
 const WOLF_TICK = 100;            // ms per simulation tick
+// 6 treats, ordered most-potent → weakest (left → right, like normal-round ingredients).
 const WOLF_ITEMS = {
-  berry:  { name: "Berries",    emoji: "🫐", kind: "instant",  amt: 8 },
-  cheese: { name: "Cheese",     emoji: "🧀", kind: "instant",  amt: 12 },
-  bread:  { name: "Bread",      emoji: "🍞", kind: "instant",  amt: 16 },
-  tart:   { name: "Berry Tart", emoji: "🥧", kind: "instant",  amt: 20 },
-  roast:  { name: "Roast",      emoji: "🍖", kind: "instant",  amt: 32 },
-  grapes: { name: "Grapes",     emoji: "🍇", kind: "overtime", perSec: 5, dur: 5 },
-  honey:  { name: "Honeycomb",  emoji: "🍯", kind: "overtime", perSec: 4, dur: 6 },
-  tonic:  { name: "Nana's Cake",emoji: "🧁", kind: "tonic",    amt: 10, slow: 6 }, // +10 now, drain −50% for 6s
+  roast:  { name: "Roast",   emoji: "🍖", kind: "instant",  amt: 32 },
+  grapes: { name: "Grapes",  emoji: "🍇", kind: "overtime", perSec: 5, dur: 5 },
+  tart:   { name: "Tart",    emoji: "🥧", kind: "instant",  amt: 20 },
+  bread:  { name: "Bread",   emoji: "🍞", kind: "instant",  amt: 16 },
+  tonic:  { name: "Cake",    emoji: "🧁", kind: "tonic",    amt: 10, slow: 6 }, // +10 now, drain −50% for 6s
+  berry:  { name: "Berries", emoji: "🫐", kind: "instant",  amt: 8 },
 };
 const WOLF_ITEM_IDS = Object.keys(WOLF_ITEMS);
-function wolfFxLabel(it) { return it.kind === "overtime" ? `+${it.perSec}/s · ${it.dur}s` : it.kind === "tonic" ? `😴 drowsy` : `+${it.amt}`; }
+function wolfFxLabel(it) { return it.kind === "overtime" ? `+${it.perSec}/s` : it.kind === "tonic" ? `😴` : `+${it.amt}`; }
 function wolfBasket() {
-  // a randomized picnic — a base spread plus a few random extras, so each run plays differently
-  const b = { berry: 3, cheese: 2, bread: 2, tart: 2, roast: 1, grapes: 1, honey: 1, tonic: 1 };
-  for (let i = 0; i < 4; i++) b[R.pick(WOLF_ITEM_IDS)]++;
+  // a randomized, DELIBERATELY-TIGHT picnic — you'll start running low late, forcing repeats
+  // (and the same-treat-twice penalty) as the huntsman closes in.
+  const b = { roast: 2, grapes: 2, tart: 2, bread: 3, tonic: 1, berry: 3 };
+  for (let i = 0; i < 2; i++) b[R.pick(WOLF_ITEM_IDS)]++;
   return b;
 }
 function renderWolfIntro() {
@@ -1643,8 +1644,9 @@ function renderWolfIntro() {
         <div class="stat-line"><span>Keep him calm</span><span>until the huntsman comes 🏹</span></div>
         <div class="stat-line"><span>Feed picnic treats</span><span class="gold">to top up Patience</span></div>
         <div class="stat-line"><span>Patience hits empty</span><span style="color:var(--bad)">he pounces! 🐺</span></div>
+        <div class="stat-line"><span>Huntsman's allergic 🤧</span><span style="color:var(--bad)">use up the 🤧 treats!</span></div>
       </div>
-      <div class="muted" style="max-width:300px">Tap treats to feed him — but only every couple seconds, so <b>choose wisely</b>. Small treats nudge, big ones fill fast; 🍇🍯 feed <b>slowly over time</b>, and Nana's cake 🧁 makes him <b>drowsy</b>.</div>
+      <div class="muted" style="max-width:300px">Tap treats to feed him — only every couple seconds, so <b>choose wisely</b>. Big treats fill fast, 🍇 feeds <b>over time</b>, the cake 🧁 makes him <b>drowsy</b>. Don't feed the <b>same treat twice in a row</b> (longer wait!) — and <b>use up the huntsman's allergens</b> before he arrives, or he can't come in.</div>
     </div>
     <button class="btn good" id="wolf-play">🧺 Distract the wolf!</button>
     <div style="height:8px"></div>
@@ -1654,8 +1656,20 @@ function renderWolfIntro() {
   on("#wolf-skip", "click", startRound);
   show("event");
 }
+// Pick 1–2 treats the huntsman is allergic to — you must use them ALL up before he arrives.
+// Kept to a clearable total so it's a real task, not an impossible one.
+function wolfPickAllergens(basket) {
+  const present = WOLF_ITEM_IDS.filter(id => (basket[id] || 0) > 0);
+  for (let i = present.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = present[i]; present[i] = present[j]; present[j] = t; }
+  const picks = [present[0]];
+  if (present[1] && (basket[present[0]] + basket[present[1]]) <= 5) picks.push(present[1]);
+  return picks;
+}
+function wolfAllergenLeft() { return WOLF ? WOLF.allergens.reduce((s, id) => s + (WOLF.basket[id] || 0), 0) : 0; }
 function wolfStart() {
-  WOLF = { patience: WOLF_START, basket: wolfBasket(), effects: [], slowUntil: 0, cooldownUntil: 0, elapsed: 0, inGreen: 0, over: false, tickTimer: null };
+  const basket = wolfBasket();
+  WOLF = { patience: WOLF_START, basket, allergens: wolfPickAllergens(basket), lastFed: null,
+    effects: [], slowUntil: 0, cooldownUntil: 0, cooldownDur: WOLF_COOLDOWN_MS, elapsed: 0, inGreen: 0, over: false, tickTimer: null };
   wolfPlay();
   WOLF.tickTimer = setInterval(wolfTick, WOLF_TICK);
 }
@@ -1671,12 +1685,22 @@ function wolfTick() {
   if (p >= WOLF_GREEN[0] && p <= WOLF_GREEN[1]) WOLF.inGreen += WOLF_TICK;
   wolfPaint();
   if (p <= 0) return wolfFinish(false);
-  if (WOLF.elapsed >= WOLF_WIN_MS) return wolfFinish(true);
+  // huntsman arrives — but he can't help if his allergens aren't all used up
+  if (WOLF.elapsed >= WOLF_WIN_MS) return wolfFinish(wolfAllergenLeft() > 0 ? "allergen" : true);
+}
+function wolfObjHtml() {
+  if (!WOLF || !WOLF.allergens.length) return "";
+  const parts = WOLF.allergens.map(id => {
+    const left = WOLF.basket[id] || 0, it = WOLF_ITEMS[id];
+    return `<span class="wolf-obj-item ${left <= 0 ? "done" : ""}">${it.emoji} ${left <= 0 ? "✓" : "×" + left}</span>`;
+  }).join("");
+  return `<span class="wolf-obj-lbl">🤧 Use up before rescue:</span>${parts}`;
 }
 function wolfPlay() {
   const tiles = WOLF_ITEM_IDS.map(id => {
-    const it = WOLF_ITEMS[id], n = WOLF.basket[id] || 0;
-    return `<button class="wolf-tile ${n <= 0 ? "empty" : ""}" data-id="${id}" ${n <= 0 ? "disabled" : ""}>
+    const it = WOLF_ITEMS[id], n = WOLF.basket[id] || 0, allergen = WOLF.allergens.includes(id);
+    return `<button class="wolf-tile ${n <= 0 ? "empty" : ""} ${allergen ? "allergen" : ""}" data-id="${id}" ${n <= 0 ? "disabled" : ""}>
+      ${allergen ? `<span class="wolf-allergen">🤧</span>` : ""}
       <span class="wolf-emoji">${it.emoji}</span><span class="wolf-tname">${it.name}</span>
       <span class="wolf-tfx">${wolfFxLabel(it)}</span><span class="wolf-count" id="wolf-n-${id}">×${n}</span></button>`;
   }).join("");
@@ -1686,6 +1710,7 @@ function wolfPlay() {
       <div class="wolf-face" id="wolf-face">🐺</div>
       <div class="wolf-huntsman"><span class="wolf-hlbl">🏹 Huntsman on the way…</span><div class="wolf-hbar"><i id="wolf-hbar"></i></div></div>
     </div>
+    <div class="wolf-obj" id="wolf-obj">${wolfObjHtml()}</div>
     <div class="wolf-patience">
       <div class="wolf-plabel">😤 Patience</div>
       <div class="wolf-ptrack"><span class="wolf-green" style="left:${WOLF_GREEN[0]}%;width:${WOLF_GREEN[1] - WOLF_GREEN[0]}%"></span><i class="wolf-pfill" id="wolf-pfill"></i></div>
@@ -1707,8 +1732,13 @@ function wolfPaint() {
   const face = $("#wolf-face"); if (face) face.classList.toggle("angry", p < 22);
   const fx = $("#wolf-effects");
   if (fx) fx.innerHTML = WOLF.effects.map(e => `<span class="wolf-chip">⏳ +${e.perSec}/s · ${Math.ceil(e.remaining)}s</span>`).join("") + (now < WOLF.slowUntil ? `<span class="wolf-chip slow">😴 drowsy ${Math.ceil((WOLF.slowUntil - now) / 1000)}s</span>` : "");
-  const cd = WOLF.cooldownUntil - now, cdbar = $("#wolf-cdbar"), cdtxt = $("#wolf-cdtxt"), grid = $("#wolf-grid");
-  if (cd > 0) { if (cdbar) cdbar.style.width = (cd / WOLF_COOLDOWN_MS * 100) + "%"; if (cdtxt) cdtxt.textContent = "Wait…"; if (grid) grid.classList.add("cooling"); }
+  const ob = $("#wolf-obj");
+  if (ob) { ob.innerHTML = wolfObjHtml();
+    const left = wolfAllergenLeft(), late = WOLF.elapsed / WOLF_WIN_MS > 0.65;
+    ob.classList.toggle("clear", left <= 0);
+    ob.classList.toggle("urgent", left > 0 && late); }
+  const cd = WOLF.cooldownUntil - now, dur = WOLF.cooldownDur || WOLF_COOLDOWN_MS, cdbar = $("#wolf-cdbar"), cdtxt = $("#wolf-cdtxt"), grid = $("#wolf-grid");
+  if (cd > 0) { if (cdbar) cdbar.style.width = (cd / dur * 100) + "%"; if (cdtxt) cdtxt.textContent = WOLF.cooldownDur > WOLF_COOLDOWN_MS ? "Same treat — longer wait…" : "Wait…"; if (grid) grid.classList.add("cooling"); }
   else { if (cdbar) cdbar.style.width = "0%"; if (cdtxt) cdtxt.textContent = "Ready — feed him!"; if (grid) grid.classList.remove("cooling"); }
 }
 function wolfFeed(id) {
@@ -1720,14 +1750,20 @@ function wolfFeed(id) {
   WOLF.basket[id] = n - 1;
   if (it.kind === "overtime") { WOLF.effects.push({ perSec: it.perSec, remaining: it.dur }); SFX.charm(); }
   else { WOLF.patience = Math.min(100, WOLF.patience + it.amt); if (it.kind === "tonic") { WOLF.slowUntil = now + it.slow * 1000; SFX.charm(); } else SFX.coin(); }
-  WOLF.cooldownUntil = now + WOLF_COOLDOWN_MS;
+  // same treat twice in a row → the wolf gets wary → a longer wait before you can feed again
+  const repeat = id === WOLF.lastFed;
+  WOLF.cooldownDur = WOLF_COOLDOWN_MS + (repeat ? WOLF_REPEAT_PENALTY_MS : 0);
+  WOLF.cooldownUntil = now + WOLF.cooldownDur;
+  WOLF.lastFed = id;
+  if (repeat) { SFX.sneeze(); toast("😬 The same treat again? He eyes you — longer wait!"); }
   const cnt = $("#wolf-n-" + id); if (cnt) cnt.textContent = "×" + WOLF.basket[id];
   const tile = $("#screen-event") && $("#screen-event").querySelector(`.wolf-tile[data-id="${id}"]`);
   if (tile) { if (WOLF.basket[id] <= 0) { tile.classList.add("empty"); tile.disabled = true; } tile.classList.remove("pop"); void tile.offsetWidth; tile.classList.add("pop"); }
   wolfPaint();
 }
-function wolfFinish(win) {
+function wolfFinish(result) {
   if (!WOLF) return;
+  const win = result === true, allergenFail = result === "allergen";
   WOLF.over = true;
   if (WOLF.tickTimer) { clearInterval(WOLF.tickTimer); WOLF.tickTimer = null; }
   const secs = Math.round(WOLF.elapsed / 1000), greenPct = Math.round(WOLF.inGreen / Math.max(1, WOLF.elapsed) * 100);
@@ -1741,6 +1777,13 @@ function wolfFinish(win) {
               `<div class="stat-line"><span>Time kept comfy (green)</span><span>${greenPct}%</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`],
       note: "You kept the wolf busy long enough — the huntsman bursts in and rescues Grandma! 🎉" };
+  } else if (allergenFail) {
+    save(); SFX.sneeze();
+    const leftT = WOLF.allergens.filter(id => (WOLF.basket[id] || 0) > 0).map(id => WOLF_ITEMS[id].emoji).join(" ");
+    outcome = { emoji: "🤧", title: "Huntsman can't come in!", cls: "lose",
+      lines: [`<div class="stat-line"><span>You stalled him</span><span>${secs}s</span></div>`,
+              `<div class="stat-line"><span>Allergens left out</span><span style="color:var(--bad)">${leftT}</span></div>`],
+      note: "You held the wolf off — but you left the huntsman's allergens on the table! He sneezes at the door and the wolf slips away. Next time, use up the 🤧 treats before he arrives." };
   } else {
     save(); SFX.sneeze();
     outcome = { emoji: "🐺", title: "The wolf pounced!", cls: "lose",
