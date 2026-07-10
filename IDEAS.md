@@ -99,6 +99,42 @@ for a realm event AND for the practice-shop idea below.
 
 ---
 
+## 🆕 "Grandma… or the Wolf?" — Willow-Wish Village FINALE
+
+**The premise:** Little Red arrives at Grandma's cottage. Is it really Grandma, or the wolf
+in her nightcap? A **deduction** game built from the fairytale's own iconic beats.
+
+**Recommended design — spot-the-tells (using the story's lines as the UI):** inspect
+"Grandma" feature by feature; each is an innocent Grandma trait OR a wolf tell:
+- 👀 *"What big eyes you have…"* — warm, or wolf-yellow & hungry?
+- 👂 *"What big ears…"* — soft & floppy, or pointed & furry?
+- 🦷 *"What big teeth…"* — dentures, or fangs?
+- 🐾 hands — wrinkled, or clawed/hairy?  · 🗣️ voice — sweet warble, or a growl underneath?
+
+Flag the suspicious traits, then make the call. **The deduction twist:** sometimes it really
+IS Grandma (all traits innocent — falsely accusing her should FAIL you), sometimes it's the
+wolf (several tells to catch). So you're reading evidence, not coin-flipping.
+
+**The basket = your investigation tools (ties in the picnic ingredients).** Offer items to
+probe reactions: Grandma coos over flowers/tea; the wolf can't hide itself near the roast, or
+sniffs at *you* too hungrily. Offering items surfaces tells.
+
+**Why it's finale-safe (must-win + retryable):**
+- **Solvable by observation** — a careful player can ALWAYS tell. Critical for a must-win
+  gate: skill wins, never unfair RNG. (Difficulty = how *subtle* the tells are.)
+- Clean win/lose: catch the wolf OR correctly clear Grandma → win the **Realm Key**. Wrong
+  accusation, or dawdle too long and the wolf pounces → fail, retry (forgiving).
+
+**Alternates if we want a different flavor:**
+- **Read-the-reaction (basket-first):** the whole game is offering picnic items and reading
+  micro-reactions to deduce. Simpler, leans fully on the basket idea.
+- **Spot-the-difference memory:** flash the real Grandma, then the current one — tap what
+  changed. Classic/readable, but less on-theme than "what big teeth you have."
+
+Pick: **spot-the-tells + basket-as-probes.** Most iconic, most "aha," and genuinely solvable.
+
+---
+
 ## 🆕 Spilled Wishwine — King's Courtyard (candidate FINALE)
 
 **The scene:** a droplet of enchanted crimson-purple wine falls and **splats into a tiny
