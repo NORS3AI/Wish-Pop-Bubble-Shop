@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v131"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v132"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2213,28 +2213,31 @@ function feastFinish(win) {
 /* ======================================================================= */
 let STACK = null;
 let STACK_FINALE = false;           // true when this run is the Beanstalk Realm-Key finale
-const STACK_TICK = 55;              // ms per simulation tick
-const STACK_CATCH_Y = 80;          // y% of the plate's catch line
-const STACK_FLOOR = 100;           // y% at which an uncaught item is gone
-const STACK_COLS = 5;              // spawn columns across the sky
+const STACK_TICK = 45;              // ms per simulation tick (smaller = smoother sway)
+const STACK_SURFACE = 46;           // y% where the TOP of the tower sits — it stays mid-screen
+const STACK_COIN_R = 4;             // coin "radius" in y%; catch fires the instant the TIP touches
+const STACK_CATCH_Y = STACK_SURFACE - STACK_COIN_R; // y% at which a falling coin's tip meets the top
+const STACK_PITCH = 4.6;            // vertical spacing between stacked coins (y%)
+const STACK_FLOOR = 108;            // y% at which an uncaught item is gone
 const STACK_WIND_LEN = 4500;       // ms a wind gust lasts
 // Falling items. good coins/gems ADD height; bad bombs/rocks SUBTRACT height and add Wobble.
 const STACK_KINDS = {
   coin: { name: "Coin", emoji: "🪙", good: true,  height: 1,  wob: 0 },
   gem:  { name: "Gem",  emoji: "💎", good: true,  height: 3,  wob: 0 },
-  rock: { name: "Rock", emoji: "🪨", good: false, height: -1, wob: 20 },
-  bomb: { name: "Bomb", emoji: "💣", good: false, height: -4, wob: 34 },
+  rock: { name: "Rock", emoji: "🪨", good: false, height: -1, wob: 16 },
+  bomb: { name: "Bomb", emoji: "💣", good: false, height: -4, wob: 28 },
 };
-// Difficulty. plateW = catcher width (%). fall = %screen/sec. spawnEvery = ms between drops.
-// dur = round length. goal = Stack Height to win. winds = # of wind gusts. spawn = weighted
-// drop table. wobDecay = Wobble recovered per second when you're catching clean.
+// Difficulty. catchTol = how close the tower-top must be to a coin's x to catch it (%). sway =
+// how bouncy the tower is (grows with height). fall = %screen/sec. spawnEvery = ms between drops.
+// dur = round length. goal = Stack Height to win. winds = # of wind gusts. spawn = weighted drop
+// table. wobDecay = Wobble recovered per second when catching clean. windWob = Wobble/sec in wind.
 const STACK_MODES = {
-  easy:   { label: "Easy",   plateW: 30, fall: 16, spawnEvery: 850, dur: 30000, goal: 20, winds: 0,
-            spawn: [["coin", 70], ["gem", 12], ["rock", 12], ["bomb", 6]], wobDecay: 7, windWob: 0 },
-  medium: { label: "Medium", plateW: 22, fall: 19, spawnEvery: 760, dur: 36000, goal: 26, winds: 1,
-            spawn: [["coin", 64], ["gem", 10], ["rock", 16], ["bomb", 10]], wobDecay: 6, windWob: 9 },
-  hard:   { label: "Hard",   plateW: 17, fall: 23, spawnEvery: 660, dur: 42000, goal: 36, winds: 2,
-            spawn: [["coin", 60], ["gem", 8], ["rock", 18], ["bomb", 14]], wobDecay: 5, windWob: 12 },
+  easy:   { label: "Easy",   catchTol: 12, sway: 0.12, fall: 20, spawnEvery: 900, dur: 30000, goal: 18, winds: 0,
+            spawn: [["coin", 72], ["gem", 12], ["rock", 11], ["bomb", 5]], wobDecay: 8, windWob: 0 },
+  medium: { label: "Medium", catchTol: 10, sway: 0.26, fall: 24, spawnEvery: 800, dur: 36000, goal: 22, winds: 1,
+            spawn: [["coin", 66], ["gem", 10], ["rock", 15], ["bomb", 9]], wobDecay: 7, windWob: 7 },
+  hard:   { label: "Hard",   catchTol: 8,  sway: 0.42, fall: 29, spawnEvery: 700, dur: 42000, goal: 30, winds: 2,
+            spawn: [["coin", 62], ["gem", 8], ["rock", 18], ["bomb", 12]], wobDecay: 6, windWob: 9 },
 };
 function stackMode() { return STACK_MODES[STACK.mode]; }
 function stackWinding() { return !!(STACK && STACK.windWindows.some(at => STACK.elapsed >= at && STACK.elapsed < at + STACK_WIND_LEN)); }
@@ -2302,15 +2305,20 @@ function stackStart(mode) {
   mode = STACK_MODES[mode] ? mode : "easy";
   const m = STACK_MODES[mode];
   const windWindows = m.winds === 2 ? [Math.round(0.36 * m.dur), Math.round(0.68 * m.dur)] : m.winds === 1 ? [Math.round(0.52 * m.dur)] : [];
-  STACK = { mode, items: [], uid: 0, plateX: 50, elapsed: 0, nextSpawnAt: 500,
+  STACK = { mode, items: [], uid: 0, targetX: 50, towerX: 50, towerVX: 0, angle: 0, elapsed: 0, nextSpawnAt: 500,
     height: 0, wobble: 0, caught: 0, missed: 0, windWindows, windOn: false, over: false, tickTimer: null };
   stackPlay();
   STACK.tickTimer = setInterval(stackTick, STACK_TICK);
 }
-function stackPileHtml() {
-  const shown = Math.min(STACK.height, 9);
-  let coins = ""; for (let i = 0; i < shown; i++) coins += `<span class="stack-coin">🪙</span>`;
-  return `<div class="stack-pile-coins">${coins}</div>`;
+// The tower renders from its TOP (parked at STACK_SURFACE) downward. As height grows the plate
+// sinks below the screen — so we only ever draw the coins that are still on-screen.
+function stackTowerHtml() {
+  const visible = Math.ceil((STACK_FLOOR - STACK_SURFACE) / STACK_PITCH) + 1;
+  const n = STACK.height, show = Math.min(n, visible);
+  let s = "";
+  for (let i = 0; i < show; i++) s += `<span class="stack-coin2" style="top:${STACK_SURFACE + i * STACK_PITCH}%">🪙</span>`;
+  if (n <= visible) s += `<div class="stack-base" style="top:${(STACK_SURFACE + n * STACK_PITCH).toFixed(2)}%"></div>`;
+  return s;
 }
 function stackPlay() {
   const m = stackMode();
@@ -2326,17 +2334,15 @@ function stackPlay() {
     <div class="feast-timerbar"><i id="stack-timer"></i></div>
     <div class="feast-sky stack-sky" id="stack-sky">
       <div class="feast-toast" id="stack-wind">🌬️ A gust of wind! The tower sways…</div>
-      <div class="stack-plate" id="stack-plate" style="left:50%;width:${m.plateW}%"><div class="stack-pile" id="stack-pile">${stackPileHtml()}</div><div class="stack-base"></div></div>
+      <div class="stack-tower" id="stack-tower">${stackTowerHtml()}</div>
     </div>
-    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Drag / move to slide the plate • catch 🪙💎 • dodge 💣🪨</p>
+    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Swipe to sway the tower • catch 🪙💎 • dodge 💣🪨</p>
   `);
   const sky = $("#stack-sky");
   const move = clientX => {
     if (!STACK || STACK.over) return;
     const r = sky.getBoundingClientRect(); if (!r.width) return;
-    const hw = stackMode().plateW / 2;
-    STACK.plateX = Math.max(hw, Math.min(100 - hw, (clientX - r.left) / r.width * 100));
-    const p = $("#stack-plate"); if (p) p.style.left = STACK.plateX + "%";
+    STACK.targetX = Math.max(8, Math.min(92, (clientX - r.left) / r.width * 100));   // swipe sets where the tower leans toward
   };
   sky.addEventListener("pointermove", e => move(e.clientX));
   sky.addEventListener("pointerdown", e => move(e.clientX));
@@ -2345,9 +2351,9 @@ function stackPlay() {
   stackPaint();
 }
 function stackSpawn() {
-  const kind = stackPick(), k = STACK_KINDS[kind], col = Math.floor(Math.random() * STACK_COLS), wind = stackWinding();
-  const it = { uid: ++STACK.uid, kind, x: 13 + col * (74 / (STACK_COLS - 1)), y: 0, spawnAt: STACK.elapsed,
-    fall: stackMode().fall * (wind ? 1.35 : 1) * (0.9 + Math.random() * 0.2), el: null };
+  const kind = stackPick(), k = STACK_KINDS[kind], wind = stackWinding();
+  const it = { uid: ++STACK.uid, kind, x: 12 + Math.random() * 76, y: 0, spawnAt: STACK.elapsed,
+    fall: stackMode().fall * (wind ? 1.3 : 1) * (0.92 + Math.random() * 0.16), passed: false, el: null };
   STACK.items.push(it);
   const sky = $("#stack-sky");
   if (sky) {
@@ -2360,14 +2366,16 @@ function stackSpawn() {
 }
 function stackCatch(it) {
   const k = STACK_KINDS[it.kind];
+  // an off-centre catch shoves the tower sideways — worse the taller you are
+  const off = it.x - STACK.towerX;
+  STACK.towerVX += off * (0.7 + Math.min(STACK.height, 45) * 0.03);
   STACK.height = Math.max(0, STACK.height + k.height);
   if (!k.good) STACK.wobble = Math.min(100, STACK.wobble + k.wob);
   STACK.caught++;
   if (it.el) it.el.remove();
   SFX[k.good ? (it.kind === "gem" ? "charm" : "coin") : "chop"]();
-  const plate = $("#stack-plate");
-  if (plate) { const cls = k.good ? "catch-good" : "catch-bad"; plate.classList.remove(cls); void plate.offsetWidth; plate.classList.add(cls); }
-  const pile = $("#stack-pile"); if (pile) pile.innerHTML = stackPileHtml();
+  const tower = $("#stack-tower");
+  if (tower) { tower.innerHTML = stackTowerHtml(); const cls = k.good ? "catch-good" : "catch-bad"; tower.classList.remove(cls); void tower.offsetWidth; tower.classList.add(cls); }
 }
 function stackPaint() {
   if (!STACK) return;
@@ -2378,25 +2386,39 @@ function stackPaint() {
   const w = $("#stack-wobble"); if (w) { w.style.width = STACK.wobble + "%"; w.className = "feast-tfill " + (STACK.wobble >= 75 ? "danger" : STACK.wobble >= 45 ? "amber" : "ok"); }
   const wn = $("#stack-wnum"); if (wn) wn.textContent = Math.round(STACK.wobble) + "%";
   const face = $("#stack-face"); if (face) face.textContent = STACK.wobble >= 75 ? "😰" : STACK.wobble >= 45 ? "😅" : "🪙";
-  const sky = $("#stack-sky"); if (sky) sky.classList.toggle("swaying", STACK.wobble >= 45 || stackWinding());
+  const tower = $("#stack-tower");
+  if (tower) { tower.style.setProperty("--tx", STACK.towerX.toFixed(2) + "%"); tower.style.setProperty("--ang", STACK.angle.toFixed(2) + "deg"); }
 }
 function stackTick() {
   if (!STACK || STACK.over) return;
   const m = stackMode(), dt = STACK_TICK / 1000;
   STACK.elapsed += STACK_TICK;
   const wind = stackWinding();
-  if (wind && !STACK.windOn) { STACK.windOn = true; toast("🌬️ A gust of wind — the tower sways!"); SFX.whoosh(); }
+  if (wind && !STACK.windOn) { STACK.windOn = true; toast("🌬️ A gust of wind — the tower sways!"); SFX.whoosh(); STACK.towerVX += (Math.random() < 0.5 ? -1 : 1) * 22; }
   else if (!wind && STACK.windOn) STACK.windOn = false;
   const banner = $("#stack-wind"); if (banner) banner.classList.toggle("show", wind);
-  // wobble: rises with wind, otherwise steadies as you catch clean
+  // Wobble meter (the topple gauge): rises with wind, steadies as you catch clean.
   STACK.wobble = Math.max(0, Math.min(100, STACK.wobble + (wind ? m.windWob : -m.wobDecay) * dt));
   if (STACK.elapsed >= STACK.nextSpawnAt) { stackSpawn(); STACK.nextSpawnAt = STACK.elapsed + (wind ? m.spawnEvery * 0.7 : m.spawnEvery); }
-  const hw = m.plateW / 2;
+  // Spring the tower toward where you're swiping — looser (more sway) the taller it gets.
+  const hf = 1 + Math.min(STACK.height, 50) * m.sway * 0.05;
+  const k = 30, damp = Math.max(2.6, 10 / hf);
+  STACK.towerVX += (STACK.targetX - STACK.towerX) * k * dt;
+  STACK.towerVX -= STACK.towerVX * damp * dt;
+  STACK.towerX += STACK.towerVX * dt;
+  if (STACK.towerX < 3) { STACK.towerX = 3; STACK.towerVX *= -0.3; }
+  if (STACK.towerX > 97) { STACK.towerX = 97; STACK.towerVX *= -0.3; }
+  STACK.angle = Math.max(-9, Math.min(9, STACK.towerVX * 0.42));
+  // Falling items: catch the instant the tip meets the tower top; otherwise it slips past.
   for (let i = STACK.items.length - 1; i >= 0; i--) {
     const it = STACK.items[i], prevY = it.y;
     it.y = (STACK.elapsed - it.spawnAt) / 1000 * it.fall;
-    if (prevY < STACK_CATCH_Y && it.y >= STACK_CATCH_Y && Math.abs(it.x - STACK.plateX) <= hw) { STACK.items.splice(i, 1); stackCatch(it); continue; }
-    if (it.y >= STACK_FLOOR) { STACK.items.splice(i, 1); STACK.missed++; if (it.el) it.el.remove(); continue; }
+    if (!it.passed && prevY < STACK_CATCH_Y && it.y >= STACK_CATCH_Y) {
+      if (Math.abs(it.x - STACK.towerX) <= m.catchTol) { STACK.items.splice(i, 1); stackCatch(it); continue; }
+      it.passed = true;   // missed the top — let it keep falling past the tower
+    }
+    if (it.passed && it.y >= STACK_SURFACE + 12) { STACK.items.splice(i, 1); STACK.missed++; if (it.el) it.el.remove(); continue; }
+    if (it.y >= STACK_FLOOR) { STACK.items.splice(i, 1); if (it.el) it.el.remove(); continue; }
     if (it.el) it.el.style.top = it.y + "%";
   }
   stackPaint();

@@ -207,8 +207,11 @@ the **Realm Key**. Redline the Patience bar → fail, retry (forgiving).
 
 ## 🪙 Sky-High Savings — Beanstalk Bank FINALE ✅ BUILT (v131)
 
-**What shipped (a Sky-Burger-style stacker, owner's idea):** coins and junk **rain from the top**;
-**slide the golden plate** along the bottom (drag / mouse-move) to catch them onto your tower.
+**What shipped (a Sky-Burger-style stacker, owner's idea; v132 = true Sky-Burger feel):** coins and
+junk **rain from the top**; **swipe to sway your tower** (drag / mouse-move) and catch coins on top.
+The tower **stacks infinitely** — its top stays parked mid-screen while the stack scrolls down and the
+plate sinks off the bottom. Catches register **on the tip** (the moment a coin meets the top), and the
+tower **springs & leans** as you move — wobblier the taller it grows, and off-centre catches shove it.
 - **Gold coin 🪙 → +1 height, gem 💎 → +3.** Reach the **goal height before time's up → win.**
 - **Bomb 💣 (−4) and rock 🪨 (−1)** knock coins off AND spike a **Wobble** meter; **Wobble maxes → the
   tower topples → lose.** Catching clean lets Wobble steady back down. (Doom bar = Wobble, mirroring
