@@ -83,10 +83,13 @@ unlock on that count, then allow the gold/key purchase.
 - ✅ Beanstalk's finale = **Sky-High Savings** (Sky-Burger-style coin stacker, v131 — spec below).
   Forced Easy, must-win, retryable; winning grants `GAME.finaleWon.beanstalk`. Admin: "🔑 Beanstalk
   Finale". (Beanstalk realm itself is still `comingSoon`, so this is ready-and-waiting.)
-- ✅ Realm differentiation (v136): each realm now has its own identity in the CORE loop, not just
-  new content. (1) **Per-realm fussiness** — a `reqBonus` raises the match-% needed to please a
-  customer (Willow +13, Courtyard +23, later realms more; capped at 92). So the court is genuinely
-  harder to satisfy, not just reskinned. (2) **Infused ingredients now DEBUT in the Courtyard** —
+- ✅ Realm differentiation (v136, retuned v138): each realm now has its own identity in the CORE
+  loop, not just new content. (1) **Per-realm fussiness** — a `reqBonus` shifts the match-% needed
+  to please a customer. NOTE: the difficulty ramp caps at the "veryhard" tier (80%) after ~10
+  customers, so the bonus mostly sets the STEADY-STATE target veterans see: **Willow 75%, Courtyard
+  85%**, escalating after (oasis 88, thieves 90, beanstalk 92-cap). v136 shipped +13/+23 which
+  stacked on the 80% veryhard base and hit the 92 cap for everyone → fixed in v138 to −5/+5 so the
+  steady-state lands exactly on 75/85. (2) **Infused ingredients now DEBUT in the Courtyard** —
   removed from Willow entirely (Willow = learn the basics; Courtyard = the crafting layer arrives).
   Admin "🏰 Go to King's Courtyard (test)" jumps there to test.
 - ⏳ TODO: wire finales for the remaining realms (Willow + Courtyard + Beanstalk built; Oasis &
