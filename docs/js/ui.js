@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v114"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v115"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3152,21 +3152,26 @@ function ingCard(st) {
   // infused ingredients carry a built-in charm effect — spell it out under the magic label
   const ingDef = (!inst.wild && !inst.essence) ? D.INGREDIENT_BY_ID[inst.id] : null;
   const infusedFx = ingDef && ingDef.infused ? INFUSED_LABEL[ingDef.infused] : "";
+  // flag any magic that matches this customer's allergy so you don't have to scan back to the bars
+  const allergens = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
+  const warnIco = ROUND.villain ? "☠️" : "⚠️";
+  const mkPill = q => {
+    const warn = allergens.includes(q);
+    return `<span class="mp${warn ? " allergen" : ""}" style="--mc:${D.MAGIC[q] || "#888"}">${warn ? `<span class="mp-warn">${warnIco}</span>` : ""}${q}</span>`;
+  };
   let pills = "";
   if (infusedFx) {
     // infused shows its real magic pill(s) then a plain-language effect line (no blank reserves)
     for (let r = 0; r < list.length; r++) {
       const reveal = r === 0 || insight || singleKnown;
-      if (reveal) { const q = list[r]; pills += `<span class="mp" style="--mc:${D.MAGIC[q] || "#888"}">${q}</span>`; }
-      else pills += `<span class="mp hidden">?</span>`;
+      pills += reveal ? mkPill(list[r]) : `<span class="mp hidden">?</span>`;
     }
     pills += `<span class="icard-fx">${infusedFx}</span>`;
   } else {
     for (let r = 0; r < 3; r++) {
       if (r < list.length) {
         const reveal = r === 0 || insight || singleKnown;
-        if (reveal) { const q = list[r]; pills += `<span class="mp" style="--mc:${D.MAGIC[q] || "#888"}">${q}</span>`; }
-        else pills += `<span class="mp hidden">?</span>`;
+        pills += reveal ? mkPill(list[r]) : `<span class="mp hidden">?</span>`;
       } else pills += `<span class="mp blank"></span>`;
     }
   }
