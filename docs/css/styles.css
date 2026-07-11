@@ -1106,6 +1106,18 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes stackBad { 0%,100% { transform: rotate(var(--ang)); } 30% { transform: rotate(calc(var(--ang) - 4deg)); } 70% { transform: rotate(calc(var(--ang) + 4deg)); } }
 .stack-hint { color: #cbbdf0; }
 .stack-best { font-size: 11px; font-weight: 700; color: #ffd76a; opacity: .9; margin-left: 4px; }
+/* Spilled Wish-Wine — dab blooming drops off the King's cloak */
+.wine-cloak { position: relative; flex: 1; min-height: 0; margin: 4px 2px; border-radius: 14px; overflow: hidden;
+  background: linear-gradient(160deg, #efe7d6, #d6c9ad); border: 1px solid rgba(0,0,0,.18);
+  box-shadow: inset 0 0 34px rgba(120,90,50,.28); touch-action: manipulation; }
+.wine-drop { position: absolute; transform: translate(-50%,-50%); width: 16px; height: 16px; border-radius: 50%; padding: 0; border: none; cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #b23a63, #5e1436 72%); box-shadow: 0 1px 3px rgba(0,0,0,.45); z-index: 2; }
+.wine-drop.urgent { animation: wineUrgent .5s ease-in-out infinite; box-shadow: 0 0 12px rgba(210,40,95,.95); }
+@keyframes wineUrgent { 0%,100% { transform: translate(-50%,-50%) scale(1); } 50% { transform: translate(-50%,-50%) scale(1.12); } }
+.wine-stain { position: absolute; transform: translate(-50%,-50%); width: 60px; height: 52px; border-radius: 48% 52% 55% 45%;
+  background: radial-gradient(circle at 40% 35%, rgba(120,20,60,.72), rgba(70,10,40,.6) 70%); z-index: 1; pointer-events: none; }
+.wine-sparkle { position: absolute; transform: translate(-50%,-50%); font-size: 30px; z-index: 3; pointer-events: none; animation: wineSpark .4s ease-out forwards; }
+@keyframes wineSpark { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.5); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.5); } }
 /* Collection hunt — tracker chip + "found one!" flourish */
 .hunt-chip { display: flex; width: fit-content; margin: 6px auto 0; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 999px;
   background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.30); font-size: 13px; font-weight: 800; color: #fff;

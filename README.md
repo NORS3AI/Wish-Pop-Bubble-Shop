@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🍷 **New Courtyard game — Spilled Wish-Wine!** The enchanted wine is dripping all over the King's
+  cloak. Each drop slowly **blooms** — **tap it before it finishes** and it whisks away, but miss it
+  and it sets into a **permanent stain**. Let too many stains set and the King storms off! Always dab
+  the drop **closest to setting** first, and hang on as the spill speeds up toward the end. Comes in
+  Easy / Medium / Hard, and now turns up as one of the Courtyard's events.
+
 - 🐑 **New treasure hunts!** Keep an eye out while you play — little lost treasures now turn up
   hidden in the game: in a **bubble pop**, in the **glitter of a scoop**, tucked inside an
   **ingredient you cut**, or in a **tip**. In **Willow-Wish Village**, help **Bo Peep** find her

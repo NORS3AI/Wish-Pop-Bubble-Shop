@@ -323,6 +323,15 @@ event / practice game (it doesn't need to carry a whole finale). Spec preserved 
 
 ---
 
+## 🍷 Spilled Wish-Wine — ✅ BUILT (v142), a Courtyard event + practice game
+
+Shipped as the "dab the spill" game: enchanted wine drips onto the King's cloak; each drop **blooms**
+outward and you **tap it before it finishes** or it sets into a **permanent stain**. Too many stains
+(a per-mode cap) → lose; survive the toast (timer) under the cap → win. Multiple drops at once = dab
+the one **closest to setting** first; the spill speeds up over the round. Easy/Medium/Hard modes;
+seated into the **Courtyard playlist** (the `"wine"` token, slot 5). Verified 15/15 winnable all modes.
+Admin: "🍷 Spilled Wish-Wine (practice)". Original brainstorm below.
+
 ## 🆕 Spilled Wishwine — ripple/bloom minor event (was a finale candidate)
 
 **The scene:** a droplet of enchanted crimson-purple wine falls and **splats into a tiny
