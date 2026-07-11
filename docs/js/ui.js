@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v176"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v177"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -607,6 +607,7 @@ function renderAdmin() {
         <button class="btn" id="ad-dance2" style="margin-bottom:8px">🤴 Ball: Prince</button>
         <button class="btn" id="ad-dance3" style="margin-bottom:8px">👸 Ball: Cinderella</button>
         <button class="btn" id="ad-cake" style="margin-bottom:8px">🧁 Drury Lane Bake-Off</button>
+        <button class="btn" id="ad-intro" style="margin-bottom:8px">📖 Replay Intro (Little Red)</button>
         <button class="btn secondary" id="ad-boss" style="margin-bottom:8px">👑 VIP (Boss) Customer</button>
         <button class="btn secondary" id="ad-rush">⏱️ In‑a‑Rush Customer</button>
       </div>
@@ -653,6 +654,7 @@ function renderAdmin() {
   on("#ad-dance2", "click", () => renderDanceIntro("prince"));
   on("#ad-dance3", "click", () => renderDanceIntro("cinderella"));
   on("#ad-cake", "click", renderCakeIntro);
+  on("#ad-intro", "click", playArrivalIntro);
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
