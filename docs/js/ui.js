@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v160"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v161"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -218,6 +218,7 @@ function stopEventTimers() {
   if (typeof STACK !== "undefined" && STACK && STACK.tickTimer) clearInterval(STACK.tickTimer);
   if (typeof WINE !== "undefined" && WINE && WINE.tickTimer) clearInterval(WINE.tickTimer);
   if (typeof CARPET !== "undefined" && CARPET && CARPET.tickTimer) clearInterval(CARPET.tickTimer);
+  if (typeof carpetMusicStop === "function") carpetMusicStop();
   if (typeof RUMPEL !== "undefined") RUMPEL = null;
   if (typeof GOBLIN !== "undefined") GOBLIN = null;
   if (typeof WOLF !== "undefined") WOLF = null;
@@ -3022,6 +3023,17 @@ function carpetClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function carpetSkin() { return carpetClamp(GAME.carpetSkin || 5, 1, CARPET_RUGS); }
 // difficulty creeps up: things fall a touch faster the deeper into the flight you are
 function carpetRamp() { return CARPET ? (1 + 0.40 * Math.min(1, CARPET.elapsed / carpetMode().dur)) : 1; }
+// Background music for the flight (looping mp3). Respects the game's mute toggle.
+let CARPET_MUSIC = null;
+function carpetMusicStart() {
+  if (SFX.isMuted()) return;
+  try {
+    if (!CARPET_MUSIC) { CARPET_MUSIC = new Audio(`audio/flyingcarpet.mp3?v=${BUILD}`); CARPET_MUSIC.loop = true; CARPET_MUSIC.volume = 0.5; }
+    CARPET_MUSIC.currentTime = 0;
+    const pr = CARPET_MUSIC.play(); if (pr && pr.catch) pr.catch(() => {});
+  } catch (e) {}
+}
+function carpetMusicStop() { if (CARPET_MUSIC) { try { CARPET_MUSIC.pause(); } catch (e) {} } }
 function renderCarpetIntro() {
   SFX.unlock(); SFX.fanfare();
   html("event", `
@@ -3067,6 +3079,7 @@ function carpetStart(mode) {
     nextStarAt: 450, nextCloudAt: m.cloudEvery, nextPlanetAt: m.planetEvery, caught: 0,
     hearts: CARPET_HEARTS, invUntil: -1, steer: 0, vx: 0, bg: 0, fog: 0, over: false, tickTimer: null };
   carpetPlay();
+  carpetMusicStart();
   CARPET.tickTimer = setInterval(carpetTick, CARPET_TICK);
 }
 function carpetPlay() {
@@ -3235,6 +3248,7 @@ function carpetTick() {
 }
 function carpetFinish(win, why) {
   if (!CARPET) return;
+  carpetMusicStop();
   const m = carpetMode(), caught = CARPET.caught;
   CARPET.over = true;
   if (CARPET.tickTimer) { clearInterval(CARPET.tickTimer); CARPET.tickTimer = null; }
