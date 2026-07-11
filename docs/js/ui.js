@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v142"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v143"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2734,9 +2734,10 @@ function stackFinishInfinite(height, why) {
 let WINE = null;
 const WINE_TICK = 60;   // ms per tick
 const WINE_MODES = {
-  easy:   { label: "Easy",   bloomMs: 2800, spawnEvery: 1150, dur: 26000, maxStains: 10 },
-  medium: { label: "Medium", bloomMs: 2200, spawnEvery: 950,  dur: 30000, maxStains: 8 },
-  hard:   { label: "Hard",   bloomMs: 1750, spawnEvery: 780,  dur: 36000, maxStains: 7 },
+  // curve shifted up a notch (old Medium is the new Easy). Hard "splatters" satellite drops per spill.
+  easy:   { label: "Easy",   bloomMs: 2200, spawnEvery: 950,  dur: 28000, maxStains: 9 },
+  medium: { label: "Medium", bloomMs: 1950, spawnEvery: 850,  dur: 32000, maxStains: 8 },
+  hard:   { label: "Hard",   bloomMs: 1900, spawnEvery: 1350, dur: 36000, maxStains: 9, splatter: 2 },
 };
 function wineMode() { return WINE_MODES[WINE.mode]; }
 // difficulty creeps up over the round: drops bloom quicker & spill faster toward the "toast"
@@ -2794,15 +2795,25 @@ function winePlay() {
   show("event");
   winePaint();
 }
-function wineSpawn() {
-  const m = wineMode(), cloak = $("#wine-cloak"); if (!cloak) return;
-  const d = { uid: ++WINE.uid, x: 8 + Math.random() * 84, y: 12 + Math.random() * 74, born: WINE.elapsed, bloom: m.bloomMs * wineRamp(), el: null };
+function wineClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function wineAddDrop(x, y, bloom) {
+  const cloak = $("#wine-cloak"); if (!cloak) return;
+  const d = { uid: ++WINE.uid, x, y, born: WINE.elapsed, bloom, el: null };
   WINE.drops.push(d);
   const el = document.createElement("button");
   el.className = "wine-drop"; el.dataset.uid = d.uid;
-  el.style.left = d.x + "%"; el.style.top = d.y + "%";
+  el.style.left = x + "%"; el.style.top = y + "%";
   el.addEventListener("click", () => wineTap(d.uid));
   cloak.appendChild(el); d.el = el;
+}
+function wineSpawn() {
+  const m = wineMode(); if (!$("#wine-cloak")) return;
+  const cx = 10 + Math.random() * 80, cy = 14 + Math.random() * 70, ramp = wineRamp();
+  wineAddDrop(cx, cy, m.bloomMs * ramp);
+  // HARD: the spill splatters extra drops right around it — close in place AND time
+  for (let k = 0; k < (m.splatter || 0); k++) {
+    wineAddDrop(wineClamp(cx + (Math.random() - 0.5) * 24, 5, 95), wineClamp(cy + (Math.random() - 0.5) * 22, 8, 90), m.bloomMs * ramp * (0.8 + Math.random() * 0.4));
+  }
 }
 function wineTap(uid) {
   if (!WINE || WINE.over) return;
