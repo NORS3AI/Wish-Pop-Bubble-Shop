@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v159"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v160"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3011,11 +3011,11 @@ const CARPET_STARS = 10, CARPET_CLOUDS = 6, CARPET_PLANETS = 3, CARPET_RUGS = 10
 const CARPET_HEARTS = 3;               // hearts you start with
 const CARPET_STAR_GOLD = [2, 3, 5, 6, 9, 10];  // gold stars — COLLECT these
 const CARPET_STAR_DARK = [1, 4, 7, 8];         // blue/purple stars — AVOID (catching one costs a heart)
-const CARPET_TURN = 0.14;              // how quickly the carpet swings toward your steer — low = boat-like, heavy to turn
+const CARPET_TURN = 0.10;              // how quickly the carpet swings toward your steer — low = boat-like, heavy to turn
 const CARPET_MODES = {
-  easy:   { label: "Easy",   dur: 32000, fall: 22, starEvery: 900, cloudEvery: 3800, planetEvery: 8600, steer: 52, fogGain: 0.90, fogClear: 0.38, planetR: 52, badStar: 0.22 },
-  medium: { label: "Medium", dur: 38000, fall: 27, starEvery: 800, cloudEvery: 3100, planetEvery: 7000, steer: 58, fogGain: 1.05, fogClear: 0.32, planetR: 58, badStar: 0.30 },
-  hard:   { label: "Hard",   dur: 44000, fall: 32, starEvery: 720, cloudEvery: 2500, planetEvery: 6400, steer: 66, fogGain: 1.25, fogClear: 0.27, planetR: 60, badStar: 0.33 },
+  easy:   { label: "Easy",   dur: 32000, fall: 22, starEvery: 900, cloudEvery: 3800, planetEvery: 7200, steer: 46, fogGain: 0.90, fogClear: 0.38, planetR: 52, badStar: 0.22 },
+  medium: { label: "Medium", dur: 38000, fall: 27, starEvery: 800, cloudEvery: 3100, planetEvery: 5400, steer: 50, fogGain: 1.05, fogClear: 0.32, planetR: 58, badStar: 0.30 },
+  hard:   { label: "Hard",   dur: 44000, fall: 32, starEvery: 720, cloudEvery: 2500, planetEvery: 3900, steer: 54, fogGain: 1.25, fogClear: 0.27, planetR: 60, badStar: 0.33 },
 };
 function carpetMode() { return CARPET_MODES[CARPET.mode]; }
 function carpetClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -3221,7 +3221,7 @@ function carpetTick() {
   const bodyR = CARPET_BODY / 100 * skyW;
   for (let i = CARPET.planets.length - 1; i >= 0; i--) {
     const c = CARPET.planets[i];
-    c.y += fall * 0.29 * dt; c.x -= shift;   // planets drift slowly — plenty of time to read the edge and steer clear
+    c.y += fall * 0.37 * dt; c.x -= shift;   // planets drift down — a bit quicker so more of them pass by to dodge
     if (c.y > 100 + m.planetR * 1.4 || c.x < -140 || c.x > 240) { if (c.el) c.el.remove(); CARPET.planets.splice(i, 1); continue; }
     if (c.el) {
       c.el.style.top = c.y + "%"; c.el.style.left = c.x + "%";
