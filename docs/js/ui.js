@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v140"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v141"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1157,6 +1157,48 @@ const FAIRY_LADDER = [
 ];
 const FAIRY_SHOW = 5, FAIRY_NEED = 3, FAIRY_BASKETS = 6;
 let fairyRung = 1;
+// --- Realm event PLAYLIST: an authored recipe for each realm's story ------
+// The story is seated in stone (guarantees the ball order, exactly one villain, no spam), while
+// "house" slots stay a little random so runs aren't identical. Plan length = eventsNeeded − 1
+// (the last slot is always reserved for the must-win finale). Tokens:
+//   "ball"  → a Royal Ball; partner escalates knight → prince → cinderella by its order in the plan
+//   "queen" → the Evil Queen villain round (falls back to a house event if you can't afford her)
+//   "house" → a recurring "house" event (Mixing Duel / Fairy's Match / Bake-Off), no back-to-back repeats
+//   "duel"/"fairy"/"cake" → that specific house event, if you want an exact seat
+const REALM_EVENT_PLAN = {
+  willow:    ["house", "house", "queen", "house"],                              // 4 story + 🐺 finale = 5
+  courtyard: ["ball", "house", "queen", "ball", "house", "ball", "house"],       // 3 balls (K/P/C) + Queen + 3 house + 🍗 finale = 8
+};
+let lastHouseEvent = null;
+function houseEvent() {
+  const all = [renderDuelIntro, renderFairyIntro, renderCakeIntro];
+  const pool = all.filter(f => f !== lastHouseEvent);
+  const pick = R.pick(pool.length ? pool : all);
+  lastHouseEvent = pick; return pick;
+}
+function resolveEventToken(token, plan, idx) {
+  if (token === "ball") {
+    const ballNo = plan.slice(0, idx + 1).filter(t => t === "ball").length;   // 1st ball = knight, 2nd = prince, 3rd = cinderella
+    const partner = ["knight", "prince", "cinderella"][ballNo - 1] || "cinderella";
+    return () => renderDanceIntro(partner);
+  }
+  if (token === "queen") return GAME.gold >= QUEEN_PACKAGES[0].gold ? renderQueenIntro : houseEvent();
+  if (token === "duel") return renderDuelIntro;
+  if (token === "fairy") return renderFairyIntro;
+  if (token === "cake") return renderCakeIntro;
+  return houseEvent();   // "house" or anything unrecognized
+}
+// Read-only preview of a realm's authored story sequence (for tooling/tests).
+function eventPlanPreview(realmId) {
+  const plan = REALM_EVENT_PLAN[realmId] || [];
+  const seq = plan.map((token, idx) => {
+    if (token === "ball") { const n = plan.slice(0, idx + 1).filter(t => t === "ball").length; return "ball:" + (["knight", "prince", "cinderella"][n - 1] || "cinderella"); }
+    if (token === "queen") return GAME.gold >= QUEEN_PACKAGES[0].gold ? "queen" : "house(queen→fallback)";
+    return token;
+  });
+  seq.push("FINALE");
+  return seq;
+}
 function maybeEvent() {
   if (GAME.nextEventAt < 0) { GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save(); return false; }
   if (servedTotal < GAME.nextEventAt) return false;
@@ -1168,12 +1210,12 @@ function maybeEvent() {
     finale();
     return true;
   }
-  // otherwise a regular story event (counts win-or-lose, capped at need-1)
-  const events = [renderDuelIntro, renderFairyIntro, renderCakeIntro];
-  if (GAME.gold >= QUEEN_PACKAGES[0].gold) events.push(renderQueenIntro); // Queen needs gold for her ransom
-  if (realm.id === "courtyard") events.push(() => renderDanceIntro(pickDancePartner())); // a royal-ball dance lesson
+  // otherwise the next authored story event (counts win-or-lose, capped at need-1)
+  const cleared = realmEventsCleared(realm.id);
+  const plan = REALM_EVENT_PLAN[realm.id] || [];
+  const token = plan[cleared] || "house";   // out-of-plan realms fall back to a house event
   markRealmEventCleared();   // advances this realm's story (win or lose), reserving the finale slot
-  R.pick(events)();
+  resolveEventToken(token, plan, cleared)();
   return true;
 }
 function renderFairyIntro() {
@@ -4842,7 +4884,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

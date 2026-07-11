@@ -147,6 +147,25 @@ as a **light, opt-in collection meta** layered over normal play, NOT a timed cha
 
 ---
 
+## ✅ Realm event PLAYLISTS — authored story recipes (BUILT v141)
+
+Replaced the old pure-random event picker with a **per-realm authored plan** (`REALM_EVENT_PLAN` in
+ui.js). Each realm's story is seated in stone (guarantees the ball order, exactly one villain, no
+event spammed) while `"house"` filler slots stay lightly random (no back-to-back repeats). Plan
+length = `eventsNeeded − 1`; the last slot is always the must-win finale.
+- Tokens: `ball` (partner escalates knight→prince→cinderella by order), `queen` (villain; falls back
+  to a house event if you can't afford her), `house` (Duel / Fairy / Bake-Off), or a specific
+  `duel`/`fairy`/`cake` seat.
+- **Willow (5):** house · house · queen · house · 🐺 finale.
+- **Courtyard (8):** ball:knight · house · queen · ball:prince · house · ball:cinderella · house · 🍗 finale.
+- **The per-realm recipe going forward** (owner's design): 1 villain, 1 dance (reskinned; Courtyard
+  gets the full 3× intro series → 👠 skin), 1 signature NEW engine run ~3× at rising difficulty → a
+  skin, the rest "house" events capped so nothing repeats much. One new engine per realm, everything
+  else a costume change or a difficulty tier. Trash visitors (Rumpel/Goblin) stay OUT of the story
+  count — they're bin-full utility encounters, not story beats.
+- **To author a new realm's arc:** just write its `REALM_EVENT_PLAN` entry. `eventPlanPreview(realm)`
+  prints the resolved sequence for checking.
+
 ## 🆕 "Catch the ripples" — tap falling drops in order (minigame / event)
 
 **The gist:** drops land all over the screen. Each landing spot shows a small circle
