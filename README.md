@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ♾️ **Magic Carpet — Infinite mode + music!** A new endless high-score run: fly as **long as you
+  can** (Hard's pace, 3 hearts, planets still end the flight) and it keeps ramping up — your best
+  survival times are saved as a **top-3 board**. The carpet now has its own **background music** too.
+  Also: **Hard has many more blue stars** to dodge now.
+
 - 🌌 **Cleaner screens + more sky!** Both flying/stacking games ditched the bulky top panel — now
   the counters tuck into the corners and the timer sits across the top, so you see much more of the
   sky (and get more time to react to what's falling). In the coin stacker the tower now stacks nice

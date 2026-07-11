@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v161"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v162"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -40,6 +40,7 @@ function normalizeGame(g) {
   if (!g.hunts || typeof g.hunts !== "object") g.hunts = {}; // realmId -> { found, done } collection scavenger hunt
   if (typeof g.huntCelebrate === "undefined") g.huntCelebrate = null; // realmId pending a completion thank-you card
   if (!g.carpetSkin || g.carpetSkin < 1 || g.carpetSkin > 10) g.carpetSkin = 5; // Magic Carpet Dash chosen rug (5 = moon carpet)
+  if (!Array.isArray(g.carpetBest)) g.carpetBest = []; // top-3 Magic Carpet Dash Infinite survival times (seconds)
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
   ["served", "perfect", "bossWins", "rings", "bags", "rushWins"].forEach(k => { if (typeof g.stats[k] !== "number") g.stats[k] = 0; });
   if (!g.quests || typeof g.quests !== "object") g.quests = { day: "", week: -1, daily: [], weekly: [], dailyBonus: false };
@@ -3016,13 +3017,20 @@ const CARPET_TURN = 0.10;              // how quickly the carpet swings toward y
 const CARPET_MODES = {
   easy:   { label: "Easy",   dur: 32000, fall: 22, starEvery: 900, cloudEvery: 3800, planetEvery: 7200, steer: 46, fogGain: 0.90, fogClear: 0.38, planetR: 52, badStar: 0.22 },
   medium: { label: "Medium", dur: 38000, fall: 27, starEvery: 800, cloudEvery: 3100, planetEvery: 5400, steer: 50, fogGain: 1.05, fogClear: 0.32, planetR: 58, badStar: 0.30 },
-  hard:   { label: "Hard",   dur: 44000, fall: 32, starEvery: 720, cloudEvery: 2500, planetEvery: 3900, steer: 54, fogGain: 1.25, fogClear: 0.27, planetR: 60, badStar: 0.33 },
+  hard:   { label: "Hard",   dur: 44000, fall: 32, starEvery: 740, cloudEvery: 2500, planetEvery: 4500, steer: 54, fogGain: 1.25, fogClear: 0.27, planetR: 60, badStar: 0.40 },
+  // Endless survival for a high score — uses Hard's feel and ramps up the longer you fly.
+  infinite: { label: "Infinite", endless: true, fall: 30, starEvery: 780, cloudEvery: 2600, planetEvery: 4800, steer: 54, fogGain: 1.2, fogClear: 0.30, planetR: 60, badStar: 0.38 },
 };
 function carpetMode() { return CARPET_MODES[CARPET.mode]; }
 function carpetClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function carpetSkin() { return carpetClamp(GAME.carpetSkin || 5, 1, CARPET_RUGS); }
 // difficulty creeps up: things fall a touch faster the deeper into the flight you are
-function carpetRamp() { return CARPET ? (1 + 0.40 * Math.min(1, CARPET.elapsed / carpetMode().dur)) : 1; }
+function carpetRamp() {
+  if (!CARPET) return 1;
+  const m = carpetMode();
+  if (m.endless) return 1 + 0.6 * Math.min(1.5, CARPET.elapsed / 40000);   // endless keeps ramping (capped)
+  return 1 + 0.40 * Math.min(1, CARPET.elapsed / m.dur);
+}
 // Background music for the flight (looping mp3). Respects the game's mute toggle.
 let CARPET_MUSIC = null;
 function carpetMusicStart() {
@@ -3061,6 +3069,8 @@ function renderCarpetIntro() {
       <button class="btn" id="carpet-hard">🔴 Hard</button>
     </div>
     <div style="height:8px"></div>
+    <button class="btn" id="carpet-infinite" style="width:100%;max-width:340px">♾️ Infinite${(GAME.carpetBest && GAME.carpetBest[0]) ? ` · best ${GAME.carpetBest[0]}s ⏱️` : " · how long can you last?"}</button>
+    <div style="height:8px"></div>
     <button class="btn secondary" id="carpet-skip">Not now</button>
   `);
   const cycle = d => { GAME.carpetSkin = ((carpetSkin() - 1 + d + CARPET_RUGS) % CARPET_RUGS) + 1; save(); const a = $("#carpet-pick-art"); if (a) a.src = `art/carpet_rug_${GAME.carpetSkin}.png?v=${BUILD}`; SFX.pop(); };
@@ -3069,6 +3079,7 @@ function renderCarpetIntro() {
   on("#carpet-easy", "click", () => carpetStart("easy"));
   on("#carpet-medium", "click", () => carpetStart("medium"));
   on("#carpet-hard", "click", () => carpetStart("hard"));
+  on("#carpet-infinite", "click", () => carpetStart("infinite"));
   on("#carpet-skip", "click", startRound);
   show("event");
 }
@@ -3090,7 +3101,7 @@ function carpetPlay() {
       <div class="carpet-bg" id="carpet-bg"></div>
       <div class="stack-overlay">
         <div class="stack-chip" id="carpet-hchip"><span id="carpet-hearts">${"❤️".repeat(CARPET_HEARTS)}</span></div>
-        <div class="stack-timer2"><i id="carpet-prog"></i></div>
+        ${m.endless ? '<div class="stack-chip stack-chip-mid">⏱️ <b id="carpet-time">0s</b></div>' : '<div class="stack-timer2"><i id="carpet-prog"></i></div>'}
         <div class="stack-chip"><span>⭐</span><b id="carpet-stars">0</b></div>
       </div>
       <div class="carpet-arrow left">◀</div><div class="carpet-arrow right">▶</div>
@@ -3117,8 +3128,9 @@ function carpetSteer(dir) { if (CARPET) CARPET.steer = dir < 0 ? -1 : dir > 0 ? 
 function carpetAddStar(forceGood) {
   const sky = $("#carpet-sky"); if (!sky) return;
   let good = forceGood || Math.random() >= carpetMode().badStar;  // gold = collect; blue/purple = avoid
-  // fairness: no blue star while you're already busy dodging a planet, and never two blue at the top at once
-  if (!good && CARPET.planets.some(p => p.y > -12)) good = true;
+  // fairness: suppress a blue star only while a planet is in the tight lower dodging window (would force
+  // opposite steering at once), and never two blue stars crowding the top at once
+  if (!good && CARPET.planets.some(p => p.y > 32 && p.y < 92)) good = true;
   if (!good && CARPET.stars.some(s => !s.good && !s.done && s.y < 36)) good = true;
   const img = R.pick(good ? CARPET_STAR_GOLD : CARPET_STAR_DARK);
   const s = { uid: ++CARPET.uid, x: 10 + Math.random() * 80, y: -8, img, good, el: null, done: false, cullAt: 0 };
@@ -3185,7 +3197,8 @@ function carpetPaint() {
   const s = $("#carpet-stars"); if (s) s.textContent = CARPET.caught;
   const hp = $("#carpet-hearts"); if (hp) hp.textContent = "❤️".repeat(Math.max(0, CARPET.hearts)) + "🖤".repeat(Math.max(0, CARPET_HEARTS - CARPET.hearts));
   const hc = $("#carpet-hchip"); if (hc) hc.className = "stack-chip" + (CARPET.hearts <= 1 ? " danger" : "");
-  const pb = $("#carpet-prog"); if (pb) pb.style.width = Math.min(100, CARPET.elapsed / m.dur * 100) + "%";
+  if (m.endless) { const tm = $("#carpet-time"); if (tm) tm.textContent = Math.floor(CARPET.elapsed / 1000) + "s"; }
+  else { const pb = $("#carpet-prog"); if (pb) pb.style.width = Math.min(100, CARPET.elapsed / m.dur * 100) + "%"; }
   const fg = $("#carpet-fog"); if (fg) fg.style.opacity = (CARPET.fog * 0.94).toFixed(3);
 }
 function carpetTick() {
@@ -3244,15 +3257,16 @@ function carpetTick() {
     }
   }
   carpetPaint();
-  if (CARPET.elapsed >= m.dur) return carpetFinish(true);
+  if (!m.endless && CARPET.elapsed >= m.dur) return carpetFinish(true);   // endless never "wins" — you fly until you crash
 }
 function carpetFinish(win, why) {
   if (!CARPET) return;
   carpetMusicStop();
-  const m = carpetMode(), caught = CARPET.caught;
+  const m = carpetMode(), caught = CARPET.caught, secs = Math.floor(CARPET.elapsed / 1000), endless = m.endless;
   CARPET.over = true;
   if (CARPET.tickTimer) { clearInterval(CARPET.tickTimer); CARPET.tickTimer = null; }
   CARPET = null;
+  if (endless) return carpetFinishInfinite(secs, caught);
   let outcome;
   if (win) {
     const stars = caught >= 16 ? 3 : caught >= 8 ? 2 : 1;
@@ -3279,6 +3293,32 @@ function carpetFinish(win, why) {
       <div class="result-title ${outcome.cls}">${outcome.title}</div>
       <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
       <p class="muted" style="max-width:300px">${outcome.note}</p>
+    </div>
+    <button class="btn" id="carpet-next">Continue  →</button>
+  `);
+  on("#carpet-next", "click", startRound);
+  show("event");
+}
+// Infinite mode result: survival time + a top-3 high-score board.
+function carpetFinishInfinite(secs, caught) {
+  const best = (GAME.carpetBest || []).slice();
+  const isBest = !best.length || secs > best[0];
+  best.push(secs); best.sort((a, b) => b - a); GAME.carpetBest = best.slice(0, 3);
+  const gold = 25 + secs * 2 + caught * 2, dust = 3 + Math.floor(caught / 4);
+  grantReward({ gold, stardust: dust }); save();
+  if (isBest) { SFX.perfect(); SFX.bigCoin(); confettiOver($("#app")); } else SFX.sneeze();
+  const medals = ["🥇", "🥈", "🥉"];
+  const board = GAME.carpetBest.map((s, i) => `<div class="stat-line"><span>${medals[i]} ${(i === 0 && isBest) ? "<b style='color:var(--good)'>New best!</b>" : ""}</span><span>${s}s</span></div>`).join("");
+  html("event", `
+    ${hud("Forgotten Oasis")}
+    <div class="grow center" style="gap:12px">
+      <div class="ph big">${isBest ? "🏆" : "💫"}</div>
+      <div class="result-title ${isBest ? "win" : "lose"}">${isBest ? "New high score!" : `You flew ${secs}s!`}</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>You lasted</span><span><b>${secs}s</b> · ⭐ ${caught}</span></div>
+        <div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>
+      </div>
+      <div class="card" style="width:100%;max-width:320px"><div class="stat-line" style="opacity:.8"><span>Best flights</span><span></span></div>${board}</div>
     </div>
     <button class="btn" id="carpet-next">Continue  →</button>
   `);
@@ -5452,7 +5492,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
