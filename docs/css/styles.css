@@ -1559,6 +1559,9 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); transition: transform .06s linear; }
 .carpet-rug.hurt { animation: carpetHurt .4s; }
 @keyframes carpetHurt { 0%,100% { filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); } 30% { filter: brightness(1.9) drop-shadow(0 0 9px #ff5a5a); } }
+/* crash: the carpet tumbles and shrinks away behind the planet */
+.carpet-rug.crash { animation: carpetCrash .95s ease-in forwards; }
+@keyframes carpetCrash { 0% { transform: translateX(-50%) rotate(0deg) scale(1); } 100% { transform: translateX(-50%) translateY(28%) rotate(220deg) scale(.35); opacity: .2; } }
 /* the fog that builds while you're inside a cloud — warm sunset haze that whites out your view */
 .carpet-fog { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0;
   background: radial-gradient(120% 90% at 50% 45%, rgba(255,236,205,.98), rgba(255,205,150,.96) 55%, rgba(240,170,120,.95) 100%); }
