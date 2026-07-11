@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎒 **New: the Satchel (your inventory).** A single place (in the Shop menu) for the keepsakes and
+  quest items you collect. Grant the **Gingerbread Man's** wish and he leaves you a gumdrop to carry
+  toward Drury Lane; your realm collectibles (Bo Peep's sheep, the Stepsister's beads) live here too.
+  It's the groundwork for handing clues to characters — like giving Little Red proof of the wolf.
 - 🐺 **Little Red's story continues.** A few customers after you first meet her, Red pops back in.
   First she shares a photo album of Grandma's oasis holiday — flip through the postcards with the
   ‹ › arrows — and asks for a "charm of good company." Later she returns, spooked: someone's

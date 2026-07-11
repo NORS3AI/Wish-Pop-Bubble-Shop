@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v179"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v180"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -43,6 +43,7 @@ function normalizeGame(g) {
   if (!Array.isArray(g.stackBest)) g.stackBest = []; // top-3 Sky-High Savings Infinite scores
   if (!g.hunts || typeof g.hunts !== "object") g.hunts = {}; // realmId -> { found, done } collection scavenger hunt
   if (typeof g.huntCelebrate === "undefined") g.huntCelebrate = null; // realmId pending a completion thank-you card
+  if (!g.satchel || typeof g.satchel !== "object") g.satchel = {}; // main inventory: itemId -> count (quest / keepsake items)
   if (!g.carpetSkin || g.carpetSkin < 1 || g.carpetSkin > 10) g.carpetSkin = 5; // Magic Carpet Dash chosen rug (5 = moon carpet)
   if (!Array.isArray(g.carpetBest)) g.carpetBest = []; // top-3 Magic Carpet Dash Infinite survival times (seconds)
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
@@ -578,6 +579,92 @@ function maybeShowHuntCelebrate() {
 }
 
 /* ======================================================================= */
+/* THE SATCHEL — your main inventory. Discrete quest / keepsake items you    */
+/* collect (a customer drops one, an event gives one) and carry across       */
+/* realms until there's someone to give them to or somewhere to use them.    */
+/* Stored as GAME.satchel { itemId: count }. The realm scavenger hunts       */
+/* (Bo Peep's sheep, the Stepsister's beads) are shown here too, reflected   */
+/* from GAME.hunts so everything you're collecting lives in one place.       */
+/* ======================================================================= */
+const SATCHEL_ITEMS = {
+  // A keepsake from Willow you carry toward Drury Lane.
+  gumdrop:  { name: "Gumdrop",             emoji: "🍬", from: "the Gingerbread Man", note: "A sweet from Willow — keep it safe for Drury Lane." },
+  // (wired later) the clue the Wolf drops in your shop, to hand to Little Red.
+  wolf_clue: { name: "Scrap of Grandma's Shawl", emoji: "🧣", from: "the “grandma” in your shop", note: "Give this to Little Red — she’ll want to see it.", giveTo: "Little Red" },
+};
+function satchelItem(id) { return SATCHEL_ITEMS[id] || null; }
+function satchelCount(id) { return (GAME.satchel && GAME.satchel[id]) || 0; }
+function satchelTotal() { return Object.values(GAME.satchel || {}).reduce((a, b) => a + b, 0); }
+function satchelAdd(id, n) {
+  if (!SATCHEL_ITEMS[id]) return false;
+  GAME.satchel[id] = satchelCount(id) + (n || 1); save();
+  return true;
+}
+function satchelRemove(id, n) {
+  const c = satchelCount(id); if (c <= 0) return false;
+  GAME.satchel[id] = c - (n || 1);
+  if (GAME.satchel[id] <= 0) delete GAME.satchel[id];
+  save(); return true;
+}
+// A customer keepsake drop on a successful serve (foundation: the Gingerbread Man's gumdrop,
+// given once until you've spent it). Returns an item id if something dropped, else null.
+function maybeSatchelDrop(customer) {
+  if (!customer) return null;
+  if (customer.id === "gingerbread" && satchelCount("gumdrop") === 0) {
+    satchelAdd("gumdrop");
+    toast("🍬 The Gingerbread Man left you a gumdrop — it’s in your Satchel!");
+    return "gumdrop";
+  }
+  return null;
+}
+function renderSatchel() {
+  const items = Object.keys(GAME.satchel || {}).filter(id => satchelCount(id) > 0 && satchelItem(id));
+  const itemCards = items.map(id => {
+    const it = satchelItem(id), n = satchelCount(id);
+    return `<div class="sat-item">
+      <div class="sat-ic">${it.emoji}${n > 1 ? `<span class="sat-n">${n}</span>` : ""}</div>
+      <div class="sat-body">
+        <div class="sat-name">${it.name}</div>
+        <div class="sat-from">from ${it.from}</div>
+        <div class="sat-note">${it.note}</div>
+      </div>
+    </div>`;
+  }).join("");
+  // realm scavenger-hunt collectibles, reflected from the hunts
+  const huntCards = Object.keys(HUNTS).map(realm => {
+    const h = HUNTS[realm], st = huntState(realm), pct = Math.round(100 * st.found / h.need);
+    const realmName = (D.REALM_BY_ID[realm] || {}).name || realm;
+    return `<div class="sat-item hunt">
+      <div class="sat-ic">${h.itemEmoji}</div>
+      <div class="sat-body">
+        <div class="sat-name">${h.item[0].toUpperCase() + h.item.slice(1)} collection <span class="muted" style="font-weight:600">· ${realmName}</span></div>
+        <div class="sat-from">for ${h.char}${st.done ? " — complete! 🎉" : ""}</div>
+        <div class="sat-bar"><i style="width:${pct}%"></i></div>
+      </div>
+      <div class="sat-count">${st.found}/${h.need}</div>
+    </div>`;
+  }).join("");
+  html("satchel", `
+    ${hud("Your Satchel")}
+    <div class="grow" style="overflow-y:auto">
+      <p class="muted" style="text-align:center;font-size:12px;margin:2px 0 12px">Keepsakes and quest items you’ve collected. Carry them until there’s someone to give them to — or somewhere to use them.</p>
+      <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:10px">🎒 Quest Items ${items.length ? `<span class="muted" style="font-weight:600;font-size:13px">· ${satchelTotal()}</span>` : ""}</div>
+        ${items.length ? itemCards : `<p class="muted" style="text-align:center;font-size:13px;margin:6px 0">Empty for now — keep an eye out! Some customers leave a little something behind when you grant their wish.</p>`}
+      </div>
+      <div class="card">
+        <div style="font-weight:800;margin-bottom:10px">🔎 Collectibles</div>
+        ${huntCards}
+        <p class="muted" style="font-size:11px;margin-top:8px">These turn up while you play in each realm. Find the whole set to earn a special skin.</p>
+      </div>
+    </div>
+    <button class="btn secondary" id="sat-back">←  Back</button>
+  `);
+  on("#sat-back", "click", renderMenu);
+  show("satchel");
+}
+
+/* ======================================================================= */
 /* WORLD MAP — travel between realms; unlock new ones with gold + keys.     */
 /* ======================================================================= */
 // A realm's "story path" for the map — filled pips for events experienced, empty for the
@@ -712,6 +799,15 @@ function renderAdmin() {
           <button class="btn good small" id="ad-keys">+10 🗝️</button>
         </div>
       </div>
+      <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:8px">🎒 Satchel</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn small" id="ad-satchel">Open Satchel</button>
+          <button class="btn good small" id="ad-gumdrop">+🍬 Gumdrop</button>
+          <button class="btn good small" id="ad-wolfclue">+🧣 Wolf clue</button>
+          <button class="btn secondary small" id="ad-satclear">Clear</button>
+        </div>
+      </div>
       <p class="muted" style="font-size:11px;text-align:center">For testing only — we can hide this panel before the game goes public.</p>
     </div>
     <button class="btn secondary" id="ad-back">←  Back</button>
@@ -751,6 +847,10 @@ function renderAdmin() {
   on("#ad-red3", "click", playRedImpostor);
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
+  on("#ad-satchel", "click", renderSatchel);
+  on("#ad-gumdrop", "click", () => { satchelAdd("gumdrop"); toast("🍬 Gumdrop added to Satchel"); renderAdmin(); });
+  on("#ad-wolfclue", "click", () => { satchelAdd("wolf_clue"); toast("🧣 Wolf clue added to Satchel"); renderAdmin(); });
+  on("#ad-satclear", "click", () => { GAME.satchel = {}; save(); toast("Satchel cleared"); renderAdmin(); });
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
   on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
   on("#ad-treats", "click", () => { GAME.treats += 10; save(); toast("+10 treats 🐸"); renderAdmin(); });
@@ -789,6 +889,7 @@ function renderMenu() {
         <button class="btn secondary" id="recycle-btn" style="flex:1">🗑️ Recycle <span class="muted" style="font-weight:500;font-size:12px">· ${GAME.trash.length}/${BALANCE.TRASH_BIN_MAX}</span></button>
         <button class="btn ${GAME.keys > 0 ? "good" : "secondary"}" id="vault-btn" style="flex:1">🗝️ Vault <span class="muted" style="font-weight:500;font-size:12px">· ${GAME.keys}</span></button>
       </div>
+      <button class="btn ${satchelTotal() > 0 ? "good" : "secondary"}" id="satchel-btn" style="margin-bottom:10px">🎒 Satchel${satchelTotal() > 0 ? ` <span class="q-badge">${satchelTotal()}</span>` : ""}</button>
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:8px">🐸 Treats <span class="muted" style="font-weight:500;font-size:13px">· ${GAME.treats} owned · 🪙${BALANCE.PRICES.treat} each</span></div>
         <div class="row" style="align-items:center;justify-content:center">
@@ -818,6 +919,7 @@ function renderMenu() {
   on("#wardrobe-btn", "click", renderWardrobe);
   on("#recycle-btn", "click", () => renderRecycle("coins"));
   on("#vault-btn", "click", renderVault);
+  on("#satchel-btn", "click", renderSatchel);
   on("#menu-back", "click", renderStart);
   show("menu");
 }
@@ -5647,6 +5749,7 @@ function serve() {
     if (ROUND.wish.boss) bumpStat("bossWins");
     if (ROUND.rush) bumpStat("rushWins");
     if (isPerfect) bumpStat("perfect");
+    res.satchelDrop = maybeSatchelDrop(ROUND.customer);   // a keepsake from certain customers
   }
   servedTotal++; localStorage.setItem("wishpop_served", servedTotal); save();
   renderResult(res);
@@ -5701,6 +5804,7 @@ function renderResult(res) {
         <div class="stat-line"><span>Needed</span><span>${res.required}%</span></div>
         ${allergyLine}
         ${earnedRow}
+        ${res.satchelDrop && satchelItem(res.satchelDrop) ? `<div class="stat-line"><span>${satchelItem(res.satchelDrop).emoji} ${satchelItem(res.satchelDrop).name}</span><span style="color:var(--good)">→ your Satchel! 🎒</span></div>` : ""}
       </div>
       <p class="muted" style="max-width:300px">${blurb}</p>
     </div>
@@ -5992,7 +6096,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, redVisitOutro, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, redVisitOutro, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
