@@ -1607,17 +1607,17 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .bq-zone .bq-proc.on { opacity: 1; }
 .bq-zone .bq-proc i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #c58bff, #ffd76a); }
 /* the incoming-orders shelf pinned to the bottom */
-.bq-supply { position: absolute; left: 4px; right: 4px; bottom: 4px; z-index: 4; min-height: 76px;
-  background: linear-gradient(0deg, rgba(20,10,6,.62), rgba(20,10,6,.28)); border-radius: 12px; padding: 4px 6px; }
-.bq-supply-slot { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; justify-content: center; min-height: 70px; }
+.bq-supply { position: absolute; left: 4px; right: 4px; bottom: 4px; z-index: 4; min-height: 130px;
+  background: linear-gradient(0deg, rgba(20,10,6,.5), rgba(20,10,6,.05)); border-radius: 14px; padding: 6px; }
+.bq-supply-slot { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; justify-content: center; min-height: 122px; }
 /* an "order" = station-icon chips (remaining) + the dress sprite (its current stage) + patience bar, moving as one unit */
 .bq-order { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.bq-remain { display: flex; gap: 2px; align-items: center; justify-content: center; min-height: 20px; }
-.bq-ic { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 5px;
-  background: #f6efdd; box-shadow: 0 1px 2px rgba(0,0,0,.5); }
-.bq-ic img { width: 14px; height: 14px; object-fit: contain; display: block; }
-.bq-ic.now { box-shadow: 0 0 0 2px #ffd76a, 0 1px 2px rgba(0,0,0,.5); }
-.bq-ic-done { font-size: 13px; }
+.bq-remain { display: flex; gap: 3px; align-items: center; justify-content: center; flex-wrap: wrap; max-width: 160px; min-height: 24px; }
+.bq-ic { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 10px;
+  background: #f6efdd; box-shadow: 0 2px 4px rgba(0,0,0,.55); }
+.bq-ic img { width: 34px; height: 34px; object-fit: contain; display: block; }
+.bq-ic.now { box-shadow: 0 0 0 3px #ffd76a, 0 2px 4px rgba(0,0,0,.55); }
+.bq-ic-done { font-size: 30px; }
 .bq-dress { width: auto; height: 70px; max-width: 88px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.55)); }
 .bq-opat { width: 54px; height: 5px; border-radius: 3px; background: rgba(0,0,0,.5); overflow: hidden; }
 .bq-opat i { display: block; height: 100%; width: 100%; background: #7ee08a; transition: width .1s linear; }
@@ -1647,6 +1647,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); box-shadow: 0 2px 7px rgba(0,0,0,.45); }
 /* hide the bottom hint line and let the play area go edge-to-edge */
 #app.mg-full .stack-hint { display: none; }
-#app.mg-full .carpet-sky, #app.mg-full .stack-sky, #app.mg-full .bq-shop { margin: 0; border-radius: 0; }
+#app.mg-full .carpet-sky, #app.mg-full .stack-sky, #app.mg-full .bq-shop,
+#app.mg-full .wine-cloak, #app.mg-full .feast-sky, #app.mg-full .dance-stage, #app.mg-full .cake-stage2 { margin: 0; border-radius: 0; }
+/* meter panels / top rows shift right so the floating ☰ menu doesn't cover them */
+#app.mg-full .feast-hud, #app.mg-full .wolf-top { padding-left: 46px; }
+#app.mg-full .cake-caption { padding-left: 40px; }
 /* nudge each game's own top-left counter clear of the floating menu button */
 #app.mg-full .bq-hud, #app.mg-full .stack-overlay { padding-left: 46px; }

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v168"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v169"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -1973,7 +1973,7 @@ function wolfObjHtml() {
 function wolfPlay() {
   html("event", `
     ${hud("Feed the Wolf!")}
-    <div class="wolf-top">
+    <div class="wolf-top mg-fullbleed">
       <div class="wolf-face" id="wolf-face">🐺</div>
       <div class="wolf-huntsman"><span class="wolf-hlbl">🏹 Huntsman on the way… <b>${WOLF_MODES[WOLF.mode].label}</b></span><div class="wolf-hbar"><i id="wolf-hbar"></i></div></div>
     </div>
@@ -2223,7 +2223,7 @@ function feastPlay() {
       </div>
     </div>
     <div class="feast-timerbar"><i id="feast-timer"></i></div>
-    <div class="feast-sky" id="feast-sky"><div class="feast-toast" id="feast-toast">👑 The King rises — the toast! Dishes fly!</div></div>
+    <div class="feast-sky mg-fullbleed" id="feast-sky"><div class="feast-toast" id="feast-toast">👑 The King rises — the toast! Dishes fly!</div></div>
     <div class="feast-hands" id="feast-hands">${feastHandsHtml()}</div>
     <div class="feast-homes" id="feast-homes">${feastHomesHtml()}</div>
   `);
@@ -2842,7 +2842,7 @@ function winePlay() {
       </div>
     </div>
     <div class="feast-timerbar"><i id="wine-timer"></i></div>
-    <div class="wine-cloak" id="wine-cloak"></div>
+    <div class="wine-cloak mg-fullbleed" id="wine-cloak"></div>
     <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Tap balls to keep them up • dab the wine before it sets!</p>
   `);
   show("event");
@@ -3371,7 +3371,7 @@ const BQ_TICK = 90;                                 // ms per tick
 const BQ_NAME = { fabric: "Fabric", cut: "Cut", sew: "Sew", bead: "Bead", trim: "Trim" };
 const BQ_PROC = { fabric: 1500, cut: 2000, sew: 2400, bead: 2100, trim: 2000 };   // base processing ms per table (× mode.procScale)
 // where each station's drop-zone sits on the boutique_bg art (% of the play area)
-const BQ_POS = { fabric: { x: 21, y: 25 }, cut: { x: 71, y: 30 }, bead: { x: 21, y: 59 }, sew: { x: 72, y: 57 }, trim: { x: 47, y: 74 } };
+const BQ_POS = { fabric: { x: 25, y: 27 }, cut: { x: 72, y: 29 }, bead: { x: 25, y: 50 }, sew: { x: 70, y: 50 }, trim: { x: 46, y: 69 } };
 const BQ_COLORS = 8;                                // dress colours (art/bq_dress_1..8_*)
 const BOUTIQUE_MODES = {
   easy:   { label: "Easy",   stations: ["fabric", "cut", "sew", "trim"],          procScale: 1.1, patience: 27000, spawnEvery: 4800, maxConcurrent: 2, goal: 6,  maxLost: 5, beadChance: 0,    reworkChance: 0 },
@@ -3881,7 +3881,7 @@ function renderDance() {
     : "";
   html("event", `
     ${hud(counting ? "Get Ready!" : rehearse ? "Rehearsal 💃" : "The Ball 🎼")}
-    <div class="dance-stage">
+    <div class="dance-stage mg-fullbleed">
       <div class="dance-grace top"><i id="dance-grace-fill" style="width:${meterPct}%"></i><span class="dance-grace-mark" style="left:${targetPct}%"></span></div>
       <div class="dance-dancer">
         <img class="dance-dancer-img" id="dance-dancer" src="${danceDancerSrc(p, D0.pose || 1, D0.poseWorried)}" alt="${p.name}" draggable="false">
@@ -4113,7 +4113,7 @@ function renderCake() {
   const canUndo = !study && C.fillIdx > 0, canRedo = !study && C.redo && C.redo.length;
   html("event", `
     ${hud(study ? "Study Tier " + t + " 👀" : "Decorate Tier " + t + " 🧁")}
-    <div class="cake-stage2${study ? " studying" : ""}">
+    <div class="cake-stage2 mg-fullbleed${study ? " studying" : ""}">
       <div class="cake-caption">${study
         ? `<b>Memorise</b> tier ${t} — where each treat sits…`
         : `Tap the treats in order — they fill left to right (${placedCount}/${n})`}</div>
