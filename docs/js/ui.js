@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v155"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v156"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2373,6 +2373,17 @@ const STACK_KINDS = {
   rock: { name: "Rock", emoji: "🪨", good: false, height: -1, wob: 16 },
   bomb: { name: "Bomb", emoji: "💣", good: false, height: -4, wob: 28 },
 };
+// Real artwork: coins/gems have a FRONT (faceted, while falling) and an EDGE/angled view (stacked).
+const STACK_GEM_COLORS = ["purple", "green", "blue", "red", "yellow", "teal", "pink"];
+const STACK_BAD_MILD = [1, 2, 3, 4, 5, 6];   // thorn-vine, rock, thorn-flower, vined boot, bird nest, spilling bucket
+const STACK_BAD_SEVERE = [7, 8, 9, 10];      // pitchfork, dagger, axe, crow (the "bomb"-tier junk)
+// pick the falling + stacked artwork for a spawned item
+function stackArt(kind) {
+  if (kind === "coin") return { front: "stack_coin_front", edge: "stack_coin_edge" };
+  if (kind === "gem") { const c = R.pick(STACK_GEM_COLORS); return { front: `stack_gem_${c}_front`, edge: `stack_gem_${c}_edge` }; }
+  const pool = kind === "bomb" ? STACK_BAD_SEVERE : STACK_BAD_MILD;
+  return { front: `stack_bad_${R.pick(pool)}`, edge: null };
+}
 // Difficulty. catchTol = how close the tower-top must be to a coin's x to catch it (%). sway =
 // how bouncy the tower is (grows with height). fall = %screen/sec. spawnEvery = ms between drops.
 // dur = round length. goal = Stack Height to win. winds = # of wind gusts. spawn = weighted drop
@@ -2480,10 +2491,10 @@ function stackTowerHtml() {
   const visible = Math.ceil((STACK_FLOOR - STACK_SURFACE) / STACK_PITCH) + 1;
   const pile = STACK.pile, n = pile.length, show = Math.min(n, visible);
   let s = "";
-  // topmost (i=0, parked at the surface) = the most recent catch
+  // topmost (i=0, parked at the surface) = the most recent catch. pile holds EDGE-art names.
   for (let i = 0; i < show; i++) {
-    const emoji = pile[n - 1 - i], gem = emoji === "💎";
-    s += `<span class="stack-coin2${gem ? " gem" : ""}" style="top:${STACK_SURFACE + i * STACK_PITCH}%">${emoji}</span>`;
+    const img = pile[n - 1 - i], gem = img.indexOf("gem") >= 0;
+    s += `<span class="stack-coin2${gem ? " gem" : ""}" style="top:${STACK_SURFACE + i * STACK_PITCH}%;background-image:url('art/${img}.png?v=${BUILD}')"></span>`;
   }
   if (n <= visible) s += `<div class="stack-base" style="top:${(STACK_SURFACE + n * STACK_PITCH).toFixed(2)}%"></div>`;
   return s;
@@ -2504,6 +2515,7 @@ function stackPlay() {
     </div>
     ${endless ? "" : '<div class="feast-timerbar"><i id="stack-timer"></i></div>'}
     <div class="feast-sky stack-sky" id="stack-sky">
+      <div class="stack-bg"></div>
       <div class="feast-toast" id="stack-wind">🌬️ A gust of wind! The tower sways…</div>
       <div class="stack-tower" id="stack-tower">${stackTowerHtml()}</div>
     </div>
@@ -2524,15 +2536,16 @@ function stackPlay() {
 function stackSpawn() {
   const m = stackMode(), kind = stackPick(), k = STACK_KINDS[kind], wind = stackWinding();
   const lvl = m.endless ? Math.min(12, Math.floor(STACK.height / 12)) : 0;  // Infinite: falls speed up as you climb
+  const art = stackArt(kind);
   const it = { uid: ++STACK.uid, kind, x: 12 + Math.random() * 76, y: 0, spawnAt: STACK.elapsed,
-    fall: (m.fall + lvl * 1.2) * (wind ? 1.3 : 1) * (0.92 + Math.random() * 0.16), passed: false, el: null };
+    fall: (m.fall + lvl * 1.2) * (wind ? 1.3 : 1) * (0.92 + Math.random() * 0.16), passed: false, edgeImg: art.edge, el: null };
   STACK.items.push(it);
   const sky = $("#stack-sky");
   if (sky) {
     const el = document.createElement("div");
-    el.className = "stack-item" + (k.good ? "" : " bad");
+    el.className = "stack-item" + (k.good ? (kind === "gem" ? " gem" : "") : " bad");
     el.style.left = it.x + "%"; el.style.top = "0%";
-    el.innerHTML = `<span class="stack-emoji">${k.emoji}</span>`;
+    el.style.backgroundImage = `url('art/${art.front}.png?v=${BUILD}')`;
     sky.appendChild(el); it.el = el;
   }
 }
@@ -2547,7 +2560,7 @@ function stackCatch(it) {
   const off = it.x - STACK.towerX;
   STACK.towerVX += off * (0.7 + Math.min(STACK.height, 45) * 0.03);
   STACK.height = Math.max(0, STACK.height + k.height);
-  if (k.good) { STACK.pile.push(k.emoji); }             // stack the actual thing you caught (coin OR gem)
+  if (k.good) { STACK.pile.push(it.edgeImg); }          // stack the angled art of the thing you caught (coin OR gem)
   else { STACK.wobble = Math.min(100, STACK.wobble + k.wob); for (let p = (it.kind === "bomb" ? 3 : 1); p > 0 && STACK.pile.length; p--) STACK.pile.pop(); }
   STACK.caught++;
   if (it.el) it.el.remove();

@@ -19,6 +19,17 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🪙 **Sky-High Savings got real artwork!** The coin-stacker now plays over a lush, softly-blurred
+  beanstalk-valley sky. The falling **coins and gems** are big, hand-painted jewels (seven gem
+  colours!), your tower stacks them as glinting gold discs and crystals, and the junk to dodge is now
+  a pile of characterful hazards — thorny vines, rocks, a vined boot, a bird's nest, a spilling
+  bucket, and sharper stuff like a pitchfork, dagger, axe and crow.
+
+- 🪐 **Bigger, deadlier planets in Magic Carpet Dash.** The planets are now huge — when you see one's
+  edge slide onto the screen, steer well clear, because **any touch ends the run** (your carpet
+  tumbles away behind the planet). They drift in slowly from the sides, so there's always a lane if
+  you react in time.
+
 - 🎨 **Spilled Wish-Wine got real artwork!** The Jester's juggling balls are now proper glossy,
   hand-painted balls (every one a different colour, as always), and the wine spills use real
   splat-shaped stains that vary each time — a big glow-up from the old plain blobs.

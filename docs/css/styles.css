@@ -1072,23 +1072,28 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes feastGood { 0% { transform: scale(1); box-shadow: 0 0 0 rgba(126,224,138,0); } 45% { transform: scale(1.12); box-shadow: 0 0 16px rgba(126,224,138,.9); border-color: #7ee08a; } 100% { transform: scale(1); } }
 @keyframes feastMeh { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-5px); } 60% { transform: translateX(5px); } }
 /* Sky-High Savings — swipe to sway an ever-growing coin tower (Beanstalk finale) */
-.stack-sky { touch-action: none; cursor: grab; }
+.stack-sky { touch-action: none; cursor: grab; background: #170f2e; }
 .stack-sky:active { cursor: grabbing; }
 .stack-sky.bump { animation: stackBump .32s ease-out; }
 @keyframes stackBump { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-6px,3px); } 45% { transform: translate(5px,-2px); } 70% { transform: translate(-3px,2px); } }
-.stack-item { position: absolute; transform: translateX(-50%); top: 0; will-change: top; z-index: 2; pointer-events: none; }
-.stack-item .stack-emoji { font-size: 46px; line-height: 1; filter: drop-shadow(0 4px 6px rgba(0,0,0,.55)); display: inline-block; }
-.stack-item.bad .stack-emoji { animation: stackBadGlow 1s ease-in-out infinite; border-radius: 50%; }
-@keyframes stackBadGlow { 0%,100% { filter: drop-shadow(0 4px 6px rgba(0,0,0,.55)); } 50% { filter: drop-shadow(0 0 9px rgba(255,90,60,.95)); } }
+/* the lush beanstalk-valley backdrop, softly blurred so the coins pop in front */
+.stack-bg { position: absolute; inset: -8px; z-index: 0; pointer-events: none;
+  background: url('../art/beanstalk_sky.jpg') center center / cover no-repeat; filter: blur(2px) brightness(.82) saturate(1.05); }
+.stack-item { position: absolute; transform: translateX(-50%); top: 0; width: 72px; height: 72px;
+  background: center / contain no-repeat; will-change: top; z-index: 2; pointer-events: none;
+  filter: drop-shadow(0 4px 7px rgba(0,0,0,.6)); }
+.stack-item.gem { filter: drop-shadow(0 0 8px rgba(170,225,255,.7)) drop-shadow(0 4px 7px rgba(0,0,0,.55)); }
+.stack-item.bad { width: 68px; height: 68px; animation: stackBadGlow 1.1s ease-in-out infinite; }
+@keyframes stackBadGlow { 0%,100% { filter: drop-shadow(0 4px 7px rgba(0,0,0,.6)); } 50% { filter: drop-shadow(0 0 10px rgba(255,90,60,.95)) drop-shadow(0 4px 7px rgba(0,0,0,.5)); } }
 /* A missed item keeps falling (behind the tower) to the bottom, dimmed so it reads as "got away" */
 .stack-item.miss { opacity: .5; z-index: 1; }
-/* The tower: coins are positioned by top%, share a horizontal position (--tx), and the whole
+/* The tower: coins/gems are positioned by top%, share a horizontal position (--tx), and the whole
    thing leans (--ang) around its top so the catch point never moves. */
 .stack-tower { position: absolute; inset: 0; z-index: 3; pointer-events: none;
   --tx: 50%; --ang: 0deg; transform: rotate(var(--ang)); transform-origin: var(--tx) 46%; will-change: transform; }
-.stack-coin2 { position: absolute; left: var(--tx); transform: translate(-50%,-50%); font-size: 40px; line-height: 1;
-  filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
-.stack-coin2.gem { filter: drop-shadow(0 0 7px rgba(120,220,255,.85)) drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.stack-coin2 { position: absolute; left: var(--tx); transform: translate(-50%,-50%); width: 86px; height: 46px;
+  background: center / contain no-repeat; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.stack-coin2.gem { width: 60px; height: 62px; filter: drop-shadow(0 0 8px rgba(170,225,255,.65)) drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
 /* Hard-mode body-hit flourish: an impact spark + a floating −5 */
 .stack-spark { position: absolute; transform: translate(-50%,-50%); font-size: 40px; z-index: 4; pointer-events: none;
   animation: stackSpark .4s ease-out forwards; }
