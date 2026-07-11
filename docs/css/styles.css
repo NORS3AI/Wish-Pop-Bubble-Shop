@@ -1093,7 +1093,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   --tx: 50%; --ang: 0deg; transform: rotate(var(--ang)); transform-origin: var(--tx) 46%; will-change: transform; }
 .stack-coin2 { position: absolute; left: var(--tx); transform: translate(-50%,-50%); width: 86px; height: 46px;
   background: center / contain no-repeat; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
-.stack-coin2.gem { width: 60px; height: 62px; filter: drop-shadow(0 0 8px rgba(170,225,255,.65)) drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.stack-coin2.gem { width: 84px; height: 48px; filter: drop-shadow(0 0 8px rgba(170,225,255,.65)) drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
 /* Hard-mode body-hit flourish: an impact spark + a floating −5 */
 .stack-spark { position: absolute; transform: translate(-50%,-50%); font-size: 40px; z-index: 4; pointer-events: none;
   animation: stackSpark .4s ease-out forwards; }
