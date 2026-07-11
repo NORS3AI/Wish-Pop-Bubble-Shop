@@ -332,6 +332,14 @@ the one **closest to setting** first; the spill speeds up over the round. Easy/M
 seated into the **Courtyard playlist** (the `"wine"` token, slot 5). Verified 15/15 winnable all modes.
 Admin: "🍷 Spilled Wish-Wine (practice)". Original brainstorm below.
 
+**Second element added (v144): the Joker's juggling.** To give it a real judgment axis (not just "tap faster"),
+the game now runs TWO systems at once on the same cloak: dab the blooming wine AND keep the Joker's
+balls in the air (tap a ball to toss it back up; it arcs under gravity). Balls: Easy 3 / Medium 4 /
+Hard 5, entering ~0.5s apart. **The link:** a dropped ball knocks a goblet → spawns a fresh spill, so
+the two systems feed each other (fumbling the juggle makes more mess). Two lose conditions: stains hit
+the cap, OR every ball drops. A few spills are pre-seeded at round start so there's instant action.
+Bigger drop/stain art; medium balls. Still 15/15 winnable (bot juggles + dabs).
+
 ## 🆕 Spilled Wishwine — ripple/bloom minor event (was a finale candidate)
 
 **The scene:** a droplet of enchanted crimson-purple wine falls and **splats into a tiny

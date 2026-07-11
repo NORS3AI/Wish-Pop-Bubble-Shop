@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v143"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v144"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2733,11 +2733,15 @@ function stackFinishInfinite(height, why) {
 /* ======================================================================= */
 let WINE = null;
 const WINE_TICK = 60;   // ms per tick
+const WINE_BALL_G = 135;      // gravity (%/s²-ish) pulling juggling balls down
+const WINE_BALL_THROW = 150;  // upward speed a tap gives a ball (%/s)
+const WINE_FLOOR = 94;        // y% past which an uncaught ball is dropped
 const WINE_MODES = {
-  // curve shifted up a notch (old Medium is the new Easy). Hard "splatters" satellite drops per spill.
-  easy:   { label: "Easy",   bloomMs: 2200, spawnEvery: 950,  dur: 28000, maxStains: 9 },
-  medium: { label: "Medium", bloomMs: 1950, spawnEvery: 850,  dur: 32000, maxStains: 8 },
-  hard:   { label: "Hard",   bloomMs: 1900, spawnEvery: 1350, dur: 36000, maxStains: 9, splatter: 2 },
+  // Two things at once: dab blooming wine AND keep the Joker's balls up. A dropped ball knocks a
+  // goblet → spawns a fresh spill (the two systems feed each other). More balls each difficulty.
+  easy:   { label: "Easy",   bloomMs: 2200, spawnEvery: 950,  dur: 28000, maxStains: 9,  balls: 3, startDrops: 3 },
+  medium: { label: "Medium", bloomMs: 1950, spawnEvery: 850,  dur: 32000, maxStains: 8,  balls: 4, startDrops: 4 },
+  hard:   { label: "Hard",   bloomMs: 1900, spawnEvery: 1350, dur: 36000, maxStains: 9, splatter: 2, balls: 5, startDrops: 5 },
 };
 function wineMode() { return WINE_MODES[WINE.mode]; }
 // difficulty creeps up over the round: drops bloom quicker & spill faster toward the "toast"
@@ -2773,8 +2777,11 @@ function renderWineIntro() {
 }
 function wineStart(mode) {
   mode = WINE_MODES[mode] ? mode : "medium";
-  WINE = { mode, drops: [], uid: 0, elapsed: 0, nextSpawnAt: 400, saved: 0, stains: 0, over: false, tickTimer: null };
+  const m = WINE_MODES[mode];
+  WINE = { mode, drops: [], balls: [], uid: 0, elapsed: 0, nextSpawnAt: m.spawnEvery, saved: 0, stains: 0, dropped: 0,
+    pendingBalls: m.balls, startBalls: m.balls, nextBallAt: 0, over: false, tickTimer: null };
   winePlay();
+  for (let i = 0; i < (m.startDrops || 3); i++) wineAddDrop(8 + Math.random() * 84, 14 + Math.random() * 66, m.bloomMs * (0.85 + Math.random() * 0.4));  // a few spills waiting at the start
   WINE.tickTimer = setInterval(wineTick, WINE_TICK);
 }
 function winePlay() {
@@ -2784,13 +2791,13 @@ function winePlay() {
     <div class="feast-hud">
       <div class="feast-king-wrap"><span id="wine-king">🙂</span></div>
       <div class="feast-meters">
-        <div class="feast-mrow"><span class="feast-mlbl">🍷 Dabbed <b id="wine-saved">0</b></span><div class="feast-track"><i class="feast-dfill" id="wine-savedbar"></i></div></div>
+        <div class="feast-mrow"><span class="feast-mlbl">🤹 Juggling <b id="wine-balls">${m.balls}</b></span><div class="feast-track"><i class="feast-dfill" id="wine-ballbar"></i></div></div>
         <div class="feast-mrow"><span class="feast-mlbl">🟣 Stains <b id="wine-snum">0/${m.maxStains}</b></span><div class="feast-track"><i class="feast-tfill ok" id="wine-stainbar"></i></div></div>
       </div>
     </div>
     <div class="feast-timerbar"><i id="wine-timer"></i></div>
     <div class="wine-cloak" id="wine-cloak"></div>
-    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Dab the drop closest to setting first!</p>
+    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Tap balls to keep them up • dab the wine before it sets!</p>
   `);
   show("event");
   winePaint();
@@ -2814,6 +2821,33 @@ function wineSpawn() {
   for (let k = 0; k < (m.splatter || 0); k++) {
     wineAddDrop(wineClamp(cx + (Math.random() - 0.5) * 24, 5, 95), wineClamp(cy + (Math.random() - 0.5) * 22, 8, 90), m.bloomMs * ramp * (0.8 + Math.random() * 0.4));
   }
+}
+function wineAddBall() {
+  const cloak = $("#wine-cloak"); if (!cloak) return;
+  const colors = ["#ff5a5a", "#ffd24a", "#5ab0ff", "#8ae06a", "#c58bff"];
+  const b = { uid: ++WINE.uid, x: 14 + Math.random() * 72, y: 3, vy: 12, vx: (Math.random() - 0.5) * 16, el: null };
+  WINE.balls.push(b);
+  const el = document.createElement("button");
+  el.className = "wine-ball"; el.dataset.uid = b.uid;
+  el.style.left = b.x + "%"; el.style.top = b.y + "%";
+  el.style.background = `radial-gradient(circle at 34% 30%, #ffffffcc, ${R.pick(colors)} 62%)`;
+  el.addEventListener("click", () => wineThrow(b.uid));
+  cloak.appendChild(el); b.el = el;
+}
+function wineThrow(uid) {
+  if (!WINE || WINE.over) return;
+  const b = WINE.balls.find(x => x.uid === uid); if (!b) return;
+  b.vy = -WINE_BALL_THROW; b.vx += (Math.random() - 0.5) * 12;
+  SFX.pop();
+  if (b.el) { b.el.classList.remove("toss", "low"); void b.el.offsetWidth; b.el.classList.add("toss"); }
+}
+function wineDropBall(b) {   // a ball hit the floor: fumble sound, a splat, and it knocks a goblet → a fresh spill
+  WINE.dropped++;
+  if (b.el) b.el.remove();
+  SFX.sneeze();
+  const cloak = $("#wine-cloak");
+  if (cloak) { const s = document.createElement("div"); s.className = "wine-splat"; s.style.left = b.x + "%"; s.style.top = (WINE_FLOOR - 3) + "%"; s.textContent = "💥"; s.addEventListener("animationend", () => s.remove()); cloak.appendChild(s); }
+  wineAddDrop(wineClamp(b.x + (Math.random() - 0.5) * 12, 6, 94), wineClamp(66 + Math.random() * 16, 40, 86), wineMode().bloomMs * wineRamp() * 0.9);
 }
 function wineTap(uid) {
   if (!WINE || WINE.over) return;
@@ -2839,50 +2873,62 @@ function winePaint() {
   if (!WINE) return;
   const m = wineMode();
   const tv = $("#wine-timer"); if (tv) tv.style.width = Math.min(100, WINE.elapsed / m.dur * 100) + "%";
-  const sv = $("#wine-saved"); if (sv) sv.textContent = WINE.saved;
-  const sb = $("#wine-savedbar"); if (sb) sb.style.width = Math.min(100, WINE.saved / 20 * 100) + "%";
+  const bn = $("#wine-balls"); if (bn) bn.textContent = WINE.balls.length;
+  const bb = $("#wine-ballbar"); if (bb) { bb.style.width = (WINE.balls.length / Math.max(1, WINE.startBalls) * 100) + "%"; bb.className = "feast-dfill" + (WINE.balls.length <= 1 ? " lowball" : ""); }
   const sn = $("#wine-snum"); if (sn) sn.textContent = WINE.stains + "/" + m.maxStains;
   const stb = $("#wine-stainbar"); if (stb) { stb.style.width = (WINE.stains / m.maxStains * 100) + "%"; stb.className = "feast-tfill " + (WINE.stains >= m.maxStains - 2 ? "danger" : WINE.stains >= m.maxStains * 0.5 ? "amber" : "ok"); }
-  const king = $("#wine-king"); if (king) king.textContent = WINE.stains >= m.maxStains - 2 ? "😡" : WINE.stains >= m.maxStains * 0.5 ? "😠" : "🙂";
+  const king = $("#wine-king"); if (king) king.textContent = (WINE.stains >= m.maxStains - 2 || WINE.balls.length <= 1) ? "😡" : (WINE.stains >= m.maxStains * 0.5 || WINE.dropped > 0) ? "😠" : "🙂";
 }
 function wineTick() {
   if (!WINE || WINE.over) return;
-  const m = wineMode();
+  const m = wineMode(), dt = WINE_TICK / 1000;
   WINE.elapsed += WINE_TICK;
+  // juggling balls enter ~0.5s apart at the start, then arc up/down under gravity
+  if (WINE.pendingBalls > 0 && WINE.elapsed >= WINE.nextBallAt) { wineAddBall(); WINE.pendingBalls--; WINE.nextBallAt = WINE.elapsed + 500; }
+  for (let i = WINE.balls.length - 1; i >= 0; i--) {
+    const b = WINE.balls[i];
+    b.vy += WINE_BALL_G * dt; b.y += b.vy * dt; b.x += b.vx * dt;
+    if (b.x < 6) { b.x = 6; b.vx = Math.abs(b.vx); } else if (b.x > 94) { b.x = 94; b.vx = -Math.abs(b.vx); }
+    if (b.y >= WINE_FLOOR) { WINE.balls.splice(i, 1); wineDropBall(b); continue; }
+    if (b.el) { b.el.style.left = b.x + "%"; b.el.style.top = b.y + "%"; b.el.classList.toggle("low", b.y > 74 && b.vy > 0); }
+  }
+  // wine spills bloom in place
   if (WINE.elapsed >= WINE.nextSpawnAt) { wineSpawn(); WINE.nextSpawnAt = WINE.elapsed + m.spawnEvery * wineRamp(); }
   for (let i = WINE.drops.length - 1; i >= 0; i--) {
     const d = WINE.drops[i], p = (WINE.elapsed - d.born) / d.bloom;
     if (p >= 1) { WINE.drops.splice(i, 1); wineSet(d); continue; }
-    if (d.el) { const sz = 16 + p * 48; d.el.style.width = sz + "px"; d.el.style.height = sz + "px"; d.el.classList.toggle("urgent", p > 0.66); }
+    if (d.el) { const sz = 22 + p * 62; d.el.style.width = sz + "px"; d.el.style.height = sz + "px"; d.el.classList.toggle("urgent", p > 0.66); }
   }
   winePaint();
-  if (WINE.stains >= m.maxStains) return wineFinish(false);
+  if (WINE.stains >= m.maxStains) return wineFinish(false, "stains");
+  if (WINE.pendingBalls === 0 && WINE.balls.length === 0) return wineFinish(false, "balls");
   if (WINE.elapsed >= m.dur) return wineFinish(true);
 }
-function wineFinish(win) {
+function wineFinish(win, why) {
   if (!WINE) return;
-  const m = wineMode(), saved = WINE.saved, stains = WINE.stains;
+  const m = wineMode(), saved = WINE.saved, stains = WINE.stains, dropped = WINE.dropped;
   WINE.over = true;
   if (WINE.tickTimer) { clearInterval(WINE.tickTimer); WINE.tickTimer = null; }
   WINE = null;
   let outcome;
   if (win) {
-    const stars = Math.max(1, Math.min(3, 3 - Math.floor(stains / Math.max(1, m.maxStains / 3))));
+    const stars = Math.max(1, Math.min(3, 3 - Math.floor((stains + dropped) / Math.max(1, m.maxStains / 3))));
     const gold = 40 + stars * 12 + saved, dust = 4 + stars * 2;
     grantReward({ gold, stardust: dust }); save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
     outcome = { emoji: "🍷", title: "Cloak saved!", cls: "win",
       lines: [`<div class="stat-line"><span>Drops dabbed</span><span>${saved} · ${"⭐".repeat(stars)}</span></div>`,
-              `<div class="stat-line"><span>Stains left</span><span>${stains}/${m.maxStains}</span></div>`,
+              `<div class="stat-line"><span>Balls dropped</span><span>${dropped}</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`],
-      note: "You kept the King's cloak (mostly) spotless through the whole toast — nicely dabbed!" };
+      note: "You kept the Joker juggling AND the cloak clean through the whole toast — masterful!" };
   } else {
     save(); SFX.sneeze();
-    outcome = { emoji: "🟣", title: "The cloak's ruined!", cls: "lose",
+    const ballsOut = why === "balls";
+    outcome = { emoji: ballsOut ? "🤹" : "🟣", title: ballsOut ? "The juggling collapsed!" : "The cloak's ruined!", cls: "lose",
       lines: [`<div class="stat-line"><span>Drops dabbed</span><span>${saved}</span></div>`,
-              `<div class="stat-line"><span>Stains</span><span style="color:var(--bad)">${stains}/${m.maxStains}</span></div>`,
+              `<div class="stat-line"><span>${ballsOut ? "Balls dropped" : "Stains"}</span><span style="color:var(--bad)">${ballsOut ? dropped : stains + "/" + m.maxStains}</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="muted">none — try again!</span></div>`],
-      note: "Too many stains set into the cloak and the King stormed off. Always dab the drop closest to setting first!" };
+      note: ballsOut ? "Every one of the Joker's balls hit the floor — his act fell apart! Keep tapping the balls to toss them back up." : "Too many stains set into the cloak and the King stormed off. Remember — every dropped ball knocks over more wine!" };
   }
   html("event", `
     ${hud("King's Courtyard")}
@@ -5064,7 +5110,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
