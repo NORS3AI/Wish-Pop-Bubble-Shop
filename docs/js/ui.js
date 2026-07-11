@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v146"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v147"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2812,7 +2812,7 @@ function wineAddDrop(x, y, bloom) {
   const el = document.createElement("button");
   el.className = "wine-drop"; el.dataset.uid = d.uid;
   el.style.left = x + "%"; el.style.top = y + "%";
-  el.addEventListener("click", () => wineTap(d.uid));
+  el.addEventListener("pointerdown", e => { e.preventDefault(); wineTap(d.uid); });
   cloak.appendChild(el); d.el = el;
 }
 function wineSpawn() {
@@ -2833,8 +2833,9 @@ function wineAddBall() {
   const el = document.createElement("button");
   el.className = "wine-ball"; el.dataset.uid = b.uid;
   el.style.left = b.x + "%"; el.style.top = b.y + "%";
-  el.style.background = `radial-gradient(circle at 34% 30%, #ffffffcc, ${R.pick(colors)} 62%)`;
-  el.addEventListener("click", () => wineThrow(b.uid));
+  // a big invisible hit-zone button with a smaller visible ball inside (bigger, more forgiving tap target)
+  el.innerHTML = `<span class="wine-ball-face" style="background:radial-gradient(circle at 34% 30%, #ffffffcc, ${R.pick(colors)} 62%)"></span>`;
+  el.addEventListener("pointerdown", e => { e.preventDefault(); wineThrow(b.uid); });  // fire on touch, not click — reliable on a moving target
   cloak.appendChild(el); b.el = el;
 }
 function wineThrow(uid) {

@@ -1119,12 +1119,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .wine-sparkle { position: absolute; transform: translate(-50%,-50%); font-size: 32px; z-index: 3; pointer-events: none; animation: wineSpark .4s ease-out forwards; }
 @keyframes wineSpark { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.5); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.5); } }
 /* Joker's juggling balls — medium, bouncy, always tappable above the wine */
-.wine-ball { position: absolute; transform: translate(-50%,-50%); width: 74px; height: 74px; border-radius: 50%; padding: 0; border: none; cursor: pointer;
-  box-shadow: 0 3px 6px rgba(0,0,0,.4), inset 0 -3px 6px rgba(0,0,0,.25); z-index: 4; touch-action: manipulation;
-  transition: top .06s linear, left .06s linear; }
-.wine-ball.low { box-shadow: 0 0 14px rgba(255,80,80,.9), 0 3px 6px rgba(0,0,0,.4); }
-.wine-ball.toss { animation: wineToss .3s ease; }
-@keyframes wineToss { 0%,100% { transform: translate(-50%,-50%) scale(1); } 45% { transform: translate(-50%,-50%) scale(1.22); } }
+.wine-ball { position: absolute; transform: translate(-50%,-50%); width: 92px; height: 92px; padding: 0; border: none; background: transparent; cursor: pointer;
+  z-index: 4; touch-action: manipulation; display: flex; align-items: center; justify-content: center; }
+.wine-ball-face { width: 70px; height: 70px; border-radius: 50%; pointer-events: none;
+  box-shadow: 0 3px 6px rgba(0,0,0,.4), inset 0 -4px 7px rgba(0,0,0,.28); }
+.wine-ball.low .wine-ball-face { box-shadow: 0 0 16px rgba(255,80,80,.9), 0 3px 6px rgba(0,0,0,.4); }
+.wine-ball.toss .wine-ball-face { animation: wineToss .3s ease; }
+@keyframes wineToss { 0%,100% { transform: scale(1); } 45% { transform: scale(1.2); } }
 .wine-splat { position: absolute; transform: translate(-50%,-50%); font-size: 34px; z-index: 3; pointer-events: none; animation: wineSpark .45s ease-out forwards; }
 /* Collection hunt — tracker chip + "found one!" flourish */
 .hunt-chip { display: flex; width: fit-content; margin: 6px auto 0; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 999px;
