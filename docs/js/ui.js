@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v149"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v150"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2977,7 +2977,7 @@ let CARPET = null;
 const CARPET_TICK = 40;        // ms per tick (~25fps)
 const CARPET_X = 50;           // carpet's fixed screen x (%) — it never leaves centre
 const CARPET_Y = 74;           // carpet's screen y (%)
-const CARPET_HALF = 13;        // half-width (%) of the catch/hit column around the carpet
+const CARPET_HALF = 15;        // half-width (%) of the catch/hit column around the carpet
 const CARPET_SHIELD_MS = 2600; // how long a lamp's genie-shield lasts
 const CARPET_MODES = {
   easy:   { label: "Easy",   dur: 30000, fall: 24, spawnEvery: 980, hazardRate: 0.42, hearts: 3, steer: 44 },
@@ -3125,7 +3125,7 @@ function carpetTick() {
   const m = carpetMode(), dt = CARPET_TICK / 1000;
   CARPET.elapsed += CARPET_TICK;
   // ease lateral velocity toward the steer target → smooth banking (carpet stays centred, world slides)
-  CARPET.vx += (CARPET.steer * m.steer - CARPET.vx) * 0.20;
+  CARPET.vx += (CARPET.steer * m.steer - CARPET.vx) * 0.26;
   const shift = CARPET.vx * dt;               // fly right (vx>0) → the whole sky slides left
   CARPET.bg -= CARPET.vx * dt * 0.6;
   const dunes = $("#carpet-dunes"); if (dunes) dunes.style.backgroundPositionX = CARPET.bg + "%";

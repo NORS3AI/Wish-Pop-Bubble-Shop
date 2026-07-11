@@ -1550,21 +1550,22 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   opacity: .92; }
 .carpet-arrow { position: absolute; top: 46%; font-size: 22px; color: #ffffff40; z-index: 1; pointer-events: none; }
 .carpet-arrow.left { left: 10px; } .carpet-arrow.right { right: 10px; }
-.carpet-item { position: absolute; transform: translate(-50%,-50%); font-size: 30px; line-height: 1; z-index: 2;
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); pointer-events: none; will-change: top,left; }
-.carpet-item.good { font-size: 34px; filter: drop-shadow(0 0 7px #ffe27a) drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
+.carpet-item { position: absolute; transform: translate(-50%,-50%); font-size: 40px; line-height: 1; z-index: 2;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); pointer-events: none;
+  transition: left .06s linear, top .06s linear; will-change: top,left; }
+.carpet-item.good { font-size: 46px; filter: drop-shadow(0 0 8px #ffe27a) drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
 .carpet-item.bad.near { animation: carpetNear .5s infinite; }
 @keyframes carpetNear { 50% { filter: drop-shadow(0 0 8px #ff6a6a) drop-shadow(0 2px 2px rgba(0,0,0,.4)); } }
 .carpet-item.caught { animation: carpetCaught .5s forwards; }
 @keyframes carpetCaught { to { transform: translate(-50%,-50%) scale(1.9); opacity: 0; } }
 .carpet-item.smash { animation: carpetSmash .45s forwards; }
 @keyframes carpetSmash { 0% { transform: translate(-50%,-50%) scale(1.3); } 100% { transform: translate(-50%,-50%) scale(.4) rotate(28deg); opacity: 0; } }
-.carpet-rug { position: absolute; left: 50%; top: 74%; transform: translateX(-50%); width: 26%; max-width: 118px; aspect-ratio: 5 / 2; z-index: 3;
+.carpet-rug { position: absolute; left: 50%; top: 74%; transform: translateX(-50%); width: 32%; max-width: 148px; aspect-ratio: 5 / 2; z-index: 3;
   background: repeating-linear-gradient(90deg, #7b2ff7 0 12%, #b06bff 12% 24%);
-  border: 2px solid #ffd24a; border-radius: 9px;
+  border: 3px solid #ffd24a; border-radius: 10px;
   box-shadow: 0 6px 15px rgba(0,0,0,.45), inset 0 0 0 3px rgba(255,255,255,.14);
-  display: flex; align-items: center; justify-content: center; transition: transform .05s linear; }
-.carpet-rug .carpet-rider { font-size: 21px; transform: translateY(-72%); filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+  display: flex; align-items: center; justify-content: center; transition: transform .06s linear; }
+.carpet-rug .carpet-rider { font-size: 26px; transform: translateY(-72%); filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
 .carpet-tassel { position: absolute; bottom: -6px; width: 4px; height: 9px; background: #ffd24a; border-radius: 0 0 2px 2px; }
 .carpet-tassel.l { left: 12%; } .carpet-tassel.r { right: 12%; }
 .carpet-rug.hurt { animation: carpetHurt .4s; }
