@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v162"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v163"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3010,6 +3010,9 @@ const CARPET_Y = 78;           // carpet's screen y (%)
 const CARPET_STAR_HALF = 12;   // half-width (%) of the star-catch column around the carpet — snug, so a near-miss is safe
 const CARPET_BODY = 12;        // carpet collision half-width (% of sky width) for planets
 const CARPET_STARS = 10, CARPET_CLOUDS = 6, CARPET_PLANETS = 3, CARPET_RUGS = 10;
+// Fair hitbox: each planet's solid BODY radius as a fraction of its sprite half-width.
+// Planet 2 is the ringed one — its sprite is much wider than the sphere, so its body is smaller.
+const CARPET_PLANET_BODY = { 1: 0.80, 2: 0.60, 3: 0.80 };
 const CARPET_HEARTS = 3;               // hearts you start with
 const CARPET_STAR_GOLD = [2, 3, 5, 6, 9, 10];  // gold stars — COLLECT these
 const CARPET_STAR_DARK = [1, 4, 7, 8];         // blue/purple stars — AVOID (catching one costs a heart)
@@ -3251,9 +3254,9 @@ function carpetTick() {
     if (c.y > 100 + m.planetR * 1.4 || c.x < -140 || c.x > 240) { if (c.el) c.el.remove(); CARPET.planets.splice(i, 1); continue; }
     if (c.el) {
       c.el.style.top = c.y + "%"; c.el.style.left = c.x + "%";
-      const pr = c.el.offsetWidth / 2, pcx = skyW * c.x / 100, pcy = skyH * c.y / 100;
+      const pr = (c.el.offsetWidth / 2) * (CARPET_PLANET_BODY[c.img] || 0.78), pcx = skyW * c.x / 100, pcy = skyH * c.y / 100;
       const dist = Math.hypot(cxp - pcx, cyp - pcy);
-      if (dist < pr * 0.80 + bodyR * 0.6) { carpetCrash(c); return; }   // touch the planet body → crash
+      if (dist < pr + bodyR * 0.3) { carpetCrash(c); return; }   // only the actual planet body crashes you now
     }
   }
   carpetPaint();
