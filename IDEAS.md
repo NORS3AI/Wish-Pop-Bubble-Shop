@@ -586,3 +586,54 @@ stayed green). As built:
 **Possible follow-ups:** make Stardust a bit harder to get elsewhere so this
 becomes a primary path to cosmetics; maybe a lifetime "best allergy-free streak"
 shown on a stats/achievements screen.
+
+---
+
+# 📖 STORY DIRECTION & WORLD BIBLE (owner brainstorm — not yet built)
+
+_Captured verbatim-ish from the owner. This is the canonical direction for the
+story layer. Build the FRAMEWORK once, then ship ONE complete arc at a time._
+
+## Guiding principle
+Make Willow Wish feel like a real village where everyone's stories overlap.
+Characters remember past events, move to new places, return with new problems,
+and occasionally affect one another's stories. Not isolated fairy tales — one
+connected fairy-tale world that unfolds through the wishes the player answers.
+
+## Recurring customers
+- Every recurring customer has an ongoing arc told THROUGH THEIR WISHES (whether
+  tied to the main wolf story or lighter background flavor). Each wish reveals
+  another chapter of their life; attentive players slowly piece it together.
+- Customers may disappear for a while and REAPPEAR IN LATER REALMS, so the world
+  feels connected and persistent. (⇒ per-customer state must be GLOBAL, with an
+  optional "next appears in <realm>" pointer.)
+
+## The Wolf (main mischief-maker of Willow Wish)
+- Same wolf from Little Red Riding Hood AND the Three Little Pigs.
+- Many customers are UNKNOWINGLY wishing to fix problems the wolf caused; the
+  player gradually realizes he's behind much of the town's trouble. (⇒ plant
+  breadcrumb clues across other customers' wishes, with a later payoff.)
+- Eventually the wolf becomes a CUSTOMER himself. First wish:
+  - "I wish I could stop being so hungry all the time."
+  - The wish goes wrong; he returns demanding a free replacement:
+    "It didn't work! I could eat a whole sheep! Grant me a free wish."
+- Ties into the existing wolfWatch flag + the Grandma's Cottage finale.
+
+## Wolf disguises (running joke)
+- Every visit he arrives in an increasingly ridiculous disguise, with a
+  different fake name each time.
+- Everyone — including the player — obviously knows it's him. (⇒ keep a
+  consistent "tell": same eyes / tail / paw so the gag reads.)
+
+## Three Little Pigs
+- Two pigs appear as recurring customers in Willow Wish.
+- Their wishes revolve around the wolf repeatedly blowing down their straw and
+  stick houses.
+- Their arc concludes with them deciding to move in with their third brother in
+  a DIFFERENT realm.
+- In a later realm all three pigs reappear in the brick house, story continuing
+  with new wishes. (First real test of cross-realm customer persistence.)
+
+## TUTORIAL NOTE — allergy explanation wording (use language VERY close to this)
+> "Every answer to every wish is made from magic. Every magic has ingredients.
+>  Some people don't react well to certain kinds of magic… so be careful!"
