@@ -1118,7 +1118,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   background: center / contain no-repeat; filter: brightness(.8) saturate(1.05) drop-shadow(0 1px 2px rgba(0,0,0,.35)); z-index: 1; pointer-events: none; }
 .wine-sparkle { position: absolute; transform: translate(-50%,-50%); font-size: 32px; z-index: 3; pointer-events: none; animation: wineSpark .4s ease-out forwards; }
 @keyframes wineSpark { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.5); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.5); } }
-/* Joker's juggling balls — medium, bouncy, always tappable above the wine */
+/* Jester's juggling balls — medium, bouncy, always tappable above the wine */
 .wine-ball { position: absolute; transform: translate(-50%,-50%); width: 92px; height: 92px; padding: 0; border: none; background: transparent; cursor: pointer;
   z-index: 4; touch-action: manipulation; display: flex; align-items: center; justify-content: center;
   transition: top .06s linear, left .06s linear; will-change: top, left; }

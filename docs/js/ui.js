@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v151"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v152"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2068,7 +2068,7 @@ function wolfFinish(result) {
 /* tumbling off the top of the screen. Tap a falling dish to catch it, then  */
 /* tap its rightful home at the bottom to set it down. Right homes charm the */
 /* King (Delight ✨); dishes that smash on the floor stoke his Temper 😠 — */
-/* max it and the poor Joker is hauled to the dungeon (you lose). Easy lets  */
+/* max it and the poor Jester is hauled to the dungeon (you lose). Easy lets  */
 /* you hold TWO dishes; Medium/Hard just one (one pair of hands) so you must */
 /* place fast. Numbers verified winnable by a greedy solver in the tests.    */
 /* ======================================================================= */
@@ -2130,7 +2130,7 @@ function renderFeastFinale() {
         <div class="stat-line"><span>Catch each dish</span><span>set it in its home 🍽️</span></div>
         <div class="stat-line"><span>Win to earn</span><span class="gold">🗝️ a Realm Key!</span></div>
       </div>
-      <div class="muted" style="max-width:300px">Beat this to earn the <b>Realm Key</b> for the next realm. Save the feast — and the poor Joker — before the King's Temper boils over. You can retry as many times as it takes.</div>
+      <div class="muted" style="max-width:300px">Beat this to earn the <b>Realm Key</b> for the next realm. Save the feast — and the poor Jester — before the King's Temper boils over. You can retry as many times as it takes.</div>
     </div>
     <button class="btn good" id="feast-finale-go">🍗 Save the Feast!</button>
     <div style="height:8px"></div>
@@ -2154,7 +2154,7 @@ function renderFeastIntro() {
         <div class="stat-line"><span>Right home</span><span style="color:var(--good)">delights the King ✨</span></div>
         <div class="stat-line"><span>Dish hits the floor</span><span style="color:var(--bad)">Temper rises 😠</span></div>
       </div>
-      <div class="muted" style="max-width:300px"><b>Easy</b> lets you hold two dishes at once; <b>Medium</b> & <b>Hard</b> just one — place fast! Keep the King's Temper from boiling over or the Joker's in trouble.</div>
+      <div class="muted" style="max-width:300px"><b>Easy</b> lets you hold two dishes at once; <b>Medium</b> & <b>Hard</b> just one — place fast! Keep the King's Temper from boiling over or the Jester's in trouble.</div>
     </div>
     <div class="wolf-modes">
       <button class="btn good" id="feast-easy">🟢 Easy · hold 2</button>
@@ -2320,7 +2320,7 @@ function feastFinish(win) {
     outcome = { emoji: finale ? "🗝️" : "👑", title: finale ? "The feast is saved!" : "The King is delighted!", cls: "win",
       lines: [`<div class="stat-line"><span>Dishes rescued</span><span>${placed} · ${"⭐".repeat(stars)}</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`, keyLine],
-      note: finale ? "You put the whole feast back before the King turned 'round — the Joker's forgiven, and you've earned the 🗝️ Realm Key! Head to the map to open the next realm." : "The King never noticed a thing — and the Joker keeps his head. Well played!" };
+      note: finale ? "You put the whole feast back before the King turned 'round — the Jester's forgiven, and you've earned the 🗝️ Realm Key! Head to the map to open the next realm." : "The King never noticed a thing — and the Jester keeps his head. Well played!" };
   } else {
     save(); SFX.sneeze();
     outcome = { emoji: "😡", title: "The King's had enough!", cls: "lose",
@@ -2743,7 +2743,7 @@ const WINE_BALL_MAXFALL = 55; // cap on downward speed so a ball never drops fas
 const WINE_FLOOR = 94;        // y% past which an uncaught ball is dropped
 const WINE_BALL_GAP = 2000;   // ms between ball entrances (first one at this mark too)
 const WINE_MODES = {
-  // Two things at once: dab blooming wine AND keep the Joker's balls up. A dropped ball knocks a
+  // Two things at once: dab blooming wine AND keep the Jester's balls up. A dropped ball knocks a
   // goblet → spawns a fresh spill (the two systems feed each other). More balls each difficulty.
   easy:   { label: "Easy",   bloomMs: 2200, spawnEvery: 950,  dur: 28000, maxStains: 9,  balls: 3, startDrops: 3 },
   medium: { label: "Medium", bloomMs: 1950, spawnEvery: 850,  dur: 32000, maxStains: 8,  balls: 4, startDrops: 4 },
@@ -2845,7 +2845,7 @@ function wineAddBall() {
   const used = WINE.balls.map(x => x.img), avail = [];
   for (let k = 1; k <= WINE_BALL_IMGS; k++) if (!used.includes(k)) avail.push(k);
   const img = avail.length ? R.pick(avail) : R.int(1, WINE_BALL_IMGS);
-  // enters near the bottom and is tossed straight up (the Joker throws it), then arcs down over ~3s
+  // enters near the bottom and is tossed straight up (the Jester throws it), then arcs down over ~3s
   const b = { uid: ++WINE.uid, x: 16 + Math.random() * 68, y: 88 + Math.random() * 4, vy: -WINE_BALL_THROW, vx: (Math.random() - 0.5) * 10, img, el: null };
   WINE.balls.push(b);
   const el = document.createElement("button");
@@ -2950,7 +2950,7 @@ function wineFinish(win, why) {
       lines: [`<div class="stat-line"><span>Drops dabbed</span><span>${saved} · ${"⭐".repeat(stars)}</span></div>`,
               `<div class="stat-line"><span>Balls dropped</span><span>${dropped}</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`],
-      note: "You kept the Joker juggling AND the cloak clean through the whole toast — masterful!" };
+      note: "You kept the Jester juggling AND the cloak clean through the whole toast — masterful!" };
   } else {
     save(); SFX.sneeze();
     const ballsOut = why === "balls";
@@ -2958,7 +2958,7 @@ function wineFinish(win, why) {
       lines: [`<div class="stat-line"><span>Drops dabbed</span><span>${saved}</span></div>`,
               `<div class="stat-line"><span>${ballsOut ? "Balls dropped" : "Stains"}</span><span style="color:var(--bad)">${ballsOut ? dropped : stains + "/" + m.maxStains}</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="muted">none — try again!</span></div>`],
-      note: ballsOut ? "Every one of the Joker's balls hit the floor — his act fell apart! Keep tapping the balls to toss them back up." : "Too many stains set into the cloak and the King stormed off. Remember — every dropped ball knocks over more wine!" };
+      note: ballsOut ? "Every one of the Jester's balls hit the floor — his act fell apart! Keep tapping the balls to toss them back up." : "Too many stains set into the cloak and the King stormed off. Remember — every dropped ball knocks over more wine!" };
   }
   html("event", `
     ${hud("King's Courtyard")}

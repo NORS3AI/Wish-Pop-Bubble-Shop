@@ -308,9 +308,9 @@ bumped the banquet table and the whole feast — roast, cakes, fruit, bread, can
 (plate, bowl, basket, stand, holder, goblet) to set it down.
 - **Right home → King's Delight ✨ rises** (your score / star rating). **Wrong home** still tidies
   it (small credit) — the game is about *pleasing the King*, never punishing.
-- **Dish smashes on the floor → King's Temper 😠 rises.** Max it and the poor Joker is hauled to
+- **Dish smashes on the floor → King's Temper 😠 rises.** Max it and the poor Jester is hauled to
   the dungeon → **lose, retry.** (Reframed from a "stain meter" per owner: it's about saving the
-  feast and the Joker, not avoiding stains.)
+  feast and the Jester, not avoiding stains.)
 - **Depth to match the wolf:** one pair of hands (Easy holds **2**, Medium/Hard hold **1** — place
   fast), attention split across many falling dishes, hazard dishes (🕯️ candle, 🍷 wine cost extra
   Temper if smashed), a **"The King rises for the toast!" surge** (dishes rain faster), and Hard adds
@@ -332,8 +332,8 @@ the one **closest to setting** first; the spill speeds up over the round. Easy/M
 seated into the **Courtyard playlist** (the `"wine"` token, slot 5). Verified 15/15 winnable all modes.
 Admin: "🍷 Spilled Wish-Wine (practice)". Original brainstorm below.
 
-**Second element added (v144): the Joker's juggling.** To give it a real judgment axis (not just "tap faster"),
-the game now runs TWO systems at once on the same cloak: dab the blooming wine AND keep the Joker's
+**Second element added (v144): the Jester's juggling.** To give it a real judgment axis (not just "tap faster"),
+the game now runs TWO systems at once on the same cloak: dab the blooming wine AND keep the Jester's
 balls in the air (tap a ball to toss it back up; it arcs under gravity). Balls: Easy 3 / Medium 4 /
 Hard 5, entering ~0.5s apart. **The link:** a dropped ball knocks a goblet → spawns a fresh spill, so
 the two systems feed each other (fumbling the juggle makes more mess). Two lose conditions: stains hit

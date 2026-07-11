@@ -19,7 +19,7 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
-- 🎨 **Spilled Wish-Wine got real artwork!** The Joker's juggling balls are now proper glossy,
+- 🎨 **Spilled Wish-Wine got real artwork!** The Jester's juggling balls are now proper glossy,
   hand-painted balls (every one a different colour, as always), and the wine spills use real
   splat-shaped stains that vary each time — a big glow-up from the old plain blobs.
 
@@ -60,7 +60,7 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 - 🍗 **New finale — Rescue the Feast!** The clumsy jester bumped the King's banquet and the whole
   feast is tumbling off the table. **Catch each falling dish and set it in its home** (plate, bowl,
   basket, stand, candle-holder, goblet). Right homes **delight the King ✨**; dishes that smash on
-  the floor stoke his **Temper 😠** — let it boil over and the poor Joker's in trouble. Easy lets you
+  the floor stoke his **Temper 😠** — let it boil over and the poor Jester's in trouble. Easy lets you
   hold **two** dishes at once, Medium and Hard just one (so place fast!), and mid-round the King rises
   for a **toast** and the dishes rain down faster. **Beat it to earn the Realm Key** that opens the
   next kingdom on the map.
