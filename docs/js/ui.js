@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v169"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v170"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3373,6 +3373,7 @@ const BQ_PROC = { fabric: 1500, cut: 2000, sew: 2400, bead: 2100, trim: 2000 }; 
 // where each station's drop-zone sits on the boutique_bg art (% of the play area)
 const BQ_POS = { fabric: { x: 25, y: 27 }, cut: { x: 72, y: 29 }, bead: { x: 25, y: 50 }, sew: { x: 70, y: 50 }, trim: { x: 46, y: 69 } };
 const BQ_COLORS = 8;                                // dress colours (art/bq_dress_1..8_*)
+const BQ_SFX = { fabric: "whoosh", cut: "chop", sew: "count", bead: "charm", trim: "bonus" };   // a distinct sound as each table finishes
 const BOUTIQUE_MODES = {
   easy:   { label: "Easy",   stations: ["fabric", "cut", "sew", "trim"],          procScale: 1.1, patience: 27000, spawnEvery: 4800, maxConcurrent: 2, goal: 6,  maxLost: 5, beadChance: 0,    reworkChance: 0 },
   medium: { label: "Medium", stations: ["fabric", "cut", "sew", "bead", "trim"],  procScale: 1.0, patience: 23000, spawnEvery: 4200, maxConcurrent: 3, goal: 8,  maxLost: 4, beadChance: 0.5,  reworkChance: 0 },
@@ -3461,11 +3462,12 @@ function boutiquePlay() {
 }
 // each dress carries its own REMAINING recipe above it (station icons in cream chips) — done steps drop off
 function boutiqueRemainHtml(o) {
+  if (o.station === "supply") return "";   // orders waiting in the line show no recipe icons
   if (o.step >= o.recipe.length) return '<span class="bq-ic now"><span class="bq-ic-done">📦</span></span>';
   return o.recipe.slice(o.step).map((st, i) => `<span class="bq-ic${i === 0 ? " now" : ""}"><img src="art/bq_ic_${st}.png?v=${BUILD}" alt="${st}"></span>`).join("");
 }
 function boutiqueStateClass(o) { return (o.step >= o.recipe.length && o.ready) ? "done" : o.ready ? "ready" : "proc"; }
-function boutiqueDressSrc(o) { return `art/bq_dress_${o.color}_${boutiqueStage(o)}.png?v=${BUILD}`; }
+function boutiqueDressSrc(o) { const st = boutiqueStage(o); return st === "fabric" ? `art/bq_mouse_${o.color}.png?v=${BUILD}` : `art/bq_dress_${o.color}_${st}.png?v=${BUILD}`; }
 function boutiqueAddOrderEl(o) {
   const slot = $("#bq-slot-supply"); if (!slot) return;
   const el = document.createElement("div");
@@ -3566,9 +3568,10 @@ function boutiqueTick() {
   // finished processing → ready to move on
   BOUTIQUE.orders.forEach(o => {
     if (!o.ready && o.procStart != null && BOUTIQUE.elapsed - o.procStart >= o.procDur) {
+      const finished = o.station;
       o.ready = true; o.procStart = null; o.step++;
       boutiqueUpdateOrder(o);
-      SFX.pop();
+      (SFX[BQ_SFX[finished]] || SFX.pop)();
     }
   });
   // patience ran out → customer storms off

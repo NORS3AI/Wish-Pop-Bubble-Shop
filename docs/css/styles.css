@@ -1603,7 +1603,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* a station drop-zone sits over its painted table; the dress-in-progress appears here */
 .bq-zone { position: absolute; transform: translate(-50%,-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; }
 .bq-zone .bq-slot { display: flex; align-items: center; justify-content: center; min-height: 20px; }
-.bq-zone .bq-proc { width: 52px; height: 5px; margin-top: 3px; border-radius: 3px; background: rgba(0,0,0,.5); overflow: hidden; opacity: 0; transition: opacity .15s; }
+.bq-zone .bq-proc { width: 58px; height: 9px; margin-top: 3px; border-radius: 5px; background: rgba(0,0,0,.55); overflow: hidden; opacity: 0; transition: opacity .15s; box-shadow: 0 1px 2px rgba(0,0,0,.4); }
 .bq-zone .bq-proc.on { opacity: 1; }
 .bq-zone .bq-proc i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #c58bff, #ffd76a); }
 /* the incoming-orders shelf pinned to the bottom */
@@ -1619,7 +1619,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .bq-ic.now { box-shadow: 0 0 0 3px #ffd76a, 0 2px 4px rgba(0,0,0,.55); }
 .bq-ic-done { font-size: 30px; }
 .bq-dress { width: auto; height: 70px; max-width: 88px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.55)); }
-.bq-opat { width: 54px; height: 5px; border-radius: 3px; background: rgba(0,0,0,.5); overflow: hidden; }
+.bq-opat { width: 60px; height: 9px; border-radius: 5px; background: rgba(0,0,0,.55); overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.4); }
 .bq-opat i { display: block; height: 100%; width: 100%; background: #7ee08a; transition: width .1s linear; }
 .bq-opat i.amber { background: #ffcf5a; } .bq-opat i.danger { background: #ff6a6a; }
 .bq-order.ready .bq-dress { animation: bqReady 1.1s ease-in-out infinite; }
