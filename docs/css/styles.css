@@ -1634,3 +1634,19 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 @keyframes bqDeliver { to { transform: translateY(-40px) scale(.55); opacity: 0; } }
 .bq-order.lost { animation: bqLost .5s forwards; pointer-events: none; }
 @keyframes bqLost { to { transform: translateY(22px) scale(.6) rotate(18deg); opacity: 0; } }
+
+/* ===== FULL-BLEED MINIGAMES — art fills the screen, header becomes a corner menu button ===== */
+#app.mg-full { padding: var(--safe-t) 0 var(--safe-b); }
+#app.mg-full > .screen { padding: 0; position: relative; }
+/* the top HUD collapses to just a floating ☰ menu button in the corner */
+#app.mg-full .hud { position: absolute; top: 8px; left: 10px; width: auto; margin: 0; padding: 0; background: none; z-index: 40; }
+#app.mg-full .hud .title, #app.mg-full .hud .gold { display: none; }
+#app.mg-full .hud .hud-left { gap: 0; font-size: 0; }            /* hides the 🐸 + treat count */
+#app.mg-full .hud .hud-menu { font-size: 20px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; color: #fff; background: rgba(18,10,28,.5); border: 1px solid rgba(255,255,255,.22);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); box-shadow: 0 2px 7px rgba(0,0,0,.45); }
+/* hide the bottom hint line and let the play area go edge-to-edge */
+#app.mg-full .stack-hint { display: none; }
+#app.mg-full .carpet-sky, #app.mg-full .stack-sky, #app.mg-full .bq-shop { margin: 0; border-radius: 0; }
+/* nudge each game's own top-left counter clear of the floating menu button */
+#app.mg-full .bq-hud, #app.mg-full .stack-overlay { padding-left: 46px; }

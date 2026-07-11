@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v167"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v168"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -177,7 +177,14 @@ let servedTotal = +(localStorage.getItem("wishpop_served") || 0);
 /* --- helpers ------------------------------------------------------------ */
 const $ = sel => document.querySelector(sel);
 function screen(id) { return document.getElementById("screen-" + id); }
-function show(id) { document.querySelectorAll(".screen").forEach(s => s.classList.remove("active")); screen(id).classList.add("active"); }
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  const sc = screen(id); sc.classList.add("active");
+  // Full-bleed minigames: any screen containing a .mg-fullbleed play area drops the header/padding
+  // and floats a corner menu button so the art fills the screen.
+  const app = document.getElementById("app");
+  if (app) app.classList.toggle("mg-full", !!sc.querySelector(".mg-fullbleed"));
+}
 function html(id, markup) { screen(id).innerHTML = markup; }
 function on(sel, ev, fn) { const e = $(sel); if (e) e.addEventListener(ev, fn); }
 let toastT = null;
@@ -2517,7 +2524,7 @@ function stackPlay() {
   const mid = endless ? (best ? `<div class="stack-chip stack-chip-mid">🏆 <b>${best}</b></div>` : "") : `<div class="stack-timer2"><i id="stack-timer"></i></div>`;
   html("event", `
     ${hud("Sky-High Savings!")}
-    <div class="feast-sky stack-sky" id="stack-sky">
+    <div class="feast-sky stack-sky mg-fullbleed" id="stack-sky">
       <div class="stack-bg"></div>
       <div class="stack-overlay">
         <div class="stack-chip"><span>🪙</span><b id="stack-hnum">${hInit}</b></div>
@@ -3119,7 +3126,7 @@ function carpetPlay() {
   const m = carpetMode();
   html("event", `
     ${hud("Magic Carpet Dash!")}
-    <div class="carpet-sky" id="carpet-sky">
+    <div class="carpet-sky mg-fullbleed" id="carpet-sky">
       <div class="carpet-bg" id="carpet-bg"></div>
       <div class="stack-overlay">
         <div class="stack-chip" id="carpet-hchip"><span id="carpet-hearts">${"❤️".repeat(CARPET_HEARTS)}</span></div>
@@ -3437,7 +3444,7 @@ function boutiquePlay() {
     </div>`).join("");
   html("event", `
     ${hud("Mouse Boutique")}
-    <div class="bq-shop" id="bq-shop">
+    <div class="bq-shop mg-fullbleed" id="bq-shop">
       <div class="bq-hud">
         <div class="bq-chip">👗 <b id="bq-delivered">0/${m.goal}</b></div>
         <div class="bq-chip" id="bq-lost-chip">😖 <b id="bq-lost">0/${m.maxLost}</b></div>
