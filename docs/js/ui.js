@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v166"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v167"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3361,21 +3361,33 @@ function carpetFinishInfinite(secs, caught) {
 /* ======================================================================= */
 let BOUTIQUE = null;
 const BQ_TICK = 90;                                 // ms per tick
-const BQ_ICON = { cut: "✂️", sew: "🪡", bead: "💎", trim: "🎀" };
-const BQ_NAME = { cut: "Cut", sew: "Sew", bead: "Bead", trim: "Trim" };
-const BQ_PROC = { cut: 1900, sew: 2300, bead: 2100, trim: 1900 };   // base processing ms per table (× mode.procScale)
+const BQ_NAME = { fabric: "Fabric", cut: "Cut", sew: "Sew", bead: "Bead", trim: "Trim" };
+const BQ_PROC = { fabric: 1500, cut: 2000, sew: 2400, bead: 2100, trim: 2000 };   // base processing ms per table (× mode.procScale)
+// where each station's drop-zone sits on the boutique_bg art (% of the play area)
+const BQ_POS = { fabric: { x: 21, y: 25 }, cut: { x: 71, y: 30 }, bead: { x: 21, y: 59 }, sew: { x: 72, y: 57 }, trim: { x: 47, y: 74 } };
+const BQ_COLORS = 8;                                // dress colours (art/bq_dress_1..8_*)
 const BOUTIQUE_MODES = {
-  easy:   { label: "Easy",   stations: ["cut", "sew", "trim"],          procScale: 1.15, patience: 22000, spawnEvery: 4200, maxConcurrent: 2, goal: 6,  maxLost: 5, beadChance: 0,   reworkChance: 0 },
-  medium: { label: "Medium", stations: ["cut", "sew", "bead", "trim"],  procScale: 1.0,  patience: 18000, spawnEvery: 3600, maxConcurrent: 3, goal: 8,  maxLost: 4, beadChance: 0.5, reworkChance: 0 },
-  hard:   { label: "Hard",   stations: ["cut", "sew", "bead", "trim"],  procScale: 0.85, patience: 20000, spawnEvery: 3900, maxConcurrent: 3, goal: 8,  maxLost: 4, beadChance: 0.55, reworkChance: 0.25 },
+  easy:   { label: "Easy",   stations: ["fabric", "cut", "sew", "trim"],          procScale: 1.1, patience: 27000, spawnEvery: 4800, maxConcurrent: 2, goal: 6,  maxLost: 5, beadChance: 0,    reworkChance: 0 },
+  medium: { label: "Medium", stations: ["fabric", "cut", "sew", "bead", "trim"],  procScale: 1.0, patience: 23000, spawnEvery: 4200, maxConcurrent: 3, goal: 8,  maxLost: 4, beadChance: 0.5,  reworkChance: 0 },
+  hard:   { label: "Hard",   stations: ["fabric", "cut", "sew", "bead", "trim"],  procScale: 0.9, patience: 20000, spawnEvery: 3700, maxConcurrent: 3, goal: 9,  maxLost: 4, beadChance: 0.55, reworkChance: 0.2 },
 };
 function boutiqueMode() { return BOUTIQUE_MODES[BOUTIQUE.mode]; }
 function boutiqueRecipe(m) {
-  const r = ["cut", "sew"];
+  const r = ["fabric", "cut", "sew"];
   if (m.reworkChance && Math.random() < m.reworkChance) r.push("cut");             // "needs more fabric" — back to cutting
   if (m.stations.indexOf("bead") >= 0 && Math.random() < m.beadChance) r.push("bead");
-  r.push("trim");
+  if (m.stations.indexOf("trim") >= 0) r.push("trim");
   return r;
+}
+// which dress-stage sprite to show, based on the stations this order has COMPLETED
+function boutiqueStage(o) {
+  const done = o.recipe.slice(0, o.step), has = s => done.indexOf(s) >= 0;
+  if (has("trim") && has("bead")) return "trim";       // fully finished
+  if (has("trim")) return "trimonly";
+  if (has("bead")) return "beadonly";
+  if (has("sew")) return "sew";
+  if (has("cut")) return "cut";
+  return "fabric";                                     // raw bolt
 }
 function renderBoutiqueIntro() {
   SFX.unlock(); SFX.fanfare();
@@ -3386,12 +3398,12 @@ function renderBoutiqueIntro() {
       <div style="font-weight:800;font-size:20px">Mouse Boutique</div>
       <div class="speech">“Gowns for the ball, and every stepsister wants hers first! Run the mice through the shop and get each dress out the door in time.”</div>
       <div class="card" style="width:100%;max-width:330px">
-        <div class="stat-line"><span>Tap a glowing dress 👗</span><span>sends it to its next table</span></div>
-        <div class="stat-line"><span>Follow each ticket</span><span>✂️ → 🪡 → 🎀</span></div>
+        <div class="stat-line"><span>Tap a glowing dress</span><span>scurries it to its next table</span></div>
+        <div class="stat-line"><span>The tables</span><span>Fabric → Cut → Sew → Bead → Trim</span></div>
         <div class="stat-line"><span>One dress per table</span><span style="color:var(--bad)">keep the line moving!</span></div>
         <div class="stat-line"><span>Deliver enough</span><span style="color:var(--good)">before they storm off ⏳</span></div>
       </div>
-      <div class="muted" style="max-width:300px">Each dress's ticket shows the tables it needs. Tap it when it glows to scurry it along — a table only holds one dress, so don't let the line clog!</div>
+      <div class="muted" style="max-width:300px">The icons above each dress show the tables it still needs — they drop off as it's made, and the dress itself takes shape stage by stage. A table only holds one dress, so if its next table's busy, tapping it hops it back to the line.</div>
     </div>
     <div class="wolf-modes">
       <button class="btn good" id="bq-easy">🟢 Easy</button>
@@ -3418,45 +3430,41 @@ function boutiqueStart(mode) {
 }
 function boutiquePlay() {
   const m = boutiqueMode();
-  const stationsHtml = m.stations.map(st => `
-    <div class="bq-station" id="bq-st-${st}">
-      <div class="bq-st-head"><span class="bq-st-ic">${BQ_ICON[st]}</span><span class="bq-st-name">${BQ_NAME[st]}</span></div>
+  const zones = m.stations.map(st => `
+    <div class="bq-zone" id="bq-zone-${st}" style="left:${BQ_POS[st].x}%;top:${BQ_POS[st].y}%">
       <div class="bq-slot" id="bq-slot-${st}"></div>
       <div class="bq-proc"><i id="bq-proc-${st}"></i></div>
     </div>`).join("");
   html("event", `
     ${hud("Mouse Boutique")}
-    <div class="bq-top">
-      <div class="stack-chip">👗 <b id="bq-delivered">0 / ${m.goal}</b></div>
-      <div class="bq-title">🐭 Stitch &amp; Scurry</div>
-      <div class="stack-chip" id="bq-lost-chip">😖 <b id="bq-lost">0 / ${m.maxLost}</b></div>
-    </div>
-    <div class="bq-floor">
-      <div class="bq-supply">
-        <div class="bq-supply-lbl">🧵 New<br>orders</div>
-        <div class="bq-slot bq-supply-slot" id="bq-slot-supply"></div>
+    <div class="bq-shop" id="bq-shop">
+      <div class="bq-hud">
+        <div class="bq-chip">👗 <b id="bq-delivered">0/${m.goal}</b></div>
+        <div class="bq-chip" id="bq-lost-chip">😖 <b id="bq-lost">0/${m.maxLost}</b></div>
       </div>
-      <div class="bq-stations bq-n${m.stations.length}">${stationsHtml}</div>
+      ${zones}
+      <div class="bq-supply"><div class="bq-slot bq-supply-slot" id="bq-slot-supply"></div></div>
     </div>
-    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Tap a dress to send it on • if its table's busy it hops back to the line</p>
+    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Tap a dress to send it on • if its next table's busy it hops back to the line</p>
   `);
   show("event");
-  const floor = $(".bq-floor");
-  if (floor) floor.addEventListener("pointerdown", e => { const t = e.target.closest("[data-order]"); if (t) { e.preventDefault(); boutiqueAdvance(+t.dataset.order); } });
+  const shop = $("#bq-shop");
+  if (shop) shop.addEventListener("pointerdown", e => { const t = e.target.closest("[data-order]"); if (t) { e.preventDefault(); boutiqueAdvance(+t.dataset.order); } });
   boutiquePaint();
 }
-// each dress carries its own REMAINING recipe above it — done steps drop off, leaving only what's left
+// each dress carries its own REMAINING recipe above it (station icons in cream chips) — done steps drop off
 function boutiqueRemainHtml(o) {
-  if (o.step >= o.recipe.length) return '<span class="bq-step now">📦</span>';
-  return o.recipe.slice(o.step).map((st, i) => `<span class="bq-step${i === 0 ? " now" : ""}">${BQ_ICON[st]}</span>`).join("");
+  if (o.step >= o.recipe.length) return '<span class="bq-ic now"><span class="bq-ic-done">📦</span></span>';
+  return o.recipe.slice(o.step).map((st, i) => `<span class="bq-ic${i === 0 ? " now" : ""}"><img src="art/bq_ic_${st}.png?v=${BUILD}" alt="${st}"></span>`).join("");
 }
 function boutiqueStateClass(o) { return (o.step >= o.recipe.length && o.ready) ? "done" : o.ready ? "ready" : "proc"; }
+function boutiqueDressSrc(o) { return `art/bq_dress_${o.color}_${boutiqueStage(o)}.png?v=${BUILD}`; }
 function boutiqueAddOrderEl(o) {
   const slot = $("#bq-slot-supply"); if (!slot) return;
   const el = document.createElement("div");
   el.className = "bq-order " + boutiqueStateClass(o); el.id = "bq-order-" + o.id; el.dataset.order = o.id;
   el.innerHTML = `<div class="bq-remain" id="bq-remain-${o.id}">${boutiqueRemainHtml(o)}</div>
-    <div class="bq-dress-wrap"><span class="bq-dress" style="filter:hue-rotate(${o.hue}deg)">👗</span></div>
+    <img class="bq-dress" id="bq-dress-${o.id}" src="${boutiqueDressSrc(o)}" draggable="false" alt="dress">
     <div class="bq-opat"><i id="bq-opat-${o.id}"></i></div>`;
   slot.appendChild(el); o.el = el;
 }
@@ -3464,13 +3472,17 @@ function boutiqueUpdateOrder(o) {
   if (!o.el) return;
   o.el.className = "bq-order " + boutiqueStateClass(o);
   const r = $("#bq-remain-" + o.id); if (r) r.innerHTML = boutiqueRemainHtml(o);
+  const d = $("#bq-dress-" + o.id); if (d) d.src = boutiqueDressSrc(o);
 }
 function boutiqueMoveOrderEl(o, station) {
   const slot = $("#bq-slot-" + station); if (slot && o.el) slot.appendChild(o.el);
 }
 function boutiqueSpawn() {
   const m = boutiqueMode();
-  const o = { id: ++BOUTIQUE.uid, recipe: boutiqueRecipe(m), step: 0, hue: R.int(0, 330), born: BOUTIQUE.elapsed, patience: m.patience, station: "supply", procStart: null, procDur: 0, ready: true, el: null };
+  const used = BOUTIQUE.orders.map(x => x.color), avail = [];
+  for (let c = 1; c <= BQ_COLORS; c++) if (used.indexOf(c) < 0) avail.push(c);   // avoid two dresses of the same colour in play
+  const color = avail.length ? R.pick(avail) : R.int(1, BQ_COLORS);
+  const o = { id: ++BOUTIQUE.uid, recipe: boutiqueRecipe(m), step: 0, color, born: BOUTIQUE.elapsed, patience: m.patience, station: "supply", procStart: null, procDur: 0, ready: true, el: null };
   BOUTIQUE.orders.push(o);
   boutiqueAddOrderEl(o);
   boutiquePaint();
@@ -3525,9 +3537,9 @@ function boutiqueLose(o) {
 function boutiquePaint() {
   if (!BOUTIQUE) return;
   const m = boutiqueMode();
-  const d = $("#bq-delivered"); if (d) d.textContent = BOUTIQUE.delivered + " / " + m.goal;
-  const l = $("#bq-lost"); if (l) l.textContent = BOUTIQUE.lost + " / " + m.maxLost;
-  const lc = $("#bq-lost-chip"); if (lc) lc.className = "stack-chip" + (BOUTIQUE.lost >= m.maxLost - 1 ? " danger" : "");
+  const d = $("#bq-delivered"); if (d) d.textContent = BOUTIQUE.delivered + "/" + m.goal;
+  const l = $("#bq-lost"); if (l) l.textContent = BOUTIQUE.lost + "/" + m.maxLost;
+  const lc = $("#bq-lost-chip"); if (lc) lc.className = "bq-chip" + (BOUTIQUE.lost >= m.maxLost - 1 ? " danger" : "");
   BOUTIQUE.orders.forEach(o => {
     const bar = $("#bq-opat-" + o.id);
     if (bar) { const left = Math.max(0, 1 - (BOUTIQUE.elapsed - o.born) / o.patience); bar.style.width = (left * 100) + "%"; bar.className = left < 0.25 ? "danger" : left < 0.5 ? "amber" : ""; }
@@ -3535,7 +3547,9 @@ function boutiquePaint() {
   m.stations.forEach(st => {
     const bar = $("#bq-proc-" + st); if (!bar) return;
     const id = BOUTIQUE.stations[st], o = id != null ? BOUTIQUE.orders.find(x => x.id === id) : null;
-    bar.style.width = (o && !o.ready && o.procStart != null) ? Math.min(100, (BOUTIQUE.elapsed - o.procStart) / o.procDur * 100) + "%" : "0%";
+    const working = o && !o.ready && o.procStart != null;
+    bar.style.width = working ? Math.min(100, (BOUTIQUE.elapsed - o.procStart) / o.procDur * 100) + "%" : "0%";
+    if (bar.parentElement) bar.parentElement.classList.toggle("on", !!working);
   });
 }
 function boutiqueTick() {
