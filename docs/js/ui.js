@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v144"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v145"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2733,9 +2733,10 @@ function stackFinishInfinite(height, why) {
 /* ======================================================================= */
 let WINE = null;
 const WINE_TICK = 60;   // ms per tick
-const WINE_BALL_G = 135;      // gravity (%/s²-ish) pulling juggling balls down
-const WINE_BALL_THROW = 150;  // upward speed a tap gives a ball (%/s)
+const WINE_BALL_G = 75;       // gravity (%/s²-ish) pulling juggling balls down — gentle, ~3s hang time
+const WINE_BALL_THROW = 112;  // upward speed a toss gives a ball (%/s)
 const WINE_FLOOR = 94;        // y% past which an uncaught ball is dropped
+const WINE_BALL_GAP = 2000;   // ms between ball entrances (first one at this mark too)
 const WINE_MODES = {
   // Two things at once: dab blooming wine AND keep the Joker's balls up. A dropped ball knocks a
   // goblet → spawns a fresh spill (the two systems feed each other). More balls each difficulty.
@@ -2779,7 +2780,7 @@ function wineStart(mode) {
   mode = WINE_MODES[mode] ? mode : "medium";
   const m = WINE_MODES[mode];
   WINE = { mode, drops: [], balls: [], uid: 0, elapsed: 0, nextSpawnAt: m.spawnEvery, saved: 0, stains: 0, dropped: 0,
-    pendingBalls: m.balls, startBalls: m.balls, nextBallAt: 0, over: false, tickTimer: null };
+    pendingBalls: m.balls, startBalls: m.balls, nextBallAt: WINE_BALL_GAP, over: false, tickTimer: null };
   winePlay();
   for (let i = 0; i < (m.startDrops || 3); i++) wineAddDrop(8 + Math.random() * 84, 14 + Math.random() * 66, m.bloomMs * (0.85 + Math.random() * 0.4));  // a few spills waiting at the start
   WINE.tickTimer = setInterval(wineTick, WINE_TICK);
@@ -2825,7 +2826,8 @@ function wineSpawn() {
 function wineAddBall() {
   const cloak = $("#wine-cloak"); if (!cloak) return;
   const colors = ["#ff5a5a", "#ffd24a", "#5ab0ff", "#8ae06a", "#c58bff"];
-  const b = { uid: ++WINE.uid, x: 14 + Math.random() * 72, y: 3, vy: 12, vx: (Math.random() - 0.5) * 16, el: null };
+  // enters near the bottom and is tossed straight up (the Joker throws it), then arcs down over ~3s
+  const b = { uid: ++WINE.uid, x: 16 + Math.random() * 68, y: 88 + Math.random() * 4, vy: -WINE_BALL_THROW, vx: (Math.random() - 0.5) * 10, el: null };
   WINE.balls.push(b);
   const el = document.createElement("button");
   el.className = "wine-ball"; el.dataset.uid = b.uid;
@@ -2884,7 +2886,7 @@ function wineTick() {
   const m = wineMode(), dt = WINE_TICK / 1000;
   WINE.elapsed += WINE_TICK;
   // juggling balls enter ~0.5s apart at the start, then arc up/down under gravity
-  if (WINE.pendingBalls > 0 && WINE.elapsed >= WINE.nextBallAt) { wineAddBall(); WINE.pendingBalls--; WINE.nextBallAt = WINE.elapsed + 500; }
+  if (WINE.pendingBalls > 0 && WINE.elapsed >= WINE.nextBallAt) { wineAddBall(); WINE.pendingBalls--; WINE.nextBallAt = WINE.elapsed + WINE_BALL_GAP; }
   for (let i = WINE.balls.length - 1; i >= 0; i--) {
     const b = WINE.balls[i];
     b.vy += WINE_BALL_G * dt; b.y += b.vy * dt; b.x += b.vx * dt;
