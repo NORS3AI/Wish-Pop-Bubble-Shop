@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎨 **Spilled Wish-Wine got real artwork!** The Joker's juggling balls are now proper glossy,
+  hand-painted balls (every one a different colour, as always), and the wine spills use real
+  splat-shaped stains that vary each time — a big glow-up from the old plain blobs.
+
 - 🧞 **New flying game — Magic Carpet Dash!** Hop on a magic carpet and soar to the Forgotten Oasis.
   Your carpet stays right in the **middle** — the whole starry sky **slides around you** as you hold
   the **left or right** side to steer, so you can drift across the heavens forever. **Line up the

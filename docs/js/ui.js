@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v150"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v151"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2816,11 +2816,15 @@ function wineSilkY(y) { return wineClamp(y, WINE_SILK.y0, WINE_SILK.y1); }
 function wineDropPos() { return { x: WINE_SILK.x0 + Math.random() * (WINE_SILK.x1 - WINE_SILK.x0), y: WINE_SILK.y0 + Math.random() * (WINE_SILK.y1 - WINE_SILK.y0) }; }
 function wineAddDrop(x, y, bloom) {
   const cloak = $("#wine-cloak"); if (!cloak) return;
-  const d = { uid: ++WINE.uid, x, y, born: WINE.elapsed, bloom, el: null };
+  // each spill picks a random splat shape + rotation; the set stain reuses the same shape
+  const stain = R.int(1, WINE_STAIN_IMGS), rot = R.int(0, 359);
+  const d = { uid: ++WINE.uid, x, y, born: WINE.elapsed, bloom, stain, rot, el: null };
   WINE.drops.push(d);
   const el = document.createElement("button");
   el.className = "wine-drop"; el.dataset.uid = d.uid;
   el.style.left = x + "%"; el.style.top = y + "%";
+  el.style.setProperty("--rot", rot + "deg");
+  el.style.backgroundImage = `url('art/wine_stain_${stain}.png?v=${BUILD}')`;
   el.addEventListener("pointerdown", e => { e.preventDefault(); wineTap(d.uid); });
   cloak.appendChild(el); d.el = el;
 }
@@ -2833,20 +2837,22 @@ function wineSpawn() {
     wineAddDrop(wineSilkX(c.x + (Math.random() - 0.5) * 20), wineSilkY(c.y + (Math.random() - 0.5) * 18), m.bloomMs * ramp * (0.8 + Math.random() * 0.4));
   }
 }
-const WINE_BALL_COLORS = ["#ff5a5a", "#ffd24a", "#5ab0ff", "#8ae06a", "#c58bff"];
+const WINE_BALL_IMGS = 7;    // art/wine_ball_1..7.png — seven distinct colours
+const WINE_STAIN_IMGS = 10;  // art/wine_stain_1..10.png — ten wine-splat shapes
 function wineAddBall() {
   const cloak = $("#wine-cloak"); if (!cloak) return;
-  // every live ball is a DIFFERENT colour — pick one no current ball is using
-  const used = WINE.balls.map(x => x.color), avail = WINE_BALL_COLORS.filter(c => !used.includes(c));
-  const color = avail.length ? R.pick(avail) : R.pick(WINE_BALL_COLORS);
+  // every live ball is a DIFFERENT colour — pick a ball image no current ball is using
+  const used = WINE.balls.map(x => x.img), avail = [];
+  for (let k = 1; k <= WINE_BALL_IMGS; k++) if (!used.includes(k)) avail.push(k);
+  const img = avail.length ? R.pick(avail) : R.int(1, WINE_BALL_IMGS);
   // enters near the bottom and is tossed straight up (the Joker throws it), then arcs down over ~3s
-  const b = { uid: ++WINE.uid, x: 16 + Math.random() * 68, y: 88 + Math.random() * 4, vy: -WINE_BALL_THROW, vx: (Math.random() - 0.5) * 10, color, el: null };
+  const b = { uid: ++WINE.uid, x: 16 + Math.random() * 68, y: 88 + Math.random() * 4, vy: -WINE_BALL_THROW, vx: (Math.random() - 0.5) * 10, img, el: null };
   WINE.balls.push(b);
   const el = document.createElement("button");
   el.className = "wine-ball"; el.dataset.uid = b.uid;
   el.style.left = b.x + "%"; el.style.top = b.y + "%";
   // a big invisible hit-zone button with a smaller visible ball inside (bigger, more forgiving tap target)
-  el.innerHTML = `<span class="wine-ball-face" style="background:radial-gradient(circle at 34% 30%, #ffffffcc, ${color} 62%)"></span>`;
+  el.innerHTML = `<span class="wine-ball-face" style="background-image:url('art/wine_ball_${img}.png?v=${BUILD}')"></span>`;
   el.addEventListener("pointerdown", e => { e.preventDefault(); wineThrow(b.uid); });  // fire on touch, not click — reliable on a moving target
   cloak.appendChild(el); b.el = el;
 }
@@ -2877,11 +2883,18 @@ function wineTap(uid) {
   SFX.pop();
   winePaint();
 }
-function wineSet(d) {   // a drop finished blooming → a permanent stain
+function wineSet(d) {   // a drop finished blooming → a permanent stain (same splat shape, darkened)
   WINE.stains++;
   if (d.el) {
-    const el = d.el, cloak = el.parentNode; el.remove();
-    if (cloak) { const st = document.createElement("div"); st.className = "wine-stain"; st.style.left = d.x + "%"; st.style.top = d.y + "%"; cloak.appendChild(st); }
+    const el = d.el, cloak = el.parentNode, sz = el.offsetWidth || 132; el.remove();
+    if (cloak) {
+      const st = document.createElement("div"); st.className = "wine-stain";
+      st.style.left = d.x + "%"; st.style.top = d.y + "%";
+      st.style.width = sz + "px"; st.style.height = sz + "px";
+      st.style.setProperty("--rot", (d.rot || 0) + "deg");
+      st.style.backgroundImage = `url('art/wine_stain_${d.stain || R.int(1, WINE_STAIN_IMGS)}.png?v=${BUILD}')`;
+      cloak.appendChild(st);
+    }
   }
   SFX.chop();
 }
