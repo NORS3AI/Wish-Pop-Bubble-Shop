@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v145"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v146"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2733,8 +2733,9 @@ function stackFinishInfinite(height, why) {
 /* ======================================================================= */
 let WINE = null;
 const WINE_TICK = 60;   // ms per tick
-const WINE_BALL_G = 75;       // gravity (%/s²-ish) pulling juggling balls down — gentle, ~3s hang time
-const WINE_BALL_THROW = 112;  // upward speed a toss gives a ball (%/s)
+const WINE_BALL_G = 52;       // gravity (%/s²-ish) pulling juggling balls down — gentle floaty arc
+const WINE_BALL_THROW = 92;   // upward speed a toss gives a ball (%/s)
+const WINE_BALL_MAXFALL = 55; // cap on downward speed so a ball never drops faster than you can catch it
 const WINE_FLOOR = 94;        // y% past which an uncaught ball is dropped
 const WINE_BALL_GAP = 2000;   // ms between ball entrances (first one at this mark too)
 const WINE_MODES = {
@@ -2889,7 +2890,8 @@ function wineTick() {
   if (WINE.pendingBalls > 0 && WINE.elapsed >= WINE.nextBallAt) { wineAddBall(); WINE.pendingBalls--; WINE.nextBallAt = WINE.elapsed + WINE_BALL_GAP; }
   for (let i = WINE.balls.length - 1; i >= 0; i--) {
     const b = WINE.balls[i];
-    b.vy += WINE_BALL_G * dt; b.y += b.vy * dt; b.x += b.vx * dt;
+    b.vy += WINE_BALL_G * dt; if (b.vy > WINE_BALL_MAXFALL) b.vy = WINE_BALL_MAXFALL;  // terminal velocity → always catchable
+    b.y += b.vy * dt; b.x += b.vx * dt;
     if (b.x < 6) { b.x = 6; b.vx = Math.abs(b.vx); } else if (b.x > 94) { b.x = 94; b.vx = -Math.abs(b.vx); }
     if (b.y >= WINE_FLOOR) { WINE.balls.splice(i, 1); wineDropBall(b); continue; }
     if (b.el) { b.el.style.left = b.x + "%"; b.el.style.top = b.y + "%"; b.el.classList.toggle("low", b.y > 74 && b.vy > 0); }
