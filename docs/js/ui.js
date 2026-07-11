@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v153"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v154"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2997,9 +2997,9 @@ const CARPET_STAR_HALF = 15;   // half-width (%) of the star-catch column around
 const CARPET_BODY = 12;        // carpet collision half-width (% of sky width) for planets
 const CARPET_STARS = 10, CARPET_CLOUDS = 6, CARPET_PLANETS = 3, CARPET_RUGS = 10;
 const CARPET_MODES = {
-  easy:   { label: "Easy",   dur: 32000, fall: 23, starEvery: 820, cloudEvery: 3800, planetEvery: 8200, hearts: 3, steer: 48, fogGain: 0.42, fogClear: 0.85, planetR: 34 },
-  medium: { label: "Medium", dur: 38000, fall: 28, starEvery: 720, cloudEvery: 3100, planetEvery: 6600, hearts: 3, steer: 54, fogGain: 0.55, fogClear: 0.78, planetR: 37 },
-  hard:   { label: "Hard",   dur: 44000, fall: 33, starEvery: 620, cloudEvery: 2500, planetEvery: 5200, hearts: 3, steer: 60, fogGain: 0.70, fogClear: 0.70, planetR: 40 },
+  easy:   { label: "Easy",   dur: 32000, fall: 23, starEvery: 820, cloudEvery: 3800, planetEvery: 8200, hearts: 3, steer: 48, fogGain: 0.90, fogClear: 0.38, planetR: 34 },
+  medium: { label: "Medium", dur: 38000, fall: 28, starEvery: 720, cloudEvery: 3100, planetEvery: 6600, hearts: 3, steer: 54, fogGain: 1.05, fogClear: 0.32, planetR: 37 },
+  hard:   { label: "Hard",   dur: 44000, fall: 33, starEvery: 620, cloudEvery: 2500, planetEvery: 5200, hearts: 3, steer: 60, fogGain: 1.25, fogClear: 0.27, planetR: 40 },
 };
 function carpetMode() { return CARPET_MODES[CARPET.mode]; }
 function carpetClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
