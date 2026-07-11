@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v171"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v172"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3574,6 +3574,7 @@ function boutiqueTick() {
       const finished = o.station;
       o.ready = true; o.procStart = null; o.step++;
       boutiqueUpdateOrder(o);
+      if (o.el) { o.el.classList.remove("justdone"); void o.el.offsetWidth; o.el.classList.add("justdone"); o.el.addEventListener("animationend", () => { if (o.el) o.el.classList.remove("justdone"); }, { once: true }); }
       (SFX[BQ_SFX[finished]] || SFX.pop)();
     }
   });
