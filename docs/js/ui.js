@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v165"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v166"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3420,10 +3420,9 @@ function boutiquePlay() {
   const m = boutiqueMode();
   const stationsHtml = m.stations.map(st => `
     <div class="bq-station" id="bq-st-${st}">
-      <div class="bq-st-ic">${BQ_ICON[st]}</div>
+      <div class="bq-st-head"><span class="bq-st-ic">${BQ_ICON[st]}</span><span class="bq-st-name">${BQ_NAME[st]}</span></div>
       <div class="bq-slot" id="bq-slot-${st}"></div>
       <div class="bq-proc"><i id="bq-proc-${st}"></i></div>
-      <div class="bq-st-name">${BQ_NAME[st]}</div>
     </div>`).join("");
   html("event", `
     ${hud("Mouse Boutique")}
@@ -3432,50 +3431,49 @@ function boutiquePlay() {
       <div class="bq-title">🐭 Stitch &amp; Scurry</div>
       <div class="stack-chip" id="bq-lost-chip">😖 <b id="bq-lost">0 / ${m.maxLost}</b></div>
     </div>
-    <div class="bq-orders" id="bq-orders"></div>
     <div class="bq-floor">
       <div class="bq-supply">
-        <div class="bq-supply-lbl">🧵 Fabric</div>
+        <div class="bq-supply-lbl">🧵 New<br>orders</div>
         <div class="bq-slot bq-supply-slot" id="bq-slot-supply"></div>
       </div>
       <div class="bq-stations bq-n${m.stations.length}">${stationsHtml}</div>
     </div>
-    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Tap a glowing dress to send it along • deliver ${m.goal} before ${m.maxLost} storm off</p>
+    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Tap a dress to send it on • if its table's busy it hops back to the line</p>
   `);
   show("event");
   const floor = $(".bq-floor");
   if (floor) floor.addEventListener("pointerdown", e => { const t = e.target.closest("[data-order]"); if (t) { e.preventDefault(); boutiqueAdvance(+t.dataset.order); } });
-  boutiqueRenderOrders();
   boutiquePaint();
 }
-function boutiqueRenderOrders() {
-  const box = $("#bq-orders"); if (!box) return;
-  box.innerHTML = BOUTIQUE.orders.map(o => {
-    const doneAll = o.step >= o.recipe.length;
-    const steps = o.recipe.map((st, i) => `<span class="bq-step${i < o.step ? " done" : i === o.step ? " now" : ""}">${BQ_ICON[st]}</span>`).join("");
-    return `<div class="bq-ticket${doneAll ? " ready" : ""}" id="bq-ticket-${o.id}">
-      <span class="bq-tdress" style="filter:hue-rotate(${o.hue}deg)">👗</span>
-      <div class="bq-steps">${steps}${doneAll ? '<span class="bq-step now">📦</span>' : ""}</div>
-      <div class="bq-pat"><i id="bq-pat-${o.id}"></i></div>
-    </div>`;
-  }).join("");
+// each dress carries its own REMAINING recipe above it — done steps drop off, leaving only what's left
+function boutiqueRemainHtml(o) {
+  if (o.step >= o.recipe.length) return '<span class="bq-step now">📦</span>';
+  return o.recipe.slice(o.step).map((st, i) => `<span class="bq-step${i === 0 ? " now" : ""}">${BQ_ICON[st]}</span>`).join("");
 }
-function boutiqueAddToken(o) {
+function boutiqueStateClass(o) { return (o.step >= o.recipe.length && o.ready) ? "done" : o.ready ? "ready" : "proc"; }
+function boutiqueAddOrderEl(o) {
   const slot = $("#bq-slot-supply"); if (!slot) return;
-  const el = document.createElement("button");
-  el.type = "button"; el.className = "bq-token ready"; el.id = "bq-token-" + o.id; el.dataset.order = o.id;
-  el.innerHTML = `<span class="bq-dress" style="filter:hue-rotate(${o.hue}deg)">👗</span>`;
-  slot.appendChild(el); o.tokenEl = el;
+  const el = document.createElement("div");
+  el.className = "bq-order " + boutiqueStateClass(o); el.id = "bq-order-" + o.id; el.dataset.order = o.id;
+  el.innerHTML = `<div class="bq-remain" id="bq-remain-${o.id}">${boutiqueRemainHtml(o)}</div>
+    <div class="bq-dress-wrap"><span class="bq-dress" style="filter:hue-rotate(${o.hue}deg)">👗</span></div>
+    <div class="bq-opat"><i id="bq-opat-${o.id}"></i></div>`;
+  slot.appendChild(el); o.el = el;
 }
-function boutiqueMoveToken(o, station) {
-  const slot = $("#bq-slot-" + station); if (slot && o.tokenEl) slot.appendChild(o.tokenEl);
+function boutiqueUpdateOrder(o) {
+  if (!o.el) return;
+  o.el.className = "bq-order " + boutiqueStateClass(o);
+  const r = $("#bq-remain-" + o.id); if (r) r.innerHTML = boutiqueRemainHtml(o);
+}
+function boutiqueMoveOrderEl(o, station) {
+  const slot = $("#bq-slot-" + station); if (slot && o.el) slot.appendChild(o.el);
 }
 function boutiqueSpawn() {
   const m = boutiqueMode();
-  const o = { id: ++BOUTIQUE.uid, recipe: boutiqueRecipe(m), step: 0, hue: R.int(0, 330), born: BOUTIQUE.elapsed, patience: m.patience, station: "supply", procStart: null, procDur: 0, ready: true, tokenEl: null };
+  const o = { id: ++BOUTIQUE.uid, recipe: boutiqueRecipe(m), step: 0, hue: R.int(0, 330), born: BOUTIQUE.elapsed, patience: m.patience, station: "supply", procStart: null, procDur: 0, ready: true, el: null };
   BOUTIQUE.orders.push(o);
-  boutiqueAddToken(o);
-  boutiqueRenderOrders();
+  boutiqueAddOrderEl(o);
+  boutiquePaint();
   SFX.reveal();
 }
 function boutiqueAdvance(id) {
@@ -3484,36 +3482,44 @@ function boutiqueAdvance(id) {
   if (!o || !o.ready) return;
   if (o.step >= o.recipe.length) return boutiqueDeliver(o);   // fully finished → deliver it
   const target = o.recipe[o.step], occ = BOUTIQUE.stations[target];
-  if (occ != null && occ !== o.id) {   // table busy — can't move there yet
-    SFX.chop();
-    const st = $("#bq-st-" + target); if (st) { st.classList.remove("busy"); void st.offsetWidth; st.classList.add("busy"); }
-    if (o.tokenEl) { o.tokenEl.classList.remove("nudge"); void o.tokenEl.offsetWidth; o.tokenEl.classList.add("nudge"); }
+  if (occ != null && occ !== o.id) {   // next table busy
+    if (o.station !== "supply") {       // hop it back to the fabric line so you can unclog the jam
+      BOUTIQUE.stations[o.station] = null;
+      o.station = "supply";
+      boutiqueMoveOrderEl(o, "supply");
+      boutiqueUpdateOrder(o);
+      SFX.whoosh();
+    } else {                            // already in line and its table is busy — just wait
+      SFX.chop();
+      const st = $("#bq-st-" + target); if (st) { st.classList.remove("busy"); void st.offsetWidth; st.classList.add("busy"); }
+      if (o.el) { o.el.classList.remove("nudge"); void o.el.offsetWidth; o.el.classList.add("nudge"); }
+    }
     return;
   }
   if (o.station !== "supply" && o.station !== target && BOUTIQUE.stations[o.station] === o.id) BOUTIQUE.stations[o.station] = null;
   const moved = o.station !== target;
   BOUTIQUE.stations[target] = o.id;
   o.station = target; o.ready = false; o.procStart = BOUTIQUE.elapsed; o.procDur = BQ_PROC[target] * m.procScale;
-  if (moved) boutiqueMoveToken(o, target);
-  if (o.tokenEl) o.tokenEl.className = "bq-token proc";
+  if (moved) boutiqueMoveOrderEl(o, target);
+  boutiqueUpdateOrder(o);
   SFX.scoop();
 }
 function boutiqueDeliver(o) {
   if (BOUTIQUE.stations[o.station] === o.id) BOUTIQUE.stations[o.station] = null;
   BOUTIQUE.delivered++;
   SFX.coin(); SFX.charm();
-  if (o.tokenEl) { const el = o.tokenEl; el.className = "bq-token delivered"; el.addEventListener("animationend", () => el.remove()); }
+  if (o.el) { const el = o.el; el.className = "bq-order delivered"; el.addEventListener("animationend", () => el.remove()); }
   const i = BOUTIQUE.orders.indexOf(o); if (i >= 0) BOUTIQUE.orders.splice(i, 1);
-  boutiqueRenderOrders(); boutiquePaint();
+  boutiquePaint();
   if (BOUTIQUE.delivered >= boutiqueMode().goal) return boutiqueFinish(true);
 }
 function boutiqueLose(o) {
   if (BOUTIQUE.stations[o.station] === o.id) BOUTIQUE.stations[o.station] = null;
   BOUTIQUE.lost++;
   SFX.sneeze();
-  if (o.tokenEl) { const el = o.tokenEl; el.className = "bq-token lost"; el.addEventListener("animationend", () => el.remove()); }
+  if (o.el) { const el = o.el; el.className = "bq-order lost"; el.addEventListener("animationend", () => el.remove()); }
   const i = BOUTIQUE.orders.indexOf(o); if (i >= 0) BOUTIQUE.orders.splice(i, 1);
-  boutiqueRenderOrders(); boutiquePaint();
+  boutiquePaint();
   if (BOUTIQUE.lost >= boutiqueMode().maxLost) return boutiqueFinish(false);
 }
 function boutiquePaint() {
@@ -3523,7 +3529,7 @@ function boutiquePaint() {
   const l = $("#bq-lost"); if (l) l.textContent = BOUTIQUE.lost + " / " + m.maxLost;
   const lc = $("#bq-lost-chip"); if (lc) lc.className = "stack-chip" + (BOUTIQUE.lost >= m.maxLost - 1 ? " danger" : "");
   BOUTIQUE.orders.forEach(o => {
-    const bar = $("#bq-pat-" + o.id);
+    const bar = $("#bq-opat-" + o.id);
     if (bar) { const left = Math.max(0, 1 - (BOUTIQUE.elapsed - o.born) / o.patience); bar.style.width = (left * 100) + "%"; bar.className = left < 0.25 ? "danger" : left < 0.5 ? "amber" : ""; }
   });
   m.stations.forEach(st => {
@@ -3540,10 +3546,8 @@ function boutiqueTick() {
   BOUTIQUE.orders.forEach(o => {
     if (!o.ready && o.procStart != null && BOUTIQUE.elapsed - o.procStart >= o.procDur) {
       o.ready = true; o.procStart = null; o.step++;
-      const doneAll = o.step >= o.recipe.length;
-      if (o.tokenEl) o.tokenEl.className = "bq-token " + (doneAll ? "done" : "ready");
+      boutiqueUpdateOrder(o);
       SFX.pop();
-      boutiqueRenderOrders();
     }
   });
   // patience ran out → customer storms off
