@@ -1651,20 +1651,28 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 
 /* ===== STORY — Little Red's tale: full-screen illustrated dialogue cards ===== */
 .story-card { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  padding: 18px 16px calc(16px + var(--safe-b)); overflow: hidden;
-  background: linear-gradient(180deg, rgba(30,16,40,.14) 0%, rgba(24,12,32,.34) 52%, rgba(18,8,26,.72) 100%), url('../art/village_far.jpg') center top / cover no-repeat; }
+  padding: 18px 16px calc(16px + var(--safe-b)); overflow: hidden; background: #150b20; }
+/* crossfading backdrop layers — the scene can drift (village → shop) across beats */
+.story-bg { position: absolute; inset: 0; z-index: 0; background-position: center top; background-size: cover; background-repeat: no-repeat; }
+.story-bg.top { opacity: 1; }
+.story-bg.top.cross { opacity: 0; animation: storyBgCross .9s ease forwards; }
+@keyframes storyBgCross { to { opacity: 1; } }
+.story-scrim { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(30,16,40,.14) 0%, rgba(24,12,32,.34) 52%, rgba(18,8,26,.72) 100%); }
 /* Little Red stands LARGE, anchored to the bottom — her lower half tucks behind the text card */
-.story-figure { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 1; pointer-events: none;
-  display: flex; align-items: flex-end; justify-content: center; height: 84vh; animation: storyIn .45s ease-out; }
+.story-figure { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 2; pointer-events: none;
+  display: flex; align-items: flex-end; justify-content: center; height: 84vh; animation: storyFigIn .5s ease-out; }
+/* keeps her horizontally centred the whole time (a clean slide up, no sideways jump) */
+@keyframes storyFigIn { from { opacity: 0; transform: translateX(-50%) translateY(30px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 img.story-face { height: 100%; width: auto; max-width: 96vw; object-fit: contain; object-position: bottom; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
 span.story-face { display: inline-flex; align-items: center; justify-content: center; height: 40vh; font-size: 32vh; line-height: 1; } /* emoji fallback */
 .story-figure.scene { height: auto; bottom: auto; top: 16%; }
-/* the dialogue stack sits on top of her, pinned to the bottom */
-.story-below { position: relative; z-index: 2; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+/* the dialogue stack sits on top of everything, pinned to the bottom */
+.story-below { position: relative; z-index: 3; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 
 /* gallery beats: Red holds up photos/a sketch — one big picture with ‹ › and dots */
 .story-card.gallery-beat { justify-content: flex-end; }
-.story-card.gallery-beat::before { content: ""; position: absolute; inset: 0; background: rgba(14,7,22,.45); z-index: 0; }
+.story-card.gallery-beat::before { content: ""; position: absolute; inset: 0; background: rgba(14,7,22,.5); z-index: 1; }
 .story-gallery { position: relative; z-index: 2; flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 0 14px; }
 .gal-frame { display: flex; align-items: center; justify-content: center; min-width: 0; }
 img.gal-pic { max-height: 56vh; max-width: 74vw; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 12px 22px rgba(0,0,0,.6)); animation: galPop .32s ease-out; }
@@ -1676,21 +1684,17 @@ img.gal-pic { max-height: 56vh; max-width: 74vw; width: auto; height: auto; obje
 .gal-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.4); box-shadow: 0 1px 2px rgba(0,0,0,.5); transition: background .15s, transform .15s; }
 .gal-dot.on { background: #ffd76a; transform: scale(1.25); }
 
-/* ===== STORY ZOOM CINEMATIC — a slow dolly from the village in to the shop door ===== */
+/* ===== STORY ZOOM — one smooth, continuous push straight in through the shop door ===== */
 .zoom-cine { position: absolute; inset: 0; overflow: hidden; background: #150b20; }
-.zoom-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; opacity: 0; transform-origin: 52% 46%; will-change: transform, opacity; }
-.zl-far  { animation: zlFar  6.2s ease-in forwards; }
-.zl-mid  { animation: zlMid  6.2s ease-in forwards; }
-.zl-door { animation: zlDoor 6.2s ease-in forwards; }
-@keyframes zlFar  { 0% { opacity: 1; transform: scale(1); } 30% { opacity: 1; transform: scale(1.13); } 40% { opacity: 0; transform: scale(1.17); } 100% { opacity: 0; } }
-@keyframes zlMid  { 0% { opacity: 0; transform: scale(1.02); } 30% { opacity: 0; } 40% { opacity: 1; transform: scale(1.06); } 64% { opacity: 1; transform: scale(1.15); } 74% { opacity: 0; transform: scale(1.19); } 100% { opacity: 0; } }
-@keyframes zlDoor { 0% { opacity: 0; transform: scale(1.02); } 64% { opacity: 0; } 74% { opacity: 1; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1.17); } }
-/* a soft cream veil that blooms only at the very end, easing into the tutorial */
-.zoom-veil { position: absolute; inset: 0; background: radial-gradient(120% 90% at 52% 50%, rgba(255,248,234,.95), rgba(255,244,224,1)); opacity: 0; pointer-events: none; animation: zoomVeil 6.2s ease-in forwards; }
-@keyframes zoomVeil { 0%, 90% { opacity: 0; } 100% { opacity: 1; } }
+.zoom-solo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 46%;
+  transform-origin: 50% 47%; will-change: transform; animation: zoomSolo 2.6s cubic-bezier(.45,0,.75,.55) forwards; }
+@keyframes zoomSolo { from { transform: scale(1); } to { transform: scale(2.6); } }
+/* a soft cream veil that blooms at the very end, easing into the tutorial */
+.zoom-veil { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 48%, rgba(255,248,234,.95), rgba(255,244,224,1)); opacity: 0; pointer-events: none; animation: zoomVeil 2.6s ease-in forwards; }
+@keyframes zoomVeil { 0%, 74% { opacity: 0; } 100% { opacity: 1; } }
 .zoom-skip { position: absolute; bottom: calc(14px + var(--safe-b)); right: 16px; z-index: 3; color: #fff; font-size: 13px; font-weight: 700;
-  padding: 6px 12px; border-radius: 999px; background: rgba(20,10,28,.42); backdrop-filter: blur(2px); animation: zoomSkipFade 6.2s ease forwards; }
-@keyframes zoomSkipFade { 0%,84% { opacity: .9; } 100% { opacity: 0; } }
+  padding: 6px 12px; border-radius: 999px; background: rgba(20,10,28,.42); backdrop-filter: blur(2px); animation: zoomSkipFade 2.6s ease forwards; }
+@keyframes zoomSkipFade { 0%,70% { opacity: .9; } 100% { opacity: 0; } }
 .story-figure.scene .story-scene { font-size: 76px; line-height: 1.15; text-align: center; filter: drop-shadow(0 6px 12px rgba(0,0,0,.5)); }
 .story-scene { animation: storyFloat 3.4s ease-in-out infinite; }
 .story-name { font-weight: 900; font-size: 20px; color: #fff6e6; letter-spacing: .3px;

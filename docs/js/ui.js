@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v178"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v179"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -333,8 +333,9 @@ function redCust() { return D.CUSTOMERS.find(c => c.id === "little_red") || { id
 // cheer, think, point, offer, angry, annoyed, welcome. Falls back to her emoji.
 function redPose(pose) { return ART.tag("red_" + (pose || "wave"), "👧", "story-face"); }
 
-let STORY_BEATS = null, STORY_I = 0, STORY_DONE = null, GALLERY = null, GALLERY_I = 0;
-function renderStoryBeats(beats, done) { STORY_BEATS = beats; STORY_I = 0; STORY_DONE = done || null; storyPaint(); }
+let STORY_BEATS = null, STORY_I = 0, STORY_DONE = null, GALLERY = null, GALLERY_I = 0, STORY_BG_PREV = null;
+const STORY_DEF_BG = "village_far";   // default story backdrop (a beat can override with `bg`)
+function renderStoryBeats(beats, done) { STORY_BEATS = beats; STORY_I = 0; STORY_DONE = done || null; STORY_BG_PREV = null; storyPaint(); }
 function storyAdvance() {
   SFX.unlock(); SFX.pop(1);
   if (STORY_I >= STORY_BEATS.length - 1) { const d = STORY_DONE; STORY_BEATS = null; STORY_DONE = null; if (d) d(); }
@@ -368,8 +369,16 @@ function storyPaint() {
   else if (b.gallery) { cls = "gallery-beat"; GALLERY = b.gallery; GALLERY_I = 0; top = galleryHtml(); }
   else if (b.scene) { top = `<div class="story-figure scene"><div class="story-scene">${b.scene}</div></div>`; }
   else { top = `<div class="story-figure">${redPose(b.pose)}</div>`; }
+  // backdrop: crossfade from the previous beat's scene to this one's (village → shop, etc.)
+  const curBg = b.bg || STORY_DEF_BG, prevBg = STORY_BG_PREV || curBg;
+  const bgHtml = `
+    <div class="story-bg" style="background-image:url(art/${prevBg}.jpg?v=${BUILD})"></div>
+    <div class="story-bg top${prevBg !== curBg ? " cross" : ""}" style="background-image:url(art/${curBg}.jpg?v=${BUILD})"></div>
+    <div class="story-scrim"></div>`;
+  STORY_BG_PREV = curBg;
   html("event", `
     <div class="story-card mg-fullbleed${cls ? " " + cls : ""}" id="story-card">
+      ${bgHtml}
       ${top}
       <div class="story-below">
         ${b.name ? `<div class="story-name">${b.name}</div>` : ""}
@@ -393,10 +402,10 @@ function playArrivalIntro() {
   ["wave", "explain", "idea"].forEach(p => ART.ensure("red_" + p, () => {})); // pre-warm Red's arrival poses
   ["village_mid", "village_door"].forEach(n => { try { const im = new Image(); im.src = "art/" + n + ".jpg?v=" + BUILD; } catch (e) {} }); // preload the zoom frames
   renderStoryBeats([
-    { vista: true, text: "A little path winds down into <b>Willow Wish Village</b> — lanterns in the trees, banners on the rooftops, a castle beyond. And there, with its striped awning and bubbles drifting from the chimney, is your very own <b>Wish Pop Bubble Shop</b>." },
-    { name: "Little Red", pose: "wave", text: "Oh — hello! I just arrived too. I’m off through the woods to visit my grandma. But everyone says the new wish‑shop is the heart of the village… is that <i>you</i>?" },
-    { name: "Little Red", pose: "explain", text: "Then let me be your very first customer! It’s a long walk to Grandma’s cottage… could you mix me a little charm of <b>safe passage</b>?" },
-    { name: "Little Red", pose: "idea", cta: "Step inside  ▸", text: "Come on — let’s pop into the shop and I’ll show you how it works: <b>scoop</b> up some sparkle, <b>pop</b> the bubbles for magic, then <b>mix</b> it to match my wish!" },
+    { vista: true, bg: "village_far", text: "A little path winds down into <b>Willow Wish Village</b> — lanterns in the trees, banners on the rooftops, a castle beyond. And there, with its striped awning and bubbles drifting from the chimney, is your very own <b>Wish Pop Bubble Shop</b>." },
+    { name: "Little Red", pose: "wave", bg: "village_far", text: "Oh — hello! I just arrived too. I’m off through the woods to visit my grandma. But everyone says the new wish‑shop is the heart of the village… is that <i>you</i>?" },
+    { name: "Little Red", pose: "explain", bg: "village_mid", text: "Then let me be your very first customer! It’s a long walk to Grandma’s cottage… could you mix me a little charm of <b>safe passage</b>?" },
+    { name: "Little Red", pose: "idea", bg: "village_door", cta: "Step inside  ▸", text: "Come on — let’s pop into the shop and I’ll show you how it works: <b>scoop</b> up some sparkle, <b>pop</b> the bubbles for magic, then <b>mix</b> it to match my wish!" },
   ], () => { GAME.seenIntro = true; GAME.storyStep = Math.max(GAME.storyStep, 1); save(); playZoomIn(() => startRedWish("red-arrival", "A little charm of safe passage for the woods, if you please — my very first wish in your shop!", { tutorial: true })); });
 }
 /* --- Little Red's later visits (Willow). Each: a chat, a photo/sketch she shows
@@ -433,23 +442,22 @@ function maybeRedVisit() {
   }
   return false;
 }
-// A slow cinematic zoom from the village vista in to the shop's open door, then a
-// soft fade into the tutorial. Tap to skip. Uses the three progressive art frames.
+// One smooth, continuous zoom straight in through the shop's open door (the backdrop
+// has already drifted to the shopfront during the chat), then a soft fade into the
+// tutorial. Tap to skip.
 function playZoomIn(done) {
   let finished = false;
   const finish = () => { if (finished) return; finished = true; clearTimeout(timer); if (done) done(); };
   html("event", `
     <div class="zoom-cine mg-fullbleed" id="zoom-cine">
-      <img class="zoom-layer zl-far"  src="art/village_far.jpg?v=${BUILD}"  alt="" draggable="false">
-      <img class="zoom-layer zl-mid"  src="art/village_mid.jpg?v=${BUILD}"  alt="" draggable="false">
-      <img class="zoom-layer zl-door" src="art/village_door.jpg?v=${BUILD}" alt="" draggable="false">
+      <img class="zoom-solo" src="art/village_door.jpg?v=${BUILD}" alt="" draggable="false">
       <div class="zoom-veil"></div>
       <div class="zoom-skip" id="zoom-skip">Tap to skip  ▸</div>
     </div>
   `);
   show("event");
   SFX.lift && SFX.lift();
-  const timer = setTimeout(finish, 6200);
+  const timer = setTimeout(finish, 2600);
   on("#zoom-cine", "click", finish);
 }
 // Little Red as a forced, gentle customer (no boss/rush/vip). tag drives the story
@@ -664,6 +672,13 @@ function renderAdmin() {
     ${hud("Admin & Testing")}
     <div class="grow" style="overflow-y:auto">
       <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:6px">📖 Little Red's Story</div>
+        <p class="muted" style="font-size:12px;margin-bottom:10px">Watch any part of Little Red's tale — in order, they run: the arrival, then Grandma's photos, then the impostor.</p>
+        <button class="btn" id="ad-intro" style="margin-bottom:8px">1️⃣ 📖 Arrival + Tutorial (Replay Intro)</button>
+        <button class="btn" id="ad-red2" style="margin-bottom:8px">2️⃣ 📸 Visit: Grandma's Vacation Photos</button>
+        <button class="btn" id="ad-red3">3️⃣ 🐺 Visit: The Impostor Sketch</button>
+      </div>
+      <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:6px">🎬 Jump to an event</div>
         <p class="muted" style="font-size:12px;margin-bottom:10px">Launch a special encounter right now — no need to play through normal rounds to find one.</p>
         <button class="btn" id="ad-duel" style="margin-bottom:8px">⚔️ Mixing Duel</button>
@@ -685,9 +700,6 @@ function renderAdmin() {
         <button class="btn" id="ad-dance2" style="margin-bottom:8px">🤴 Ball: Prince</button>
         <button class="btn" id="ad-dance3" style="margin-bottom:8px">👸 Ball: Cinderella</button>
         <button class="btn" id="ad-cake" style="margin-bottom:8px">🧁 Drury Lane Bake-Off</button>
-        <button class="btn" id="ad-intro" style="margin-bottom:8px">📖 Replay Intro (Little Red)</button>
-        <button class="btn" id="ad-red2" style="margin-bottom:8px">📸 Red Visit: Grandma's Photos</button>
-        <button class="btn" id="ad-red3" style="margin-bottom:8px">🐺 Red Visit: The Impostor Sketch</button>
         <button class="btn secondary" id="ad-boss" style="margin-bottom:8px">👑 VIP (Boss) Customer</button>
         <button class="btn secondary" id="ad-rush">⏱️ In‑a‑Rush Customer</button>
       </div>
