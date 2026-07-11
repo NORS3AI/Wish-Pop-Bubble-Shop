@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v163"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v164"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -218,6 +218,7 @@ function stopEventTimers() {
   if (typeof FEAST !== "undefined" && FEAST && FEAST.tickTimer) clearInterval(FEAST.tickTimer);
   if (typeof STACK !== "undefined" && STACK && STACK.tickTimer) clearInterval(STACK.tickTimer);
   if (typeof WINE !== "undefined" && WINE && WINE.tickTimer) clearInterval(WINE.tickTimer);
+  if (typeof wineMusicStop === "function") wineMusicStop();
   if (typeof CARPET !== "undefined" && CARPET && CARPET.tickTimer) clearInterval(CARPET.tickTimer);
   if (typeof carpetMusicStop === "function") carpetMusicStop();
   if (typeof RUMPEL !== "undefined") RUMPEL = null;
@@ -2796,12 +2797,24 @@ function renderWineIntro() {
   on("#wine-skip", "click", startRound);
   show("event");
 }
+// Background music for the toast (looping mp3). Respects the game's mute toggle.
+let WINE_MUSIC = null;
+function wineMusicStart() {
+  if (SFX.isMuted()) return;
+  try {
+    if (!WINE_MUSIC) { WINE_MUSIC = new Audio(`audio/jesterjuggling.mp3?v=${BUILD}`); WINE_MUSIC.loop = true; WINE_MUSIC.volume = 0.5; }
+    WINE_MUSIC.currentTime = 0;
+    const pr = WINE_MUSIC.play(); if (pr && pr.catch) pr.catch(() => {});
+  } catch (e) {}
+}
+function wineMusicStop() { if (WINE_MUSIC) { try { WINE_MUSIC.pause(); } catch (e) {} } }
 function wineStart(mode) {
   mode = WINE_MODES[mode] ? mode : "medium";
   const m = WINE_MODES[mode];
   WINE = { mode, drops: [], balls: [], uid: 0, elapsed: 0, nextSpawnAt: m.spawnEvery, saved: 0, stains: 0, dropped: 0,
     pendingBalls: m.balls, startBalls: m.balls, nextBallAt: WINE_BALL_GAP, over: false, tickTimer: null };
   winePlay();
+  wineMusicStart();
   for (let i = 0; i < (m.startDrops || 3); i++) { const p = wineDropPos(); wineAddDrop(p.x, p.y, m.bloomMs * (0.85 + Math.random() * 0.4)); }  // a few spills waiting at the start
   WINE.tickTimer = setInterval(wineTick, WINE_TICK);
 }
@@ -2951,6 +2964,7 @@ function wineTick() {
 }
 function wineFinish(win, why) {
   if (!WINE) return;
+  wineMusicStop();
   const m = wineMode(), saved = WINE.saved, stains = WINE.stains, dropped = WINE.dropped;
   WINE.over = true;
   if (WINE.tickTimer) { clearInterval(WINE.tickTimer); WINE.tickTimer = null; }
