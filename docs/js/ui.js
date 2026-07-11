@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v147"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v148"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2783,7 +2783,7 @@ function wineStart(mode) {
   WINE = { mode, drops: [], balls: [], uid: 0, elapsed: 0, nextSpawnAt: m.spawnEvery, saved: 0, stains: 0, dropped: 0,
     pendingBalls: m.balls, startBalls: m.balls, nextBallAt: WINE_BALL_GAP, over: false, tickTimer: null };
   winePlay();
-  for (let i = 0; i < (m.startDrops || 3); i++) wineAddDrop(8 + Math.random() * 84, 14 + Math.random() * 66, m.bloomMs * (0.85 + Math.random() * 0.4));  // a few spills waiting at the start
+  for (let i = 0; i < (m.startDrops || 3); i++) { const p = wineDropPos(); wineAddDrop(p.x, p.y, m.bloomMs * (0.85 + Math.random() * 0.4)); }  // a few spills waiting at the start
   WINE.tickTimer = setInterval(wineTick, WINE_TICK);
 }
 function winePlay() {
@@ -2805,6 +2805,11 @@ function winePlay() {
   winePaint();
 }
 function wineClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+// Wine only spills onto the white SILK of the cloak — never the fur trim, corners, or top collar.
+const WINE_SILK = { x0: 24, x1: 76, y0: 26, y1: 82 };
+function wineSilkX(x) { return wineClamp(x, WINE_SILK.x0, WINE_SILK.x1); }
+function wineSilkY(y) { return wineClamp(y, WINE_SILK.y0, WINE_SILK.y1); }
+function wineDropPos() { return { x: WINE_SILK.x0 + Math.random() * (WINE_SILK.x1 - WINE_SILK.x0), y: WINE_SILK.y0 + Math.random() * (WINE_SILK.y1 - WINE_SILK.y0) }; }
 function wineAddDrop(x, y, bloom) {
   const cloak = $("#wine-cloak"); if (!cloak) return;
   const d = { uid: ++WINE.uid, x, y, born: WINE.elapsed, bloom, el: null };
@@ -2817,24 +2822,27 @@ function wineAddDrop(x, y, bloom) {
 }
 function wineSpawn() {
   const m = wineMode(); if (!$("#wine-cloak")) return;
-  const cx = 10 + Math.random() * 80, cy = 14 + Math.random() * 70, ramp = wineRamp();
-  wineAddDrop(cx, cy, m.bloomMs * ramp);
-  // HARD: the spill splatters extra drops right around it — close in place AND time
+  const c = wineDropPos(), ramp = wineRamp();
+  wineAddDrop(c.x, c.y, m.bloomMs * ramp);
+  // HARD: the spill splatters extra drops right around it — close in place AND time (still on the silk)
   for (let k = 0; k < (m.splatter || 0); k++) {
-    wineAddDrop(wineClamp(cx + (Math.random() - 0.5) * 24, 5, 95), wineClamp(cy + (Math.random() - 0.5) * 22, 8, 90), m.bloomMs * ramp * (0.8 + Math.random() * 0.4));
+    wineAddDrop(wineSilkX(c.x + (Math.random() - 0.5) * 20), wineSilkY(c.y + (Math.random() - 0.5) * 18), m.bloomMs * ramp * (0.8 + Math.random() * 0.4));
   }
 }
+const WINE_BALL_COLORS = ["#ff5a5a", "#ffd24a", "#5ab0ff", "#8ae06a", "#c58bff"];
 function wineAddBall() {
   const cloak = $("#wine-cloak"); if (!cloak) return;
-  const colors = ["#ff5a5a", "#ffd24a", "#5ab0ff", "#8ae06a", "#c58bff"];
+  // every live ball is a DIFFERENT colour — pick one no current ball is using
+  const used = WINE.balls.map(x => x.color), avail = WINE_BALL_COLORS.filter(c => !used.includes(c));
+  const color = avail.length ? R.pick(avail) : R.pick(WINE_BALL_COLORS);
   // enters near the bottom and is tossed straight up (the Joker throws it), then arcs down over ~3s
-  const b = { uid: ++WINE.uid, x: 16 + Math.random() * 68, y: 88 + Math.random() * 4, vy: -WINE_BALL_THROW, vx: (Math.random() - 0.5) * 10, el: null };
+  const b = { uid: ++WINE.uid, x: 16 + Math.random() * 68, y: 88 + Math.random() * 4, vy: -WINE_BALL_THROW, vx: (Math.random() - 0.5) * 10, color, el: null };
   WINE.balls.push(b);
   const el = document.createElement("button");
   el.className = "wine-ball"; el.dataset.uid = b.uid;
   el.style.left = b.x + "%"; el.style.top = b.y + "%";
   // a big invisible hit-zone button with a smaller visible ball inside (bigger, more forgiving tap target)
-  el.innerHTML = `<span class="wine-ball-face" style="background:radial-gradient(circle at 34% 30%, #ffffffcc, ${R.pick(colors)} 62%)"></span>`;
+  el.innerHTML = `<span class="wine-ball-face" style="background:radial-gradient(circle at 34% 30%, #ffffffcc, ${color} 62%)"></span>`;
   el.addEventListener("pointerdown", e => { e.preventDefault(); wineThrow(b.uid); });  // fire on touch, not click — reliable on a moving target
   cloak.appendChild(el); b.el = el;
 }
@@ -2851,7 +2859,7 @@ function wineDropBall(b) {   // a ball hit the floor: fumble sound, a splat, and
   SFX.sneeze();
   const cloak = $("#wine-cloak");
   if (cloak) { const s = document.createElement("div"); s.className = "wine-splat"; s.style.left = b.x + "%"; s.style.top = (WINE_FLOOR - 3) + "%"; s.textContent = "💥"; s.addEventListener("animationend", () => s.remove()); cloak.appendChild(s); }
-  wineAddDrop(wineClamp(b.x + (Math.random() - 0.5) * 12, 6, 94), wineClamp(66 + Math.random() * 16, 40, 86), wineMode().bloomMs * wineRamp() * 0.9);
+  wineAddDrop(wineSilkX(b.x + (Math.random() - 0.5) * 12), wineSilkY(60 + Math.random() * 18), wineMode().bloomMs * wineRamp() * 0.9);
 }
 function wineTap(uid) {
   if (!WINE || WINE.over) return;
@@ -2902,7 +2910,7 @@ function wineTick() {
   for (let i = WINE.drops.length - 1; i >= 0; i--) {
     const d = WINE.drops[i], p = (WINE.elapsed - d.born) / d.bloom;
     if (p >= 1) { WINE.drops.splice(i, 1); wineSet(d); continue; }
-    if (d.el) { const sz = 22 + p * 62; d.el.style.width = sz + "px"; d.el.style.height = sz + "px"; d.el.classList.toggle("urgent", p > 0.66); }
+    if (d.el) { const sz = 32 + p * 108; d.el.style.width = sz + "px"; d.el.style.height = sz + "px"; d.el.classList.toggle("urgent", p > 0.66); }
   }
   winePaint();
   if (WINE.stains >= m.maxStains) return wineFinish(false, "stains");
