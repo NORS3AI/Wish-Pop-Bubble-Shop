@@ -1607,9 +1607,9 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .bq-zone .bq-proc.on { opacity: 1; }
 .bq-zone .bq-proc i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #c58bff, #ffd76a); }
 /* the incoming-orders shelf pinned to the bottom */
-.bq-supply { position: absolute; left: 4px; right: 4px; bottom: 4px; z-index: 4; min-height: 130px;
+.bq-supply { position: absolute; left: 4px; right: 4px; bottom: 4px; z-index: 4; min-height: 152px;
   background: linear-gradient(0deg, rgba(20,10,6,.5), rgba(20,10,6,.05)); border-radius: 14px; padding: 6px; }
-.bq-supply-slot { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; justify-content: center; min-height: 122px; }
+.bq-supply-slot { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; justify-content: center; min-height: 144px; }
 /* an "order" = station-icon chips (remaining) + the dress sprite (its current stage) + patience bar, moving as one unit */
 .bq-order { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .bq-remain { display: flex; gap: 3px; align-items: center; justify-content: center; flex-wrap: wrap; max-width: 160px; min-height: 24px; }
@@ -1619,6 +1619,8 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .bq-ic.now { box-shadow: 0 0 0 3px #ffd76a, 0 2px 4px rgba(0,0,0,.55); }
 .bq-ic-done { font-size: 30px; }
 .bq-dress { width: auto; height: 70px; max-width: 88px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.55)); }
+/* orders waiting in the line (their mice) sit bigger so they're easy to see and tap */
+.bq-supply-slot .bq-dress { height: 104px; max-width: 116px; }
 .bq-opat { width: 60px; height: 9px; border-radius: 5px; background: rgba(0,0,0,.55); overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.4); }
 .bq-opat i { display: block; height: 100%; width: 100%; background: #7ee08a; transition: width .1s linear; }
 .bq-opat i.amber { background: #ffcf5a; } .bq-opat i.danger { background: #ff6a6a; }

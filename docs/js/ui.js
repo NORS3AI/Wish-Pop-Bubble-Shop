@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v170"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v171"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -3428,6 +3428,7 @@ function renderBoutiqueIntro() {
   show("event");
 }
 function boutiqueStart(mode) {
+  SFX.unlock();   // the mode-button tap is a real gesture — resume audio so table sounds play
   mode = BOUTIQUE_MODES[mode] ? mode : "easy";
   const m = BOUTIQUE_MODES[mode];
   BOUTIQUE = { mode, orders: [], stations: {}, uid: 0, elapsed: 0, nextSpawnAt: 0, delivered: 0, lost: 0, over: false, tickTimer: null };
@@ -3467,7 +3468,9 @@ function boutiqueRemainHtml(o) {
   return o.recipe.slice(o.step).map((st, i) => `<span class="bq-ic${i === 0 ? " now" : ""}"><img src="art/bq_ic_${st}.png?v=${BUILD}" alt="${st}"></span>`).join("");
 }
 function boutiqueStateClass(o) { return (o.step >= o.recipe.length && o.ready) ? "done" : o.ready ? "ready" : "proc"; }
-function boutiqueDressSrc(o) { const st = boutiqueStage(o); return st === "fabric" ? `art/bq_mouse_${o.color}.png?v=${BUILD}` : `art/bq_dress_${o.color}_${st}.png?v=${BUILD}`; }
+// A never-touched order waiting in the line shows its mouse customer; once it enters
+// a table (started) it becomes the bolt/dress-stage sprite — so the fabric table shows a bolt.
+function boutiqueDressSrc(o) { const st = boutiqueStage(o); return (!o.started && st === "fabric") ? `art/bq_mouse_${o.color}.png?v=${BUILD}` : `art/bq_dress_${o.color}_${st}.png?v=${BUILD}`; }
 function boutiqueAddOrderEl(o) {
   const slot = $("#bq-slot-supply"); if (!slot) return;
   const el = document.createElement("div");
@@ -3491,7 +3494,7 @@ function boutiqueSpawn() {
   const used = BOUTIQUE.orders.map(x => x.color), avail = [];
   for (let c = 1; c <= BQ_COLORS; c++) if (used.indexOf(c) < 0) avail.push(c);   // avoid two dresses of the same colour in play
   const color = avail.length ? R.pick(avail) : R.int(1, BQ_COLORS);
-  const o = { id: ++BOUTIQUE.uid, recipe: boutiqueRecipe(m), step: 0, color, born: BOUTIQUE.elapsed, patience: m.patience, station: "supply", procStart: null, procDur: 0, ready: true, el: null };
+  const o = { id: ++BOUTIQUE.uid, recipe: boutiqueRecipe(m), step: 0, color, born: BOUTIQUE.elapsed, patience: m.patience, station: "supply", procStart: null, procDur: 0, ready: true, started: false, el: null };
   BOUTIQUE.orders.push(o);
   boutiqueAddOrderEl(o);
   boutiquePaint();
@@ -3520,7 +3523,7 @@ function boutiqueAdvance(id) {
   if (o.station !== "supply" && o.station !== target && BOUTIQUE.stations[o.station] === o.id) BOUTIQUE.stations[o.station] = null;
   const moved = o.station !== target;
   BOUTIQUE.stations[target] = o.id;
-  o.station = target; o.ready = false; o.procStart = BOUTIQUE.elapsed; o.procDur = BQ_PROC[target] * m.procScale;
+  o.station = target; o.started = true; o.ready = false; o.procStart = BOUTIQUE.elapsed; o.procDur = BQ_PROC[target] * m.procScale;
   if (moved) boutiqueMoveOrderEl(o, target);
   boutiqueUpdateOrder(o);
   SFX.scoop();
