@@ -19,6 +19,15 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🌌 **Cleaner screens + more sky!** Both flying/stacking games ditched the bulky top panel — now
+  the counters tuck into the corners and the timer sits across the top, so you see much more of the
+  sky (and get more time to react to what's falling). In the coin stacker the tower now stacks nice
+  and tight, each coin/gem overlapping the one below.
+
+- ⭐ **Magic Carpet — gold vs blue stars.** Now you **collect the gold stars** but **dodge the
+  blue-purple ones** (each blue one you touch costs a ❤️). The carpet also steers **like a boat** now
+  — heavier and slower to turn — so ease into your turns. Planets still end the run on any touch.
+
 - 🪙 **Sky-High Savings got real artwork!** The coin-stacker now plays over a lush, softly-blurred
   beanstalk-valley sky. The falling **coins and gems** are big, hand-painted jewels (seven gem
   colours!), your tower stacks them as glinting gold discs and crystals, and the junk to dodge is now

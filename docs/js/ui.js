@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v158"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v159"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -2361,7 +2361,7 @@ const STACK_TICK = 45;              // ms per simulation tick (smaller = smoothe
 const STACK_SURFACE = 46;           // y% where the TOP of the tower sits — it stays mid-screen
 const STACK_COIN_R = 4;             // coin "radius" in y%; catch fires the instant the TIP touches
 const STACK_CATCH_Y = STACK_SURFACE - STACK_COIN_R; // y% at which a falling coin's tip meets the top
-const STACK_PITCH = 4.6;            // vertical spacing between stacked coins (y%)
+const STACK_PITCH = 2.7;            // vertical spacing between stacked coins (y%) — tight, so each overlaps the one below
 const STACK_FLOOR = 108;            // y% at which an uncaught item is gone
 const STACK_WIND_LEN = 4500;       // ms a wind gust lasts
 const STACK_COLLIDE_W = 6;          // half-width (%) of the tower body for Hard-mode side collisions
@@ -2492,30 +2492,30 @@ function stackTowerHtml() {
   const pile = STACK.pile, n = pile.length, show = Math.min(n, visible);
   let s = "";
   // topmost (i=0, parked at the surface) = the most recent catch. pile holds EDGE-art names.
+  // Higher pieces (smaller i) get a higher z-index so each one overlaps the piece below it.
   for (let i = 0; i < show; i++) {
     const img = pile[n - 1 - i], gem = img.indexOf("gem") >= 0;
-    s += `<span class="stack-coin2${gem ? " gem" : ""}" style="top:${STACK_SURFACE + i * STACK_PITCH}%;background-image:url('art/${img}.png?v=${BUILD}')"></span>`;
+    s += `<span class="stack-coin2${gem ? " gem" : ""}" style="top:${STACK_SURFACE + i * STACK_PITCH}%;z-index:${show - i};background-image:url('art/${img}.png?v=${BUILD}')"></span>`;
   }
   if (n <= visible) s += `<div class="stack-base" style="top:${(STACK_SURFACE + n * STACK_PITCH).toFixed(2)}%"></div>`;
   return s;
 }
 function stackPlay() {
   const m = stackMode(), endless = m.endless, best = (GAME.stackBest && GAME.stackBest[0]) || 0;
-  const hLabel = endless ? `🪙 Height <b id="stack-hnum">0</b>${best ? ` <span class="stack-best">best ${best}</span>` : ""}` : `🪙 Stack Height <b id="stack-hnum">0 / ${m.goal}</b>`;
-  const wLabel = endless ? `💥 Bumps <b id="stack-wnum">0/${m.maxBumps}</b>` : `🗼 Wobble <b id="stack-wnum">0%</b>`;
+  const hInit = endless ? "0" : "0 / " + m.goal;
+  const wInit = endless ? "0/" + m.maxBumps : "0%";
   const hint = endless ? "Stack as high as you can — 5 💥 bumps or a 💣 on top = out!" : "Swipe to sway the tower • catch 🪙💎 • dodge 💣🪨";
+  // Minimal HUD floats over the sky (counters in the corners, timer across the top) so you see more sky.
+  const mid = endless ? (best ? `<div class="stack-chip stack-chip-mid">🏆 <b>${best}</b></div>` : "") : `<div class="stack-timer2"><i id="stack-timer"></i></div>`;
   html("event", `
     ${hud("Sky-High Savings!")}
-    <div class="feast-hud">
-      <div class="feast-king-wrap"><span id="stack-face">🪙</span></div>
-      <div class="feast-meters">
-        <div class="feast-mrow"><span class="feast-mlbl">${hLabel}</span><div class="feast-track"><i class="feast-dfill" id="stack-height"></i></div></div>
-        <div class="feast-mrow"><span class="feast-mlbl">${wLabel}</span><div class="feast-track"><i class="feast-tfill ok" id="stack-wobble"></i></div></div>
-      </div>
-    </div>
-    ${endless ? "" : '<div class="feast-timerbar"><i id="stack-timer"></i></div>'}
     <div class="feast-sky stack-sky" id="stack-sky">
       <div class="stack-bg"></div>
+      <div class="stack-overlay">
+        <div class="stack-chip"><span>🪙</span><b id="stack-hnum">${hInit}</b></div>
+        ${mid}
+        <div class="stack-chip" id="stack-wchip"><span id="stack-face">🪙</span><b id="stack-wnum">${wInit}</b></div>
+      </div>
       <div class="feast-toast" id="stack-wind">🌬️ A gust of wind! The tower sways…</div>
       <div class="stack-tower" id="stack-tower">${stackTowerHtml()}</div>
     </div>
@@ -2591,20 +2591,19 @@ function stackBodyHit(it) {
 function stackPaint() {
   if (!STACK) return;
   const m = stackMode();
+  const wchip = $("#stack-wchip");
   if (m.endless) {
-    const best = (GAME.stackBest && GAME.stackBest[0]) || 0, bumps = STACK.penalty, mx = m.maxBumps || 5;
+    const bumps = STACK.penalty, mx = m.maxBumps || 5;
     const hn = $("#stack-hnum"); if (hn) hn.textContent = STACK.height;
-    const h = $("#stack-height"); if (h) h.style.width = Math.min(100, STACK.height / Math.max(best, 10) * 100) + "%";
-    const w = $("#stack-wobble"); if (w) { w.style.width = (bumps / mx * 100) + "%"; w.className = "feast-tfill " + (bumps >= mx - 1 ? "danger" : bumps >= mx - 2 ? "amber" : "ok"); }
     const wn = $("#stack-wnum"); if (wn) wn.textContent = bumps + "/" + mx;
-    const face = $("#stack-face"); if (face) face.textContent = bumps >= mx - 1 ? "😰" : bumps >= 2 ? "😅" : "🪙";
+    if (wchip) wchip.className = "stack-chip" + (bumps >= mx - 1 ? " danger" : "");
+    const face = $("#stack-face"); if (face) face.textContent = bumps >= mx - 1 ? "😰" : bumps >= 2 ? "😅" : "💥";
   } else {
     const t = $("#stack-timer"); if (t) t.style.width = Math.min(100, STACK.elapsed / m.dur * 100) + "%";
-    const h = $("#stack-height"); if (h) h.style.width = Math.min(100, STACK.height / m.goal * 100) + "%";
     const hn = $("#stack-hnum"); if (hn) hn.textContent = STACK.height + " / " + m.goal;
-    const w = $("#stack-wobble"); if (w) { w.style.width = STACK.wobble + "%"; w.className = "feast-tfill " + (STACK.wobble >= 75 ? "danger" : STACK.wobble >= 45 ? "amber" : "ok"); }
     const wn = $("#stack-wnum"); if (wn) wn.textContent = Math.round(STACK.wobble) + "%";
-    const face = $("#stack-face"); if (face) face.textContent = STACK.wobble >= 75 ? "😰" : STACK.wobble >= 45 ? "😅" : "🪙";
+    if (wchip) wchip.className = "stack-chip" + (STACK.wobble >= 75 ? " danger" : "");
+    const face = $("#stack-face"); if (face) face.textContent = STACK.wobble >= 75 ? "😰" : STACK.wobble >= 45 ? "😅" : "🗼";
   }
   const tower = $("#stack-tower");
   if (tower) { tower.style.setProperty("--tx", STACK.towerX.toFixed(2) + "%"); tower.style.setProperty("--ang", STACK.angle.toFixed(2) + "deg"); }
@@ -3006,13 +3005,17 @@ let CARPET = null;
 const CARPET_TICK = 34;        // ms per tick (~30fps)
 const CARPET_X = 50;           // carpet's fixed screen x (%) — it never leaves centre
 const CARPET_Y = 78;           // carpet's screen y (%)
-const CARPET_STAR_HALF = 15;   // half-width (%) of the star-catch column around the carpet
+const CARPET_STAR_HALF = 12;   // half-width (%) of the star-catch column around the carpet — snug, so a near-miss is safe
 const CARPET_BODY = 12;        // carpet collision half-width (% of sky width) for planets
 const CARPET_STARS = 10, CARPET_CLOUDS = 6, CARPET_PLANETS = 3, CARPET_RUGS = 10;
+const CARPET_HEARTS = 3;               // hearts you start with
+const CARPET_STAR_GOLD = [2, 3, 5, 6, 9, 10];  // gold stars — COLLECT these
+const CARPET_STAR_DARK = [1, 4, 7, 8];         // blue/purple stars — AVOID (catching one costs a heart)
+const CARPET_TURN = 0.14;              // how quickly the carpet swings toward your steer — low = boat-like, heavy to turn
 const CARPET_MODES = {
-  easy:   { label: "Easy",   dur: 32000, fall: 23, starEvery: 820, cloudEvery: 3800, planetEvery: 8600, steer: 48, fogGain: 0.90, fogClear: 0.38, planetR: 52 },
-  medium: { label: "Medium", dur: 38000, fall: 28, starEvery: 720, cloudEvery: 3100, planetEvery: 7000, steer: 54, fogGain: 1.05, fogClear: 0.32, planetR: 58 },
-  hard:   { label: "Hard",   dur: 44000, fall: 33, starEvery: 620, cloudEvery: 2500, planetEvery: 6400, steer: 62, fogGain: 1.25, fogClear: 0.27, planetR: 60 },
+  easy:   { label: "Easy",   dur: 32000, fall: 22, starEvery: 900, cloudEvery: 3800, planetEvery: 8600, steer: 52, fogGain: 0.90, fogClear: 0.38, planetR: 52, badStar: 0.22 },
+  medium: { label: "Medium", dur: 38000, fall: 27, starEvery: 800, cloudEvery: 3100, planetEvery: 7000, steer: 58, fogGain: 1.05, fogClear: 0.32, planetR: 58, badStar: 0.30 },
+  hard:   { label: "Hard",   dur: 44000, fall: 32, starEvery: 720, cloudEvery: 2500, planetEvery: 6400, steer: 66, fogGain: 1.25, fogClear: 0.27, planetR: 60, badStar: 0.33 },
 };
 function carpetMode() { return CARPET_MODES[CARPET.mode]; }
 function carpetClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -3033,11 +3036,12 @@ function renderCarpetIntro() {
       <div class="muted" style="margin-top:-4px">Pick your carpet</div>
       <div class="card" style="width:100%;max-width:320px">
         <div class="stat-line"><span>Hold left / right</span><span>steer the sky ◀ ▶</span></div>
-        <div class="stat-line"><span>Line up ⭐</span><span>collect the stars</span></div>
+        <div class="stat-line"><span>Catch <b style="color:#ffd76a">gold</b> stars ⭐</span><span>that's the treasure!</span></div>
+        <div class="stat-line"><span>Dodge <b style="color:#9a7bff">blue</b> stars ✦</span><span style="color:var(--bad)">they cost a ❤️</span></div>
         <div class="stat-line"><span>Fly through ☁️</span><span style="color:var(--bad)">it fogs your view!</span></div>
         <div class="stat-line"><span>Giant 🪐 planets</span><span style="color:var(--bad)">touch one = crash!</span></div>
       </div>
-      <div class="muted" style="max-width:300px">Your carpet stays centred — the whole sky slides as you steer. The planets are huge, so steer well clear — one touch and it's over. Reach the Oasis to win!</div>
+      <div class="muted" style="max-width:300px">Your carpet steers like a boat — ease into your turns. Collect the gold stars, avoid the blue ones, and steer well clear of the planets. Reach the Oasis to win!</div>
     </div>
     <div class="wolf-modes">
       <button class="btn good" id="carpet-easy">🟢 Easy</button>
@@ -3061,7 +3065,7 @@ function carpetStart(mode) {
   const m = CARPET_MODES[mode];
   CARPET = { mode, stars: [], clouds: [], planets: [], uid: 0, elapsed: 0,
     nextStarAt: 450, nextCloudAt: m.cloudEvery, nextPlanetAt: m.planetEvery, caught: 0,
-    steer: 0, vx: 0, bg: 0, fog: 0, over: false, tickTimer: null };
+    hearts: CARPET_HEARTS, invUntil: -1, steer: 0, vx: 0, bg: 0, fog: 0, over: false, tickTimer: null };
   carpetPlay();
   CARPET.tickTimer = setInterval(carpetTick, CARPET_TICK);
 }
@@ -3069,15 +3073,13 @@ function carpetPlay() {
   const m = carpetMode();
   html("event", `
     ${hud("Magic Carpet Dash!")}
-    <div class="feast-hud">
-      <div class="feast-king-wrap"><span>🧞</span></div>
-      <div class="feast-meters">
-        <div class="feast-mrow"><span class="feast-mlbl">⭐ Stars <b id="carpet-stars">0</b></span><div class="feast-track"><i class="feast-dfill" id="carpet-starbar"></i></div></div>
-        <div class="feast-mrow"><span class="feast-mlbl">🏝️ To the Oasis</span><div class="feast-track"><i class="feast-tfill ok" id="carpet-progbar"></i></div></div>
-      </div>
-    </div>
     <div class="carpet-sky" id="carpet-sky">
       <div class="carpet-bg" id="carpet-bg"></div>
+      <div class="stack-overlay">
+        <div class="stack-chip" id="carpet-hchip"><span id="carpet-hearts">${"❤️".repeat(CARPET_HEARTS)}</span></div>
+        <div class="stack-timer2"><i id="carpet-prog"></i></div>
+        <div class="stack-chip"><span>⭐</span><b id="carpet-stars">0</b></div>
+      </div>
       <div class="carpet-arrow left">◀</div><div class="carpet-arrow right">▶</div>
       <img class="carpet-rug" id="carpet-rug" src="art/carpet_rug_${carpetSkin()}.png?v=${BUILD}" alt="carpet" draggable="false">
       <div class="carpet-fog" id="carpet-fog"></div>
@@ -3099,12 +3101,17 @@ function carpetBindControls() {
   sky.addEventListener("pointerleave", clear);
 }
 function carpetSteer(dir) { if (CARPET) CARPET.steer = dir < 0 ? -1 : dir > 0 ? 1 : 0; }  // bot / keyboard hook: -1 left, +1 right, 0 straight
-function carpetAddStar() {
+function carpetAddStar(forceGood) {
   const sky = $("#carpet-sky"); if (!sky) return;
-  const s = { uid: ++CARPET.uid, x: 10 + Math.random() * 80, y: -8, img: R.int(1, CARPET_STARS), el: null, done: false, cullAt: 0 };
+  let good = forceGood || Math.random() >= carpetMode().badStar;  // gold = collect; blue/purple = avoid
+  // fairness: no blue star while you're already busy dodging a planet, and never two blue at the top at once
+  if (!good && CARPET.planets.some(p => p.y > -12)) good = true;
+  if (!good && CARPET.stars.some(s => !s.good && !s.done && s.y < 36)) good = true;
+  const img = R.pick(good ? CARPET_STAR_GOLD : CARPET_STAR_DARK);
+  const s = { uid: ++CARPET.uid, x: 10 + Math.random() * 80, y: -8, img, good, el: null, done: false, cullAt: 0 };
   CARPET.stars.push(s);
   const el = document.createElement("div");
-  el.className = "carpet-star"; el.style.left = s.x + "%"; el.style.top = s.y + "%";
+  el.className = "carpet-star" + (good ? "" : " bad"); el.style.left = s.x + "%"; el.style.top = s.y + "%";
   el.style.backgroundImage = `url('art/carpet_star_${s.img}.png?v=${BUILD}')`;
   sky.appendChild(el); s.el = el;
 }
@@ -3137,6 +3144,18 @@ function carpetCatchStar(s) {
   if (s.el) s.el.classList.add("caught");
   carpetPaint();
 }
+function carpetStarHit(s) {   // caught a blue/purple star — costs a heart (brief mercy window after each hit)
+  s.done = true; s.cullAt = CARPET.elapsed + 500;
+  if (CARPET.elapsed < CARPET.invUntil) { if (s.el) s.el.classList.add("caught"); return; }
+  CARPET.hearts--;
+  CARPET.invUntil = CARPET.elapsed + 900;
+  SFX.clang();
+  const sky = $("#carpet-sky"); if (sky) { sky.classList.remove("shake"); void sky.offsetWidth; sky.classList.add("shake"); }
+  const rug = $("#carpet-rug"); if (rug) { rug.classList.remove("hurt"); void rug.offsetWidth; rug.classList.add("hurt"); }
+  if (s.el) s.el.classList.add("smash");
+  carpetPaint();
+  if (CARPET.hearts <= 0) carpetFinish(false, "hearts");
+}
 function carpetCrash(planet) {
   if (CARPET.over) return;   // any touch of a planet ends the run
   CARPET.over = true;
@@ -3151,8 +3170,9 @@ function carpetPaint() {
   if (!CARPET) return;
   const m = carpetMode();
   const s = $("#carpet-stars"); if (s) s.textContent = CARPET.caught;
-  const sb = $("#carpet-starbar"); if (sb) sb.style.width = Math.min(100, CARPET.caught * 6) + "%";
-  const pb = $("#carpet-progbar"); if (pb) pb.style.width = Math.min(100, CARPET.elapsed / m.dur * 100) + "%";
+  const hp = $("#carpet-hearts"); if (hp) hp.textContent = "❤️".repeat(Math.max(0, CARPET.hearts)) + "🖤".repeat(Math.max(0, CARPET_HEARTS - CARPET.hearts));
+  const hc = $("#carpet-hchip"); if (hc) hc.className = "stack-chip" + (CARPET.hearts <= 1 ? " danger" : "");
+  const pb = $("#carpet-prog"); if (pb) pb.style.width = Math.min(100, CARPET.elapsed / m.dur * 100) + "%";
   const fg = $("#carpet-fog"); if (fg) fg.style.opacity = (CARPET.fog * 0.94).toFixed(3);
 }
 function carpetTick() {
@@ -3161,15 +3181,15 @@ function carpetTick() {
   const sky = $("#carpet-sky"); if (!sky) return;
   const rect = sky.getBoundingClientRect(), skyW = rect.width, skyH = rect.height;
   CARPET.elapsed += CARPET_TICK;
-  // ease lateral velocity toward the steer target → smooth banking (carpet stays centred, world slides)
-  CARPET.vx += (CARPET.steer * m.steer - CARPET.vx) * 0.24;
+  // ease lateral velocity toward the steer target — LOW gain = boat-like, heavy/slow to change heading
+  CARPET.vx += (CARPET.steer * m.steer - CARPET.vx) * CARPET_TURN;
   const shift = CARPET.vx * dt;               // fly right (vx>0) → the whole sky slides left
   CARPET.bg = carpetClamp(CARPET.bg - CARPET.vx * dt * 0.5, -8, 8);
   const bg = $("#carpet-bg"); if (bg) bg.style.transform = `translateX(${CARPET.bg}%)`;
   const rug = $("#carpet-rug"); if (rug) rug.style.transform = `translateX(-50%) rotate(${carpetClamp(CARPET.vx * 0.34, -22, 22)}deg)`;
   const fall = m.fall * carpetRamp();
   // ---- spawns ----
-  if (CARPET.elapsed >= CARPET.nextStarAt) { carpetAddStar(); if (Math.random() < 0.3) carpetAddStar(); CARPET.nextStarAt = CARPET.elapsed + m.starEvery / carpetRamp(); }
+  if (CARPET.elapsed >= CARPET.nextStarAt) { carpetAddStar(); if (Math.random() < 0.3) carpetAddStar(true); CARPET.nextStarAt = CARPET.elapsed + m.starEvery / carpetRamp(); }
   if (CARPET.elapsed >= CARPET.nextCloudAt) { carpetAddCloud(); CARPET.nextCloudAt = CARPET.elapsed + m.cloudEvery * (0.8 + Math.random() * 0.5); }
   if (CARPET.elapsed >= CARPET.nextPlanetAt) { if (!CARPET.planets.length) { carpetAddPlanet(); CARPET.nextPlanetAt = CARPET.elapsed + m.planetEvery * (0.85 + Math.random() * 0.4); } else { CARPET.nextPlanetAt = CARPET.elapsed + 700; } }  // one planet at a time
   // ---- stars: collect at the carpet row ----
@@ -3177,8 +3197,9 @@ function carpetTick() {
     const s = CARPET.stars[i];
     if (s.done) { if (CARPET.elapsed >= s.cullAt) { if (s.el) s.el.remove(); CARPET.stars.splice(i, 1); } continue; }
     s.y += fall * dt; s.x -= shift;
-    if (s.y >= CARPET_Y - 4 && s.y <= CARPET_Y + 8 && Math.abs(s.x - CARPET_X) <= CARPET_STAR_HALF) { carpetCatchStar(s); continue; }
+    if (s.y >= CARPET_Y - 4 && s.y <= CARPET_Y + 8 && Math.abs(s.x - CARPET_X) <= CARPET_STAR_HALF) { s.good ? carpetCatchStar(s) : carpetStarHit(s); if (!CARPET) return; continue; }
     if (s.y > 122 || s.x < -30 || s.x > 130) { if (s.el) s.el.remove(); CARPET.stars.splice(i, 1); continue; }
+    if (!s.good && s.el) s.el.classList.toggle("near", s.y > CARPET_Y - 22 && s.y < CARPET_Y + 8);
     if (s.el) { s.el.style.top = s.y + "%"; s.el.style.left = s.x + "%"; }
   }
   // ---- clouds: drift; fog builds while the carpet is inside one ----
@@ -3212,7 +3233,7 @@ function carpetTick() {
   carpetPaint();
   if (CARPET.elapsed >= m.dur) return carpetFinish(true);
 }
-function carpetFinish(win) {
+function carpetFinish(win, why) {
   if (!CARPET) return;
   const m = carpetMode(), caught = CARPET.caught;
   CARPET.over = true;
@@ -3230,10 +3251,12 @@ function carpetFinish(win) {
       note: "You soared clear across the desert sky and touched down at the shimmering Oasis. Magical flying!" };
   } else {
     save();
-    outcome = { emoji: "💫", title: "Crashed into a planet!", cls: "lose",
+    const hearts = why === "hearts";
+    outcome = { emoji: hearts ? "✦" : "💫", title: hearts ? "Too many wrong stars!" : "Crashed into a planet!", cls: "lose",
       lines: [`<div class="stat-line"><span>Stars collected</span><span>${caught}</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="muted">none — try again!</span></div>`],
-      note: "The planets are huge — steer well clear the moment you see one edge onto the screen. And don't linger in a cloud, or you'll be flying blind straight into one!" };
+      note: hearts ? "Those blue-purple stars sting — steer so only the GOLD ones line up with your carpet. Collect gold, dodge blue!"
+                   : "The planets are huge — steer well clear the moment you see one edge onto the screen. And don't linger in a cloud, or you'll be flying blind straight into one!" };
   }
   html("event", `
     ${hud("Forgotten Oasis")}
@@ -5415,7 +5438,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetCrash, carpetFinish, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

@@ -1111,6 +1111,19 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes stackBad { 0%,100% { transform: rotate(var(--ang)); } 30% { transform: rotate(calc(var(--ang) - 4deg)); } 70% { transform: rotate(calc(var(--ang) + 4deg)); } }
 .stack-hint { color: #cbbdf0; }
 .stack-best { font-size: 11px; font-weight: 700; color: #ffd76a; opacity: .9; margin-left: 4px; }
+/* Minimal floating HUD over the sky: counters in the corners, timer across the top */
+.stack-overlay { position: absolute; top: 7px; left: 7px; right: 7px; z-index: 6; display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 8px; pointer-events: none; }
+.stack-chip { display: flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 999px; font-weight: 800; font-size: 15px;
+  color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.75); background: rgba(18,10,34,.5); border: 1px solid rgba(255,255,255,.2);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.stack-chip b { color: #ffe08a; }
+.stack-chip.danger { background: rgba(120,20,20,.6); border-color: #ff6a6a; }
+.stack-chip.danger b { color: #ffb0b0; }
+.stack-chip-mid { background: rgba(18,10,34,.42); }
+.stack-timer2 { flex: 1; max-width: 150px; height: 9px; margin-top: 7px; border-radius: 999px; overflow: hidden;
+  background: rgba(18,10,34,.5); border: 1px solid rgba(255,255,255,.22); }
+.stack-timer2 i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #c58bff, #ffd76a); transition: width .12s linear; }
 /* Spilled Wish-Wine — dab blooming drops off the King's cloak */
 .wine-cloak { position: relative; flex: 1; min-height: 0; margin: 4px 2px; border-radius: 14px; overflow: hidden;
   background: #efe7d6 url('../art/wine_cloak.png') center center / cover no-repeat; border: 1px solid rgba(0,0,0,.18);
@@ -1555,6 +1568,11 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   transition: left .05s linear, top .05s linear; will-change: top,left; }
 .carpet-star.caught { animation: carpetCaught .45s forwards; }
 @keyframes carpetCaught { to { transform: translate(-50%,-50%) scale(1.8); opacity: 0; } }
+.carpet-star.bad { filter: drop-shadow(0 0 8px rgba(155,120,255,.9)); }
+.carpet-star.bad.near { animation: carpetStarNear .5s infinite; }
+@keyframes carpetStarNear { 50% { filter: drop-shadow(0 0 12px rgba(185,120,255,1)); } }
+.carpet-star.smash { animation: carpetStarSmash .45s forwards; }
+@keyframes carpetStarSmash { 0% { transform: translate(-50%,-50%) scale(1.2); } 100% { transform: translate(-50%,-50%) scale(.4) rotate(30deg); opacity: 0; } }
 .carpet-cloud { position: absolute; transform: translate(-50%,-50%); height: auto; z-index: 4;
   background: center / contain no-repeat; aspect-ratio: 2 / 1; pointer-events: none;
   filter: drop-shadow(0 3px 10px rgba(0,0,0,.3)); transition: left .05s linear, top .05s linear; will-change: top,left; }
