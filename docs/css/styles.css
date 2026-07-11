@@ -1651,10 +1651,16 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 
 /* ===== STORY — Little Red's tale: full-screen illustrated dialogue cards ===== */
 .story-card { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  gap: 14px; padding: 18px 18px calc(18px + var(--safe-b)); overflow: hidden;
-  background: linear-gradient(180deg, rgba(30,16,40,.18) 0%, rgba(24,12,32,.42) 58%, rgba(18,8,26,.82) 100%), url('../art/village_far.jpg') center top / cover no-repeat; }
-/* vista beats: no character, just the village and the text card */
-.story-card.vista .story-stage { flex: 1; }
+  padding: 18px 16px calc(16px + var(--safe-b)); overflow: hidden;
+  background: linear-gradient(180deg, rgba(30,16,40,.14) 0%, rgba(24,12,32,.34) 52%, rgba(18,8,26,.72) 100%), url('../art/village_far.jpg') center top / cover no-repeat; }
+/* Little Red stands LARGE, anchored to the bottom — her lower half tucks behind the text card */
+.story-figure { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 1; pointer-events: none;
+  display: flex; align-items: flex-end; justify-content: center; height: 84vh; animation: storyIn .45s ease-out; }
+img.story-face { height: 100%; width: auto; max-width: 96vw; object-fit: contain; object-position: bottom; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
+span.story-face { display: inline-flex; align-items: center; justify-content: center; height: 40vh; font-size: 32vh; line-height: 1; } /* emoji fallback */
+.story-figure.scene { height: auto; bottom: auto; top: 16%; }
+/* the dialogue stack sits on top of her, pinned to the bottom */
+.story-below { position: relative; z-index: 2; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 
 /* ===== STORY ZOOM CINEMATIC — a slow dolly from the village in to the shop door ===== */
 .zoom-cine { position: absolute; inset: 0; overflow: hidden; background: #150b20; }
@@ -1671,11 +1677,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .zoom-skip { position: absolute; bottom: calc(14px + var(--safe-b)); right: 16px; z-index: 3; color: #fff; font-size: 13px; font-weight: 700;
   padding: 6px 12px; border-radius: 999px; background: rgba(20,10,28,.42); backdrop-filter: blur(2px); animation: zoomSkipFade 6.2s ease forwards; }
 @keyframes zoomSkipFade { 0%,84% { opacity: .9; } 100% { opacity: 0; } }
-.story-stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; width: 100%; animation: storyIn .5s ease-out; }
-.story-figure { display: flex; align-items: center; justify-content: center; }
-img.story-face { width: auto; height: 42vh; max-height: 360px; max-width: 88%; object-fit: contain; filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)); }
-span.story-face { display: inline-flex; align-items: center; justify-content: center; height: 42vh; max-height: 360px; font-size: 34vh; line-height: 1; } /* emoji fallback stays big */
-.story-figure.scene { font-size: 76px; line-height: 1.15; text-align: center; filter: drop-shadow(0 6px 12px rgba(0,0,0,.5)); }
+.story-figure.scene .story-scene { font-size: 76px; line-height: 1.15; text-align: center; filter: drop-shadow(0 6px 12px rgba(0,0,0,.5)); }
 .story-scene { animation: storyFloat 3.4s ease-in-out infinite; }
 .story-name { font-weight: 900; font-size: 20px; color: #fff6e6; letter-spacing: .3px;
   padding: 5px 18px; border-radius: 999px; background: linear-gradient(180deg, #b8517e, #8a3a63);

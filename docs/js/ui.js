@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v175"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v176"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -327,26 +327,24 @@ function renderStart() {
 /* runs a callback. Cozy-with-a-wink in tone.                                 */
 /* ======================================================================= */
 function redCust() { return D.CUSTOMERS.find(c => c.id === "little_red") || { id: "little_red", name: "Little Red", emoji: "👧", wishType: "SafeSpell", line: "" }; }
-function redFace(mood) { return custMoodArt(redCust(), mood || "normal", "👧", "story-face"); }
+// Full-body story poses (art/red_<pose>.png): wave, explain, idea, present, worried,
+// cheer, think, point, offer, angry, annoyed, welcome. Falls back to her emoji.
+function redPose(pose) { return ART.tag("red_" + (pose || "wave"), "👧", "story-face"); }
 
 let STORY_BEATS = null, STORY_I = 0, STORY_DONE = null;
 function renderStoryBeats(beats, done) { STORY_BEATS = beats; STORY_I = 0; STORY_DONE = done || null; storyPaint(); }
 function storyPaint() {
   if (!STORY_BEATS) return;
   const b = STORY_BEATS[STORY_I], last = STORY_I >= STORY_BEATS.length - 1;
-  const figure = b.vista
-    ? ""
-    : b.scene
-    ? `<div class="story-scene">${b.scene}</div>`
-    : `<div class="story-portrait">${redFace(b.mood)}</div>`;
+  const figure = b.vista ? "" : b.scene ? `<div class="story-scene">${b.scene}</div>` : redPose(b.pose);
   html("event", `
     <div class="story-card mg-fullbleed${b.vista ? " vista" : ""}" id="story-card">
-      <div class="story-stage">
-        ${b.vista ? "" : `<div class="story-figure${b.scene ? " scene" : ""}">${figure}</div>`}
+      ${figure ? `<div class="story-figure${b.scene ? " scene" : ""}">${figure}</div>` : ""}
+      <div class="story-below">
         ${b.name ? `<div class="story-name">${b.name}</div>` : ""}
+        <div class="story-speech">${b.text}</div>
+        <button class="btn story-next" id="story-next">${b.cta || (last ? "Let’s begin  ▸" : "Continue  ▸")}</button>
       </div>
-      <div class="story-speech">${b.text}</div>
-      <button class="btn story-next" id="story-next">${b.cta || (last ? "Let’s begin  ▸" : "Continue  ▸")}</button>
     </div>
   `);
   on("#story-next", "click", () => {
@@ -355,22 +353,22 @@ function storyPaint() {
     else { STORY_I++; storyPaint(); }
   });
   show("event");
-  // art loads asynchronously; if this portrait isn't cached yet, repaint once it arrives
+  // art loads asynchronously; if this pose isn't cached yet, repaint once it arrives
   if (!b.scene && !b.vista) {
-    const key = "customer_" + redCust().id + (b.mood && b.mood !== "normal" ? "_" + b.mood : "");
+    const key = "red_" + (b.pose || "wave");
     if (!ART.isReady(key)) ART.ensure(key, () => { if (STORY_BEATS && STORY_BEATS[STORY_I] === b) storyPaint(); });
   }
 }
 // The very-first-launch arrival: the village, then Little Red, then her tutorial wish.
 function playArrivalIntro() {
   SFX.unlock();
-  ["", "_happy"].forEach(m => ART.ensure("customer_" + redCust().id + m, () => {})); // pre-warm Red's portraits
+  ["wave", "explain", "idea"].forEach(p => ART.ensure("red_" + p, () => {})); // pre-warm Red's arrival poses
   ["village_mid", "village_door"].forEach(n => { try { const im = new Image(); im.src = "art/" + n + ".jpg?v=" + BUILD; } catch (e) {} }); // preload the zoom frames
   renderStoryBeats([
     { vista: true, text: "A little path winds down into <b>Willow Wish Village</b> — lanterns in the trees, banners on the rooftops, a castle beyond. And there, with its striped awning and bubbles drifting from the chimney, is your very own <b>Wish Pop Bubble Shop</b>." },
-    { name: "Little Red", mood: "happy", text: "Oh — hello! I just arrived too. I’m off through the woods to visit my grandma. But everyone says the new wish‑shop is the heart of the village… is that <i>you</i>?" },
-    { name: "Little Red", mood: "normal", text: "Then let me be your very first customer! It’s a long walk to Grandma’s cottage… could you mix me a little charm of <b>safe passage</b>?" },
-    { name: "Little Red", mood: "happy", cta: "Step inside  ▸", text: "Come on — let’s pop into the shop and I’ll show you how it works: <b>scoop</b> up some sparkle, <b>pop</b> the bubbles for magic, then <b>mix</b> it to match my wish!" },
+    { name: "Little Red", pose: "wave", text: "Oh — hello! I just arrived too. I’m off through the woods to visit my grandma. But everyone says the new wish‑shop is the heart of the village… is that <i>you</i>?" },
+    { name: "Little Red", pose: "explain", text: "Then let me be your very first customer! It’s a long walk to Grandma’s cottage… could you mix me a little charm of <b>safe passage</b>?" },
+    { name: "Little Red", pose: "idea", cta: "Step inside  ▸", text: "Come on — let’s pop into the shop and I’ll show you how it works: <b>scoop</b> up some sparkle, <b>pop</b> the bubbles for magic, then <b>mix</b> it to match my wish!" },
   ], () => { GAME.seenIntro = true; GAME.storyStep = Math.max(GAME.storyStep, 1); save(); playZoomIn(startRedWish); });
 }
 // A slow cinematic zoom from the village vista in to the shop's open door, then a
@@ -409,8 +407,8 @@ function startRedWish() {
 // After the tutorial wish resolves, Little Red says her goodbye and hints she’ll return.
 function playArrivalOutro(win) {
   const beats = win
-    ? [{ name: "Little Red", mood: "happy", cta: "Off she goes  ▸", text: "Oh, it’s <i>lovely</i> — I feel safer already. Thank you! I’d best hurry to Grandma’s before dark… but something tells me I’ll be back. Do take good care of the shop!" }]
-    : [{ name: "Little Red", mood: "normal", cta: "Off she goes  ▸", text: "Hmm — not quite what I pictured! But you’re only just learning, and the village is lucky to have you. I’ll pop back soon and we can try again. 🧺" }];
+    ? [{ name: "Little Red", pose: "present", cta: "Off she goes  ▸", text: "Oh, it’s <i>lovely</i> — I feel safer already. Thank you! I’d best hurry to Grandma’s before dark… but something tells me I’ll be back. Do take good care of the shop!" }]
+    : [{ name: "Little Red", pose: "worried", cta: "Off she goes  ▸", text: "Hmm — not quite what I pictured! But you’re only just learning, and the village is lucky to have you. I’ll pop back soon and we can try again. 🧺" }];
   renderStoryBeats(beats, () => { GAME.storyStep = Math.max(GAME.storyStep, 2); save(); renderStart(); });
 }
 
