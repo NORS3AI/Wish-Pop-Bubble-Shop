@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐺 **Little Red's story continues.** A few customers after you first meet her, Red pops back in.
+  First she shares a photo album of Grandma's oasis holiday — flip through the postcards with the
+  ‹ › arrows — and asks for a "charm of good company." Later she returns, spooked: someone's
+  pretending to be Grandma. She shows you her sketch of the impostor (a wolf in a bonnet!) and asks
+  you to watch for that face and tell her the moment it turns up. Each visit ends with a wish for you
+  to grant.
 - 📖 **A story begins — meet Little Red!** The game now opens with a gentle cinematic: you look out
   over **Willow Wish Village**, Little Red Riding Hood turns up on her way to visit Grandma, and then
   the camera slowly drifts down the lane and in through the door of your **Wish Pop Bubble Shop**.

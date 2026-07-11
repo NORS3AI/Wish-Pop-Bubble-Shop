@@ -1662,6 +1662,20 @@ span.story-face { display: inline-flex; align-items: center; justify-content: ce
 /* the dialogue stack sits on top of her, pinned to the bottom */
 .story-below { position: relative; z-index: 2; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 
+/* gallery beats: Red holds up photos/a sketch — one big picture with ‹ › and dots */
+.story-card.gallery-beat { justify-content: flex-end; }
+.story-card.gallery-beat::before { content: ""; position: absolute; inset: 0; background: rgba(14,7,22,.45); z-index: 0; }
+.story-gallery { position: relative; z-index: 2; flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 0 14px; }
+.gal-frame { display: flex; align-items: center; justify-content: center; min-width: 0; }
+img.gal-pic { max-height: 56vh; max-width: 74vw; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 12px 22px rgba(0,0,0,.6)); animation: galPop .32s ease-out; }
+@keyframes galPop { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+.gal-arrow { flex: none; width: 46px; height: 46px; border-radius: 50%; border: none; font-size: 28px; font-weight: 900; line-height: 1;
+  color: #4a2b12; background: rgba(255,248,234,.92); box-shadow: 0 3px 9px rgba(0,0,0,.5); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.gal-arrow:active { transform: scale(.9); }
+.gal-dots { position: absolute; bottom: 2px; left: 0; right: 0; display: flex; gap: 7px; justify-content: center; }
+.gal-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.4); box-shadow: 0 1px 2px rgba(0,0,0,.5); transition: background .15s, transform .15s; }
+.gal-dot.on { background: #ffd76a; transform: scale(1.25); }
+
 /* ===== STORY ZOOM CINEMATIC — a slow dolly from the village in to the shop door ===== */
 .zoom-cine { position: absolute; inset: 0; overflow: hidden; background: #150b20; }
 .zoom-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; opacity: 0; transform-origin: 52% 46%; will-change: transform, opacity; }
