@@ -1531,49 +1531,36 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 }
 
 /* ===== MAGIC CARPET DASH (Forgotten Oasis flight) ===================== */
+/* carpet skin picker on the intro */
+.carpet-pick { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.carpet-pick-art { width: 96px; height: auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); animation: carpetPickIn .25s ease; }
+@keyframes carpetPickIn { from { transform: scale(.8); opacity: .3; } }
+.carpet-pick-arrow { width: 44px; height: 44px; border-radius: 50%; border: none; font-size: 20px; color: #fff;
+  background: rgba(255,255,255,.16); box-shadow: 0 2px 6px rgba(0,0,0,.3); cursor: pointer; }
+.carpet-pick-arrow:active { transform: scale(.92); }
+/* the flight */
 .carpet-sky { position: relative; flex: 1; min-height: 0; width: 100%; margin: 6px 2px 0; border-radius: 16px; overflow: hidden;
-  background: linear-gradient(#160f38 0%, #29195c 40%, #6a3670 74%, #b3684a 100%);
-  touch-action: none; user-select: none; -webkit-user-select: none; }
-.carpet-sky::before { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background-image:
-    radial-gradient(1.6px 1.6px at 18% 22%, #ffffffcc, transparent),
-    radial-gradient(1.4px 1.4px at 68% 14%, #ffffffaa, transparent),
-    radial-gradient(1.2px 1.2px at 42% 40%, #ffffff99, transparent),
-    radial-gradient(1.6px 1.6px at 84% 34%, #ffffffbb, transparent),
-    radial-gradient(1.2px 1.2px at 30% 60%, #ffffff88, transparent),
-    radial-gradient(1.5px 1.5px at 58% 66%, #ffffff99, transparent);
-  opacity: .85; }
-.carpet-dunes { position: absolute; left: -20%; right: -20%; bottom: 0; height: 22%; pointer-events: none;
-  background:
-    radial-gradient(50% 130% at 22% 100%, #d59a52 0 46%, transparent 47%) 0 0 / 34% 100% repeat-x,
-    radial-gradient(56% 130% at 68% 100%, #bb823c 0 47%, transparent 48%) 17% 0 / 46% 100% repeat-x;
-  opacity: .92; }
-.carpet-arrow { position: absolute; top: 46%; font-size: 22px; color: #ffffff40; z-index: 1; pointer-events: none; }
+  background: #160f38; touch-action: none; user-select: none; -webkit-user-select: none; }
+.carpet-bg { position: absolute; top: 0; bottom: 0; left: -8%; width: 116%; z-index: 0; pointer-events: none;
+  background: url('../art/oasis_sky.jpg') center center / cover no-repeat; will-change: transform; }
+.carpet-arrow { position: absolute; top: 46%; font-size: 22px; color: #ffffff33; z-index: 1; pointer-events: none; }
 .carpet-arrow.left { left: 10px; } .carpet-arrow.right { right: 10px; }
-.carpet-item { position: absolute; transform: translate(-50%,-50%); font-size: 40px; line-height: 1; z-index: 2;
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); pointer-events: none;
-  transition: left .06s linear, top .06s linear; will-change: top,left; }
-.carpet-item.good { font-size: 46px; filter: drop-shadow(0 0 8px #ffe27a) drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
-.carpet-item.bad.near { animation: carpetNear .5s infinite; }
-@keyframes carpetNear { 50% { filter: drop-shadow(0 0 8px #ff6a6a) drop-shadow(0 2px 2px rgba(0,0,0,.4)); } }
-.carpet-item.caught { animation: carpetCaught .5s forwards; }
-@keyframes carpetCaught { to { transform: translate(-50%,-50%) scale(1.9); opacity: 0; } }
-.carpet-item.smash { animation: carpetSmash .45s forwards; }
-@keyframes carpetSmash { 0% { transform: translate(-50%,-50%) scale(1.3); } 100% { transform: translate(-50%,-50%) scale(.4) rotate(28deg); opacity: 0; } }
-.carpet-rug { position: absolute; left: 50%; top: 74%; transform: translateX(-50%); width: 32%; max-width: 148px; aspect-ratio: 5 / 2; z-index: 3;
-  background: repeating-linear-gradient(90deg, #7b2ff7 0 12%, #b06bff 12% 24%);
-  border: 3px solid #ffd24a; border-radius: 10px;
-  box-shadow: 0 6px 15px rgba(0,0,0,.45), inset 0 0 0 3px rgba(255,255,255,.14);
-  display: flex; align-items: center; justify-content: center; transition: transform .06s linear; }
-.carpet-rug .carpet-rider { font-size: 26px; transform: translateY(-72%); filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
-.carpet-tassel { position: absolute; bottom: -6px; width: 4px; height: 9px; background: #ffd24a; border-radius: 0 0 2px 2px; }
-.carpet-tassel.l { left: 12%; } .carpet-tassel.r { right: 12%; }
+.carpet-star { position: absolute; transform: translate(-50%,-50%); width: 52px; height: 52px; z-index: 2;
+  background: center / contain no-repeat; filter: drop-shadow(0 0 6px rgba(255,226,140,.7)); pointer-events: none;
+  transition: left .05s linear, top .05s linear; will-change: top,left; }
+.carpet-star.caught { animation: carpetCaught .45s forwards; }
+@keyframes carpetCaught { to { transform: translate(-50%,-50%) scale(1.8); opacity: 0; } }
+.carpet-cloud { position: absolute; transform: translate(-50%,-50%); height: auto; z-index: 4;
+  background: center / contain no-repeat; aspect-ratio: 2 / 1; pointer-events: none;
+  filter: drop-shadow(0 3px 10px rgba(0,0,0,.3)); transition: left .05s linear, top .05s linear; will-change: top,left; }
+.carpet-planet { position: absolute; transform: translate(-50%,-50%); height: auto; z-index: 1; pointer-events: none;
+  filter: drop-shadow(0 6px 22px rgba(0,0,0,.5)); transition: left .05s linear, top .05s linear; will-change: top,left; }
+.carpet-rug { position: absolute; left: 50%; top: 78%; transform: translateX(-50%); width: 23%; max-width: 118px; height: auto; z-index: 3;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); transition: transform .06s linear; }
 .carpet-rug.hurt { animation: carpetHurt .4s; }
-@keyframes carpetHurt { 0%,100% { filter: none; } 30% { filter: brightness(1.9) drop-shadow(0 0 7px #ff5a5a); } }
-.carpet-shield { position: absolute; inset: -8px; border-radius: 13px; border: 2px solid #ffe27a; box-shadow: 0 0 12px #ffe27a; opacity: 0; transition: opacity .2s; pointer-events: none; }
-.carpet-shield.on { opacity: 1; animation: carpetShield 1s infinite; }
-@keyframes carpetShield { 50% { box-shadow: 0 0 20px #fff2a0; } }
-.carpet-poof { position: absolute; transform: translate(-50%,-50%); font-size: 34px; z-index: 4; pointer-events: none; animation: carpetPoof .6s forwards; }
-@keyframes carpetPoof { 0% { transform: translate(-50%,-50%) scale(.4); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(2.2); opacity: 0; } }
-.carpet-sky.shake { animation: carpetShake .35s; }
-@keyframes carpetShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
+@keyframes carpetHurt { 0%,100% { filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); } 30% { filter: brightness(1.9) drop-shadow(0 0 9px #ff5a5a); } }
+/* the fog that builds while you're inside a cloud — warm sunset haze that whites out your view */
+.carpet-fog { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0;
+  background: radial-gradient(120% 90% at 50% 45%, rgba(255,236,205,.98), rgba(255,205,150,.96) 55%, rgba(240,170,120,.95) 100%); }
+.carpet-sky.shake { animation: carpetShake .4s; }
+@keyframes carpetShake { 0%,100% { transform: translateX(0); } 15% { transform: translate(-6px,3px); } 35% { transform: translate(6px,-2px); } 55% { transform: translate(-4px,2px); } 75% { transform: translate(4px,-1px); } }

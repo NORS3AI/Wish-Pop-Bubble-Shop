@@ -23,12 +23,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   hand-painted balls (every one a different colour, as always), and the wine spills use real
   splat-shaped stains that vary each time — a big glow-up from the old plain blobs.
 
-- 🧞 **New flying game — Magic Carpet Dash!** Hop on a magic carpet and soar to the Forgotten Oasis.
-  Your carpet stays right in the **middle** — the whole starry sky **slides around you** as you hold
-  the **left or right** side to steer, so you can drift across the heavens forever. **Line up the
-  shooting stars 🌠** to catch them (and rare jewels and lamps), but **dodge the storm clouds, rocks,
-  twinkling stars and sand-whirls** — each one you bump costs a heart ❤️. Grab a **magic lamp 🪔** and
-  the genie shields you for a moment! Reach the Oasis with a heart to spare. Easy / Medium / Hard.
+- 🧞 **Magic Carpet Dash — now with real artwork!** Hop on a hand-painted magic carpet (pick from
+  **ten**, including the moon carpet) and soar through a gorgeous sunset sky to the Forgotten Oasis.
+  Your carpet stays in the **middle** — the whole sky **slides around you** as you hold the **left or
+  right** side to steer. **Line up the ⭐ stars** to collect them, **fly through the ☁️ clouds** but
+  don't linger — they **fog up your view** the longer you're inside until you're flying blind! And
+  watch for the **giant 🪐 planets**: they're bigger than the screen, so when you see the edge of one,
+  **steer around it or crash**. Reach the Oasis with a heart to spare. Easy / Medium / Hard.
 
 - 🍷 **New Courtyard game — Spilled Wish-Wine!** The enchanted wine is dripping all over the King's
   cloak. Each drop slowly **blooms** — **tap it before it finishes** and it whisks away, but miss it
