@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v164"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v165"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -219,6 +219,7 @@ function stopEventTimers() {
   if (typeof STACK !== "undefined" && STACK && STACK.tickTimer) clearInterval(STACK.tickTimer);
   if (typeof WINE !== "undefined" && WINE && WINE.tickTimer) clearInterval(WINE.tickTimer);
   if (typeof wineMusicStop === "function") wineMusicStop();
+  if (typeof BOUTIQUE !== "undefined" && BOUTIQUE && BOUTIQUE.tickTimer) clearInterval(BOUTIQUE.tickTimer);
   if (typeof CARPET !== "undefined" && CARPET && CARPET.tickTimer) clearInterval(CARPET.tickTimer);
   if (typeof carpetMusicStop === "function") carpetMusicStop();
   if (typeof RUMPEL !== "undefined") RUMPEL = null;
@@ -227,6 +228,7 @@ function stopEventTimers() {
   if (typeof FEAST !== "undefined") FEAST = null;
   if (typeof STACK !== "undefined") STACK = null;
   if (typeof WINE !== "undefined") WINE = null;
+  if (typeof BOUTIQUE !== "undefined") BOUTIQUE = null;
   if (typeof CARPET !== "undefined") CARPET = null;
   if (typeof DANCE !== "undefined") DANCE = null;
   if (typeof CAKE !== "undefined") CAKE = null;
@@ -493,6 +495,7 @@ function renderAdmin() {
         <button class="btn" id="ad-stack" style="margin-bottom:8px">🪙 Sky-High Savings (practice)</button>
         <button class="btn" id="ad-stack-finale" style="margin-bottom:8px">🔑 Beanstalk Finale (Realm Key)</button>
         <button class="btn" id="ad-wine" style="margin-bottom:8px">🍷 Spilled Wish-Wine (practice)</button>
+        <button class="btn" id="ad-boutique" style="margin-bottom:8px">🐭 Mouse Boutique (practice)</button>
         <button class="btn" id="ad-carpet" style="margin-bottom:8px">🧞 Magic Carpet Dash (practice)</button>
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen</button>
@@ -535,6 +538,7 @@ function renderAdmin() {
   on("#ad-stack", "click", renderStackIntro);
   on("#ad-stack-finale", "click", renderStackFinale);
   on("#ad-wine", "click", renderWineIntro);
+  on("#ad-boutique", "click", renderBoutiqueIntro);
   on("#ad-carpet", "click", renderCarpetIntro);
   on("#ad-courtyard", "click", () => { GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true; GAME.unlockedRealms.courtyard = true; save(); travelRealm("courtyard"); });
   on("#ad-queen", "click", () => {
@@ -1179,7 +1183,7 @@ let fairyRung = 1;
 //   "duel"/"fairy"/"cake" → that specific house event, if you want an exact seat
 const REALM_EVENT_PLAN = {
   willow:    ["house", "house", "queen", "house"],                              // 4 story + 🐺 finale = 5
-  courtyard: ["ball", "house", "queen", "ball", "wine", "ball", "house"],         // 3 balls (K/P/C) + Queen + Spilled Wine + 2 house + 🍗 finale = 8
+  courtyard: ["ball", "house", "queen", "ball", "wine", "ball", "boutique"],      // 3 balls (K/P/C) + Queen + Spilled Wine + house + Mouse Boutique + 🍗 finale = 8
 };
 let lastHouseEvent = null;
 function houseEvent() {
@@ -1196,6 +1200,7 @@ function resolveEventToken(token, plan, idx) {
   }
   if (token === "queen") return GAME.gold >= QUEEN_PACKAGES[0].gold ? renderQueenIntro : houseEvent();
   if (token === "wine") return renderWineIntro;
+  if (token === "boutique") return renderBoutiqueIntro;
   if (token === "duel") return renderDuelIntro;
   if (token === "fairy") return renderFairyIntro;
   if (token === "cake") return renderCakeIntro;
@@ -3340,6 +3345,254 @@ function carpetFinishInfinite(secs, caught) {
     <button class="btn" id="carpet-next">Continue  →</button>
   `);
   on("#carpet-next", "click", startRound);
+  show("event");
+}
+
+/* ======================================================================= */
+/* MOUSE BOUTIQUE — "Stitch & Scurry" (King's Courtyard). A light time-       */
+/* management game: the mice run a dress shop and orders pour in. Each gown   */
+/* has a recipe printed on its ticket — a path through the work tables        */
+/* (✂️ Cut → 🪡 Sew → 💎 Bead → 🎀 Trim). Tap a gown when it's READY (glowing) */
+/* and a mouse scurries it to its next table. A table holds ONE gown at a     */
+/* time, so keep the line moving or it clogs. Every order has a patience      */
+/* meter — deliver enough gowns before too many customers storm off. Single-  */
+/* tap-to-advance keeps it approachable (no aiming); the skill is throughput   */
+/* and clearing bottlenecks. Verified winnable by a greedy auto-player.       */
+/* ======================================================================= */
+let BOUTIQUE = null;
+const BQ_TICK = 90;                                 // ms per tick
+const BQ_ICON = { cut: "✂️", sew: "🪡", bead: "💎", trim: "🎀" };
+const BQ_NAME = { cut: "Cut", sew: "Sew", bead: "Bead", trim: "Trim" };
+const BQ_PROC = { cut: 1900, sew: 2300, bead: 2100, trim: 1900 };   // base processing ms per table (× mode.procScale)
+const BOUTIQUE_MODES = {
+  easy:   { label: "Easy",   stations: ["cut", "sew", "trim"],          procScale: 1.15, patience: 22000, spawnEvery: 4200, maxConcurrent: 2, goal: 6,  maxLost: 5, beadChance: 0,   reworkChance: 0 },
+  medium: { label: "Medium", stations: ["cut", "sew", "bead", "trim"],  procScale: 1.0,  patience: 18000, spawnEvery: 3600, maxConcurrent: 3, goal: 8,  maxLost: 4, beadChance: 0.5, reworkChance: 0 },
+  hard:   { label: "Hard",   stations: ["cut", "sew", "bead", "trim"],  procScale: 0.85, patience: 20000, spawnEvery: 3900, maxConcurrent: 3, goal: 8,  maxLost: 4, beadChance: 0.55, reworkChance: 0.25 },
+};
+function boutiqueMode() { return BOUTIQUE_MODES[BOUTIQUE.mode]; }
+function boutiqueRecipe(m) {
+  const r = ["cut", "sew"];
+  if (m.reworkChance && Math.random() < m.reworkChance) r.push("cut");             // "needs more fabric" — back to cutting
+  if (m.stations.indexOf("bead") >= 0 && Math.random() < m.beadChance) r.push("bead");
+  r.push("trim");
+  return r;
+}
+function renderBoutiqueIntro() {
+  SFX.unlock(); SFX.fanfare();
+  html("event", `
+    ${hud("Mouse Boutique")}
+    <div class="grow center" style="gap:12px">
+      <div class="ph big">🐭</div>
+      <div style="font-weight:800;font-size:20px">Mouse Boutique</div>
+      <div class="speech">“Gowns for the ball, and every stepsister wants hers first! Run the mice through the shop and get each dress out the door in time.”</div>
+      <div class="card" style="width:100%;max-width:330px">
+        <div class="stat-line"><span>Tap a glowing dress 👗</span><span>sends it to its next table</span></div>
+        <div class="stat-line"><span>Follow each ticket</span><span>✂️ → 🪡 → 🎀</span></div>
+        <div class="stat-line"><span>One dress per table</span><span style="color:var(--bad)">keep the line moving!</span></div>
+        <div class="stat-line"><span>Deliver enough</span><span style="color:var(--good)">before they storm off ⏳</span></div>
+      </div>
+      <div class="muted" style="max-width:300px">Each dress's ticket shows the tables it needs. Tap it when it glows to scurry it along — a table only holds one dress, so don't let the line clog!</div>
+    </div>
+    <div class="wolf-modes">
+      <button class="btn good" id="bq-easy">🟢 Easy</button>
+      <button class="btn" id="bq-medium">🟡 Medium</button>
+      <button class="btn" id="bq-hard">🔴 Hard</button>
+    </div>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="bq-skip">Not now</button>
+  `);
+  on("#bq-easy", "click", () => boutiqueStart("easy"));
+  on("#bq-medium", "click", () => boutiqueStart("medium"));
+  on("#bq-hard", "click", () => boutiqueStart("hard"));
+  on("#bq-skip", "click", startRound);
+  show("event");
+}
+function boutiqueStart(mode) {
+  mode = BOUTIQUE_MODES[mode] ? mode : "easy";
+  const m = BOUTIQUE_MODES[mode];
+  BOUTIQUE = { mode, orders: [], stations: {}, uid: 0, elapsed: 0, nextSpawnAt: 0, delivered: 0, lost: 0, over: false, tickTimer: null };
+  m.stations.forEach(s => BOUTIQUE.stations[s] = null);
+  boutiquePlay();
+  boutiqueSpawn(); BOUTIQUE.nextSpawnAt = m.spawnEvery;   // first gown right away
+  BOUTIQUE.tickTimer = setInterval(boutiqueTick, BQ_TICK);
+}
+function boutiquePlay() {
+  const m = boutiqueMode();
+  const stationsHtml = m.stations.map(st => `
+    <div class="bq-station" id="bq-st-${st}">
+      <div class="bq-st-ic">${BQ_ICON[st]}</div>
+      <div class="bq-slot" id="bq-slot-${st}"></div>
+      <div class="bq-proc"><i id="bq-proc-${st}"></i></div>
+      <div class="bq-st-name">${BQ_NAME[st]}</div>
+    </div>`).join("");
+  html("event", `
+    ${hud("Mouse Boutique")}
+    <div class="bq-top">
+      <div class="stack-chip">👗 <b id="bq-delivered">0 / ${m.goal}</b></div>
+      <div class="bq-title">🐭 Stitch &amp; Scurry</div>
+      <div class="stack-chip" id="bq-lost-chip">😖 <b id="bq-lost">0 / ${m.maxLost}</b></div>
+    </div>
+    <div class="bq-orders" id="bq-orders"></div>
+    <div class="bq-floor">
+      <div class="bq-supply">
+        <div class="bq-supply-lbl">🧵 Fabric</div>
+        <div class="bq-slot bq-supply-slot" id="bq-slot-supply"></div>
+      </div>
+      <div class="bq-stations bq-n${m.stations.length}">${stationsHtml}</div>
+    </div>
+    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Tap a glowing dress to send it along • deliver ${m.goal} before ${m.maxLost} storm off</p>
+  `);
+  show("event");
+  const floor = $(".bq-floor");
+  if (floor) floor.addEventListener("pointerdown", e => { const t = e.target.closest("[data-order]"); if (t) { e.preventDefault(); boutiqueAdvance(+t.dataset.order); } });
+  boutiqueRenderOrders();
+  boutiquePaint();
+}
+function boutiqueRenderOrders() {
+  const box = $("#bq-orders"); if (!box) return;
+  box.innerHTML = BOUTIQUE.orders.map(o => {
+    const doneAll = o.step >= o.recipe.length;
+    const steps = o.recipe.map((st, i) => `<span class="bq-step${i < o.step ? " done" : i === o.step ? " now" : ""}">${BQ_ICON[st]}</span>`).join("");
+    return `<div class="bq-ticket${doneAll ? " ready" : ""}" id="bq-ticket-${o.id}">
+      <span class="bq-tdress" style="filter:hue-rotate(${o.hue}deg)">👗</span>
+      <div class="bq-steps">${steps}${doneAll ? '<span class="bq-step now">📦</span>' : ""}</div>
+      <div class="bq-pat"><i id="bq-pat-${o.id}"></i></div>
+    </div>`;
+  }).join("");
+}
+function boutiqueAddToken(o) {
+  const slot = $("#bq-slot-supply"); if (!slot) return;
+  const el = document.createElement("button");
+  el.type = "button"; el.className = "bq-token ready"; el.id = "bq-token-" + o.id; el.dataset.order = o.id;
+  el.innerHTML = `<span class="bq-dress" style="filter:hue-rotate(${o.hue}deg)">👗</span>`;
+  slot.appendChild(el); o.tokenEl = el;
+}
+function boutiqueMoveToken(o, station) {
+  const slot = $("#bq-slot-" + station); if (slot && o.tokenEl) slot.appendChild(o.tokenEl);
+}
+function boutiqueSpawn() {
+  const m = boutiqueMode();
+  const o = { id: ++BOUTIQUE.uid, recipe: boutiqueRecipe(m), step: 0, hue: R.int(0, 330), born: BOUTIQUE.elapsed, patience: m.patience, station: "supply", procStart: null, procDur: 0, ready: true, tokenEl: null };
+  BOUTIQUE.orders.push(o);
+  boutiqueAddToken(o);
+  boutiqueRenderOrders();
+  SFX.reveal();
+}
+function boutiqueAdvance(id) {
+  if (!BOUTIQUE || BOUTIQUE.over) return;
+  const m = boutiqueMode(), o = BOUTIQUE.orders.find(x => x.id === id);
+  if (!o || !o.ready) return;
+  if (o.step >= o.recipe.length) return boutiqueDeliver(o);   // fully finished → deliver it
+  const target = o.recipe[o.step], occ = BOUTIQUE.stations[target];
+  if (occ != null && occ !== o.id) {   // table busy — can't move there yet
+    SFX.chop();
+    const st = $("#bq-st-" + target); if (st) { st.classList.remove("busy"); void st.offsetWidth; st.classList.add("busy"); }
+    if (o.tokenEl) { o.tokenEl.classList.remove("nudge"); void o.tokenEl.offsetWidth; o.tokenEl.classList.add("nudge"); }
+    return;
+  }
+  if (o.station !== "supply" && o.station !== target && BOUTIQUE.stations[o.station] === o.id) BOUTIQUE.stations[o.station] = null;
+  const moved = o.station !== target;
+  BOUTIQUE.stations[target] = o.id;
+  o.station = target; o.ready = false; o.procStart = BOUTIQUE.elapsed; o.procDur = BQ_PROC[target] * m.procScale;
+  if (moved) boutiqueMoveToken(o, target);
+  if (o.tokenEl) o.tokenEl.className = "bq-token proc";
+  SFX.scoop();
+}
+function boutiqueDeliver(o) {
+  if (BOUTIQUE.stations[o.station] === o.id) BOUTIQUE.stations[o.station] = null;
+  BOUTIQUE.delivered++;
+  SFX.coin(); SFX.charm();
+  if (o.tokenEl) { const el = o.tokenEl; el.className = "bq-token delivered"; el.addEventListener("animationend", () => el.remove()); }
+  const i = BOUTIQUE.orders.indexOf(o); if (i >= 0) BOUTIQUE.orders.splice(i, 1);
+  boutiqueRenderOrders(); boutiquePaint();
+  if (BOUTIQUE.delivered >= boutiqueMode().goal) return boutiqueFinish(true);
+}
+function boutiqueLose(o) {
+  if (BOUTIQUE.stations[o.station] === o.id) BOUTIQUE.stations[o.station] = null;
+  BOUTIQUE.lost++;
+  SFX.sneeze();
+  if (o.tokenEl) { const el = o.tokenEl; el.className = "bq-token lost"; el.addEventListener("animationend", () => el.remove()); }
+  const i = BOUTIQUE.orders.indexOf(o); if (i >= 0) BOUTIQUE.orders.splice(i, 1);
+  boutiqueRenderOrders(); boutiquePaint();
+  if (BOUTIQUE.lost >= boutiqueMode().maxLost) return boutiqueFinish(false);
+}
+function boutiquePaint() {
+  if (!BOUTIQUE) return;
+  const m = boutiqueMode();
+  const d = $("#bq-delivered"); if (d) d.textContent = BOUTIQUE.delivered + " / " + m.goal;
+  const l = $("#bq-lost"); if (l) l.textContent = BOUTIQUE.lost + " / " + m.maxLost;
+  const lc = $("#bq-lost-chip"); if (lc) lc.className = "stack-chip" + (BOUTIQUE.lost >= m.maxLost - 1 ? " danger" : "");
+  BOUTIQUE.orders.forEach(o => {
+    const bar = $("#bq-pat-" + o.id);
+    if (bar) { const left = Math.max(0, 1 - (BOUTIQUE.elapsed - o.born) / o.patience); bar.style.width = (left * 100) + "%"; bar.className = left < 0.25 ? "danger" : left < 0.5 ? "amber" : ""; }
+  });
+  m.stations.forEach(st => {
+    const bar = $("#bq-proc-" + st); if (!bar) return;
+    const id = BOUTIQUE.stations[st], o = id != null ? BOUTIQUE.orders.find(x => x.id === id) : null;
+    bar.style.width = (o && !o.ready && o.procStart != null) ? Math.min(100, (BOUTIQUE.elapsed - o.procStart) / o.procDur * 100) + "%" : "0%";
+  });
+}
+function boutiqueTick() {
+  if (!BOUTIQUE || BOUTIQUE.over) return;
+  const m = boutiqueMode();
+  BOUTIQUE.elapsed += BQ_TICK;
+  // finished processing → ready to move on
+  BOUTIQUE.orders.forEach(o => {
+    if (!o.ready && o.procStart != null && BOUTIQUE.elapsed - o.procStart >= o.procDur) {
+      o.ready = true; o.procStart = null; o.step++;
+      const doneAll = o.step >= o.recipe.length;
+      if (o.tokenEl) o.tokenEl.className = "bq-token " + (doneAll ? "done" : "ready");
+      SFX.pop();
+      boutiqueRenderOrders();
+    }
+  });
+  // patience ran out → customer storms off
+  for (let i = BOUTIQUE.orders.length - 1; i >= 0; i--) {
+    const o = BOUTIQUE.orders[i];
+    if (BOUTIQUE.elapsed - o.born >= o.patience) { boutiqueLose(o); if (!BOUTIQUE) return; }
+  }
+  // new order (respect the concurrency cap)
+  if (BOUTIQUE.elapsed >= BOUTIQUE.nextSpawnAt && BOUTIQUE.orders.length < m.maxConcurrent) {
+    boutiqueSpawn(); BOUTIQUE.nextSpawnAt = BOUTIQUE.elapsed + m.spawnEvery;
+  }
+  boutiquePaint();
+}
+function boutiqueFinish(win) {
+  if (!BOUTIQUE) return;
+  const m = boutiqueMode(), delivered = BOUTIQUE.delivered, lost = BOUTIQUE.lost;
+  BOUTIQUE.over = true;
+  if (BOUTIQUE.tickTimer) { clearInterval(BOUTIQUE.tickTimer); BOUTIQUE.tickTimer = null; }
+  BOUTIQUE = null;
+  let outcome;
+  if (win) {
+    const stars = lost === 0 ? 3 : lost <= 1 ? 2 : 1;
+    const gold = 45 + delivered * 6, dust = 5 + stars * 2;
+    grantReward({ gold, stardust: dust }); save();
+    SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
+    outcome = { emoji: "👗", title: "The boutique's a hit!", cls: "win",
+      lines: [`<div class="stat-line"><span>Gowns delivered</span><span>${delivered} · ${"⭐".repeat(stars)}</span></div>`,
+              `<div class="stat-line"><span>Orders lost</span><span>${lost}</span></div>`,
+              `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`],
+      note: "Every gown out the door in time — the mice are the toast of the Courtyard!" };
+  } else {
+    save();
+    outcome = { emoji: "🧵", title: "The orders piled up!", cls: "lose",
+      lines: [`<div class="stat-line"><span>Gowns delivered</span><span>${delivered}</span></div>`,
+              `<div class="stat-line"><span>Orders lost</span><span style="color:var(--bad)">${lost}</span></div>`,
+              `<div class="stat-line"><span>Reward</span><span class="muted">none — try again!</span></div>`],
+      note: "Too many customers stormed off. Move a dress the instant it glows, and keep every table busy so the line never clogs!" };
+  }
+  html("event", `
+    ${hud("King's Courtyard")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${outcome.emoji}</div>
+      <div class="result-title ${outcome.cls}">${outcome.title}</div>
+      <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
+      <p class="muted" style="max-width:300px">${outcome.note}</p>
+    </div>
+    <button class="btn" id="bq-next">Continue  →</button>
+  `);
+  on("#bq-next", "click", startRound);
   show("event");
 }
 
@@ -5509,7 +5762,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

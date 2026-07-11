@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐭 **New Courtyard game — Mouse Boutique!** A cozy little "keep the shop running" game: dress orders
+  pour in, and you run the mice through the workshop. **Tap a glowing dress** to send it to its next
+  table — ✂️ Cut → 🪡 Sew → 💎 Bead → 🎀 Trim — following the recipe on each ticket. Every table holds
+  **one dress at a time**, so keep the line moving and don't let it clog! Deliver enough gowns before
+  too many impatient customers storm off. Easy / Medium / Hard (Hard even sends dresses back for more
+  fabric). It's now one of the King's Courtyard events, and you can practice it from the gear menu.
+
 - ♾️ **Magic Carpet — Infinite mode + music!** A new endless high-score run: fly as **long as you
   can** (Hard's pace, 3 hearts, planets still end the flight) and it keeps ramping up — your best
   survival times are saved as a **top-3 board**. The carpet now has its own **background music** too.
