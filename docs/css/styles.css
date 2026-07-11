@@ -1649,6 +1649,27 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .bq-order.lost { animation: bqLost .5s forwards; pointer-events: none; }
 @keyframes bqLost { to { transform: translateY(22px) scale(.6) rotate(18deg); opacity: 0; } }
 
+/* ===== STORY — Little Red's tale: full-screen illustrated dialogue cards ===== */
+.story-card { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  gap: 14px; padding: 18px 18px calc(18px + var(--safe-b)); overflow: hidden;
+  background: linear-gradient(180deg, rgba(30,16,40,.28) 0%, rgba(24,12,32,.55) 62%, rgba(18,8,26,.86) 100%), url('../art/willow_bg.jpg') center center / cover no-repeat; }
+.story-stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; width: 100%; animation: storyIn .5s ease-out; }
+.story-figure { display: flex; align-items: center; justify-content: center; }
+img.story-face { width: auto; height: 42vh; max-height: 360px; max-width: 88%; object-fit: contain; filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)); }
+span.story-face { display: inline-flex; align-items: center; justify-content: center; height: 42vh; max-height: 360px; font-size: 34vh; line-height: 1; } /* emoji fallback stays big */
+.story-figure.scene { font-size: 76px; line-height: 1.15; text-align: center; filter: drop-shadow(0 6px 12px rgba(0,0,0,.5)); }
+.story-scene { animation: storyFloat 3.4s ease-in-out infinite; }
+.story-name { font-weight: 900; font-size: 20px; color: #fff6e6; letter-spacing: .3px;
+  padding: 5px 18px; border-radius: 999px; background: linear-gradient(180deg, #b8517e, #8a3a63);
+  box-shadow: 0 3px 10px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.25); }
+.story-speech { width: 100%; max-width: 400px; font-size: 16.5px; line-height: 1.5; color: #3a2a1e; text-align: center;
+  background: linear-gradient(180deg, #fff8ea, #f6ead2); border-radius: 18px; padding: 16px 18px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.7); animation: storyIn .4s ease-out; }
+.story-speech b { color: #a23c6e; } .story-speech i { color: #6a4a2c; }
+.btn.story-next { width: 100%; max-width: 400px; }
+@keyframes storyIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes storyFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
 /* ===== FULL-BLEED MINIGAMES — art fills the screen, header becomes a corner menu button ===== */
 #app.mg-full { padding: var(--safe-t) 0 var(--safe-b); }
 #app.mg-full > .screen { padding: 0; position: relative; }

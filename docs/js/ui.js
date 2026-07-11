@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v172"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v174"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -31,6 +31,8 @@ function normalizeGame(g) {
   if (typeof g.rumpelSeen !== "boolean") g.rumpelSeen = false; // offered a junk visitor while bin full?
   if (typeof g.goblinTurn !== "boolean") g.goblinTurn = false; // alternate Rumpelstiltskin <-> the goblin
   if (typeof g.danceLessons !== "number") g.danceLessons = 0; // ball dance lessons taught (paces toward Cinderella)
+  if (typeof g.seenIntro !== "boolean") g.seenIntro = false; // played the Willow arrival + Little Red tutorial yet?
+  if (typeof g.storyStep !== "number") g.storyStep = 0;      // Little Red's story-thread progress (0 = not started)
   if (typeof g.realm !== "string" || !D.REALM_BY_ID[g.realm]) g.realm = "willow"; // current location
   if (!g.unlockedRealms || typeof g.unlockedRealms !== "object") g.unlockedRealms = {};
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
@@ -313,6 +315,81 @@ function renderStart() {
   applyHomeBackground();
   show("start");
   maybeShowHuntCelebrate();
+}
+
+/* ======================================================================= */
+/* STORY — Little Red Riding Hood's thread through Willow Wish Village.       */
+/* A light, scripted layer that PUNCTUATES the normal shop (it never takes   */
+/* it over). It opens the game: you arrive in the village, Little Red        */
+/* arrives too (off to visit Grandma), and she becomes your very first       */
+/* customer — a gentle tutorial wish. More beats of her tale arrive later.   */
+/* renderStoryBeats() plays a sequence of illustrated dialogue cards, then   */
+/* runs a callback. Cozy-with-a-wink in tone.                                 */
+/* ======================================================================= */
+function redCust() { return D.CUSTOMERS.find(c => c.id === "little_red") || { id: "little_red", name: "Little Red", emoji: "👧", wishType: "SafeSpell", line: "" }; }
+function redFace(mood) { return custMoodArt(redCust(), mood || "normal", "👧", "story-face"); }
+
+let STORY_BEATS = null, STORY_I = 0, STORY_DONE = null;
+function renderStoryBeats(beats, done) { STORY_BEATS = beats; STORY_I = 0; STORY_DONE = done || null; storyPaint(); }
+function storyPaint() {
+  if (!STORY_BEATS) return;
+  const b = STORY_BEATS[STORY_I], last = STORY_I >= STORY_BEATS.length - 1;
+  const figure = b.scene
+    ? `<div class="story-scene">${b.scene}</div>`
+    : `<div class="story-portrait">${redFace(b.mood)}</div>`;
+  html("event", `
+    <div class="story-card mg-fullbleed" id="story-card">
+      <div class="story-stage">
+        <div class="story-figure${b.scene ? " scene" : ""}">${figure}</div>
+        ${b.name ? `<div class="story-name">${b.name}</div>` : ""}
+      </div>
+      <div class="story-speech">${b.text}</div>
+      <button class="btn story-next" id="story-next">${b.cta || (last ? "Let’s begin  ▸" : "Continue  ▸")}</button>
+    </div>
+  `);
+  on("#story-next", "click", () => {
+    SFX.unlock(); SFX.pop(1);
+    if (STORY_I >= STORY_BEATS.length - 1) { const d = STORY_DONE; STORY_BEATS = null; STORY_DONE = null; if (d) d(); }
+    else { STORY_I++; storyPaint(); }
+  });
+  show("event");
+  // art loads asynchronously; if this portrait isn't cached yet, repaint once it arrives
+  if (!b.scene) {
+    const key = "customer_" + redCust().id + (b.mood && b.mood !== "normal" ? "_" + b.mood : "");
+    if (!ART.isReady(key)) ART.ensure(key, () => { if (STORY_BEATS && STORY_BEATS[STORY_I] === b) storyPaint(); });
+  }
+}
+// The very-first-launch arrival: the village, then Little Red, then her tutorial wish.
+function playArrivalIntro() {
+  SFX.unlock();
+  ["", "_happy"].forEach(m => ART.ensure("customer_" + redCust().id + m, () => {})); // pre-warm Red's portraits
+  renderStoryBeats([
+    { scene: "🌿🏮🍄", text: "A little path winds into <b>Willow Wish Village</b> — lanterns swaying in the trees, wishing‑smoke curling from the chimneys. You push open the door of the cosy bubble shop. It’s all yours now." },
+    { name: "Little Red", mood: "happy", text: "Oh — hello! I just arrived too. I’m off through the woods to visit my grandma. But everyone says the new wish‑shop is the heart of the village… is that <i>you</i>?" },
+    { name: "Little Red", mood: "normal", text: "Then let me be your very first customer! It’s a long walk to Grandma’s cottage… could you mix me a little charm of <b>safe passage</b>?" },
+    { name: "Little Red", mood: "happy", cta: "Make her wish  ▸", text: "Here’s how it works: <b>scoop</b> up some sparkle, <b>pop</b> the bubbles for magic, then <b>mix</b> it in the cauldron to match my wish. Give it a go — I’ll be right here!" },
+  ], () => { GAME.seenIntro = true; GAME.storyStep = Math.max(GAME.storyStep, 1); save(); startRedWish(); });
+}
+// Little Red as a forced, gentle first customer (no boss/rush/vip) — a tutorial wish.
+function startRedWish() {
+  SFX.unlock();
+  stopRoundTimers();
+  document.body.classList.remove("villain");
+  applyRealmTheme();
+  const realm = currentRealm();
+  ROUND = newRound({ servedTotal: 0, betterScoop: !!(GAME.unlocked && GAME.unlocked.scoop), charmFinder: false, customers: [redCust()], ingredientSet: realm.ingredients, magicPool: realm.magics, reqBonus: 0 });
+  injectInfused(ROUND); injectKeys(ROUND); setupHunt(ROUND);
+  ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
+  ROUND.story = "red-arrival";
+  ROUND.customer = Object.assign({}, ROUND.customer, { line: "A little charm of safe passage for the woods, if you please — my very first wish in your shop!" });
+  renderCustomer();
+}
+// After the tutorial wish resolves, Little Red says her goodbye and hints she’ll return.
+function playArrivalOutro(win) {
+  const beats = win
+    ? [{ name: "Little Red", mood: "happy", cta: "Off she goes  ▸", text: "Oh, it’s <i>lovely</i> — I feel safer already. Thank you! I’d best hurry to Grandma’s before dark… but something tells me I’ll be back. Do take good care of the shop!" }]
+    : [{ name: "Little Red", mood: "normal", cta: "Off she goes  ▸", text: "Hmm — not quite what I pictured! But you’re only just learning, and the village is lucky to have you. I’ll pop back soon and we can try again. 🧺" }];
+  renderStoryBeats(beats, () => { GAME.storyStep = Math.max(GAME.storyStep, 2); save(); renderStart(); });
 }
 
 /* ======================================================================= */
@@ -4406,6 +4483,8 @@ function renderCustomer() {
     ? `<div class="cust-wish-extra rush">⏱️ Serve fast for a +${BALANCE.RUSH_BONUS} bonus — don't dawdle!</div>`
     : ROUND.vip
     ? `<div class="cust-wish-extra vip">⭐ A VIP guest — impress them for a fine reward!</div>`
+    : ROUND.story === "red-arrival"
+    ? `<div class="cust-wish-extra vip">🌟 Little Red’s very first wish — take your time and enjoy it!</div>`
     : "";
   const streakChip = GAME.streak >= 2 ? `<div class="cust-streak">🔥 ${GAME.streak}</div>` : "";
   const bcell = (icon, label, value, cls) => `<div class="bcell">${icon ? `<img class="bic" src="art/ui/${icon}.png" alt="">` : ""}<div class="bval ${cls || ""}">${value}</div><div class="blbl">${label}</div></div>`;
@@ -5511,7 +5590,7 @@ function renderResult(res) {
       <button class="btn" id="next-btn">Next Customer  →</button>
     </div>
   `);
-  on("#next-btn", "click", startRound);
+  on("#next-btn", "click", (ROUND && ROUND.story === "red-arrival") ? () => playArrivalOutro(res.success) : startRound);
   on("#recap-btn", "click", showRoundRecap);
   show("result");
   if (win) wireRewardBubbles(res);
@@ -5794,10 +5873,10 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, playArrivalOutro, renderStoryBeats, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
-window.addEventListener("load", () => { applyCustomBackground(); refreshQuests(); renderStart(); });
+window.addEventListener("load", () => { applyCustomBackground(); refreshQuests(); if (!GAME.seenIntro) playArrivalIntro(); else renderStart(); });
 
 })();

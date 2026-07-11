@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 📖 **A story begins — meet Little Red!** The game now opens with your arrival in **Willow Wish
+  Village**. Little Red Riding Hood turns up too, on her way to visit Grandma, and becomes your very
+  first customer — a gentle guided wish that teaches the shop. It's the start of her tale, which will
+  unfold a little more as you play. (New players see it once; it never replays.)
 - 🐭 **New Courtyard game — Mouse Boutique!** A cozy "keep the shop running" game, now set in a
   gorgeous hand-painted tailor's shop. Dress orders arrive in the shelf at the bottom, and you run the
   mice through **five stations** — 🧵 Fabric → ✂️ Cut → 🪡 Sew → 💎 Bead → 🎀 Trim. **Tap a glowing
