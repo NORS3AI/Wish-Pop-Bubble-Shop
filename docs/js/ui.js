@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v148"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v149"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -216,12 +216,14 @@ function stopEventTimers() {
   if (typeof FEAST !== "undefined" && FEAST && FEAST.tickTimer) clearInterval(FEAST.tickTimer);
   if (typeof STACK !== "undefined" && STACK && STACK.tickTimer) clearInterval(STACK.tickTimer);
   if (typeof WINE !== "undefined" && WINE && WINE.tickTimer) clearInterval(WINE.tickTimer);
+  if (typeof CARPET !== "undefined" && CARPET && CARPET.tickTimer) clearInterval(CARPET.tickTimer);
   if (typeof RUMPEL !== "undefined") RUMPEL = null;
   if (typeof GOBLIN !== "undefined") GOBLIN = null;
   if (typeof WOLF !== "undefined") WOLF = null;
   if (typeof FEAST !== "undefined") FEAST = null;
   if (typeof STACK !== "undefined") STACK = null;
   if (typeof WINE !== "undefined") WINE = null;
+  if (typeof CARPET !== "undefined") CARPET = null;
   if (typeof DANCE !== "undefined") DANCE = null;
   if (typeof CAKE !== "undefined") CAKE = null;
   if (typeof DUEL !== "undefined") DUEL = null;
@@ -487,6 +489,7 @@ function renderAdmin() {
         <button class="btn" id="ad-stack" style="margin-bottom:8px">🪙 Sky-High Savings (practice)</button>
         <button class="btn" id="ad-stack-finale" style="margin-bottom:8px">🔑 Beanstalk Finale (Realm Key)</button>
         <button class="btn" id="ad-wine" style="margin-bottom:8px">🍷 Spilled Wish-Wine (practice)</button>
+        <button class="btn" id="ad-carpet" style="margin-bottom:8px">🧞 Magic Carpet Dash (practice)</button>
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen</button>
         <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Ball: Knight</button>
@@ -528,6 +531,7 @@ function renderAdmin() {
   on("#ad-stack", "click", renderStackIntro);
   on("#ad-stack-finale", "click", renderStackFinale);
   on("#ad-wine", "click", renderWineIntro);
+  on("#ad-carpet", "click", renderCarpetIntro);
   on("#ad-courtyard", "click", () => { GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true; GAME.unlockedRealms.courtyard = true; save(); travelRealm("courtyard"); });
   on("#ad-queen", "click", () => {
     if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); } // need gold to pay her ransom
@@ -2958,6 +2962,228 @@ function wineFinish(win, why) {
 }
 
 /* ======================================================================= */
+/* MAGIC CARPET DASH — a Forgotten Oasis flight. You ride a magic carpet     */
+/* that stays dead-CENTRE; the whole starry sky slides around you as you     */
+/* steer left/right, so it feels like you can drift across the heavens       */
+/* forever, everything shifting past. Shooting stars 🌠 (and rarer jewels    */
+/* and lamps) drift down — line one up with the carpet to catch it. Plain    */
+/* twinkling stars ⭐, storm clouds ☁️, rocks 🪨 and sand-whirls 🌪️ are      */
+/* hazards: let one reach the carpet and you lose a heart. Catch a magic     */
+/* lamp 🪔 and the genie shields you for a moment. Survive the flight to     */
+/* reach the Oasis. Verified winnable by a greedy auto-pilot that banks      */
+/* away from hazards and toward stars.                                       */
+/* ======================================================================= */
+let CARPET = null;
+const CARPET_TICK = 40;        // ms per tick (~25fps)
+const CARPET_X = 50;           // carpet's fixed screen x (%) — it never leaves centre
+const CARPET_Y = 74;           // carpet's screen y (%)
+const CARPET_HALF = 13;        // half-width (%) of the catch/hit column around the carpet
+const CARPET_SHIELD_MS = 2600; // how long a lamp's genie-shield lasts
+const CARPET_MODES = {
+  easy:   { label: "Easy",   dur: 30000, fall: 24, spawnEvery: 980, hazardRate: 0.42, hearts: 3, steer: 44 },
+  medium: { label: "Medium", dur: 36000, fall: 30, spawnEvery: 800, hazardRate: 0.52, hearts: 3, steer: 50 },
+  hard:   { label: "Hard",   dur: 42000, fall: 37, spawnEvery: 640, hazardRate: 0.60, hearts: 3, steer: 56 },
+};
+const CARPET_HAZARDS = [
+  { kind: "twinkle", emoji: "⭐" }, { kind: "cloud", emoji: "☁️" },
+  { kind: "rock", emoji: "🪨" }, { kind: "whirl", emoji: "🌪️" },
+];
+function carpetMode() { return CARPET_MODES[CARPET.mode]; }
+function carpetClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+// difficulty creeps up: things fall a touch faster the deeper into the flight you are
+function carpetRamp() { return CARPET ? (1 + 0.42 * Math.min(1, CARPET.elapsed / carpetMode().dur)) : 1; }
+function renderCarpetIntro() {
+  SFX.unlock(); SFX.fanfare();
+  html("event", `
+    ${hud("Magic Carpet Dash")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">🧞</div>
+      <div style="font-weight:800;font-size:20px">Magic Carpet Dash!</div>
+      <div class="speech">“Hop aboard! We fly to the Forgotten Oasis. Catch the shooting stars — but mind the storm clouds and rocks!”</div>
+      <div class="card" style="width:100%;max-width:320px">
+        <div class="stat-line"><span>Hold left / right</span><span>steer the sky ◀ ▶</span></div>
+        <div class="stat-line"><span>Line up 🌠</span><span>catch shooting stars</span></div>
+        <div class="stat-line"><span>Dodge ☁️ 🪨 ⭐ 🌪️</span><span style="color:var(--bad)">each hit costs a ❤️</span></div>
+        <div class="stat-line"><span>Grab a 🪔</span><span>genie shield!</span></div>
+      </div>
+      <div class="muted" style="max-width:300px">Your carpet stays in the middle — the whole sky slides as you steer. Reach the Oasis with a heart to spare!</div>
+    </div>
+    <div class="wolf-modes">
+      <button class="btn good" id="carpet-easy">🟢 Easy</button>
+      <button class="btn" id="carpet-medium">🟡 Medium</button>
+      <button class="btn" id="carpet-hard">🔴 Hard</button>
+    </div>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="carpet-skip">Not now</button>
+  `);
+  on("#carpet-easy", "click", () => carpetStart("easy"));
+  on("#carpet-medium", "click", () => carpetStart("medium"));
+  on("#carpet-hard", "click", () => carpetStart("hard"));
+  on("#carpet-skip", "click", startRound);
+  show("event");
+}
+function carpetStart(mode) {
+  mode = CARPET_MODES[mode] ? mode : "medium";
+  const m = CARPET_MODES[mode];
+  CARPET = { mode, items: [], uid: 0, elapsed: 0, nextSpawnAt: 500, caught: 0, stars: 0,
+    hearts: m.hearts, maxHearts: m.hearts, steer: 0, vx: 0, bg: 0, shieldUntil: -1, invUntil: -1, over: false, tickTimer: null };
+  carpetPlay();
+  CARPET.tickTimer = setInterval(carpetTick, CARPET_TICK);
+}
+function carpetPlay() {
+  const m = carpetMode();
+  html("event", `
+    ${hud("Magic Carpet Dash!")}
+    <div class="feast-hud">
+      <div class="feast-king-wrap"><span id="carpet-hearts">${"❤️".repeat(m.hearts)}</span></div>
+      <div class="feast-meters">
+        <div class="feast-mrow"><span class="feast-mlbl">🌠 Stars <b id="carpet-stars">0</b></span><div class="feast-track"><i class="feast-dfill" id="carpet-starbar"></i></div></div>
+        <div class="feast-mrow"><span class="feast-mlbl">🏝️ To the Oasis</span><div class="feast-track"><i class="feast-tfill ok" id="carpet-progbar"></i></div></div>
+      </div>
+    </div>
+    <div class="carpet-sky" id="carpet-sky">
+      <div class="carpet-dunes" id="carpet-dunes"></div>
+      <div class="carpet-arrow left">◀</div><div class="carpet-arrow right">▶</div>
+      <div class="carpet-rug" id="carpet-rug"><span class="carpet-shield" id="carpet-shield"></span><span class="carpet-rider">🧞</span><span class="carpet-tassel l"></span><span class="carpet-tassel r"></span></div>
+    </div>
+    <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Hold the left or right side of the sky to steer</p>
+  `);
+  show("event");
+  carpetBindControls();
+  carpetPaint();
+}
+function carpetBindControls() {
+  const sky = $("#carpet-sky"); if (!sky) return;
+  const setFrom = cx => { if (!CARPET) return; const r = sky.getBoundingClientRect(); CARPET.steer = cx < r.left + r.width / 2 ? -1 : 1; };
+  sky.addEventListener("pointerdown", e => { e.preventDefault(); setFrom(e.clientX); });
+  sky.addEventListener("pointermove", e => { if (CARPET && CARPET.steer !== 0) setFrom(e.clientX); });
+  const clear = () => { if (CARPET) CARPET.steer = 0; };
+  sky.addEventListener("pointerup", clear);
+  sky.addEventListener("pointercancel", clear);
+  sky.addEventListener("pointerleave", clear);
+}
+function carpetSteer(dir) { if (CARPET) CARPET.steer = dir < 0 ? -1 : dir > 0 ? 1 : 0; }  // bot / keyboard hook: -1 left, +1 right, 0 straight
+function carpetSpawn() {
+  const sky = $("#carpet-sky"); if (!sky) return;
+  const m = carpetMode();
+  let kind, emoji, good;
+  if (Math.random() < m.hazardRate) { const h = R.pick(CARPET_HAZARDS); kind = h.kind; emoji = h.emoji; good = false; }
+  else { const r = Math.random(); if (r < 0.10) { kind = "lamp"; emoji = "🪔"; } else if (r < 0.30) { kind = "gem"; emoji = "💎"; } else { kind = "star"; emoji = "🌠"; } good = true; }
+  carpetAddItem(6 + Math.random() * 88, kind, emoji, good);
+}
+function carpetAddItem(x, kind, emoji, good) {
+  const sky = $("#carpet-sky"); if (!sky) return;
+  const it = { uid: ++CARPET.uid, x, y: -8, kind, good, el: null, done: false, cullAt: 0 };
+  CARPET.items.push(it);
+  const el = document.createElement("div");
+  el.className = "carpet-item" + (good ? " good" : " bad");
+  el.textContent = emoji; el.style.left = x + "%"; el.style.top = it.y + "%";
+  sky.appendChild(el); it.el = el;
+}
+function carpetCatch(it) {
+  it.done = true; it.cullAt = CARPET.elapsed + 600;
+  CARPET.caught++;
+  CARPET.stars += it.kind === "gem" ? 2 : it.kind === "lamp" ? 3 : 1;
+  if (it.kind === "lamp") { CARPET.shieldUntil = CARPET.elapsed + CARPET_SHIELD_MS; SFX.charm(); carpetPoof(); }
+  else SFX.coin();
+  if (it.el) it.el.classList.add("caught");
+  carpetPaint();
+}
+function carpetHit(it) {
+  it.done = true; it.cullAt = CARPET.elapsed + 600;
+  const shielded = CARPET.elapsed < CARPET.shieldUntil;
+  if (shielded || CARPET.elapsed < CARPET.invUntil) {   // genie shield, or brief mercy-invuln after a hit
+    if (shielded) SFX.charm();
+    if (it.el) it.el.classList.add("caught");
+    return;
+  }
+  CARPET.hearts--;
+  CARPET.invUntil = CARPET.elapsed + 950;
+  SFX.clang();
+  const sky = $("#carpet-sky"); if (sky) { sky.classList.remove("shake"); void sky.offsetWidth; sky.classList.add("shake"); }
+  const rug = $("#carpet-rug"); if (rug) { rug.classList.remove("hurt"); void rug.offsetWidth; rug.classList.add("hurt"); }
+  if (it.el) it.el.classList.add("smash");
+  carpetPaint();
+}
+function carpetPoof() {
+  const sky = $("#carpet-sky"); if (!sky) return;
+  const p = document.createElement("div"); p.className = "carpet-poof"; p.textContent = "✨";
+  p.style.left = CARPET_X + "%"; p.style.top = CARPET_Y + "%";
+  p.addEventListener("animationend", () => p.remove()); sky.appendChild(p);
+}
+function carpetPaint() {
+  if (!CARPET) return;
+  const m = carpetMode();
+  const h = $("#carpet-hearts"); if (h) h.textContent = "❤️".repeat(Math.max(0, CARPET.hearts)) + "🖤".repeat(Math.max(0, m.hearts - CARPET.hearts));
+  const s = $("#carpet-stars"); if (s) s.textContent = CARPET.caught;
+  const sb = $("#carpet-starbar"); if (sb) sb.style.width = Math.min(100, CARPET.caught * 7) + "%";
+  const pb = $("#carpet-progbar"); if (pb) pb.style.width = Math.min(100, CARPET.elapsed / m.dur * 100) + "%";
+  const shield = $("#carpet-shield"); if (shield) shield.classList.toggle("on", CARPET.elapsed < CARPET.shieldUntil);
+}
+function carpetTick() {
+  if (!CARPET || CARPET.over) return;
+  const m = carpetMode(), dt = CARPET_TICK / 1000;
+  CARPET.elapsed += CARPET_TICK;
+  // ease lateral velocity toward the steer target → smooth banking (carpet stays centred, world slides)
+  CARPET.vx += (CARPET.steer * m.steer - CARPET.vx) * 0.20;
+  const shift = CARPET.vx * dt;               // fly right (vx>0) → the whole sky slides left
+  CARPET.bg -= CARPET.vx * dt * 0.6;
+  const dunes = $("#carpet-dunes"); if (dunes) dunes.style.backgroundPositionX = CARPET.bg + "%";
+  const rug = $("#carpet-rug"); if (rug) rug.style.transform = `translateX(-50%) rotate(${carpetClamp(CARPET.vx * 0.32, -20, 20)}deg)`;
+  const fall = m.fall * carpetRamp();
+  if (CARPET.elapsed >= CARPET.nextSpawnAt) { carpetSpawn(); CARPET.nextSpawnAt = CARPET.elapsed + m.spawnEvery / carpetRamp(); }
+  for (let i = CARPET.items.length - 1; i >= 0; i--) {
+    const it = CARPET.items[i];
+    if (it.done) { if (CARPET.elapsed >= it.cullAt) { if (it.el) it.el.remove(); CARPET.items.splice(i, 1); } continue; }
+    it.y += fall * dt; it.x -= shift;
+    if (it.y >= CARPET_Y && it.y <= CARPET_Y + 9 && Math.abs(it.x - CARPET_X) <= CARPET_HALF) { it.good ? carpetCatch(it) : carpetHit(it); continue; }
+    if (it.y > 118 || it.x < -32 || it.x > 132) { if (it.el) it.el.remove(); CARPET.items.splice(i, 1); continue; }
+    if (it.el) { it.el.style.top = it.y + "%"; it.el.style.left = it.x + "%"; if (!it.good) it.el.classList.toggle("near", it.y > CARPET_Y - 18 && it.y < CARPET_Y + 9); }
+  }
+  carpetPaint();
+  if (CARPET.hearts <= 0) return carpetFinish(false);
+  if (CARPET.elapsed >= m.dur) return carpetFinish(true);
+}
+function carpetFinish(win) {
+  if (!CARPET) return;
+  const m = carpetMode(), caught = CARPET.caught, hearts = CARPET.hearts;
+  CARPET.over = true;
+  if (CARPET.tickTimer) { clearInterval(CARPET.tickTimer); CARPET.tickTimer = null; }
+  CARPET = null;
+  let outcome;
+  if (win) {
+    const stars = Math.max(1, Math.min(3, hearts));
+    const gold = 45 + caught * 3 + hearts * 10, dust = 5 + hearts * 2;
+    grantReward({ gold, stardust: dust }); save();
+    SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
+    outcome = { emoji: "🏝️", title: "You reached the Oasis!", cls: "win",
+      lines: [`<div class="stat-line"><span>Shooting stars caught</span><span>${caught} · ${"⭐".repeat(stars)}</span></div>`,
+              `<div class="stat-line"><span>Hearts left</span><span>${"❤️".repeat(hearts) || "—"}</span></div>`,
+              `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`],
+      note: "You soared clear across the desert sky and touched down at the shimmering Oasis. Magical flying!" };
+  } else {
+    save(); SFX.sneeze();
+    outcome = { emoji: "💫", title: "The carpet went down!", cls: "lose",
+      lines: [`<div class="stat-line"><span>Shooting stars caught</span><span>${caught}</span></div>`,
+              `<div class="stat-line"><span>Hearts left</span><span style="color:var(--bad)">none</span></div>`,
+              `<div class="stat-line"><span>Reward</span><span class="muted">none — try again!</span></div>`],
+      note: "Too many bumps and the carpet tumbled from the sky. Steer early — the whole sky slides, so ease around the clouds and rocks in good time." };
+  }
+  html("event", `
+    ${hud("Forgotten Oasis")}
+    <div class="grow center" style="gap:14px">
+      <div class="ph big">${outcome.emoji}</div>
+      <div class="result-title ${outcome.cls}">${outcome.title}</div>
+      <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
+      <p class="muted" style="max-width:300px">${outcome.note}</p>
+    </div>
+    <button class="btn" id="carpet-next">Continue  →</button>
+  `);
+  on("#carpet-next", "click", startRound);
+  show("event");
+}
+
+/* ======================================================================= */
 /* THE ROYAL BALL — a King's Courtyard dance lesson. You are the dance       */
 /* TEACHER; a clumsy courtier is your student. Two acts, back to back:       */
 /*   Act 1 (Rehearsal): the choreography is called out in a bubble on the    */
@@ -5123,7 +5349,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatch, carpetHit, carpetFinish, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

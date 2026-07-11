@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧞 **New flying game — Magic Carpet Dash!** Hop on a magic carpet and soar to the Forgotten Oasis.
+  Your carpet stays right in the **middle** — the whole starry sky **slides around you** as you hold
+  the **left or right** side to steer, so you can drift across the heavens forever. **Line up the
+  shooting stars 🌠** to catch them (and rare jewels and lamps), but **dodge the storm clouds, rocks,
+  twinkling stars and sand-whirls** — each one you bump costs a heart ❤️. Grab a **magic lamp 🪔** and
+  the genie shields you for a moment! Reach the Oasis with a heart to spare. Easy / Medium / Hard.
+
 - 🍷 **New Courtyard game — Spilled Wish-Wine!** The enchanted wine is dripping all over the King's
   cloak. Each drop slowly **blooms** — **tap it before it finishes** and it whisks away, but miss it
   and it sets into a **permanent stain**. Let too many stains set and the King storms off! Always dab

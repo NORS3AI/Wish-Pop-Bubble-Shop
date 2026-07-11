@@ -557,6 +557,18 @@ reason for it ("of course things are unstable — it's a dust storm").
 
 ## Done / shipped
 
+### ✅ Magic Carpet Dash (Forgotten Oasis flying game) — shipped v149
+A vertical dodge-and-catch flyer for Desert Oasis. **The carpet stays dead-centre; the
+whole sky slides** as you hold left/right (owner's key idea — "we can go left or right in
+the sky forever, everything around us changes"). Catch **shooting stars 🌠** (+ rare 💎 / 🪔);
+dodge **⭐ storm clouds ☁️ rocks 🪨 sand-whirls 🌪️** (no birds, per owner — swapped for
+fairytale hazards). 3 hearts; a **magic lamp 🪔 grants a genie shield** for ~2.6s. Survive the
+timer → **reach the Oasis**. Easy/Med/Hard. World-slides via a single lateral `vx` applied to
+every item's x (fly right → items slide left) + parallax dunes. Verified 15/15 winnable by a
+greedy auto-pilot (banks away from hazards, toward stars). Practice via Admin; slots into the
+Oasis event playlist when that realm is stood up. **Fairytale hooks still on the shelf:** lamp
+= "a wish" (shield is v1; could clear-screen/magnet later); a genie 🧞 hand-off at the Oasis.
+
 ### ✅ Clean-streak Stardust reward (no-allergy bonus) — shipped v117
 Reward Stardust ✨ for consecutive **allergy-risk** wishes granted *clean* (meter
 stayed green). As built:
