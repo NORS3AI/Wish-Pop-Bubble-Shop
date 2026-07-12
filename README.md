@@ -19,6 +19,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐑 **Bo Peep & the sheep hunt.** Early on, Bo Peep drops by (in story mode, like Little Red),
+  frazzled about her missing flock. You brew her a homing charm and take her quest — and *that's*
+  what starts the sheep turning up as you play. Bring the strays home to complete her collection.
 - 🧑‍🤝‍🧑 **Customers have stories now.** Recurring customers' wishes evolve chapter by chapter —
   each time you grant one, they come back a little later with the *next* part of their tale. The
   **Gingerbread Man** (frosting → ants → a cracked coat) and **Tiny Mouse** (opening her sewing shop
