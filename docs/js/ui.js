@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v202"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v203"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -510,15 +510,15 @@ function maybeBoPeep() {
 }
 // The Two Pigs' finale — once BOTH have exhausted their blow-down arcs, they come in
 // together to move out. A joint story-mode scene + a suitcase wish; then they leave Willow.
-function pigsMovingCust() { return { id: "pigs_moving", name: "The Two Pigs", emoji: "🐷", wishType: "PowerPop", location: "Willow-Wish Village", line: "" }; }
+function pigsMovingCust() { return { id: "pigs_moving", name: "Thatch & Woody", emoji: "🐷", wishType: "PowerPop", location: "Willow-Wish Village", line: "" }; }
 function playPigsMoving() {
   SFX.unlock();
   ["pigs_duo", "pigs_duo_shrug", "pigs_duo_cross", "pigs_duo_cheer"].forEach(f => ART.ensure(f, () => {}));
   GAME.pigsMoved = true; save();   // they're leaving Willow regardless — remove them from the roster
   renderStoryBeats([
-    { name: "The Two Pigs", fig: "pigs_duo_shrug", text: "<b>Pig One:</b> Both houses. <i>Gone.</i> I <i>told</i> you the sky had it out for us. New plan: we give up.<br><b>Pig Two:</b> We do NOT give up. We <i>relocate</i>. Big difference." },
-    { name: "The Two Pigs", gallery: ["pigs_family_portrait"], text: "<b>Pig Two:</b> We’re moving in with our brother — the smug one who built with <b>brick</b>.<br><b>Pig One:</b> Fancy realm. Very exclusive. We’re basically getting an upgrade." },
-    { name: "The Two Pigs", fig: "pigs_duo_cheer", cta: "Pack it up  ▸", text: "<b>Pig One:</b> We just need… a small suitcase.<br><b>Pig Two:</b> That fits a whole house. Don’t ask questions. Can you?" },
+    { name: "Thatch & Woody", fig: "pigs_duo_shrug", text: "<b>Thatch:</b> Both houses. <i>Gone.</i> I <i>told</i> you the sky had it out for us. New plan: we give up.<br><b>Woody:</b> We do NOT give up. We <i>relocate</i>. Big difference." },
+    { name: "The Piggleby Brothers", gallery: ["pigs_family_portrait"], text: "<b>Woody:</b> We’re moving in with our brother — <b>Mason</b>. The smug one who built with brick.<br><b>Thatch:</b> Mason <i>Piggleby</i>. Fancy realm, very exclusive. We’re basically getting an upgrade." },
+    { name: "Thatch & Woody", fig: "pigs_duo_cheer", cta: "Pack it up  ▸", text: "<b>Thatch:</b> We just need… a small suitcase.<br><b>Woody:</b> That fits a whole house. Don’t ask questions. Can you?" },
   ], () => startStoryWish(pigsMovingCust(), "pigs-moving", "One small suitcase, please — the kind that fits an entire house. We’re moving up in the world. Bricks, baby."));
 }
 function maybePigsMoving() {
@@ -647,8 +647,8 @@ function storyWishOutro(tag, win) {
   }
   if (tag === "pigs-moving") {
     const beats = win
-      ? [{ name: "The Two Pigs", fig: "pigs_duo_cheer", cta: "Off they go  ▸", text: "<b>Pig Two:</b> See? Upgrade.<br><b>Pig One:</b> …I’m gonna miss this village.<br><b>Pig Two:</b> We’ll visit! Once the brick sets. Thanks, friend!" }]
-      : [{ name: "The Two Pigs", fig: "pigs_duo_cross", cta: "Off they go  ▸", text: "<b>Pig One:</b> It’s a <i>little</i> lumpy.<br><b>Pig Two:</b> It’s CHARACTER. Close enough — we’ve a cart to catch. See you around, friend!" }];
+      ? [{ name: "Thatch & Woody", fig: "pigs_duo_cheer", cta: "Off they go  ▸", text: "<b>Woody:</b> See? Upgrade.<br><b>Thatch:</b> …I’m gonna miss this village.<br><b>Woody:</b> We’ll visit! Once the brick sets. Thanks, friend!" }]
+      : [{ name: "Thatch & Woody", fig: "pigs_duo_cross", cta: "Off they go  ▸", text: "<b>Thatch:</b> It’s a <i>little</i> lumpy.<br><b>Woody:</b> It’s CHARACTER. Close enough — we’ve a cart to catch. See you around, friend!" }];
     renderStoryBeats(beats, () => { save(); renderStart(); });
     return;
   }
@@ -4912,13 +4912,13 @@ const CUSTOMER_ARCS = {
     { line: "Forty-one bows by Friday. Forty. ONE. My paws cramp just saying it. Charm me some ribbon that ties its own bows? Neat ones! Not those sad droopy loops." },
     { line: "Third drawer of buttons gone this week — THIRD! I lock up every night, I swear it. Down to safety pins and stubbornness. I wish for a button jar that never runs empty. Humor a mouse." },
   ],
-  // Pig One — catastrophizes everything. Walk-in face changes per chapter: first ruined
+  // Thatch (straw house) — catastrophizes everything. Walk-in face changes per chapter: first ruined
   // house (grumpy arms-crossed, the base art) → second ruined house (the cheery "here we go again" pose).
   pig_straw: [
     { line: "So my house is GONE. Big windbag huffed and — poof — straw everywhere. I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof." },
     { art: "customer_pig_straw_ruined2", line: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof! I wish for… okay, iron hay. Is iron hay a thing? Make it a thing." },
   ],
-  // Pig Two — aggressively in denial. Walk-in face changes per chapter: first ruined
+  // Woody (stick house) — aggressively in denial. Walk-in face changes per chapter: first ruined
   // house (sad, the base art) → second ruined house (muddy, covered in straw).
   pig_stick: [
     { line: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair. It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother." },

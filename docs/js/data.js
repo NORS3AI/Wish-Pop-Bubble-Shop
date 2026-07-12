@@ -253,9 +253,9 @@ const CUSTOMERS = [
     line: "I wish for charm. People keep running when they see me." },
   { id: "gnome",       name: "Garden Gnome",    emoji: "🧝", location: "Drury Lane", wishType: "GardenGrowth",
     line: "I wish for growth. My mushrooms are being stubborn." },
-  { id: "pig_straw",   name: "Straw-House Pig", emoji: "🐷", location: "Willow-Wish Village", wishType: "PowerPop",
+  { id: "pig_straw",   name: "Thatch", emoji: "🐷", location: "Willow-Wish Village", wishType: "PowerPop",
     line: "I wish for a house that stays UP for once." },
-  { id: "pig_stick",   name: "Stick-House Pig", emoji: "🐖", location: "Willow-Wish Village", wishType: "StrongTreat",
+  { id: "pig_stick",   name: "Woody", emoji: "🐖", location: "Willow-Wish Village", wishType: "StrongTreat",
     line: "I wish for a house that’s a LITTLE more permanent." },
 ];
 

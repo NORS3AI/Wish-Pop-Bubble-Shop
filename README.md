@@ -32,12 +32,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   Red and she recognizes one as **Grandma's** — suddenly the mouse, the Gingerbread Man, Grandma, and
   a certain wolf are all part of the same story. Return the Gingerbread Man's button (his gumdrop one
   has gone magical and sparkly — that one's yours to keep). It all lives in your Satchel.
-- 🐷🐷 **The Two Pigs get their faces!** The straw-house worrier and the stick-house denier now
-  have real hand-drawn art with a full range of expressions — hopeful, thrilled, grumpy-and-covered-
-  in-straw, even sneezy — so you see exactly how each wish landed. Their **Moving Day** scene now
-  plays out fully: the pair arrive in tears, shrug it off, and — in a framed storybook portrait —
-  reveal their fancy **brick-building brother** (top hat, monocle, the works) before packing a whole
-  house into one small suitcase.
+- 🐷🐷 **Meet Thatch & Woody.** The straw-house worrier (**Thatch**) and the stick-house denier
+  (**Woody**) now have real hand-drawn art with a full range of expressions — hopeful, thrilled,
+  grumpy-and-covered-in-straw, even sneezy — so you see exactly how each wish landed. Their
+  **Moving Day** scene now plays out fully: the pair arrive in tears, shrug it off, and — in a framed
+  storybook portrait — reveal their fancy brick-building brother **Mason Piggleby** (top hat, monocle,
+  the works) before packing a whole house into one small suitcase.
 - 🐷🐷 **The Three Little Pigs begin.** Two pigs move to Willow, wishing their huffed-and-puffed
   straw and stick houses could just *stay up*. After two rounds of bad luck they give up and ask for
   a suitcase that fits a whole house — then move out to their brick-building brother (who'll turn up
