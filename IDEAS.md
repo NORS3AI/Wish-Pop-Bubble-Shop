@@ -850,3 +850,15 @@ maybeButtonChain() once Tiny Mouse's button-jar wish is done:
 TODO (owner): Wolf costume art (rotating disguises + fake names); Wolf's OWN
 customer arc (hunger wishes: "stop being so hungry" → "didn't work, free wish"),
 appearing as a regular customer possibly before Red's warning.
+
+### Wolf ART received + integrated (v186)
+- 6 costumes cut out clean: wolf_bowler, wolf_tophat (= "Sir Reginald Notawolf",
+  used in the button chain), wolf_detective, wolf_tourist, wolf_sherlock,
+  wolf_delivery.
+- 12 normal-wear story-mode poses (his own arc, like Red's): wolf_shrug, wolf_idea,
+  wolf_sneaky, wolf_point, wolf_talk, wolf_scratch, wolf_worried, wolf_surprised,
+  wolf_grin, wolf_puzzled, wolf_pleased, wolf_offer.
+- Story mode now supports a generic `fig:"<artkey>"` figure (not just Red's poses),
+  so any character with full-body art appears in story mode.
+- TODO: build the Wolf's OWN customer arc (hunger wishes) using normal-wear poses +
+  rotate his costumes/fake names on his appearances. Grandma finale art pending.

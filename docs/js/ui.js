@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v185"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v186"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -374,7 +374,8 @@ function storyPaint() {
   if (b.vista) { cls = "vista"; }
   else if (b.gallery) { cls = "gallery-beat"; GALLERY = b.gallery; GALLERY_I = 0; top = galleryHtml(); }
   else if (b.scene) { top = `<div class="story-figure scene"><div class="story-scene">${b.scene}</div></div>`; }
-  else if (b.figEmoji) { top = `<div class="story-figure emoji"><span class="story-face">${b.figEmoji}</span></div>`; }  // any non-Red character (emoji placeholder until art)
+  else if (b.fig) { top = `<div class="story-figure">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // any character with full-body art (e.g. wolf_tophat)
+  else if (b.figEmoji) { top = `<div class="story-figure emoji"><span class="story-face">${b.figEmoji}</span></div>`; }  // a character without art yet (emoji placeholder)
   else { top = `<div class="story-figure">${redPose(b.pose)}</div>`; }
   // backdrop: crossfade from the previous beat's scene to this one's (village → shop, etc.)
   const curBg = b.bg || STORY_DEF_BG, prevBg = STORY_BG_PREV || curBg;
@@ -397,9 +398,9 @@ function storyPaint() {
   on("#story-next", "click", storyAdvance);
   show("event");
   if (b.gallery) wireGallery();
-  // art loads asynchronously; if Red's pose isn't cached yet, repaint once it arrives
+  // art loads asynchronously; if this figure's art isn't cached yet, repaint once it arrives
   else if (!b.scene && !b.vista && !b.figEmoji) {
-    const key = "red_" + (b.pose || "wave");
+    const key = b.fig || ("red_" + (b.pose || "wave"));
     if (!ART.isReady(key)) ART.ensure(key, () => { if (STORY_BEATS && STORY_BEATS[STORY_I] === b) storyPaint(); });
   }
 }
@@ -533,9 +534,10 @@ function maybePigsMoving() {
 function wolfCust() { return { id: "wolf", name: "“Sir Reginald Notawolf”", emoji: "🐺", wishType: "PrettyPotion", location: "Willow-Wish Village", line: "" }; }
 function playWolfButtons() {
   SFX.unlock();
+  ART.ensure("wolf_tophat", () => {});
   renderStoryBeats([
-    { name: "“Sir Reginald Notawolf”", figEmoji: "🐺", text: "Good day! I’m a wealthy gentleman collector — <i>Sir Reginald Notawolf</i>. <b>No</b> relation. I’m assembling the finest button collection the realm has ever seen." },
-    { name: "“Sir Reginald Notawolf”", figEmoji: "🐺", cta: "Riiight…  ▸", text: "I would <i>never</i> know a thing about buttons going missing all over town. Preposterous! Now — a small wish, if you’d be so kind. Make my collection positively <b>gleam</b>." },
+    { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat", text: "Good day! I’m a wealthy gentleman collector — <i>Sir Reginald Notawolf</i>. <b>No</b> relation. I’m assembling the finest button collection the realm has ever seen." },
+    { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat", cta: "Riiight…  ▸", text: "I would <i>never</i> know a thing about buttons going missing all over town. Preposterous! Now — a small wish, if you’d be so kind. Make my collection positively <b>gleam</b>." },
   ], () => startStoryWish(wolfCust(), "wolf-buttons", "A dab of your finest button-polish, my good friend — for my perfectly-legitimate, not-at-all-stolen collection."));
 }
 function playRedButtons() {
@@ -588,7 +590,7 @@ function storyWishOutro(tag, win) {
   if (tag === "wolf-buttons") {
     satchelAdd("button_gumdrop"); satchelAdd("button_blue"); satchelAdd("button_heart");
     GAME.buttonStep = 1; GAME.buttonChainAt = -1; save();
-    const beats = [{ name: "“Sir Reginald Notawolf”", figEmoji: "🐺", cta: "Wait…  ▸", text: win
+    const beats = [{ name: "“Sir Reginald Notawolf”", fig: "wolf_tophat", cta: "Wait…  ▸", text: win
       ? "Magnificent! Simply— oh. <i>OH.</i> I seem to have <b>dropped</b> a few things. No matter — keep them! I’ve HUNDREDS. Toodle-oo!"
       : "Hmph. Amateur polish. I’ll take my custom elsewhere — after I— oh. I’ve <b>dropped</b> some buttons. Ah well, keep ’em. Ta!" }];
     renderStoryBeats(beats, () => { toast("🔎 The “collector” dropped 3 buttons — they’re in your Satchel!"); save(); renderStart(); });
