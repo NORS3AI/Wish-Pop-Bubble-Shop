@@ -19,6 +19,8 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🏠 **Step inside the shop.** When a customer arrives with a wish, you now see the cozy inside of
+  your own bubble shop — potion shelves, the bubbling cauldron, and the open door out to the village.
 - 🐺 **The Wolf keeps 'visiting.'** He turns up as a regular customer in a new ridiculous disguise
   every time — Hank the tourist, Wally the delivery-wolf, Detective Sherwood Woolf, and finally the
   Baron von Nothungry — with a fresh fake name that fools absolutely no one. His running gag is that
