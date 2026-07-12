@@ -749,3 +749,69 @@ register is his.)
   🍬 gumdrop, 🔵 blue, ❤️ heart buttons into the Satchel.
 - Show Red (story mode): "That heart button? Grandma's — I'd know it anywhere."
   … "Blue's the mouse's. Gumdrop's the cookie's. 'Notawolf.' He's not even trying."
+
+---
+
+# ✍️ APPROVED SCRIPTS — Willow cast (owner-approved, each own voice)
+
+## 🐭 Tiny Mouse — frazzled, house-proud seamstress
+1. "Grand Opening" (counter): "Big day — I'm opening a sewing shop! Well, it'll BE
+   a shop once I catch up. Orders out the door and I've got two paws. I wish for
+   scissors that snip on their own — tidy lines only, I have a reputation to build."
+2. "Forty-One Bows" (counter): "Forty-one bows by Friday. Forty. ONE. My paws cramp
+   just saying it. Charm me some ribbon that ties its own bows? Neat ones! Not those
+   sad droopy loops."
+3. "The Vanishing Drawer" (counter, HOOK): "Third drawer of buttons gone this week —
+   THIRD! I lock up every night, I SWEAR it. Down to safety pins and stubbornness.
+   I wish for a button jar that never runs empty. Humor a mouse."
+   → ON GRANTING she says: "Oh, bless you — a jar that never empties! Tell you what:
+   if you ever find any of my buttons out there, just keep 'em. I've got a whole JAR
+   now. Consider it a thank-you." (⇒ this authorizes keeping her BLUE button, so it
+   can be given to the Gingerbread Man with no continuity snag.)
+
+## 🐷🐷 The Two Pigs — bickering comedy duo (Pig One catastrophizes; Pig Two in denial)
+Two full rounds of houses blowing down (their upgrades keep losing to the huff-and-
+puff — that's the joke), then they move.
+1. "Straw Poll" (Pig One): "So my house is GONE. Big windbag huffed and — poof —
+   straw everywhere. I wish for stronger hay. Reinforced. Windproof. Possibly
+   bulletproof."
+2. "Sticking Point" (Pig Two): "Okay so maybe sticks weren't the flex I claimed. One
+   breeze and my place folded like a picnic table. It's fine. It's FINE. I wish for
+   stronger sticks. Don't tell my brother."
+3. "Round Two" (Pig One, hay-dusted): "The reinforced hay? Gone. He huffed, he
+   puffed — you know the drill. It was WINDPROOF! I wish for… okay, iron hay. Is iron
+   hay a thing? Make it a thing."
+4. "Also Round Two" (Pig Two, twiggy): "Before you say anything — the sticks held a
+   whole DAY this time. Progress! Then… not progress. I wish for sticks that huff
+   back. Can wood be aggressive? Asking for me."
+5. "Moving Day" (BOTH together): "New plan: we give up. We're moving in with our
+   brother — the smug one who built with brick, some fancier realm entirely. We just
+   need… a small suitcase that fits a whole house. Don't ask questions. Can you?"
+   → they LEAVE Willow and reappear together in the brick house in a later realm.
+
+## 🐑 Bo Peep — story-mode character (like Red); her quest turns ON the sheep hunt
+1. (rushes in): "Have you seen a sheep? ANY sheep? I had — well, a LOT this morning.
+   Now I have a concerning amount of empty field and one very smug crook."
+2. "They keep wandering off. Or being wandered off, I can't tell anymore. Could you
+   brew me something so the little woollies stay put? A homing charm, a sense of
+   direction, anything."
+3. (we brew it): "You're a gem. One more thing — the ones already gone? I can't just
+   leave them out there. If you spot a stray while you're about… bring it home to me?
+   Please?" → YOU ACCEPT (can't not) ⇒ this switches ON sheep-collecting (the hunt).
+Breadcrumb: sheep vanishing + a certain wolf who "could eat a whole sheep."
+
+## 🐺 The Wolf — world's worst master of disguise (theatrical, smug, fools no one)
+TELL = ridiculous fake names + terrible visual disguises + an AUDIO CUE on arrival
+(a stifled "awooo—ahem" he can't quite swallow, heard before you see the costume).
+- Visit A "Sir Reginald Notawolf" (monocle + tiny hat): "Good day! Wealthy gentleman
+  collector — 'Sir Reginald Notawolf.' NO relation. Assembling the finest button
+  collection the realm's ever seen. Wouldn't know anything about missing buttons."
+  → drops 🍬 gumdrop, 🔵 blue, ❤️ heart buttons into the Satchel.
+- Visit B "Grandmothy" (bonnet): "Why hello, dearie. Sweet old grandmother, name of…
+  'Grandmothy.' Normal granny, big eyes, big teeth, all the better to— I mean. Go on."
+- Visit C "The Hungry Truth" (barely disguised): "Off the record? I wish I could stop
+  being so HUNGRY all the time. A cookie walks by and I just— ANYWAY. Fix that."
+- Visit D "Refund" (indignant): "It didn't WORK! Hungrier than ever — I could eat a
+  whole SHEEP! You owe me. Grant me a free one, on the house. I know my rights."
+
+## Background customers (flavor only, no quests): Sleepy Owl, Village Baker (+maybe 1)
