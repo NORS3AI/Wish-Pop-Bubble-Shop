@@ -824,3 +824,14 @@ TELL = ridiculous fake names + terrible visual disguises + an AUDIO CUE on arriv
   arcs told through their series of wishes (not part of the main wolf story).
 - When wrapping up the Willow storyline, revisit each character with follow-up
   wishes that CONTINUE their stories beyond the main arc.
+
+### Pig Two — REVISED lines (done, replaces the disliked "aggressive wood" version)
+Voice: aggressively in denial, downplays every disaster.
+1. "Okay, so maybe sticks weren't the upgrade I bragged about. One breeze and the
+   whole place folded like a lawn chair. It's fine! Totally fine. I wish for
+   stronger sticks — the good stuff this time. Don't tell my brother."
+2. "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best.
+   I'm not panicking, YOU'RE panicking. I wish for sticks that don't give up the
+   second somebody sighs near them."
+Moving Day (both, joint story-mode scene → suitcase wish → they leave Willow;
+reappear later in the brick realm when it exists). Wired v184.

@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐷🐷 **The Three Little Pigs begin.** Two pigs move to Willow, wishing their huffed-and-puffed
+  straw and stick houses could just *stay up*. After two rounds of bad luck they give up and ask for
+  a suitcase that fits a whole house — then move out to their brick-building brother (who'll turn up
+  in a later realm). Their wishes tell the whole saga.
 - 🐑 **Bo Peep & the sheep hunt.** Early on, Bo Peep drops by (in story mode, like Little Red),
   frazzled about her missing flock. You brew her a homing charm and take her quest — and *that's*
   what starts the sheep turning up as you play. Bring the strays home to complete her collection.

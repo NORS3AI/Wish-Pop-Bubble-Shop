@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v183"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v184"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -36,6 +36,7 @@ function normalizeGame(g) {
   if (typeof g.storyNextAt !== "number") g.storyNextAt = -1; // servedTotal at which Red's next story visit is due (-1 = unscheduled)
   if (typeof g.wolfWatch !== "boolean") g.wolfWatch = false; // Little Red asked us to watch for the grandma impostor
   if (typeof g.bopeepMet !== "boolean") g.bopeepMet = false;  // met Bo Peep + took her quest → sheep hunt is ON
+  if (typeof g.pigsMoved !== "boolean") g.pigsMoved = false;  // the two pigs have moved out of Willow (to the brick house)
   if (typeof g.realm !== "string" || !D.REALM_BY_ID[g.realm]) g.realm = "willow"; // current location
   if (!g.unlockedRealms || typeof g.unlockedRealms !== "object") g.unlockedRealms = {};
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
@@ -483,7 +484,7 @@ function startStoryWish(cust, tag, line, opts) {
 }
 function startRedWish(tag, line, opts) { startStoryWish(redCust(), tag || "red-arrival", line, opts); }
 // tags that route the result screen's Next button into a story-mode goodbye
-function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag === "bo-peep"); }
+function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag === "bo-peep" || tag === "pigs-moving"); }
 // Bo Peep — a story-mode shepherd (like Red). Meeting her turns ON the sheep hunt.
 function boPeepCust() { return { id: "bo_peep", name: "Bo Peep", emoji: "👧", wishType: "SafeSpell", location: "Willow-Wish Village", line: "" }; }
 function playBoPeep() {
@@ -501,12 +502,36 @@ function maybeBoPeep() {
   if (servedTotal < 2) return false;   // let the player settle in first
   playBoPeep(); return true;
 }
+// The Two Pigs' finale — once BOTH have exhausted their blow-down arcs, they come in
+// together to move out. A joint story-mode scene + a suitcase wish; then they leave Willow.
+function pigsMovingCust() { return { id: "pigs_moving", name: "The Two Pigs", emoji: "🐷", wishType: "PowerPop", location: "Willow-Wish Village", line: "" }; }
+function playPigsMoving() {
+  SFX.unlock();
+  GAME.pigsMoved = true; save();   // they're leaving Willow regardless — remove them from the roster
+  renderStoryBeats([
+    { name: "The Two Pigs", figEmoji: "🐷", text: "<b>Pig One:</b> Okay. New plan. We give up.<br><b>Pig Two:</b> We do NOT give up. We <i>relocate</i>. Big difference." },
+    { name: "The Two Pigs", figEmoji: "🐷", text: "<b>Pig Two:</b> We’re moving in with our brother — the smug one who built with brick.<br><b>Pig One:</b> His place is in some fancy realm. Very exclusive. We’re basically getting an upgrade." },
+    { name: "The Two Pigs", figEmoji: "🧳", cta: "Pack it up  ▸", text: "<b>Pig One:</b> We just need… a small suitcase.<br><b>Pig Two:</b> That fits a whole house. Don’t ask questions. Can you?" },
+  ], () => startStoryWish(pigsMovingCust(), "pigs-moving", "One small suitcase, please — the kind that fits an entire house. We’re moving up in the world. Bricks, baby."));
+}
+function maybePigsMoving() {
+  if (GAME.realm !== "willow" || GAME.pigsMoved) return false;
+  if (custStoryStep("pig_straw") < 2 || custStoryStep("pig_stick") < 2) return false;   // both arcs done
+  playPigsMoving(); return true;
+}
 // After a story wish resolves, the character's goodbye plays (and story progress advances).
 function storyWishOutro(tag, win) {
   if (tag === "bo-peep") {
     const beats = win
       ? [{ name: "Bo Peep", figEmoji: "🐑", cta: "Off she goes  ▸", text: "Oh, bless you! I can already feel them settling. I’ll keep counting — you keep an eye out for strays. Every last woolly counts!" }]
       : [{ name: "Bo Peep", figEmoji: "🐑", cta: "Off she goes  ▸", text: "Hm — a few still wandered off. No matter, we’ll try again. And do bring me any strays you find out there!" }];
+    renderStoryBeats(beats, () => { save(); renderStart(); });
+    return;
+  }
+  if (tag === "pigs-moving") {
+    const beats = win
+      ? [{ name: "The Two Pigs", figEmoji: "🧳", cta: "Off they go  ▸", text: "<b>Pig Two:</b> See? Upgrade.<br><b>Pig One:</b> …I’m gonna miss this village.<br><b>Pig Two:</b> We’ll visit! Once the brick sets. Thanks, friend!" }]
+      : [{ name: "The Two Pigs", figEmoji: "🧳", cta: "Off they go  ▸", text: "<b>Pig One:</b> It’s a <i>little</i> lumpy.<br><b>Pig Two:</b> It’s CHARACTER. Close enough — we’ve a cart to catch. See you around, friend!" }];
     renderStoryBeats(beats, () => { save(); renderStart(); });
     return;
   }
@@ -816,9 +841,12 @@ function renderAdmin() {
         <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px">
           ${arcRow("gingerbread", "🍪 Gingerbread")}
           ${arcRow("mouse", "🐭 Tiny Mouse")}
+          ${arcRow("pig_straw", "🐷 Straw Pig")}
+          ${arcRow("pig_stick", "🐖 Stick Pig")}
+          <button class="btn small" id="ad-pigs-move">🧳 Pigs: Moving Day</button>
           <button class="btn secondary small" id="ad-cust-reset">↺ Reset arcs</button>
         </div>
-        <p class="muted" style="font-size:11px;text-align:center;margin:0">Spawn them at their current chapter; grant the wish to advance to the next.</p>
+        <p class="muted" style="font-size:11px;text-align:center;margin:0">Spawn them at their current chapter; grant the wish to advance. (Finish both pig arcs → Moving Day fires on its own.)</p>
       </div>
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:6px">🎬 Jump to an event</div>
@@ -902,7 +930,10 @@ function renderAdmin() {
   on("#ad-red3", "click", playRedImpostor);
   on("#ad-cust-gingerbread", "click", () => adminCustomer("gingerbread"));
   on("#ad-cust-mouse", "click", () => adminCustomer("mouse"));
-  on("#ad-cust-reset", "click", () => { GAME.custStory = {}; save(); toast("Customer story arcs reset"); renderAdmin(); });
+  on("#ad-cust-pig_straw", "click", () => adminCustomer("pig_straw"));
+  on("#ad-cust-pig_stick", "click", () => adminCustomer("pig_stick"));
+  on("#ad-pigs-move", "click", () => { GAME.pigsMoved = false; playPigsMoving(); });
+  on("#ad-cust-reset", "click", () => { GAME.custStory = {}; GAME.pigsMoved = false; save(); toast("Customer story arcs reset"); renderAdmin(); });
   on("#ad-bopeep", "click", () => { GAME.bopeepMet = false; playBoPeep(); });
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
@@ -4737,6 +4768,16 @@ const CUSTOMER_ARCS = {
     { line: "Forty-one bows by Friday. Forty. ONE. My paws cramp just saying it. Charm me some ribbon that ties its own bows? Neat ones! Not those sad droopy loops." },
     { line: "Third drawer of buttons gone this week — THIRD! I lock up every night, I swear it. Down to safety pins and stubbornness. I wish for a button jar that never runs empty. Humor a mouse." },
   ],
+  // Pig One — catastrophizes everything. (Emoji placeholder until art.)
+  pig_straw: [
+    { line: "So my house is GONE. Big windbag huffed and — poof — straw everywhere. I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof." },
+    { line: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof! I wish for… okay, iron hay. Is iron hay a thing? Make it a thing." },
+  ],
+  // Pig Two — aggressively in denial (rewritten). (Emoji placeholder until art.)
+  pig_stick: [
+    { line: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair. It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother." },
+    { line: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best. I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them." },
+  ],
 };
 function custArc(id) { return CUSTOMER_ARCS[id] || null; }
 function custStoryStep(id) { return (GAME.custStory && GAME.custStory[id]) || 0; }
@@ -4756,9 +4797,13 @@ function startRound() {
   refreshQuests();
   if (maybeRedVisit()) return;   // Little Red's story visit is due (Grandma's photos / the impostor)
   if (maybeBoPeep()) return;     // Bo Peep drops by early to give her sheep quest
+  if (maybePigsMoving()) return; // the two pigs come in together to move out (once their arcs are done)
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
-  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: currentRealm().customers, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
+  // once the pigs have moved, they no longer wander into the Willow shop
+  let roster = currentRealm().customers || D.CUSTOMERS;
+  if (GAME.pigsMoved) roster = roster.filter(c => c.id !== "pig_straw" && c.id !== "pig_stick");
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: roster, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   setupHunt(ROUND);       // maybe a hidden collection item (sheep/bead) turns up this round
@@ -6189,7 +6234,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
