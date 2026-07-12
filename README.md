@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🔎 **The button mystery ties Willow together.** Tiny Mouse's buttons keep vanishing… then a
+  suspicious “collector” struts in and clumsily drops three buttons in your shop. Show them to Little
+  Red and she recognizes one as **Grandma's** — suddenly the mouse, the Gingerbread Man, Grandma, and
+  a certain wolf are all part of the same story. Return the Gingerbread Man's button (his gumdrop one
+  has gone magical and sparkly — that one's yours to keep). It all lives in your Satchel.
 - 🐷🐷 **The Three Little Pigs begin.** Two pigs move to Willow, wishing their huffed-and-puffed
   straw and stick houses could just *stay up*. After two rounds of bad luck they give up and ask for
   a suitcase that fits a whole house — then move out to their brick-building brother (who'll turn up

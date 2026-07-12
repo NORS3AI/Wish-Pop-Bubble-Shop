@@ -835,3 +835,18 @@ Voice: aggressively in denial, downplays every disaster.
    second somebody sighs near them."
 Moving Day (both, joint story-mode scene → suitcase wish → they leave Willow;
 reappear later in the brick realm when it exists). Wired v184.
+
+### BUILT v185 — the button clue-chain (core)
+Wired end-to-end as gated story events (GAME.buttonStep 0→3), triggered by
+maybeButtonChain() once Tiny Mouse's button-jar wish is done:
+1. Wolf arrives as "Sir Reginald Notawolf" (costume placeholder — NOT grandma),
+   makes a button-polish wish; on resolve he "drops" 🍬 gumdrop, 🔵 blue, ❤️ heart
+   buttons into the Satchel (buttonStep→1).
+2. Show Red (story mode): she IDs Grandma's heart button, keeps it (removed);
+   gumdrop button becomes LOCKED/sparkly keepsake; blue kept (buttonStep→2).
+3. Gingerbread hand-off (story mode): we give him the blue button (removed), the
+   locked gumdrop stays with us; narrate his sprite gaining a blue button
+   (buttonStep→3). ⇒ NEEDS ART: updated Gingerbread sprite with a blue button.
+TODO (owner): Wolf costume art (rotating disguises + fake names); Wolf's OWN
+customer arc (hunger wishes: "stop being so hungry" → "didn't work, free wish"),
+appearing as a regular customer possibly before Red's warning.

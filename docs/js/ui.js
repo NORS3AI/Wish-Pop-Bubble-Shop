@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v184"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v185"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -37,6 +37,8 @@ function normalizeGame(g) {
   if (typeof g.wolfWatch !== "boolean") g.wolfWatch = false; // Little Red asked us to watch for the grandma impostor
   if (typeof g.bopeepMet !== "boolean") g.bopeepMet = false;  // met Bo Peep + took her quest → sheep hunt is ON
   if (typeof g.pigsMoved !== "boolean") g.pigsMoved = false;  // the two pigs have moved out of Willow (to the brick house)
+  if (typeof g.buttonStep !== "number") g.buttonStep = 0;     // button clue-chain: 0=none,1=collected,2=shown Red,3=returned
+  if (typeof g.buttonChainAt !== "number") g.buttonChainAt = -1; // servedTotal when the next button-chain beat is due
   if (typeof g.realm !== "string" || !D.REALM_BY_ID[g.realm]) g.realm = "willow"; // current location
   if (!g.unlockedRealms || typeof g.unlockedRealms !== "object") g.unlockedRealms = {};
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
@@ -484,7 +486,7 @@ function startStoryWish(cust, tag, line, opts) {
 }
 function startRedWish(tag, line, opts) { startStoryWish(redCust(), tag || "red-arrival", line, opts); }
 // tags that route the result screen's Next button into a story-mode goodbye
-function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag === "bo-peep" || tag === "pigs-moving"); }
+function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag === "bo-peep" || tag === "pigs-moving" || tag === "wolf-buttons"); }
 // Bo Peep — a story-mode shepherd (like Red). Meeting her turns ON the sheep hunt.
 function boPeepCust() { return { id: "bo_peep", name: "Bo Peep", emoji: "👧", wishType: "SafeSpell", location: "Willow-Wish Village", line: "" }; }
 function playBoPeep() {
@@ -519,6 +521,54 @@ function maybePigsMoving() {
   if (custStoryStep("pig_straw") < 2 || custStoryStep("pig_stick") < 2) return false;   // both arcs done
   playPigsMoving(); return true;
 }
+
+/* ======================================================================= */
+/* THE BUTTON CLUE-CHAIN — the Willow finale that connects everyone.          */
+/* Tiny Mouse's buttons keep vanishing → the "collector" (the Wolf, in a       */
+/* costume, NEVER as Grandma) drops three buttons in your shop → you show      */
+/* Little Red, who recognizes Grandma's → you return the Gingerbread Man's,    */
+/* except his gumdrop button has gone magical and won't come loose (you keep   */
+/* it, give him a spare). GAME.buttonStep tracks the chain.                    */
+/* ======================================================================= */
+function wolfCust() { return { id: "wolf", name: "“Sir Reginald Notawolf”", emoji: "🐺", wishType: "PrettyPotion", location: "Willow-Wish Village", line: "" }; }
+function playWolfButtons() {
+  SFX.unlock();
+  renderStoryBeats([
+    { name: "“Sir Reginald Notawolf”", figEmoji: "🐺", text: "Good day! I’m a wealthy gentleman collector — <i>Sir Reginald Notawolf</i>. <b>No</b> relation. I’m assembling the finest button collection the realm has ever seen." },
+    { name: "“Sir Reginald Notawolf”", figEmoji: "🐺", cta: "Riiight…  ▸", text: "I would <i>never</i> know a thing about buttons going missing all over town. Preposterous! Now — a small wish, if you’d be so kind. Make my collection positively <b>gleam</b>." },
+  ], () => startStoryWish(wolfCust(), "wolf-buttons", "A dab of your finest button-polish, my good friend — for my perfectly-legitimate, not-at-all-stolen collection."));
+}
+function playRedButtons() {
+  SFX.unlock();
+  ["think", "annoyed", "idea"].forEach(p => ART.ensure("red_" + p, () => {}));
+  renderStoryBeats([
+    { name: "Little Red", pose: "think", text: "You said the ‘collector’ <i>dropped</i> these? Let me see them… <i>(she turns each one over)</i>" },
+    { name: "Little Red", pose: "annoyed", text: "That <b>heart button</b> — I’d know it anywhere. That’s <b>Grandma’s</b>. And this blue one’s Tiny Mouse’s, I’d bet my hood on it. And the gumdrop…" },
+    { name: "Little Red", pose: "idea", cta: "It all connects  ▸", text: "…that’s the Gingerbread Man’s. That ‘collector’ has been pinching from <i>everyone</i>. ‘Notawolf,’ honestly. I’ll take Grandma’s button back — you sort the others out. And keep your eyes <b>open</b>." },
+  ], () => { satchelRemove("button_heart"); GAME.buttonStep = 2; GAME.buttonChainAt = -1; save(); toast("❤️ Little Red kept Grandma’s button."); renderStart(); });
+}
+function playGingerbreadButton() {
+  SFX.unlock();
+  renderStoryBeats([
+    { name: "Gingerbread Man", figEmoji: "🍪", text: "Hey hey — you got a sec? I lost a button! The gumdrop one, right off my front. Looked everywhere. I even asked a pigeon! Pigeon just stared at me." },
+    { name: "Gingerbread Man", figEmoji: "🍪", text: "…Is that it?! All glowy in your bag? Aw, it went and got magical on me. Figures — right when I want it back! That’s okay. You keep it. Looks like it likes you." },
+    { name: "Gingerbread Man", figEmoji: "🍪", cta: "Good as new  ▸", text: "One of yours? For me? Aw, gosh. …It’s even better! Don’t tell the gumdrop I said that. <i>(He pops the spare button on.)</i> Good as new! …Hey — between us, someone’s been takin’ buttons all over town. I got a hunch who." },
+  ], () => { satchelRemove("button_blue"); GAME.buttonStep = 3; GAME.buttonChainAt = -1; save(); toast("🍪 You gave the Gingerbread Man a button — the sparkly gumdrop keepsake stays with you."); renderStart(); });
+}
+// Drive the chain: Mouse's button-jar wish is the gate, then the beats pace a few rounds apart.
+function maybeButtonChain() {
+  if (GAME.realm !== "willow") return false;
+  const s = GAME.buttonStep || 0;
+  if (s >= 3) return false;
+  if (s === 0 && custStoryStep("mouse") < 3) return false;   // Tiny Mouse must have wished for the never-empty button jar first
+  if (GAME.buttonChainAt < 0) { GAME.buttonChainAt = servedTotal + 2; save(); return false; }
+  if (servedTotal < GAME.buttonChainAt) return false;
+  GAME.buttonChainAt = -1; save();
+  if (s === 0) { playWolfButtons(); return true; }        // buttonStep advances to 1 when he drops them (in the outro)
+  if (s === 1) { playRedButtons(); return true; }
+  if (s === 2) { playGingerbreadButton(); return true; }
+  return false;
+}
 // After a story wish resolves, the character's goodbye plays (and story progress advances).
 function storyWishOutro(tag, win) {
   if (tag === "bo-peep") {
@@ -533,6 +583,15 @@ function storyWishOutro(tag, win) {
       ? [{ name: "The Two Pigs", figEmoji: "🧳", cta: "Off they go  ▸", text: "<b>Pig Two:</b> See? Upgrade.<br><b>Pig One:</b> …I’m gonna miss this village.<br><b>Pig Two:</b> We’ll visit! Once the brick sets. Thanks, friend!" }]
       : [{ name: "The Two Pigs", figEmoji: "🧳", cta: "Off they go  ▸", text: "<b>Pig One:</b> It’s a <i>little</i> lumpy.<br><b>Pig Two:</b> It’s CHARACTER. Close enough — we’ve a cart to catch. See you around, friend!" }];
     renderStoryBeats(beats, () => { save(); renderStart(); });
+    return;
+  }
+  if (tag === "wolf-buttons") {
+    satchelAdd("button_gumdrop"); satchelAdd("button_blue"); satchelAdd("button_heart");
+    GAME.buttonStep = 1; GAME.buttonChainAt = -1; save();
+    const beats = [{ name: "“Sir Reginald Notawolf”", figEmoji: "🐺", cta: "Wait…  ▸", text: win
+      ? "Magnificent! Simply— oh. <i>OH.</i> I seem to have <b>dropped</b> a few things. No matter — keep them! I’ve HUNDREDS. Toodle-oo!"
+      : "Hmph. Amateur polish. I’ll take my custom elsewhere — after I— oh. I’ve <b>dropped</b> some buttons. Ah well, keep ’em. Ta!" }];
+    renderStoryBeats(beats, () => { toast("🔎 The “collector” dropped 3 buttons — they’re in your Satchel!"); save(); renderStart(); });
     return;
   }
   let beats, step;
@@ -645,46 +704,40 @@ function maybeShowHuntCelebrate() {
 /* from GAME.hunts so everything you're collecting lives in one place.       */
 /* ======================================================================= */
 const SATCHEL_ITEMS = {
-  // A keepsake from Willow you carry toward Drury Lane.
-  gumdrop:  { name: "Gumdrop",             emoji: "🍬", from: "the Gingerbread Man", note: "A sweet from Willow — keep it safe for Drury Lane." },
-  // (wired later) the clue the Wolf drops in your shop, to hand to Little Red.
-  wolf_clue: { name: "Scrap of Grandma's Shawl", emoji: "🧣", from: "the “grandma” in your shop", note: "Give this to Little Red — she’ll want to see it.", giveTo: "Little Red" },
+  // The three buttons the "collector" (the Wolf) drops in your shop — clues to show Little Red.
+  button_heart:   { name: "Heart-Shaped Button", emoji: "❤️", from: "the “button collector”", note: "Show this to Little Red." },
+  button_blue:    { name: "Blue Button",         emoji: "🔵", from: "the “button collector”", note: "Show this to Little Red." },
+  button_gumdrop: { name: "Gumdrop Button",      emoji: "🍬", from: "the “button collector”", note: "Show this to Little Red." },
 };
 function satchelItem(id) { return SATCHEL_ITEMS[id] || null; }
 function satchelCount(id) { return (GAME.satchel && GAME.satchel[id]) || 0; }
 function satchelTotal() { return Object.values(GAME.satchel || {}).reduce((a, b) => a + b, 0); }
+// once Red has seen the clues, the gumdrop button turns magical — a keepsake that won't come loose.
+function satchelLocked(id) { return id === "button_gumdrop" && (GAME.buttonStep || 0) >= 2; }
 function satchelAdd(id, n) {
   if (!SATCHEL_ITEMS[id]) return false;
   GAME.satchel[id] = satchelCount(id) + (n || 1); save();
   return true;
 }
 function satchelRemove(id, n) {
+  if (satchelLocked(id)) return false;   // the magical gumdrop keepsake can't be given away
   const c = satchelCount(id); if (c <= 0) return false;
   GAME.satchel[id] = c - (n || 1);
   if (GAME.satchel[id] <= 0) delete GAME.satchel[id];
   save(); return true;
 }
-// A customer keepsake drop on a successful serve (foundation: the Gingerbread Man's gumdrop,
-// given once until you've spent it). Returns an item id if something dropped, else null.
-function maybeSatchelDrop(customer) {
-  if (!customer) return null;
-  if (customer.id === "gingerbread" && satchelCount("gumdrop") === 0) {
-    satchelAdd("gumdrop");
-    toast("🍬 The Gingerbread Man left you a gumdrop — it’s in your Satchel!");
-    return "gumdrop";
-  }
-  return null;
-}
+// hook for future customer keepsake drops on a successful serve (none active right now).
+function maybeSatchelDrop(customer) { return null; }
 function renderSatchel() {
   const items = Object.keys(GAME.satchel || {}).filter(id => satchelCount(id) > 0 && satchelItem(id));
   const itemCards = items.map(id => {
-    const it = satchelItem(id), n = satchelCount(id);
-    return `<div class="sat-item">
-      <div class="sat-ic">${it.emoji}${n > 1 ? `<span class="sat-n">${n}</span>` : ""}</div>
+    const it = satchelItem(id), n = satchelCount(id), locked = satchelLocked(id);
+    return `<div class="sat-item${locked ? " locked" : ""}">
+      <div class="sat-ic">${it.emoji}${n > 1 ? `<span class="sat-n">${n}</span>` : ""}${locked ? `<span class="sat-lock">✨</span>` : ""}</div>
       <div class="sat-body">
         <div class="sat-name">${it.name}</div>
         <div class="sat-from">from ${it.from}</div>
-        <div class="sat-note">${it.note}</div>
+        <div class="sat-note">${locked ? "It’s gone all sparkly and magical — a keepsake now. It won’t come loose." : it.note}</div>
       </div>
     </div>`;
   }).join("");
@@ -883,12 +936,13 @@ function renderAdmin() {
         </div>
       </div>
       <div class="card" style="margin-bottom:10px">
-        <div style="font-weight:800;margin-bottom:8px">🎒 Satchel</div>
+        <div style="font-weight:800;margin-bottom:8px">🔎 Button Clue-Chain <span class="muted" style="font-weight:600;font-size:12px">· step ${GAME.buttonStep || 0}/3</span></div>
         <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">
-          <button class="btn small" id="ad-satchel">Open Satchel</button>
-          <button class="btn good small" id="ad-gumdrop">+🍬 Gumdrop</button>
-          <button class="btn good small" id="ad-wolfclue">+🧣 Wolf clue</button>
-          <button class="btn secondary small" id="ad-satclear">Clear</button>
+          <button class="btn small" id="ad-btn-wolf">1️⃣ 🐺 Wolf drops buttons</button>
+          <button class="btn small" id="ad-btn-red">2️⃣ 👧 Show Red</button>
+          <button class="btn small" id="ad-btn-ginger">3️⃣ 🍪 Gingerbread hand-off</button>
+          <button class="btn small" id="ad-satchel">🎒 Open Satchel</button>
+          <button class="btn secondary small" id="ad-btn-reset">↺ Reset chain</button>
         </div>
       </div>
       <p class="muted" style="font-size:11px;text-align:center">For testing only — we can hide this panel before the game goes public.</p>
@@ -938,9 +992,10 @@ function renderAdmin() {
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
   on("#ad-satchel", "click", renderSatchel);
-  on("#ad-gumdrop", "click", () => { satchelAdd("gumdrop"); toast("🍬 Gumdrop added to Satchel"); renderAdmin(); });
-  on("#ad-wolfclue", "click", () => { satchelAdd("wolf_clue"); toast("🧣 Wolf clue added to Satchel"); renderAdmin(); });
-  on("#ad-satclear", "click", () => { GAME.satchel = {}; save(); toast("Satchel cleared"); renderAdmin(); });
+  on("#ad-btn-wolf", "click", playWolfButtons);
+  on("#ad-btn-red", "click", playRedButtons);
+  on("#ad-btn-ginger", "click", playGingerbreadButton);
+  on("#ad-btn-reset", "click", () => { GAME.buttonStep = 0; GAME.buttonChainAt = -1; GAME.satchel = {}; save(); toast("Button chain reset"); renderAdmin(); });
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
   on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
   on("#ad-treats", "click", () => { GAME.treats += 10; save(); toast("+10 treats 🐸"); renderAdmin(); });
@@ -4798,6 +4853,7 @@ function startRound() {
   if (maybeRedVisit()) return;   // Little Red's story visit is due (Grandma's photos / the impostor)
   if (maybeBoPeep()) return;     // Bo Peep drops by early to give her sheep quest
   if (maybePigsMoving()) return; // the two pigs come in together to move out (once their arcs are done)
+  if (maybeButtonChain()) return; // the button clue-chain (Wolf drop → show Red → Gingerbread)
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
   // once the pigs have moved, they no longer wander into the Willow shop
@@ -6234,7 +6290,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
