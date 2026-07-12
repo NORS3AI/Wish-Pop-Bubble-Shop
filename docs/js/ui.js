@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v210"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v211"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -377,7 +377,7 @@ function storyPaint() {
   if (b.vista) { cls = "vista"; }
   else if (b.gallery) { cls = "gallery-beat"; GALLERY = b.gallery; GALLERY_I = 0; top = galleryHtml(); }
   else if (b.scene) { top = `<div class="story-figure scene"><div class="story-scene">${b.scene}</div></div>`; }
-  else if (b.fig) { top = `<div class="story-figure">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // any character with full-body art (e.g. wolf_tophat)
+  else if (b.fig) { const wide = /duo/.test(b.fig) ? " wide" : ""; top = `<div class="story-figure${wide}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // any character with full-body art; two-character (duo) art shows smaller so it fits the width
   else if (b.figEmoji) { top = `<div class="story-figure emoji"><span class="story-face">${b.figEmoji}</span></div>`; }  // a character without art yet (emoji placeholder)
   else { top = `<div class="story-figure">${redPose(b.pose)}</div>`; }
   // backdrop: crossfade from the previous beat's scene to this one's (village → shop, etc.)
@@ -518,7 +518,7 @@ function playPigsMoving() {
   renderStoryBeats([
     { name: "Thatch & Woody", fig: "pigs_duo_shrug", text: "<b>Thatch:</b> Both houses. <i>Gone.</i> I <i>told</i> you the sky had it out for us. New plan: we give up.<br><b>Woody:</b> We do NOT give up. We <i>relocate</i>. Big difference." },
     { name: "The Piggleby Brothers", gallery: ["pigs_family_portrait"], text: "<b>Woody:</b> We’re moving in with our brother — <b>Mason</b>. The smug one who built with brick.<br><b>Thatch:</b> Mason <i>Piggleby</i>. Fancy realm, very exclusive. We’re basically getting an upgrade." },
-    { name: "Thatch & Woody", fig: "pigs_duo_cheer", cta: "Pack it up  ▸", text: "<b>Thatch:</b> We just need… a small suitcase.<br><b>Woody:</b> That fits a whole house. Don’t ask questions. Can you?" },
+    { name: "Thatch & Woody", fig: "pigs_duo", cta: "Pack it up  ▸", text: "<b>Thatch:</b> We just need… a small suitcase.<br><b>Woody:</b> That fits a whole house. Don’t ask questions. Can you?" },
   ], () => startStoryWish(pigsMovingCust(), "pigs-moving", "One small suitcase, please — the kind that fits an entire house. We’re moving up in the world. Bricks, baby."));
 }
 function maybePigsMoving() {
@@ -4913,17 +4913,18 @@ const CUSTOMER_ARCS = {
     { line: "Third drawer of buttons gone this week — THIRD! I lock up every night, I swear it. Down to safety pins and stubbornness. I wish for a button jar that never runs empty. Humor a mouse." },
   ],
   // Thatch (straw house) — catastrophizes everything. Walk-in face changes per chapter: first ruined
-  // house (grumpy arms-crossed, the base art) → second ruined house (the cheery "here we go again" pose).
+  // house (grumpy arms-crossed) → second ruined house (frustrated, covered in straw). He stays
+  // distressed while stating the wish — no cheery swap.
   pig_straw: [
     { line: "So my house is GONE. Big windbag huffed and — poof — straw everywhere. I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof.",
       parts: [
         { text: "So my house is GONE. Big windbag huffed and — poof — straw everywhere." },
-        { text: "I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof.", art: "pig_straw_present" },
+        { text: "I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof." },
       ] },
     { art: "customer_pig_straw_ruined2", line: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof! I wish for… okay, iron hay. Is iron hay a thing? Make it a thing.",
       parts: [
         { text: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof!" },
-        { text: "I wish for… okay, iron hay. Is iron hay a thing? Make it a thing.", art: "customer_pig_straw_happy" },
+        { text: "I wish for… okay, iron hay. Is iron hay a thing? Make it a thing." },
       ] },
   ],
   // Woody (stick house) — aggressively in denial. Walk-in face changes per chapter: first ruined
@@ -4932,12 +4933,12 @@ const CUSTOMER_ARCS = {
     { line: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair. It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother.",
       parts: [
         { text: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair." },
-        { text: "It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother.", art: "pig_stick_present" },
+        { text: "It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother." },
       ] },
     { art: "customer_pig_stick_ruined2", line: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best. I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them.",
       parts: [
         { text: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best." },
-        { text: "I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them.", art: "pig_stick_present" },
+        { text: "I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them." },
       ] },
   ],
 };

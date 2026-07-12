@@ -1689,6 +1689,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* keeps her horizontally centred the whole time (a clean slide up, no sideways jump) */
 @keyframes storyFigIn { from { opacity: 0; transform: translateX(-50%) translateY(30px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 img.story-face { height: 100%; width: auto; max-width: 96vw; object-fit: contain; object-position: bottom; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
+/* two-character (duo) art is wide — show it in the upper area, sized to fit the width with
+   margin, so both pigs are fully visible above the dialogue (not squeezed edge-to-edge). */
+.story-figure.wide { height: auto; bottom: auto; top: 9%; align-items: center; }
+.story-figure.wide img.story-face { height: auto; width: auto; max-height: 55vh; max-width: 82vw; object-position: center; }
 span.story-face { display: inline-flex; align-items: center; justify-content: center; height: 40vh; font-size: 32vh; line-height: 1; } /* emoji fallback */
 .story-figure.scene { height: auto; bottom: auto; top: 16%; }
 /* emoji placeholder for characters without full-body art: float it up where it's visible */
