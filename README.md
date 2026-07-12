@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐑 **Bo Peep & her ten lost sheep.** Bo Peep now has real hand-drawn art (no more emoji
+  stand-ins), and her sheep hunt has grown to **ten** wonderfully different woolly friends —
+  a sunglasses-wearing loafer, a singer, a daisy-chewer, and more. Each one you discover pops
+  up as its own picture, and your Satchel keeps a little gallery of the flock you've rounded up.
+  Bring them all home and Bo Peep gives you a great big hug.
 - 🧸 **Goldilocks & the three bears.** A new customer, Goldilocks, has moved into Willow-Wish
   Village. Tiny Mouse can't reach her, so she asks you to deliver a teddy bear — and sews three,
   unsure of the size. Hand them over one at a time: the first is always too big, the next too

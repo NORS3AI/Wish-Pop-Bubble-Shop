@@ -1209,6 +1209,20 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .hunt-find-fx { position: fixed; transform: translate(-50%,-50%); font-size: 42px; z-index: 60; pointer-events: none;
   filter: drop-shadow(0 0 8px rgba(255,240,150,.9)); animation: huntFindFloat 1s ease-out forwards; }
 @keyframes huntFindFloat { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.4); } 25% { opacity: 1; transform: translate(-50%,-50%) scale(1.25); } 100% { opacity: 0; transform: translate(-50%,-165%) scale(1); } }
+/* a found sheep shows its own picture as it pops up */
+.hunt-find-fx .hunt-find-img.art { height: 92px; width: auto; max-width: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
+/* Bo Peep hugging her sheep on the hunt-complete card */
+.hunt-cel-fig { display: flex; justify-content: center; }
+.hunt-cel-fig .hunt-cel-art.art { height: 200px; width: auto; max-width: none; filter: drop-shadow(0 8px 16px rgba(0,0,0,.45)); }
+.hunt-cel-fig .art-emoji { font-size: 72px; }
+/* the sheep collection grid in the Satchel */
+.sheep-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; margin-top: 10px; }
+.sheep-slot { aspect-ratio: 1; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); }
+.sheep-slot.got { background: rgba(255,240,190,.14); border-color: rgba(255,220,140,.4); }
+.sheep-slot .sheep-slot-img.art { width: 88%; height: 88%; max-width: none; object-fit: contain; }
+.sheep-slot .art-emoji { font-size: 26px; }
+.sheep-q { font-family: var(--ff-display); font-size: 20px; font-weight: 800; color: rgba(255,255,255,.28); }
 /* The Royal Ball — teach a clumsy courtier to dance (rhythm, then memory) */
 .dance-hero { display: flex; justify-content: center; }
 .dance-hero img { height: 190px; width: auto; filter: drop-shadow(0 8px 16px rgba(0,0,0,.4)); animation: danceIn .3s ease; }

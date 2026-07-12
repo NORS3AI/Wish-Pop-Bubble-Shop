@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v214"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v215"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -497,11 +497,12 @@ function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag ==
 function boPeepCust() { return { id: "bo_peep", name: "Bo Peep", emoji: "👧", wishType: "SafeSpell", location: "Willow-Wish Village", line: "" }; }
 function playBoPeep() {
   SFX.unlock();
+  ["bopeep_worried", "bopeep_explain", "bopeep_warm"].forEach(f => ART.ensure(f, () => {}));
   GAME.bopeepMet = true; save();   // met her + took the quest → sheep start turning up as you play
   renderStoryBeats([
-    { name: "Bo Peep", figEmoji: "🐑", text: "Have you seen a sheep? <i>Any</i> sheep? I had — well, a LOT this morning. Now I’ve a concerning amount of empty field and one very smug crook." },
-    { name: "Bo Peep", figEmoji: "🐑", text: "They keep <i>wandering off</i>. Or being wandered off — I can’t tell anymore. Could you brew me something so the little woollies stay put? A homing charm, a sense of direction… <i>anything</i>." },
-    { name: "Bo Peep", figEmoji: "🐑", cta: "Take the quest  ▸", text: "You’re a gem. One more thing — the ones already gone? I can’t just leave them out there. If you spot a stray while you’re about… bring it home to me? Please?" },
+    { name: "Bo Peep", fig: "bopeep_worried", text: "Have you seen a sheep? <i>Any</i> sheep? I had — well, a LOT this morning. Now I’ve a concerning amount of empty field and one very smug crook." },
+    { name: "Bo Peep", fig: "bopeep_explain", text: "They keep <i>wandering off</i>. Or being wandered off — I can’t tell anymore. Could you brew me something so the little woollies stay put? A homing charm, a sense of direction… <i>anything</i>." },
+    { name: "Bo Peep", fig: "bopeep_warm", cta: "Take the quest  ▸", text: "You’re a gem. One more thing — the ones already gone? I can’t just leave them out there. If you spot a stray while you’re about… bring it home to me? Please?" },
   ], () => { toast("🐑 Quest: bring Bo Peep her lost sheep!"); startStoryWish(boPeepCust(), "bo-peep", "A little homing charm, please — so my woollies keep close and quit their wandering!"); });
 }
 // Bo Peep drops by once, early, after the arrival tutorial (Willow only).
@@ -731,9 +732,10 @@ function maybeGoldilocksQuest() {
 // After a story wish resolves, the character's goodbye plays (and story progress advances).
 function storyWishOutro(tag, win) {
   if (tag === "bo-peep") {
+    ART.ensure(win ? "bopeep_delight" : "bopeep_annoyed", () => {});
     const beats = win
-      ? [{ name: "Bo Peep", figEmoji: "🐑", cta: "Off she goes  ▸", text: "Oh, bless you! I can already feel them settling. I’ll keep counting — you keep an eye out for strays. Every last woolly counts!" }]
-      : [{ name: "Bo Peep", figEmoji: "🐑", cta: "Off she goes  ▸", text: "Hm — a few still wandered off. No matter, we’ll try again. And do bring me any strays you find out there!" }];
+      ? [{ name: "Bo Peep", fig: "bopeep_delight", cta: "Off she goes  ▸", text: "Oh, bless you! I can already feel them settling. I’ll keep counting — you keep an eye out for strays. Every last woolly counts!" }]
+      : [{ name: "Bo Peep", fig: "bopeep_annoyed", cta: "Off she goes  ▸", text: "Hm — a few still wandered off. No matter, we’ll try again. And do bring me any strays you find out there!" }];
     renderStoryBeats(beats, () => { save(); renderStart(); });
     return;
   }
@@ -791,8 +793,9 @@ function storyWishOutro(tag, win) {
 /* cosmetic: it never gates progression and can't be lost.                   */
 /* ======================================================================= */
 const HUNTS = {
-  willow: { realm: "willow", char: "Bo Peep", charEmoji: "👧", item: "sheep", itemEmoji: "🐑",
-    need: 5, chance: 0.42, skin: "toad_lamb",
+  willow: { realm: "willow", char: "Bo Peep", charEmoji: "👧", charArt: "bopeep_sheephug", item: "sheep", itemEmoji: "🐑",
+    need: 10, chance: 0.42, skin: "toad_lamb",
+    items: ["sheep_01", "sheep_02", "sheep_03", "sheep_04", "sheep_05", "sheep_06", "sheep_07", "sheep_08", "sheep_09", "sheep_10"],
     done: "Every last lamb is home safe — Bo Peep hugs you tight!" },
   courtyard: { realm: "courtyard", char: "the Stepsister", charEmoji: "💃", item: "bead", itemEmoji: "📿",
     need: 8, chance: 0.34, skin: "cauldron_pearl",
@@ -802,7 +805,14 @@ function huntFor(realm) { return HUNTS[realm] || null; }
 // a hunt only starts once its character has asked us to collect for them (Willow → Bo Peep).
 function huntUnlocked(realm) { return realm === "willow" ? !!GAME.bopeepMet : true; }
 function activeHunt() { const h = huntFor(GAME.realm); return (h && huntUnlocked(GAME.realm)) ? h : null; }
-function huntState(realm) { if (!GAME.hunts[realm]) GAME.hunts[realm] = { found: 0, done: false }; return GAME.hunts[realm]; }
+function huntState(realm) {
+  if (!GAME.hunts[realm]) GAME.hunts[realm] = { found: 0, done: false, seen: [] };
+  const st = GAME.hunts[realm], h = HUNTS[realm];
+  if (!Array.isArray(st.seen)) st.seen = (h && h.items) ? h.items.slice(0, st.found || 0) : []; // migrate count-only saves
+  // a hunt finished before the sheep set grew (old 5-sheep save) counts as fully collected
+  if (st.done && h && h.items && st.seen.length < h.items.length) { st.seen = h.items.slice(); st.found = h.items.length; }
+  return st;
+}
 function huntChipHtml() {
   const h = activeHunt(); if (!h) return ""; const st = huntState(h.realm); if (st.done) return "";
   return `<div class="hunt-chip">${h.charEmoji} ${h.itemEmoji} <b>${st.found}/${h.need}</b></div>`;
@@ -811,6 +821,7 @@ function huntChipHtml() {
 function setupHunt(round) {
   round.huntPending = false; round.huntFound = false;
   const h = activeHunt(); if (!h) return; const st = huntState(h.realm); if (st.done) return;
+  if (h.items) h.items.forEach(id => ART.ensure(id, () => {}));   // warm each sheep's art so the "found!" pop shows the picture
   if (Math.random() < (h.chance || 0.35)) { round.huntPending = true; round.huntSource = R.pick(["scoop", "pop", "knife", "tip"]); }
 }
 function tryHuntFind(source, anchorEl) {
@@ -821,17 +832,27 @@ function tryHuntFind(source, anchorEl) {
 function doHuntFind(anchorEl) {
   const h = activeHunt(); if (!h) return false; const st = huntState(h.realm); if (st.done) return false;
   if (ROUND) ROUND.huntFound = true;
-  st.found = Math.min(h.need, (st.found || 0) + 1); save();
-  huntFindFx(h, st, anchorEl);
+  let foundId = null;
+  if (h.items) {
+    const pool = h.items.filter(id => st.seen.indexOf(id) < 0);   // pick a sheep we haven't found yet
+    foundId = pool.length ? R.pick(pool) : null;
+    if (foundId) st.seen.push(foundId);
+    st.found = st.seen.length;
+  } else {
+    st.found = Math.min(h.need, (st.found || 0) + 1);
+  }
+  save();
+  huntFindFx(h, st, anchorEl, foundId);
   if (st.found >= h.need) huntComplete(h);
   return true;
 }
-function huntFindFx(h, st, anchorEl) {
+function huntFindFx(h, st, anchorEl, foundId) {
   SFX.bonus();
   toast(`${h.itemEmoji} Found a ${h.item}! ${st.found}/${h.need}`);
   let cx = window.innerWidth / 2, cy = window.innerHeight * 0.4;
   if (anchorEl && anchorEl.getBoundingClientRect) { const r = anchorEl.getBoundingClientRect(); if (r.width) { cx = r.left + r.width / 2; cy = r.top + r.height / 2; } }
-  const fx = document.createElement("div"); fx.className = "hunt-find-fx"; fx.textContent = h.itemEmoji;
+  const fx = document.createElement("div"); fx.className = "hunt-find-fx" + (foundId ? " art" : "");
+  fx.innerHTML = foundId ? ART.tag(foundId, h.itemEmoji, "hunt-find-img") : h.itemEmoji;
   fx.style.left = cx + "px"; fx.style.top = cy + "px";
   fx.addEventListener("animationend", () => fx.remove()); document.body.appendChild(fx);
   const chip = document.querySelector(".hunt-chip");
@@ -851,9 +872,10 @@ function maybeShowHuntCelebrate() {
   const h = huntFor(realm); GAME.huntCelebrate = null; save();
   if (!h) return;
   const skin = D.COSMETIC_BY_ID[h.skin];
+  if (h.charArt) ART.ensure(h.charArt, () => {});
   const ov = document.createElement("div"); ov.className = "recap-overlay";
   ov.innerHTML = `<div class="recap-sheet" style="text-align:center">
-    <div class="ph big">${h.charEmoji}</div>
+    ${h.charArt ? `<div class="hunt-cel-fig">${ART.tag(h.charArt, h.charEmoji, "hunt-cel-art")}</div>` : `<div class="ph big">${h.charEmoji}</div>`}
     <div class="result-title win">${h.char} is overjoyed!</div>
     <p class="muted" style="max-width:300px;margin:0 auto">${h.done}</p>
     <div class="card" style="max-width:300px;margin:10px auto"><div class="stat-line"><span>${skin ? skin.chip : "🎁"} New skin: ${skin ? skin.name : "reward"}</span><span style="color:var(--gold)">earned!</span></div></div>
@@ -916,6 +938,15 @@ function renderSatchel() {
   const huntCards = Object.keys(HUNTS).map(realm => {
     const h = HUNTS[realm], st = huntState(realm), pct = Math.round(100 * st.found / h.need);
     const realmName = (D.REALM_BY_ID[realm] || {}).name || realm;
+    // for hunts with distinct art (Bo Peep's sheep), show a grid: found ones as their picture, the rest as empty slots.
+    let grid = "";
+    if (h.items) {
+      h.items.forEach(id => { if (st.seen.indexOf(id) >= 0) ART.ensure(id, () => {}); });
+      grid = `<div class="sheep-grid">${h.items.map(id => {
+        const got = st.seen.indexOf(id) >= 0;
+        return `<div class="sheep-slot${got ? " got" : ""}">${got ? ART.tag(id, h.itemEmoji, "sheep-slot-img") : "<span class=\"sheep-q\">?</span>"}</div>`;
+      }).join("")}</div>`;
+    }
     return `<div class="sat-item hunt">
       <div class="sat-ic">${h.itemEmoji}</div>
       <div class="sat-body">
@@ -924,7 +955,7 @@ function renderSatchel() {
         <div class="sat-bar"><i style="width:${pct}%"></i></div>
       </div>
       <div class="sat-count">${st.found}/${h.need}</div>
-    </div>`;
+    </div>${grid}`;
   }).join("");
   html("satchel", `
     ${hud("Your Satchel")}
