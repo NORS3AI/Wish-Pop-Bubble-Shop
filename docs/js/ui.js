@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v199"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v200"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -4912,10 +4912,11 @@ const CUSTOMER_ARCS = {
     { line: "Forty-one bows by Friday. Forty. ONE. My paws cramp just saying it. Charm me some ribbon that ties its own bows? Neat ones! Not those sad droopy loops." },
     { line: "Third drawer of buttons gone this week — THIRD! I lock up every night, I swear it. Down to safety pins and stubbornness. I wish for a button jar that never runs empty. Humor a mouse." },
   ],
-  // Pig One — catastrophizes everything. (Emoji placeholder until art.)
+  // Pig One — catastrophizes everything. Walk-in face changes per chapter: first ruined
+  // house (grumpy arms-crossed, the base art) → second ruined house (the cheery "here we go again" pose).
   pig_straw: [
     { line: "So my house is GONE. Big windbag huffed and — poof — straw everywhere. I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof." },
-    { line: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof! I wish for… okay, iron hay. Is iron hay a thing? Make it a thing." },
+    { art: "customer_pig_straw_ruined2", line: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof! I wish for… okay, iron hay. Is iron hay a thing? Make it a thing." },
   ],
   // Pig Two — aggressively in denial. Walk-in face changes per chapter: first ruined
   // house (sad, the base art) → second ruined house (muddy, covered in straw).
