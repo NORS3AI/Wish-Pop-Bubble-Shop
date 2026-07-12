@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v207"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v208"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -542,7 +542,7 @@ function playWolfButtons() {
   renderStoryBeats([
     { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat_buttons", text: "Good day! Sir Reginald Notawolf — gentleman, connoisseur, <b>no</b> relation to any wolf. <i>(He flips open a velvet case of gleaming buttons.)</i> Behold! The finest button collection the realm has ever seen." },
     { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat_proud", cta: "Riiight…  ▸", text: "Every last one acquired <i>honestly</i>, I assure you — I’d <b>never</b> know a thing about buttons going missing all over town. Preposterous! Now, a small wish, if you’d be so kind: make my collection positively <b>gleam</b>." },
-  ], () => startStoryWish(wolfCust(), "wolf-buttons", "A dab of your finest button-polish, my good friend — for my perfectly-legitimate, not-at-all-stolen collection."));
+  ], () => startStoryWish(Object.assign(wolfCust(), { art: "wolf_tophat_proud" }), "wolf-buttons", "A dab of your finest button-polish, my good friend — for my perfectly-legitimate, not-at-all-stolen collection."));
 }
 function playRedButtons() {
   SFX.unlock();
@@ -584,7 +584,7 @@ function maybeButtonChain() {
 /* Independent of the button chain — he can show up before Red's warning.      */
 /* ======================================================================= */
 const WOLF_VISITS = [
-  { costume: "wolf_tourist", name: "“Hank, a Tourist”",
+  { costume: "wolf_tourist", custArt: "wolf_tourist_hungry", name: "“Hank, a Tourist”",
     intro: [
       { fig: "wolf_tourist_sly", text: "Aloha! Just a normal tourist — name’s Hank. Lovely little village. Big fan. Definitely not scoping the place out." },
       { fig: "wolf_tourist_hungry", text: "Say, between us… I’m hungry <i>all</i> the time. Concerning amounts. Whip me up something to take the edge off? Asking for a friend. The friend is me.", cta: "Sure, ‘Hank’  ▸" },
@@ -592,7 +592,7 @@ const WOLF_VISITS = [
     wish: "Something to quiet a rumbling tummy, if you’d be so kind — I’ve a very full itinerary. Of snacking.",
     outroFigWin: "wolf_tourist_cheers", outroFigLose: "wolf_tourist_arms",
     outroWin: "Mwah — <i>delicious</i>. I mean… adequate. For a tourist. Ahem. I’ll just be… touristing. Elsewhere. Ta!" },
-  { costume: "wolf_delivery", name: "“Wally, W. Wolf Deliveries”",
+  { costume: "wolf_delivery", custArt: "wolf_delivery_angry", name: "“Wally, W. Wolf Deliveries”",
     intro: [
       { fig: "wolf_delivery_announce", text: "Delivery for— oh. No package. Just me: <i>Wally</i>. W. Wolf Deliveries. Completely unrelated surname, don’t read into it." },
       { fig: "wolf_delivery_angry", text: "That last charm? DIDN’T WORK. I could eat a whole <b>sheep</b> right now. A WHOLE one. You owe me a freebie — that’s just good business.", cta: "Riiight  ▸" },
@@ -600,7 +600,7 @@ const WOLF_VISITS = [
     wish: "A free re-do, on the house — extra filling this time. I’ve deliveries to… deliver. Not eat. Deliver!",
     outroFigWin: "wolf_delivery_thumbsup", outroFigLose: "wolf_delivery_sheepish",
     outroWin: "Now THAT’S service. Package received — by my stomach. Wally, signing off! <i>(scurries)</i>" },
-  { costume: "wolf_sherlock", name: "“Detective Sherwood Woolf”",
+  { costume: "wolf_sherlock", custArt: "wolf_sherlock_pie", name: "“Detective Sherwood Woolf”",
     intro: [
       { fig: "wolf_sherlock_pie", text: "Ahem — Detective Sherwood Woolf. I’m investigating a most troubling case: someone’s been eating <i>all</i> the pies in Willow. Fiendish business. <i>(He brandishes a pie. Evidence.)</i>" },
       { fig: "wolf_sherlock_ponder", text: "Suspects? None. Leads? None. Motive? Extreme deliciousness. …I’ll require sustenance for the investigation. Something hearty. For clue-related reasons.", cta: "Case closed  ▸" },
@@ -608,7 +608,7 @@ const WOLF_VISITS = [
     wish: "A detective’s ration, piping hot — purely to fuel my brilliant deductions, which are ongoing and unrelated to pie.",
     outroFigWin: "wolf_sherlock_aha", outroFigLose: "wolf_sherlock_arms",
     outroWin: "Aha! The case remains open, but I am no longer peckish. Elementary. Toodle-oo!" },
-  { costume: "wolf_bowler", name: "“Baron von Nothungry”",
+  { costume: "wolf_bowler", custArt: "wolf_bowler_plead", name: "“Baron von Nothungry”",
     intro: [
       { fig: "wolf_bowler_present", text: "Good evening. Baron von Nothungry. As the name suggests, I am <i>not</i> remotely hungry. Never think about it. Certainly not about sheep." },
       { fig: "wolf_bowler_wink", text: "A baron does not <i>hunger</i>, darling — a baron merely <i>dines</i>. <i>(His stomach growls like distant thunder. He pretends very hard not to notice.)</i>", cta: "…We both heard that  ▸" },
@@ -624,9 +624,9 @@ function playWolfVisit() {
   const i = GAME.wolfArcStep || 0; if (i >= WOLF_VISITS.length) return;
   const v = WOLF_VISITS[i];
   SFX.unlock();
-  [v.costume, v.outroFigWin, v.outroFigLose].concat(v.intro.map(b => b.fig)).forEach(f => { if (f) ART.ensure(f, () => {}); });   // pre-warm every expression this visit uses
+  [v.costume, v.custArt, v.outroFigWin, v.outroFigLose].concat(v.intro.map(b => b.fig)).forEach(f => { if (f) ART.ensure(f, () => {}); });   // pre-warm every expression this visit uses
   const beats = v.intro.map((b, idx) => ({ name: v.name, fig: b.fig || v.costume, text: b.text, cta: b.cta || (idx === v.intro.length - 1 ? "Make his wish  ▸" : undefined) }));
-  renderStoryBeats(beats, () => startStoryWish(wolfCust(v.name), "wolf-arc", v.wish));
+  renderStoryBeats(beats, () => startStoryWish(Object.assign(wolfCust(v.name), { art: v.custArt || v.costume }), "wolf-arc", v.wish));
 }
 // A wolf visit comes due every few customers (Willow, after the tutorial). Can precede Red's warning.
 function maybeWolfArc() {
