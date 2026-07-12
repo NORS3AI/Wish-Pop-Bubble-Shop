@@ -889,3 +889,10 @@ _ponder, _eye (a dramatic close-up, not yet wired). His visit now emotes:
 holds the pie "evidence" (pie) → ponders his sustenance (ponder) → triumphant
 "aha!" on a win / arms-crossed on a loss. (delivery + bowler still emoji-single-
 pose; owner may send expression sets for those too.)
+
+### Delivery (Wally) expression variants (v193)
+Added 6 delivery-costume expressions: wolf_delivery_announce, _idea, _loaded,
+_angry, _sheepish, _thumbsup. His visit now emotes: arms-wide "delivery for—!"
+(announce) → indignant "you owe me a freebie" (angry) → thumbs-up wink on a win
+(thumbsup) / sheepish slink on a loss (sheepish). Only the BOWLER (Baron von
+Nothungry) remains single-pose — owner may send an expression set for it.
