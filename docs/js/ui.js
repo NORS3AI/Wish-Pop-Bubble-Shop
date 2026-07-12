@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v197"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v198"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -110,7 +110,7 @@ function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar); }
  * (see art.js + /docs/art/README.md). Each returns an inline HTML string. */
 function ingArt(id, cls)  { const ing = D.INGREDIENT_BY_ID[id]; return ART.tag("ing_" + id, ing ? ing.emoji : "❔", cls || "ing-art"); }
 function charmArt(id, cls) { const ch = D.SPECIAL_CHARMS[id]; return ART.tag("charm_" + id, ch ? ch.emoji : "❔", cls || "charm-art"); }
-function custArt(c, cls)  { return ART.tag("customer_" + c.id, c.emoji, cls || "cust-art"); }
+function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoji, cls || "cust-art"); }
 // Per-customer size tweaks in the arch frame (1 = default). Some art fills its
 // canvas more than others, so a few get scaled down to sit comfortably.
 const CHAR_SCALE = { owl: 0.82 };
@@ -4918,10 +4918,11 @@ const CUSTOMER_ARCS = {
     { line: "So my house is GONE. Big windbag huffed and — poof — straw everywhere. I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof." },
     { line: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof! I wish for… okay, iron hay. Is iron hay a thing? Make it a thing." },
   ],
-  // Pig Two — aggressively in denial (rewritten). (Emoji placeholder until art.)
+  // Pig Two — aggressively in denial. Walk-in face changes per chapter: first ruined
+  // house (sad, the base art) → second ruined house (muddy, covered in straw).
   pig_stick: [
     { line: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair. It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother." },
-    { line: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best. I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them." },
+    { art: "customer_pig_stick_ruined2", line: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best. I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them." },
   ],
 };
 function custArc(id) { return CUSTOMER_ARCS[id] || null; }
@@ -4932,7 +4933,7 @@ function advanceCustStory(id) { const a = custArc(id); if (!a) return; const s =
 function applyCustArc(round) {
   if (!round || !round.customer || round.story) return;
   const chap = custChapter(round.customer.id);
-  if (chap) round.customer = Object.assign({}, round.customer, { line: chap.line });
+  if (chap) round.customer = Object.assign({}, round.customer, { line: chap.line }, chap.art ? { art: chap.art } : {});
 }
 function startRound() {
   SFX.unlock();
