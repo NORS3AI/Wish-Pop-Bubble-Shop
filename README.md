@@ -20,9 +20,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 ## What's new
 
 - 🐺 **The Wolf keeps 'visiting.'** He turns up as a regular customer in a new ridiculous disguise
-  every time — Hank the tourist, Wally the delivery-wolf, Detective Sherwood Woolf — with a fresh fake
-  name that fools absolutely no one. His running gag is that he's *always* hungry (“I could eat a
-  whole sheep!”), and if you pay attention his silly visits tell their own little story.
+  every time — Hank the tourist, Wally the delivery-wolf, Detective Sherwood Woolf, and finally the
+  Baron von Nothungry — with a fresh fake name that fools absolutely no one. His running gag is that
+  he's *always* hungry (“I could eat a whole sheep!”), and now he really *emotes* through each visit:
+  the Baron's brave face cracks (belly and all) into a sincere plea, and the button “collector” flips
+  open his velvet case to show off before fumbling it all over your shop.
 - 🔎 **The button mystery ties Willow together.** Tiny Mouse's buttons keep vanishing… then a
   suspicious “collector” struts in and clumsily drops three buttons in your shop. Show them to Little
   Red and she recognizes one as **Grandma's** — suddenly the mouse, the Gingerbread Man, Grandma, and
