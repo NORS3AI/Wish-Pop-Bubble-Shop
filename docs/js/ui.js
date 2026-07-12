@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v194"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v195"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -537,10 +537,10 @@ function maybePigsMoving() {
 function wolfCust(name) { return { id: "wolf", name: name || "“Sir Reginald Notawolf”", emoji: "🐺", wishType: "PrettyPotion", location: "Willow-Wish Village", line: "" }; }
 function playWolfButtons() {
   SFX.unlock();
-  ART.ensure("wolf_tophat", () => {});
+  ["wolf_tophat_buttons", "wolf_tophat_proud"].forEach(f => ART.ensure(f, () => {}));
   renderStoryBeats([
-    { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat", text: "Good day! I’m a wealthy gentleman collector — <i>Sir Reginald Notawolf</i>. <b>No</b> relation. I’m assembling the finest button collection the realm has ever seen." },
-    { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat", cta: "Riiight…  ▸", text: "I would <i>never</i> know a thing about buttons going missing all over town. Preposterous! Now — a small wish, if you’d be so kind. Make my collection positively <b>gleam</b>." },
+    { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat_buttons", text: "Good day! Sir Reginald Notawolf — gentleman, connoisseur, <b>no</b> relation to any wolf. <i>(He flips open a velvet case of gleaming buttons.)</i> Behold! The finest button collection the realm has ever seen." },
+    { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat_proud", cta: "Riiight…  ▸", text: "Every last one acquired <i>honestly</i>, I assure you — I’d <b>never</b> know a thing about buttons going missing all over town. Preposterous! Now, a small wish, if you’d be so kind: make my collection positively <b>gleam</b>." },
   ], () => startStoryWish(wolfCust(), "wolf-buttons", "A dab of your finest button-polish, my good friend — for my perfectly-legitimate, not-at-all-stolen collection."));
 }
 function playRedButtons() {
@@ -609,10 +609,12 @@ const WOLF_VISITS = [
     outroWin: "Aha! The case remains open, but I am no longer peckish. Elementary. Toodle-oo!" },
   { costume: "wolf_bowler", name: "“Baron von Nothungry”",
     intro: [
-      { text: "Good evening. Baron von Nothungry. As the name suggests, I am <i>not</i> remotely hungry. Never think about it. Certainly not about sheep." },
-      { text: "…Okay. Off the record? It’s getting embarrassing. Everyone <i>knows</i>. Just — one more wish. A big one. Make the hunger <b>stop</b>. Please?", cta: "Oh, Wolf…  ▸" },
+      { fig: "wolf_bowler_present", text: "Good evening. Baron von Nothungry. As the name suggests, I am <i>not</i> remotely hungry. Never think about it. Certainly not about sheep." },
+      { fig: "wolf_bowler_wink", text: "A baron does not <i>hunger</i>, darling — a baron merely <i>dines</i>. <i>(His stomach growls like distant thunder. He pretends very hard not to notice.)</i>", cta: "…We both heard that  ▸" },
+      { fig: "wolf_bowler_plead", text: "…Okay. Off the record? It’s getting embarrassing. Everyone <i>knows</i>. Just — one more wish. A big one. Make the hunger <b>stop</b>. Please?", cta: "Oh, Wolf…  ▸" },
     ],
     wish: "One proper feast-in-a-bottle. No tricks this time — I mean it. A wolf can only skulk about hungry for so long.",
+    outroFigWin: "wolf_bowler_hungry", outroFigLose: "wolf_bowler_fist",
     outroWin: "…Thank you. Truly. For a moment there, I forgot I was hungry. <i>(quietly)</i> …It’s back now. But — thank you." },
 ];
 let WOLF_DEMO = false;   // admin: play all his visits back-to-back (no customers between)
@@ -661,7 +663,8 @@ function storyWishOutro(tag, win) {
   if (tag === "wolf-buttons") {
     satchelAdd("button_gumdrop"); satchelAdd("button_blue"); satchelAdd("button_heart");
     GAME.buttonStep = 1; GAME.buttonChainAt = -1; save();
-    const beats = [{ name: "“Sir Reginald Notawolf”", fig: "wolf_tophat", cta: "Wait…  ▸", text: win
+    ART.ensure("wolf_tophat_point", () => {});
+    const beats = [{ name: "“Sir Reginald Notawolf”", fig: "wolf_tophat_point", cta: "Wait…  ▸", text: win
       ? "Magnificent! Simply— oh. <i>OH.</i> I seem to have <b>dropped</b> a few things. No matter — keep them! I’ve HUNDREDS. Toodle-oo!"
       : "Hmph. Amateur polish. I’ll take my custom elsewhere — after I— oh. I’ve <b>dropped</b> some buttons. Ah well, keep ’em. Ta!" }];
     renderStoryBeats(beats, () => { toast("🔎 The “collector” dropped 3 buttons — they’re in your Satchel!"); save(); renderStart(); });
