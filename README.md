@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧸 **Goldilocks & the three bears.** A new customer, Goldilocks, has moved into Willow-Wish
+  Village. Tiny Mouse can't reach her, so she asks you to deliver a teddy bear — and sews three,
+  unsure of the size. Hand them over one at a time: the first is always too big, the next too
+  small, and the last is *juuust right* — for a big thank-you tip. (Muffin Man has stepped away
+  for now.)
 - 👑 **Special-guest bubbles.** VIPs and other special customers now show a little tappable
   bubble beside them (mid-screen). Tap it to read what that guest is about, tap away to close —
   the bubble always stays. The speech box is just their words now, locked in place so nothing

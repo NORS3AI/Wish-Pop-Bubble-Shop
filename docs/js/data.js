@@ -239,8 +239,8 @@ Object.assign(WISH_TYPES, COURT_WISH_TYPES);
 const CUSTOMERS = [
   { id: "gingerbread", name: "Gingerbread Man", emoji: "🍪", location: "Drury Lane", wishType: "StrongTreat",
     line: "I wish for something strong so I don’t crumble!" },
-  { id: "muffin",      name: "Muffin Man",      emoji: "🧁", location: "Drury Lane", wishType: "LuckySnack",
-    line: "I wish for a little luck before the bake-off!" },
+  { id: "goldilocks",  name: "Goldilocks",      emoji: "👱‍♀️", location: "Willow-Wish Village", wishType: "CalmCup",
+    line: "Something that’s just right, please — not too much, not too little!" },
   { id: "baker",       name: "Village Baker",   emoji: "👨‍🍳", location: "Drury Lane", wishType: "CalmCup",
     line: "I wish for something calm before the ovens explode again!" },
   { id: "mouse",       name: "Tiny Mouse",      emoji: "🐭", location: "Drury Lane", wishType: "BraveBite",
@@ -259,10 +259,17 @@ const CUSTOMERS = [
     line: "I wish for a house that’s a LITTLE more permanent." },
 ];
 
+/* Retired from the active Willow roster — kept here to reintroduce in a future
+   Drury Lane chapter (his art still lives in /art). Not used anywhere yet. */
+const RETIRED_CUSTOMERS = [
+  { id: "muffin", name: "Muffin Man", emoji: "🧁", location: "Drury Lane", wishType: "LuckySnack",
+    line: "I wish for a little luck before the bake-off!" },
+];
+
 /* --- 6. Magic allergy ideas (harder customers only) --------------------- */
 const ALLERGY_IDEAS = {
   wolf: "Beauty", gingerbread: "Sleep", baker: "Energy", mouse: "Courage",
-  owl: "Light", gnome: "Mischief",
+  owl: "Light", gnome: "Mischief", goldilocks: "Mischief",
 };
 
 /* --- 7. Familiar (Pet) upgrade table — the pet's default look is a Toad, but it

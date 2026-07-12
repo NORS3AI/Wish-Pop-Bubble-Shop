@@ -1764,6 +1764,20 @@ img.gal-pic { max-height: 56vh; max-width: 74vw; width: auto; height: auto; obje
   background: linear-gradient(180deg, #fff8ea, #f6ead2); border-radius: 18px; padding: 16px 18px;
   box-shadow: 0 6px 18px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.7); animation: storyIn .4s ease-out; }
 .story-speech b { color: #a23c6e; } .story-speech i { color: #6a4a2c; }
+/* Goldilocks' three-bears delivery — a tray of tappable teddy bears */
+.story-card.goldi-deliver { padding-bottom: calc(26px + var(--safe-b)); }
+.goldi-deliver .story-figure { height: 60vh; }   /* smaller so the bear tray always fits below */
+.goldi-deliver .story-below { gap: 9px; }
+.goldi-tray { display: flex; align-items: flex-end; justify-content: center; gap: 18px; margin-top: 2px; }
+.goldi-bear { position: relative; width: 92px; height: 92px; padding: 5px; border: none; cursor: pointer; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, rgba(255,242,208,.96), rgba(247,205,140,.92) 70%, rgba(208,148,68,.9));
+  box-shadow: 0 4px 13px rgba(0,0,0,.55), inset 0 0 0 3px rgba(255,255,255,.4);
+  display: flex; align-items: center; justify-content: center; animation: badgeBob 2.1s ease-in-out infinite; }
+.goldi-bear:nth-child(2) { animation-delay: .3s; } .goldi-bear:nth-child(3) { animation-delay: .6s; }
+.goldi-bear:active { transform: scale(.9); }
+.goldi-bear .goldi-bear-img.art { height: 80px; width: auto; max-width: none; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+.goldi-bear .art-emoji { font-size: 52px; line-height: 1; }
+.goldi-hint { font-family: var(--ff-display); font-size: 14.5px; color: #ffe7ac; text-shadow: 0 1px 3px rgba(0,0,0,.8); letter-spacing: .3px; }
 .btn.story-next { width: 100%; max-width: 400px; }
 @keyframes storyIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes storyFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }

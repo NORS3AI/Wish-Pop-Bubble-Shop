@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v212"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v213"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -42,6 +42,8 @@ function normalizeGame(g) {
   if (typeof g.buttonChainAt !== "number") g.buttonChainAt = -1; // servedTotal when the next button-chain beat is due
   if (typeof g.wolfArcStep !== "number") g.wolfArcStep = 0;   // the Wolf's own visit count (disguise/hunger arc)
   if (typeof g.wolfArcAt !== "number") g.wolfArcAt = -1;      // servedTotal when the Wolf's next visit is due
+  if (typeof g.goldilocksStep !== "number") g.goldilocksStep = 0; // Goldilocks' teddy-bear quest: 0=none,1=have the 3 bears,2=delivered
+  if (typeof g.goldilocksAt !== "number") g.goldilocksAt = -1;    // servedTotal when the next Goldilocks-quest beat is due
   if (typeof g.realm !== "string" || !D.REALM_BY_ID[g.realm]) g.realm = "willow"; // current location
   if (!g.unlockedRealms || typeof g.unlockedRealms !== "object") g.unlockedRealms = {};
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
@@ -636,6 +638,96 @@ function maybeWolfArc() {
   if (servedTotal < GAME.wolfArcAt) return false;
   GAME.wolfArcAt = -1; save(); playWolfVisit(); return true;
 }
+
+/* ======================================================================= */
+/* GOLDILOCKS & THE THREE BEARS — a two-part quest. Tiny Mouse can't reach   */
+/* Goldilocks, so she asks you to deliver a teddy bear; unsure of the size,  */
+/* she sews THREE. You get 3 bears in your Satchel. Next Goldilocks visit is  */
+/* an interactive delivery: the 1st bear you hand over is always "too big",   */
+/* the 2nd "too small", the 3rd "just right" (sparkle → hug) → a big tip.     */
+/* GAME.goldilocksStep tracks it: 0=none, 1=have the bears, 2=delivered.      */
+/* ======================================================================= */
+function playGoldiMouse() {
+  SFX.unlock();
+  ART.ensure("customer_mouse", () => {});
+  satchelAdd("teddy", 3);
+  GAME.goldilocksStep = 1; GAME.goldilocksAt = -1; save();
+  renderStoryBeats([
+    { name: "Tiny Mouse", fig: "customer_mouse", text: "Oh, thank goodness you’re here! Goldilocks put in an order — one teddy bear — but I <i>cannot</i> get hold of her. Never home, that girl! Could you deliver it for me?" },
+    { name: "Tiny Mouse", fig: "customer_mouse", text: "Here’s my trouble… I didn’t know what <b>size</b> she wanted. So I stitched up <b>three</b> — a big one, a small one, and one in between. Give her the one that’s <i>just right</i> and she’ll tip you something lovely, mark my words." },
+    { name: "Tiny Mouse", fig: "customer_mouse", cta: "Take the bears  ▸", text: "They’re tucked in your Satchel now. Next time Goldilocks drops by, let her try them and see which one fits. Thank you — you’re an absolute treasure!" },
+  ], () => { toast("🧸 Tiny Mouse gave you 3 teddy bears — deliver one to Goldilocks!"); save(); renderStart(); });
+}
+// The interactive delivery. Click order is FIXED (never mind which bear): 1st = too big,
+// 2nd = too small, 3rd = just right. GOLDI_REACT[picks] is the face+line shown.
+let GOLDI_PICKS = 0, GOLDI_BEARS = [];
+const GOLDI_REACT = [
+  { fig: "customer_goldilocks", text: "Ooh — you’ve brought bears! For <i>me</i>? Let me try one. Go on, hand one over!" },
+  { fig: "goldi_toobig",   text: "Oof! This one’s <b>too big</b> — I can’t even get my arms round it. Have you another?" },
+  { fig: "goldi_toosmall", text: "Hmph — now <i>that</i> one’s <b>too small</b>. Teeny! There’s got to be one that’s <b>just right</b>… one more?" },
+];
+function playGoldiDeliver() {
+  SFX.unlock();
+  ["customer_goldilocks", "goldi_toobig", "goldi_toosmall", "goldi_sparkle", "goldi_hug", "bear_1", "bear_2", "bear_3"].forEach(f => ART.ensure(f, () => {}));
+  GOLDI_PICKS = 0; GOLDI_BEARS = ["bear_1", "bear_2", "bear_3"];
+  renderGoldiDeliver();
+}
+function renderGoldiDeliver() {
+  const r = GOLDI_REACT[GOLDI_PICKS];
+  const tray = GOLDI_BEARS.map((k, i) => `<button class="goldi-bear" data-bi="${i}">${ART.tag(k, "🧸", "goldi-bear-img")}</button>`).join("");
+  html("event", `
+    <div class="story-card mg-fullbleed goldi-deliver" id="story-card">
+      <div class="story-bg" style="background-image:url(art/${STORY_DEF_BG}.jpg?v=${BUILD})"></div>
+      <div class="story-scrim"></div>
+      <div class="story-figure">${ART.tag(r.fig, "👱‍♀️", "story-face")}</div>
+      <div class="story-below">
+        <div class="story-name">Goldilocks</div>
+        <div class="story-speech">${r.text}</div>
+        <div class="goldi-hint">${GOLDI_PICKS === 0 ? "Tap a teddy bear to give it to her" : "Tap another bear"}</div>
+        <div class="goldi-tray">${tray}</div>
+      </div>
+    </div>
+  `);
+  show("event");
+  document.querySelectorAll(".goldi-bear").forEach(el => el.addEventListener("click", () => {
+    if (GOLDI_PICKS >= 3) return;
+    GOLDI_BEARS.splice(+el.dataset.bi, 1);   // that bear is used up
+    GOLDI_PICKS++;
+    SFX.unlock(); SFX.pop(1);
+    if (GOLDI_PICKS >= 3) { goldiFinale(); return; }
+    renderGoldiDeliver();
+  }));
+  // repaint when any not-yet-cached art (the figure or a bear) finishes loading
+  [r.fig].concat(GOLDI_BEARS).forEach(k => { if (!ART.isReady(k)) ART.ensure(k, () => { if (GOLDI_PICKS < 3) renderGoldiDeliver(); }); });
+}
+function goldiFinale() {
+  renderStoryBeats([
+    { name: "Goldilocks", fig: "goldi_sparkle", cta: "Aww  ▸", text: "Oh! Oh, <i>this</i> one… this one is <b>juuust right</b>! Not too big, not too small — <b>perfect</b>. ✨" },
+    { name: "Goldilocks", fig: "goldi_hug", cta: "You’re so welcome  ▸", text: "I’m never letting go! Thank you, truly. Here — take this for your trouble, and do tell Tiny Mouse she’s the finest stitcher in the whole village!" },
+  ], () => {
+    satchelRemove("teddy", 3);
+    GAME.goldilocksStep = 2; GAME.goldilocksAt = -1; save();
+    const r = grantReward({ gold: 160, stardust: 18 }); save();
+    toast("🧸 Goldilocks tipped you big! " + r);
+    renderStart();
+  });
+}
+// Drive the quest: Tiny Mouse's request fires a few rounds in, then the delivery a couple rounds after.
+function maybeGoldilocksQuest() {
+  if (GAME.realm !== "willow" || !GAME.seenIntro) return false;
+  const s = GAME.goldilocksStep || 0;
+  if (s >= 2) return false;
+  if (s === 0) {
+    if (servedTotal < 3) return false;   // let the player meet a few folks first
+    if (GAME.goldilocksAt < 0) { GAME.goldilocksAt = servedTotal + 1; save(); return false; }
+    if (servedTotal < GAME.goldilocksAt) return false;
+    GAME.goldilocksAt = -1; save(); playGoldiMouse(); return true;
+  }
+  // s === 1: we have the bears — Goldilocks comes to collect a couple rounds later
+  if (GAME.goldilocksAt < 0) { GAME.goldilocksAt = servedTotal + 2; save(); return false; }
+  if (servedTotal < GAME.goldilocksAt) return false;
+  GAME.goldilocksAt = -1; save(); playGoldiDeliver(); return true;
+}
 // After a story wish resolves, the character's goodbye plays (and story progress advances).
 function storyWishOutro(tag, win) {
   if (tag === "bo-peep") {
@@ -785,6 +877,8 @@ const SATCHEL_ITEMS = {
   button_heart:   { name: "Heart-Shaped Button", emoji: "❤️", from: "the “button collector”", note: "Show this to Little Red." },
   button_blue:    { name: "Blue Button",         emoji: "🔵", from: "the “button collector”", note: "Show this to Little Red." },
   button_gumdrop: { name: "Gumdrop Button",      emoji: "🍬", from: "the “button collector”", note: "Show this to Little Red." },
+  // Tiny Mouse sews three teddy bears (big / small / just-right) to deliver to Goldilocks.
+  teddy:          { name: "Teddy Bear",          emoji: "🧸", from: "Tiny Mouse", note: "Deliver one to Goldilocks — the size that’s just right." },
 };
 function satchelItem(id) { return SATCHEL_ITEMS[id] || null; }
 function satchelCount(id) { return (GAME.satchel && GAME.satchel[id]) || 0; }
@@ -974,6 +1068,8 @@ function renderAdmin() {
           ${arcRow("pig_straw", "🐷 Straw Pig")}
           ${arcRow("pig_stick", "🐖 Stick Pig")}
           <button class="btn small" id="ad-pigs-move">🧳 Pigs: Moving Day</button>
+          <button class="btn small" id="ad-goldi-mouse">🐭 Goldilocks: Mouse's bears</button>
+          <button class="btn small" id="ad-goldi-deliver">🧸 Goldilocks: Deliver bears</button>
           <button class="btn secondary small" id="ad-cust-reset">↺ Reset arcs</button>
         </div>
         <p class="muted" style="font-size:11px;text-align:center;margin:0">Spawn them at their current chapter; grant the wish to advance. (Finish both pig arcs → Moving Day fires on its own.)</p>
@@ -1073,6 +1169,8 @@ function renderAdmin() {
   on("#ad-cust-pig_straw", "click", () => adminCustomer("pig_straw"));
   on("#ad-cust-pig_stick", "click", () => adminCustomer("pig_stick"));
   on("#ad-pigs-move", "click", () => { GAME.pigsMoved = false; playPigsMoving(); });
+  on("#ad-goldi-mouse", "click", () => { GAME.goldilocksStep = 0; GAME.goldilocksAt = -1; save(); playGoldiMouse(); });
+  on("#ad-goldi-deliver", "click", () => { GAME.goldilocksStep = 1; GAME.goldilocksAt = -1; if (!satchelCount("teddy")) satchelAdd("teddy", 3); save(); playGoldiDeliver(); });
   on("#ad-cust-reset", "click", () => { GAME.custStory = {}; GAME.pigsMoved = false; save(); toast("Customer story arcs reset"); renderAdmin(); });
   on("#ad-bopeep", "click", () => { GAME.bopeepMet = false; playBoPeep(); });
   on("#ad-boss", "click", adminBoss);
@@ -4991,6 +5089,7 @@ function startRound() {
   if (maybePigsMoving()) return; // the two pigs come in together to move out (once their arcs are done)
   if (maybeButtonChain()) return; // the button clue-chain (Wolf drop → show Red → Gingerbread)
   if (maybeWolfArc()) return;    // the Wolf's own recurring visits (disguises + hunger gag)
+  if (maybeGoldilocksQuest()) return; // Tiny Mouse's teddy-bear delivery → Goldilocks' three-bears visit
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
   // once the pigs have moved, they no longer wander into the Willow shop
@@ -6486,7 +6585,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
