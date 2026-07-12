@@ -702,3 +702,50 @@ button is covered in SPARKLES and CANNOT be moved/given — it's become a magica
 keepsake we keep. So we hand him a plain, real button instead, and he WEARS it
 (sprite swaps gumdrop → blue button). This exchange plays in "STORY MODE" (the
 owner's name for the Red-style dialogue-card screens, i.e. renderStoryBeats).
+
+---
+
+# ✍️ VOICE + APPROVED SCRIPT — Gingerbread Man (owner-approved)
+
+**Reference voice for the Gingerbread Man = "warm goofball":** earnest, a little
+clueless, easy to love. NOT vain/diva, NOT stiffly polite. Lots of heart, humor
+comes from naivety not sarcasm. (Each other character gets their OWN voice — this
+register is his.)
+
+**Chapter 1 · "Melting Point"** (counter wish)
+> "Whoa — is it always this hot?! I'm meltin' and I've got places to be. Frost me
+> up so I don't turn into a puddle? You're a lifesaver. Literally, maybe."
+
+**Chapter 2 · "A Walking Picnic"** (counter wish)
+> "Okay, the frosting's amazing — but now there's ants following me like I'm a
+> walking picnic! A whole line of 'em! Can you shoo 'em somewhere else? I don't
+> wanna be rude, but I am NOT lunch."
+
+**Chapter 3 · "Cracked"** (counter wish)
+> "Don't laugh — okay, you can laugh a little. I snuggled up to a warm oven 'cause
+> it felt like home, and I cracked right down the middle! Patch me up? Tougher
+> batch this time, maybe. I'm kinda delicate."
+
+**Chapter 4 · "The Missing Button"** (STORY MODE)
+> GB: "Hey hey — you got a sec? I lost a button! The gumdrop one, right off my
+> front. Looked everywhere. I even asked a pigeon! Pigeon just stared at me."
+> [Open Satchel: the gumdrop button is wrapped in sparkles and won't budge.]
+> GB: "…Is that it?! All glowy in your bag? Aw, it went and got magical on me.
+> Figures — right when I want it back! That's okay. You keep it. Looks like it
+> likes you."
+> [Offer a plain spare button.]
+> GB: "One of yours? For me? Aw, gosh. …It's even better! Don't tell the gumdrop
+> I said that."
+> [Sprite updates: blue button where the gumdrop used to be.]
+> GB: "Good as new! Better, even! …Hey, uh — between us? Someone's been takin'
+> buttons all over town. I got a hunch who. Big guy. Says he 'collects things.'
+> I've probably said too much!"
+
+**Reveal beats around it (each gets its OWN voice later, not goofball):**
+- Tiny Mouse (counter): "Third drawer of buttons gone this week — THIRD! I've a
+  shop to run and I'm down to safety pins. I wish for a jar that never runs empty."
+- Wolf (counter, 'disguised'): "I'm gonna have the finest button collection the
+  world's ever seen! The name's… 'Sir Reginald Notawolf.' No relation!" → drops
+  🍬 gumdrop, 🔵 blue, ❤️ heart buttons into the Satchel.
+- Show Red (story mode): "That heart button? Grandma's — I'd know it anywhere."
+  … "Blue's the mouse's. Gumdrop's the cookie's. 'Notawolf.' He's not even trying."
