@@ -896,3 +896,13 @@ _angry, _sheepish, _thumbsup. His visit now emotes: arms-wide "delivery for—!"
 (announce) → indignant "you owe me a freebie" (angry) → thumbs-up wink on a win
 (thumbsup) / sheepish slink on a loss (sheepish). Only the BOWLER (Baron von
 Nothungry) remains single-pose — owner may send an expression set for it.
+
+### Art cutout method upgrade — alpha matting (v194)
+The pervasive "white stuff" on the wolf was white-contaminated edge pixels (halo)
+from binary color-thresholding. Fixed by proper ALPHA MATTING via pymatting
+(closed-form matte + foreground estimation), which re-estimates true edge colors
+so there's no white fringe. (rembg/U2Net AI model is blocked by egress policy, but
+pymatting needs no download.) Pipeline: color-threshold → trimap (erode fg/bg,
+remove large+small PURE-FLAT enclosed gaps to protect eyes/teeth) → estimate_alpha_cf
+→ estimate_foreground_ml. Re-cut all 35 wolf images. USE THIS for future character
+cutouts with lots of light areas.
