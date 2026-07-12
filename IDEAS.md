@@ -815,3 +815,12 @@ TELL = ridiculous fake names + terrible visual disguises + an AUDIO CUE on arriv
   whole SHEEP! You owe me. Grant me a free one, on the house. I know my rights."
 
 ## Background customers (flavor only, no quests): Sleepy Owl, Village Baker (+maybe 1)
+
+### Writing TODOs (owner notes, revisit)
+- Keep every character's VOICE distinct — don't let them start sounding the same.
+- Revise Pig Two's "sticks that huff back / can wood be aggressive" line — owner
+  doesn't like it yet.
+- Background customers (Sleepy Owl, Village Baker) still need their OWN little
+  arcs told through their series of wishes (not part of the main wolf story).
+- When wrapping up the Willow storyline, revisit each character with follow-up
+  wishes that CONTINUE their stories beyond the main arc.
