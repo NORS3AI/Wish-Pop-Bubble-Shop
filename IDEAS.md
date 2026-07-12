@@ -695,3 +695,10 @@ Bo Peep (reuses the sheep hunt), the pig wishes, and the Gingerbread/Mouse intro
 wishes are INDEPENDENT and can come first. The button clue-chain has cross-customer
 GATES (mouse button wish → wolf button drop → show Red → gingerbread's lost button)
 and should be built as one connected finale of the Willow web, last.
+
+### Clarification — the gumdrop button hand-off (owner, confirmed)
+When we open the Satchel to give the Gingerbread Man his button back, the gumdrop
+button is covered in SPARKLES and CANNOT be moved/given — it's become a magical
+keepsake we keep. So we hand him a plain, real button instead, and he WEARS it
+(sprite swaps gumdrop → blue button). This exchange plays in "STORY MODE" (the
+owner's name for the Red-style dialogue-card screens, i.e. renderStoryBeats).
