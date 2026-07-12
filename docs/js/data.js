@@ -251,7 +251,7 @@ const CUSTOMERS = [
     line: "I wish for protection on the forest path." },
   { id: "wolf",        name: "Wolf",            emoji: "🐺", location: "Drury Lane", wishType: "PrettyPotion",
     line: "I wish for charm. People keep running when they see me." },
-  { id: "gnome",       name: "Garden Gnome",    emoji: "🧝", location: "Drury Lane", wishType: "GardenGrowth",
+  { id: "gnome",       name: "Bramble",    emoji: "🧝", location: "Drury Lane", wishType: "GardenGrowth",
     line: "I wish for growth. My mushrooms are being stubborn." },
   { id: "pig_straw",   name: "Thatch", emoji: "🐷", location: "Willow-Wish Village", wishType: "PowerPop",
     line: "I wish for a house that stays UP for once." },

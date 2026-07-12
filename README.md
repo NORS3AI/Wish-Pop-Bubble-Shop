@@ -19,6 +19,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🍄 **Meet Bramble.** The garden gnome now has a name and hand-drawn art — thoughtful when he
+  arrives about his stubborn mushrooms, delighted on a win, grumpy on a miss, and a shimmering
+  rainbow-faced mess if the magic disagrees with him.
 - 💬 **Customers talk it out.** Chatty customers with a lot to say now reveal their wish a line at a
   time — read the first bit, tap the ▸ arrow for the rest (some even change expression as they go),
   and Start Scoop waits until they've finished. Little story beats, right at the counter.
