@@ -257,6 +257,10 @@ const CUSTOMERS = [
     line: "I wish for a house that stays UP for once." },
   { id: "pig_stick",   name: "Woody", emoji: "🐖", location: "Willow-Wish Village", wishType: "StrongTreat",
     line: "I wish for a house that’s a LITTLE more permanent." },
+  { id: "hare",        name: "The Hare",     emoji: "🐇", location: "Willow-Wish Village", wishType: "PowerPop",
+    line: "Name’s Dash — racer number ONE! I’m so far ahead of that tortoise I’ve time for a wish. Keep these legs springy for me?" },
+  { id: "tortoise",    name: "The Tortoise", emoji: "🐢", location: "Willow-Wish Village", wishType: "SleepySweet",
+    line: "Phew… I’m plumb tuckered. I wish there was a way I could walk AND sleep at the same time." },
 ];
 
 /* Retired from the active Willow roster — kept here to reintroduce in a future
@@ -270,6 +274,7 @@ const RETIRED_CUSTOMERS = [
 const ALLERGY_IDEAS = {
   wolf: "Beauty", gingerbread: "Sleep", baker: "Energy", mouse: "Courage",
   owl: "Light", gnome: "Mischief", goldilocks: "Mischief",
+  hare: "Calm", tortoise: "Energy",
 };
 
 /* --- 7. Familiar (Pet) upgrade table — the pet's default look is a Toad, but it

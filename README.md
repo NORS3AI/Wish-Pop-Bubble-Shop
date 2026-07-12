@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐇🐢 **The Tortoise and the Hare.** The boastful Hare zips into your shop as one of the very
+  first customers each visit, sure he's miles ahead — while the weary Tortoise plods in dead
+  last, right before the big finale, wishing he could "walk AND sleep at the same time." Keep
+  an eye on the pair as you travel: it's a slow race with a twist waiting down the road.
 - 🐺 **The village story ties together.** When the finale is due, the disguised Wolf finally
   slips into your shop in Grandma's bonnet — and when he scurries off, you match him to Little
   Red's sketch and send word to her, leading straight into the rescue at Grandma's cottage.
