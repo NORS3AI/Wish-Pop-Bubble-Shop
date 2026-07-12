@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v189"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v190"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -585,10 +585,11 @@ function maybeButtonChain() {
 const WOLF_VISITS = [
   { costume: "wolf_tourist", name: "“Hank, a Tourist”",
     intro: [
-      { text: "Aloha! Just a normal tourist — name’s Hank. Lovely little village. Big fan. Definitely not scoping the place out." },
-      { text: "Say, between us… I’m hungry <i>all</i> the time. Concerning amounts. Whip me up something to take the edge off? Asking for a friend. The friend is me.", cta: "Sure, ‘Hank’  ▸" },
+      { fig: "wolf_tourist_sly", text: "Aloha! Just a normal tourist — name’s Hank. Lovely little village. Big fan. Definitely not scoping the place out." },
+      { fig: "wolf_tourist_hungry", text: "Say, between us… I’m hungry <i>all</i> the time. Concerning amounts. Whip me up something to take the edge off? Asking for a friend. The friend is me.", cta: "Sure, ‘Hank’  ▸" },
     ],
     wish: "Something to quiet a rumbling tummy, if you’d be so kind — I’ve a very full itinerary. Of snacking.",
+    outroFigWin: "wolf_tourist_cheers", outroFigLose: "wolf_tourist_arms",
     outroWin: "Mwah — <i>delicious</i>. I mean… adequate. For a tourist. Ahem. I’ll just be… touristing. Elsewhere. Ta!" },
   { costume: "wolf_delivery", name: "“Wally, W. Wolf Deliveries”",
     intro: [
@@ -617,8 +618,9 @@ function currentWolfVisit() { return WOLF_VISITS[Math.min(GAME.wolfArcStep || 0,
 function playWolfVisit() {
   const i = GAME.wolfArcStep || 0; if (i >= WOLF_VISITS.length) return;
   const v = WOLF_VISITS[i];
-  SFX.unlock(); ART.ensure(v.costume, () => {});
-  const beats = v.intro.map((b, idx) => ({ name: v.name, fig: v.costume, text: b.text, cta: b.cta || (idx === v.intro.length - 1 ? "Make his wish  ▸" : undefined) }));
+  SFX.unlock();
+  [v.costume, v.outroFigWin, v.outroFigLose].concat(v.intro.map(b => b.fig)).forEach(f => { if (f) ART.ensure(f, () => {}); });   // pre-warm every expression this visit uses
+  const beats = v.intro.map((b, idx) => ({ name: v.name, fig: b.fig || v.costume, text: b.text, cta: b.cta || (idx === v.intro.length - 1 ? "Make his wish  ▸" : undefined) }));
   renderStoryBeats(beats, () => startStoryWish(wolfCust(v.name), "wolf-arc", v.wish));
 }
 // A wolf visit comes due every few customers (Willow, after the tutorial). Can precede Red's warning.
@@ -648,7 +650,8 @@ function storyWishOutro(tag, win) {
   if (tag === "wolf-arc") {
     const i = GAME.wolfArcStep || 0, v = WOLF_VISITS[Math.min(i, WOLF_VISITS.length - 1)];
     GAME.wolfArcStep = i + 1; save();
-    const beats = [{ name: v.name, fig: v.costume, cta: "Off he skulks  ▸", text: win ? v.outroWin : "Bah! Barely took the edge off. I’ll be BACK. Hungrier. You’ll see." }];
+    const outroFig = win ? (v.outroFigWin || v.costume) : (v.outroFigLose || v.costume);
+    const beats = [{ name: v.name, fig: outroFig, cta: "Off he skulks  ▸", text: win ? v.outroWin : "Bah! Barely took the edge off. I’ll be BACK. Hungrier. You’ll see." }];
     // "play all back-to-back" mode: roll straight into his next disguise instead of going home
     renderStoryBeats(beats, () => { save(); if (WOLF_DEMO && (GAME.wolfArcStep || 0) < WOLF_VISITS.length) playWolfVisit(); else { WOLF_DEMO = false; renderStart(); } });
     return;

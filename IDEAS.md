@@ -875,3 +875,10 @@ precede Red's warning). Each: costume banter → hunger wish → outro.
 Uses one pose per costume (enough). Optional future polish: extra expression
 variants of tourist/delivery/sherlock/bowler (hungry/caught faces) for in-scene
 emoting. Grandma finale art still pending.
+
+### Hank (tourist) expression variants (v190)
+Added 5 tourist-costume expressions: wolf_tourist_sly, _cheers, _hungry, _shrug,
+_arms. Wolf visits now support per-beat `fig` + per-outcome outro fig, so Hank
+EMOTES through his scene: sly (scoping) → hungry (belly-clutch) → cheers (win) /
+arms-crossed (lose). This is the template for giving other costumes multiple
+expressions. (Owner may send more expression sets for delivery/sherlock/bowler.)
