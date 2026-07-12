@@ -717,6 +717,18 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cust-wishbox { position: relative; width: 97%; max-width: 396px; margin: -34px auto 0; padding: 22px 34px 24px;
   z-index: 3; background: url('../art/ui/name_plate.png') no-repeat center; background-size: 100% 100%; }
 .cust-wish-text { text-align: center; font-family: 'Georgia', serif; font-size: 20px; line-height: 1.32; font-style: italic; color: #4a3212; }
+/* paginated wish: leave room for the ▸ arrow, which reveals the next line */
+.cust-wishbox.has-next { padding-right: 46px; }
+.wish-next { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 6;
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,240,200,.85); cursor: pointer;
+  background: linear-gradient(180deg, #b98cff, #8a5cf0); color: #fff; font-size: 20px; font-weight: 900; line-height: 1;
+  box-shadow: 0 2px 7px rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center;
+  animation: wishPulse 1.25s ease-in-out infinite; }
+.wish-next:active { transform: translateY(-50%) scale(.94); }
+@keyframes wishPulse { 0%,100% { transform: translateY(-50%) scale(1); } 50% { transform: translateY(-50%) scale(1.14); } }
+@keyframes wishFade { from { opacity: .15; } to { opacity: 1; } }
+@keyframes wishNudge { 0%,100% { transform: translateY(-50%) scale(1); } 25% { transform: translateY(-50%) scale(1.28); } 60% { transform: translateY(-50%) scale(1.28); } }
+.cust-char.swap img.art { animation: wishFade .3s ease; }
 .cust-wish-extra { margin-top: 6px; text-align: center; font-family: var(--ff-display); font-size: 13.5px; line-height: 1.22; color: #6a4310; }
 .cust-wish-extra.boss { color: #9a3410; } .cust-wish-extra.rush { color: #a85410; } .cust-wish-extra.vip { color: #7a5210; }
 /* stat banner — Payment · Target · Allergy — on a parchment plate like the wish box */
@@ -731,6 +743,10 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .amark.ok { color: #2e8b3d; } .amark.x { color: #b23b2e; }
 .cust-scoop { position: relative; align-self: center; width: 80%; max-width: 320px; margin: 3px auto 0; padding: 0; border: none; background: none; cursor: pointer; }
 .cust-scoop img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
+/* locked until the customer has finished speaking (multi-part wishes) */
+.cust-scoop.locked img { filter: grayscale(.9) brightness(.72) drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
+.cust-scoop.locked { cursor: not-allowed; }
+.cust-scoop.locked span { opacity: .6; }
 .cust-scoop span { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center;
   font-family: var(--ff-display); font-size: 30px; color: #fff8e0; text-shadow: 0 2px 4px rgba(20,40,10,.8); }
 .cust-scoop:active { transform: scale(.98); }

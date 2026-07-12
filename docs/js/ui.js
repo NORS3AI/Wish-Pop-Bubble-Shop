@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v204"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v205"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -4915,14 +4915,30 @@ const CUSTOMER_ARCS = {
   // Thatch (straw house) — catastrophizes everything. Walk-in face changes per chapter: first ruined
   // house (grumpy arms-crossed, the base art) → second ruined house (the cheery "here we go again" pose).
   pig_straw: [
-    { line: "So my house is GONE. Big windbag huffed and — poof — straw everywhere. I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof." },
-    { art: "customer_pig_straw_ruined2", line: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof! I wish for… okay, iron hay. Is iron hay a thing? Make it a thing." },
+    { line: "So my house is GONE. Big windbag huffed and — poof — straw everywhere. I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof.",
+      parts: [
+        { text: "So my house is GONE. Big windbag huffed and — poof — straw everywhere." },
+        { text: "I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof.", art: "pig_straw_present" },
+      ] },
+    { art: "customer_pig_straw_ruined2", line: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof! I wish for… okay, iron hay. Is iron hay a thing? Make it a thing.",
+      parts: [
+        { text: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof!" },
+        { text: "I wish for… okay, iron hay. Is iron hay a thing? Make it a thing.", art: "customer_pig_straw_happy" },
+      ] },
   ],
   // Woody (stick house) — aggressively in denial. Walk-in face changes per chapter: first ruined
   // house (sad, the base art) → second ruined house (muddy, covered in straw).
   pig_stick: [
-    { line: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair. It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother." },
-    { art: "customer_pig_stick_ruined2", line: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best. I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them." },
+    { line: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair. It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother.",
+      parts: [
+        { text: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair." },
+        { text: "It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother.", art: "pig_stick_present" },
+      ] },
+    { art: "customer_pig_stick_ruined2", line: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best. I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them.",
+      parts: [
+        { text: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best." },
+        { text: "I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them.", art: "pig_stick_present" },
+      ] },
   ],
 };
 function custArc(id) { return CUSTOMER_ARCS[id] || null; }
@@ -4933,8 +4949,36 @@ function advanceCustStory(id) { const a = custArc(id); if (!a) return; const s =
 function applyCustArc(round) {
   if (!round || !round.customer || round.story) return;
   const chap = custChapter(round.customer.id);
-  if (chap) round.customer = Object.assign({}, round.customer, { line: chap.line }, chap.art ? { art: chap.art } : {});
+  if (chap) round.customer = Object.assign({}, round.customer, { line: chap.line },
+    chap.art ? { art: chap.art } : {}, chap.parts ? { parts: chap.parts } : {});
 }
+/* ---- Paginated wish dialogue on the customer card (story-mode feel) -------------
+ * A customer with a long paragraph reads it a bit at a time: the first line shows,
+ * then a ▸ arrow reveals the rest (optionally swapping the character's expression),
+ * and Start Scoop stays locked until they've said everything. Authored `parts`
+ * (with per-part art) win; otherwise a long line auto-splits at a sentence boundary. */
+function autoSplitWish(line) {
+  const s = (line || "").trim();
+  const sentences = s.match(/[^.!?]+[.!?]+["”’]?(?:\s+|$)/g);
+  if (!sentences || sentences.length < 2 || s.length < 110) return [{ text: s }];
+  const total = s.length; let best = 1, bestDiff = Infinity, run = 0;
+  for (let i = 0; i < sentences.length - 1; i++) {
+    run += sentences[i].length;
+    const diff = Math.abs(run - (total - run));
+    if (diff < bestDiff) { bestDiff = diff; best = i + 1; }
+  }
+  const a = sentences.slice(0, best).join("").trim(), b = sentences.slice(best).join("").trim();
+  return b ? [{ text: a }, { text: b }] : [{ text: s }];
+}
+function wishParts(c) {
+  if (c && Array.isArray(c.parts) && c.parts.length) return c.parts;
+  return autoSplitWish(c ? c.line : "");
+}
+function setCustChar(artKey, c) {
+  const el = document.querySelector("#screen-customer .cust-char");
+  if (el && artKey) { el.classList.remove("swap"); void el.offsetWidth; el.innerHTML = ART.tag(artKey, c.emoji, "cust-char-art"); el.classList.add("swap"); }
+}
+let WISH_STEPS = null, WISH_STEP = 0;
 function startRound() {
   SFX.unlock();
   stopRoundTimers();
@@ -4996,6 +5040,9 @@ function renderCustomer() {
   const bcell = (icon, label, value, cls) => `<div class="bcell">${icon ? `<img class="bic" src="art/ui/${icon}.png" alt="">` : ""}<div class="bval ${cls || ""}">${value}</div><div class="blbl">${label}</div></div>`;
   // Full-bleed scene image only on realms that have one (currently Willow); other realms keep the normal padded layout.
   const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
+  // Paginated wish dialogue: long paragraphs reveal a line at a time (see wishParts).
+  const wishSteps = wishParts(c); WISH_STEPS = wishSteps; WISH_STEP = 0;
+  const wishLocked = wishSteps.length > 1;
   html("customer", `
     ${custBgEl}
     <div class="cust-top">
@@ -5010,9 +5057,10 @@ function renderCustomer() {
         <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1}">${custArt(c, "cust-char-art")}</div>
       </div>
       <div class="cust-nameplate"><img src="art/ui/kit_02.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
-      <div class="cust-wishbox">
-        <div class="cust-wish-text">“${c.line}”</div>
+      <div class="cust-wishbox${wishSteps.length > 1 ? " has-next" : ""}">
+        <div class="cust-wish-text" id="cust-wish-text">“${wishSteps[0].text}”</div>
         ${extra}
+        ${wishSteps.length > 1 ? `<button class="wish-next" id="wish-next" aria-label="Read more">▸</button>` : ""}
       </div>
       <div class="cust-bottombar">
         ${bcell("kit_13", "Payment", ROUND.payment)}
@@ -5020,7 +5068,7 @@ function renderCustomer() {
         ${bcell("kit_17", "Allergy", allergyMark)}
       </div>
     </div>
-    <button class="cust-scoop baked" id="scoop-btn"><img src="art/ui/btn_scoop.png" alt="Start Scoop" draggable="false"></button>
+    <button class="cust-scoop baked${wishLocked ? " locked" : ""}" id="scoop-btn"><img src="art/ui/btn_scoop.png" alt="Start Scoop" draggable="false"></button>
     ${canWager ? `
       <div class="vip-overlay" id="vip-overlay">
         <div class="vip-modal">
@@ -5037,7 +5085,25 @@ function renderCustomer() {
   const closeVip = () => { const o = document.getElementById("vip-overlay"); if (o) o.remove(); };
   on("#vip-yes", "click", () => { ROUND.keyStaked = true; SFX.unlock(); SFX.charm(); toast(`🗝️ ${vipCost} keys wagered — make it count!`); closeVip(); });
   on("#vip-no", "click", () => { SFX.unlock(); closeVip(); });
-  on("#scoop-btn", "click", renderScoop);
+  // ▸ arrow reveals the next line of a long wish; Start Scoop unlocks once it's all been read.
+  on("#wish-next", "click", () => {
+    if (!WISH_STEPS || WISH_STEP >= WISH_STEPS.length - 1) return;
+    WISH_STEP++;
+    const part = WISH_STEPS[WISH_STEP];
+    const tx = document.getElementById("cust-wish-text");
+    if (tx) { tx.textContent = "“" + part.text + "”"; tx.style.animation = "none"; void tx.offsetWidth; tx.style.animation = "wishFade .28s ease"; }
+    if (part.art) setCustChar(part.art, c);
+    SFX.unlock(); SFX.pop(1);
+    if (WISH_STEP >= WISH_STEPS.length - 1) {
+      const arrow = document.getElementById("wish-next"); if (arrow) arrow.remove();
+      const sb = document.getElementById("scoop-btn"); if (sb) sb.classList.remove("locked");
+    }
+  });
+  on("#scoop-btn", "click", () => {
+    const sb = document.getElementById("scoop-btn");
+    if (sb && sb.classList.contains("locked")) { SFX.unlock(); SFX.err && SFX.err(); const a = document.getElementById("wish-next"); if (a) { a.style.animation = "none"; void a.offsetWidth; a.style.animation = "wishNudge .5s ease"; } return; }
+    renderScoop();
+  });
   applyRealmBackground();
   show("customer");
 }

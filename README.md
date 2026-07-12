@@ -19,6 +19,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 💬 **Customers talk it out.** Chatty customers with a lot to say now reveal their wish a line at a
+  time — read the first bit, tap the ▸ arrow for the rest (some even change expression as they go),
+  and Start Scoop waits until they've finished. Little story beats, right at the counter.
 - 🏠 **Step inside the shop.** When a customer arrives with a wish, you now see the cozy inside of
   your own bubble shop — potion shelves, the bubbling cauldron, and the open door out to the village.
 - 🐺 **The Wolf keeps 'visiting.'** He turns up as a regular customer in a new ridiculous disguise
