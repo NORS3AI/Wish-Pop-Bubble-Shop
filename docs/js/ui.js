@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v201"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v202"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -160,11 +160,11 @@ function applyHomeBackground() {
 // Per-realm scene background for the customer screen (Willow uses the village art).
 const REALM_BG = { willow: "art/shop_interior.jpg" };
 function applyRealmBackground() {
-  const sc = document.getElementById("screen-customer"); if (!sc) return;
+  const bg = document.getElementById("cust-bg"); if (!bg) return;
   const url = REALM_BG[GAME.realm];
-  if (!url) { sc.style.backgroundImage = ""; sc.classList.remove("has-realm-bg"); return; }
+  if (!url) { bg.style.backgroundImage = ""; bg.classList.remove("has-realm-bg"); return; }
   const im = new Image();
-  im.onload = () => { const s = document.getElementById("screen-customer"); if (s) { s.style.backgroundImage = "url('" + url + "')"; s.classList.add("has-realm-bg"); } };
+  im.onload = () => { const b = document.getElementById("cust-bg"); if (b) { b.style.backgroundImage = "url('" + url + "')"; b.classList.add("has-realm-bg"); } };
   im.src = url;
 }
 // apply an optional custom cauldron-pot image over the color skin
@@ -4994,7 +4994,10 @@ function renderCustomer() {
     : "";
   const streakChip = GAME.streak >= 2 ? `<div class="cust-streak">🔥 ${GAME.streak}</div>` : "";
   const bcell = (icon, label, value, cls) => `<div class="bcell">${icon ? `<img class="bic" src="art/ui/${icon}.png" alt="">` : ""}<div class="bval ${cls || ""}">${value}</div><div class="blbl">${label}</div></div>`;
+  // Full-bleed scene image only on realms that have one (currently Willow); other realms keep the normal padded layout.
+  const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
   html("customer", `
+    ${custBgEl}
     <div class="cust-top">
       <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
       <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
