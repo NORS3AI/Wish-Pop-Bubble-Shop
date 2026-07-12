@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v198"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v199"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -513,11 +513,10 @@ function maybeBoPeep() {
 function pigsMovingCust() { return { id: "pigs_moving", name: "The Two Pigs", emoji: "🐷", wishType: "PowerPop", location: "Willow-Wish Village", line: "" }; }
 function playPigsMoving() {
   SFX.unlock();
-  ["pigs_duo", "pigs_duo_shrug", "pigs_duo_cross", "pigs_duo_cry", "pigs_duo_cheer"].forEach(f => ART.ensure(f, () => {}));
+  ["pigs_duo", "pigs_duo_shrug", "pigs_duo_cross", "pigs_duo_cheer"].forEach(f => ART.ensure(f, () => {}));
   GAME.pigsMoved = true; save();   // they're leaving Willow regardless — remove them from the roster
   renderStoryBeats([
-    { name: "The Two Pigs", fig: "pigs_duo_cry", text: "<b>Pig One:</b> Both houses. <i>Gone.</i> I <i>told</i> you the sky had it out for us.<br><b>Pig Two:</b> I am NOT crying. It’s the straw. And the sticks. It’s a… dust thing." },
-    { name: "The Two Pigs", fig: "pigs_duo_shrug", text: "<b>Pig One:</b> Okay. New plan. We give up.<br><b>Pig Two:</b> We do NOT give up. We <i>relocate</i>. Big difference." },
+    { name: "The Two Pigs", fig: "pigs_duo_shrug", text: "<b>Pig One:</b> Both houses. <i>Gone.</i> I <i>told</i> you the sky had it out for us. New plan: we give up.<br><b>Pig Two:</b> We do NOT give up. We <i>relocate</i>. Big difference." },
     { name: "The Two Pigs", gallery: ["pigs_family_portrait"], text: "<b>Pig Two:</b> We’re moving in with our brother — the smug one who built with <b>brick</b>.<br><b>Pig One:</b> Fancy realm. Very exclusive. We’re basically getting an upgrade." },
     { name: "The Two Pigs", fig: "pigs_duo_cheer", cta: "Pack it up  ▸", text: "<b>Pig One:</b> We just need… a small suitcase.<br><b>Pig Two:</b> That fits a whole house. Don’t ask questions. Can you?" },
   ], () => startStoryWish(pigsMovingCust(), "pigs-moving", "One small suitcase, please — the kind that fits an entire house. We’re moving up in the world. Bricks, baby."));
