@@ -882,3 +882,10 @@ _arms. Wolf visits now support per-beat `fig` + per-outcome outro fig, so Hank
 EMOTES through his scene: sly (scoping) → hungry (belly-clutch) → cheers (win) /
 arms-crossed (lose). This is the template for giving other costumes multiple
 expressions. (Owner may send more expression sets for delivery/sherlock/bowler.)
+
+### Sherlock (detective) expression variants (v192)
+Added 6 sherlock-costume expressions: wolf_sherlock_pie, _magnify, _aha, _arms,
+_ponder, _eye (a dramatic close-up, not yet wired). His visit now emotes:
+holds the pie "evidence" (pie) → ponders his sustenance (ponder) → triumphant
+"aha!" on a win / arms-crossed on a loss. (delivery + bowler still emoji-single-
+pose; owner may send expression sets for those too.)

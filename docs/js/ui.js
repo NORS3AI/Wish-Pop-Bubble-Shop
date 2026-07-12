@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v191"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v192"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -600,10 +600,11 @@ const WOLF_VISITS = [
     outroWin: "Now THAT’S service. Package received — by my stomach. Wally, signing off! <i>(scurries)</i>" },
   { costume: "wolf_sherlock", name: "“Detective Sherwood Woolf”",
     intro: [
-      { text: "Ahem — Detective Sherwood Woolf. I’m investigating a most troubling case: someone’s been eating <i>all</i> the pies in Willow. Fiendish business." },
-      { text: "Suspects? None. Leads? None. Motive? Extreme deliciousness. …I’ll require sustenance for the investigation. Something hearty. For clue-related reasons.", cta: "Case closed  ▸" },
+      { fig: "wolf_sherlock_pie", text: "Ahem — Detective Sherwood Woolf. I’m investigating a most troubling case: someone’s been eating <i>all</i> the pies in Willow. Fiendish business. <i>(He brandishes a pie. Evidence.)</i>" },
+      { fig: "wolf_sherlock_ponder", text: "Suspects? None. Leads? None. Motive? Extreme deliciousness. …I’ll require sustenance for the investigation. Something hearty. For clue-related reasons.", cta: "Case closed  ▸" },
     ],
     wish: "A detective’s ration, piping hot — purely to fuel my brilliant deductions, which are ongoing and unrelated to pie.",
+    outroFigWin: "wolf_sherlock_aha", outroFigLose: "wolf_sherlock_arms",
     outroWin: "Aha! The case remains open, but I am no longer peckish. Elementary. Toodle-oo!" },
   { costume: "wolf_bowler", name: "“Baron von Nothungry”",
     intro: [
