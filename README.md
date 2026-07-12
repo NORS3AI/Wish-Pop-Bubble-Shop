@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐟 **Wishy the Fish & a new rare currency.** The wishing-well fish drifts into your shop in
+  his own little water bubble — and he doesn't pay in gold. He pays in **Pearls**, a rare
+  currency that trickles in only when he visits. A tappable bubble beside him explains it, and
+  a pearl counter appears in your wallet once you've collected some. Grab them while you can!
 - 🐇🐢 **The Tortoise and the Hare.** The boastful Hare zips into your shop as one of the very
   first customers each visit, sure he's miles ahead — while the weary Tortoise plods in dead
   last, right before the big finale, wishing he could "walk AND sleep at the same time." Keep

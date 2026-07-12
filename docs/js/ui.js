@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v218"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v219"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -22,6 +22,7 @@ function loadGame() {
 // backfill cosmetic fields for older saves (so new features never crash on load)
 function normalizeGame(g) {
   if (typeof g.stardust !== "number") g.stardust = 0;
+  if (typeof g.pearls !== "number") g.pearls = 0; // rare currency — some customers (the wish-fish) pay in pearls, not gold
   if (typeof g.keys !== "number") g.keys = 0; // Treasure keys popped from bubbles → open the Vault
   if (typeof g.recycled !== "number") g.recycled = 0; // lifetime junk recycled (drives achievements)
   if (typeof g.streak !== "number") g.streak = 0;
@@ -119,7 +120,7 @@ function charmArt(id, cls) { const ch = D.SPECIAL_CHARMS[id]; return ART.tag("ch
 function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoji, cls || "cust-art"); }
 // Per-customer size tweaks in the arch frame (1 = default). Some art fills its
 // canvas more than others, so a few get scaled down to sit comfortably.
-const CHAR_SCALE = { owl: 0.82, tortoise: 0.82, hare: 0.9 };
+const CHAR_SCALE = { owl: 0.82, tortoise: 0.82, hare: 0.9, fish: 0.86 };
 // A customer's face with an EXPRESSION. "normal" is the base customer_<id>.png;
 // happy / angry / allergic are customer_<id>_<mood>.png. If that art isn't there,
 // it falls back to the given emoji (the emotion face we've always shown).
@@ -275,6 +276,7 @@ function homeBar() {
   return `<div class="home-bar">
     <div class="home-pet" title="Your buddy">${buddyArt(GAME.equipped.familiar, "home-pet-art")}</div>
     <div class="home-res">
+      ${GAME.pearls > 0 ? `<span class="res-chip pearls"><span class="res-ic">🦪</span><b>${GAME.pearls.toLocaleString()}</b></span>` : ""}
       <span class="res-chip"><span class="res-ic">🗝️</span><b>${GAME.keys || 0}</b></span>
       <span class="res-chip"><span class="res-ic">🪙</span><b>${(GAME.gold || 0).toLocaleString()}</b></span>
     </div>
@@ -1147,6 +1149,7 @@ function renderAdmin() {
           ${arcRow("baker", "👨‍🍳 Baker")}
           ${arcRow("hare", "🐇 The Hare")}
           ${arcRow("tortoise", "🐢 The Tortoise")}
+          ${arcRow("fish", "🐟 Wishy the Fish")}
           <button class="btn small" id="ad-pigs-move">🧳 Pigs: Moving Day</button>
           <button class="btn small" id="ad-goldi-mouse">🐭 Goldilocks: Mouse's bears</button>
           <button class="btn small" id="ad-goldi-deliver">🧸 Goldilocks: Deliver bears</button>
@@ -1183,6 +1186,7 @@ function renderAdmin() {
         <div style="font-weight:800;margin-bottom:8px">💰 Give yourself resources</div>
         <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">
           <button class="btn good small" id="ad-gold">+1000 🪙</button>
+          <button class="btn good small" id="ad-pearls">+25 🦪</button>
           <button class="btn good small" id="ad-dust">+100 ✨</button>
           <button class="btn good small" id="ad-treats">+10 🐸</button>
           <button class="btn good small" id="ad-keys">+10 🗝️</button>
@@ -1252,6 +1256,7 @@ function renderAdmin() {
   on("#ad-cust-baker", "click", () => adminCustomer("baker"));
   on("#ad-cust-hare", "click", () => adminCustomer("hare"));
   on("#ad-cust-tortoise", "click", () => adminCustomer("tortoise"));
+  on("#ad-cust-fish", "click", () => adminCustomer("fish"));
   on("#ad-pigs-move", "click", () => { GAME.pigsMoved = false; playPigsMoving(); });
   on("#ad-goldi-mouse", "click", () => { GAME.goldilocksStep = 0; GAME.goldilocksAt = -1; save(); playGoldiMouse(); });
   on("#ad-goldi-deliver", "click", () => { GAME.goldilocksStep = 1; GAME.goldilocksAt = -1; if (!satchelCount("teddy")) satchelAdd("teddy", 3); save(); playGoldiDeliver(); });
@@ -1271,6 +1276,7 @@ function renderAdmin() {
   on("#ad-btn-ginger", "click", playGingerbreadButton);
   on("#ad-btn-reset", "click", () => { GAME.buttonStep = 0; GAME.buttonChainAt = -1; GAME.satchel = {}; save(); toast("Button chain reset"); renderAdmin(); });
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
+  on("#ad-pearls", "click", () => { GAME.pearls = (GAME.pearls || 0) + 25; save(); toast("+25 pearls 🦪"); renderAdmin(); });
   on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
   on("#ad-treats", "click", () => { GAME.treats += 10; save(); toast("+10 treats 🐸"); renderAdmin(); });
   on("#ad-keys", "click", () => { GAME.keys = (GAME.keys || 0) + 10; save(); toast("+10 keys 🗝️"); renderAdmin(); });
@@ -5173,6 +5179,13 @@ const CUSTOMER_ARCS = {
     { line: "Oh — you again! Small world… or a very long road. That hare blew through here days back, they tell me, then vanished clean off. No matter. Still going. Could you soften the ground for these old feet?" },
     { line: "Still plodding, still smiling. Funny — haven’t spotted that hare in a good while now. A little charm to keep my shell cozy through another night on the trail?" },
   ],
+  // Wishy the Fish — the wishing-well fish who grants everyone's wishes but his own.
+  // Pays in pearls. His arc ties into the village mess (pigs' debris, lost buttons).
+  fish: [
+    { line: "Ha — a wish-fish at a wish SHOP! Irony’s not lost on me. See, I grant everyone else’s coin-wishes down my well… but never my own. So here I am! I wish for a bit of company — it’s awful quiet down there. Payment’s in pearls, mind; it’s all a well-fish has." },
+    { line: "Company worked a TREAT — the whole village tosses coins now! But my water’s gone murky: a heap of straw and sticks splashed in (those PIGS), and I keep spitting up lost buttons. I wish for a charm to keep my well crystal-clear. More pearls for you." },
+    { line: "My well’s the talk of Willow now — bright as glass, wishes flying! One more, if you’d be so kind: make my little water bubble shimmer, so I can watch the stars while I work. Take these pearls — you’ve earned every one." },
+  ],
 };
 function custArc(id) { return CUSTOMER_ARCS[id] || null; }
 function custStoryStep(id) { return (GAME.custStory && GAME.custStory[id]) || 0; }
@@ -5223,6 +5236,12 @@ const TOWN_WISHES = {
     "I tried a book club, a knitting circle, a choir — they all “suddenly remembered somewhere to be.” A little charm of good company?",
     "I’m on a strict no-sheep diet. Day two. It is NOT going well. A wish to quiet the cravings, please.",
   ],
+  fish: [
+    "The village keeps tossing wishes down my well — I’m run off my fins! A charm to sort the real wishes from the bottle-caps? Pearls for your trouble.",
+    "A heron’s been eyeing my bubble like it’s a buffet. A little charm to look less… snackable? Paid in pearls, naturally.",
+    "Someone wished for “true love” down my well and now there are TWO lovesick newts circling me. A charm to send them off happy together? Pearls, as ever.",
+    { t: "A shadow leaned over my well last night — a bonnet, and an awful lot of teeth — and wished for “a plump little snack to visit grandma.” Gave me the shivers, fins to tail! A bravery charm, please — and do be careful up there. Pearls for you.", when: () => GAME.storyStep >= 4 },
+  ],
 };
 function everydayWishes(id) {
   const arr = TOWN_WISHES[id] || [];
@@ -5250,15 +5269,17 @@ function applyCustArc(round) {
 function autoSplitWish(line) {
   const s = (line || "").trim();
   const sentences = s.match(/[^.!?]+[.!?]+["”’]?(?:\s+|$)/g);
-  if (!sentences || sentences.length < 2 || s.length < 110) return [{ text: s }];
-  const total = s.length; let best = 1, bestDiff = Infinity, run = 0;
-  for (let i = 0; i < sentences.length - 1; i++) {
-    run += sentences[i].length;
-    const diff = Math.abs(run - (total - run));
-    if (diff < bestDiff) { bestDiff = diff; best = i + 1; }
+  if (!sentences || sentences.length < 2 || s.length < 96) return [{ text: s }];
+  // Greedily pack whole sentences into parts, each kept short enough to fit the fixed-height
+  // wish box (~3 lines). Long paragraphs become as many short pages as needed — no clipping.
+  const BUDGET = 92;
+  const parts = []; let cur = "";
+  for (const sen of sentences) {
+    if (cur && (cur + sen).trim().length > BUDGET) { parts.push(cur.trim()); cur = sen; }
+    else cur += sen;
   }
-  const a = sentences.slice(0, best).join("").trim(), b = sentences.slice(best).join("").trim();
-  return b ? [{ text: a }, { text: b }] : [{ text: s }];
+  if (cur.trim()) parts.push(cur.trim());
+  return (parts.length > 1 ? parts : [s]).map(t => ({ text: t }));
 }
 function wishParts(c) {
   if (c && Array.isArray(c.parts) && c.parts.length) return c.parts;
@@ -5301,6 +5322,8 @@ function startRound() {
   // a VIP guest (any realm) — you may wager a key on the customer screen for a bigger reward
   ROUND.vip = !ROUND.wish.boss && !ROUND.rush && Math.random() < BALANCE.VIP_CHANCE;
   ROUND.keyStaked = false;
+  // some customers pay in a rare currency (the wish-fish pays pearls); keep those rounds plain (no rush/VIP overlay)
+  if (ROUND.customer && ROUND.customer.pays && ROUND.customer.pays !== "gold") { ROUND.rush = false; ROUND.vip = false; }
   renderCustomer();
 }
 // Which arched portrait frame each realm uses (falls back to the gold one)
@@ -5310,6 +5333,9 @@ function realmFrame() { return (currentRealm().custFrame) || "cframe_01"; }
 // us add new special customer types later without touching the layout.
 function custBadges() {
   const w = ROUND.wish, out = [];
+  // rare-currency badge (its own bubble — always shows for pearl-payers, alongside any other badge)
+  if (ROUND.currency === "pearls") out.push({ icon: "🦪", cls: "pearl", title: "Pays in Pearls!",
+    text: "This customer pays in Pearls — a rare currency, not gold! Grab them while you can; they’re bound to be worth something down the road." });
   if (w.boss) out.push({ icon: "👑", cls: "boss", title: "Boss Customer",
     text: `A royal, very fussy guest! Tiny green zones, only ${BALANCE.BOSS_SLOTS} slots, and two allergies to avoid. Delight them for a grand reward.` });
   else if (ROUND.rush) out.push({ icon: "⏱️", cls: "rush", title: "In a Hurry",
@@ -5324,6 +5350,8 @@ function custBadges() {
 }
 function renderCustomer() {
   const c = ROUND.customer, w = ROUND.wish, realm = currentRealm();
+  ROUND.currency = (c && c.pays) || "gold";   // which currency this customer pays in (gold, pearls, …)
+  const payGlyph = ROUND.currency === "pearls" ? "🦪" : null;   // non-gold currencies show an emoji instead of the coin icon
   const allergyList = [w.allergy, w.allergy2].filter(Boolean);
   // allergy shows a simple mark: ✕ none, ✔ one, ✔✔ two
   const allergyMark = allergyList.length === 0
@@ -5351,7 +5379,10 @@ function renderCustomer() {
     ${custBgEl}
     <div class="cust-top">
       <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
-      <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
+      <div class="cust-wallet">
+        ${GAME.pearls > 0 ? `<div class="cust-coin pearls">🦪 <b>${GAME.pearls.toLocaleString()}</b></div>` : ""}
+        <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
+      </div>
     </div>
     <div class="grow" style="overflow:hidden; display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:4px">
       <div class="cust-banner"><img src="art/ui/${bannerImg}.png" alt="A New Customer Arrives" draggable="false"></div>
@@ -5367,7 +5398,7 @@ function renderCustomer() {
         ${wishSteps.length > 1 ? `<button class="wish-next" id="wish-next" aria-label="Read more">▸</button>` : ""}
       </div>
       <div class="cust-bottombar">
-        ${bcell("kit_13", "Payment", ROUND.payment)}
+        ${payGlyph ? bcell("", "Payment", `<span class="pay-alt">${payGlyph} ${ROUND.payment}</span>`) : bcell("kit_13", "Payment", ROUND.payment)}
         ${bcell("kit_16", "Target", w.requiredMatch + "%")}
         ${bcell("kit_17", "Allergy", allergyMark)}
       </div>
@@ -6424,7 +6455,8 @@ function serve() {
       res.vipKeyLost = true;
     }
   }
-  GAME.gold += res.gold;
+  if (ROUND.currency === "pearls") { GAME.pearls = (GAME.pearls || 0) + res.gold; res.paidPearls = res.gold; }
+  else { GAME.gold += res.gold; }
   // tracked stats for quests
   if (res.success) {
     bumpStat("served");
@@ -6441,10 +6473,11 @@ function renderResult(res) {
   const win = res.success, c = ROUND.customer, zone = res.allergy && res.allergy.zone;
   const allergyLine = (win && (zone === "yellow" || zone === "red"))
     ? `<div class="stat-line"><span>⚠️ Allergy (${zone})</span><span style="color:var(--bad)">${zone === "red" ? "−50%" : "−25%"} pay</span></div>` : "";
+  const coin = ROUND.currency === "pearls" ? "🦪" : "🪙";   // the fish (and future rare-currency folk) pay in pearls
   const quickLine = (win && res.quickTip > 0)
-    ? `<div class="stat-line"><span>⚡ Quick‑service tip</span><span class="gold">🪙 +${res.quickTip}</span></div>` : "";
+    ? `<div class="stat-line"><span>⚡ Quick‑service tip</span><span class="gold">${coin} +${res.quickTip}</span></div>` : "";
   const qualLine = (win && res.qualityTip > 0)
-    ? `<div class="stat-line"><span>✨ Perfect potion!</span><span class="gold">🪙 +${res.qualityTip}</span></div>` : "";
+    ? `<div class="stat-line"><span>✨ Perfect potion!</span><span class="gold">${coin} +${res.qualityTip}</span></div>` : "";
   // PERFECT = a spotless 100% win with NO allergy reaction. An allergic win is
   // only "almost perfect", so it does not earn the confetti celebration.
   const isPerfect = win && res.weighted === 100 && zone !== "yellow" && zone !== "red";
@@ -6471,7 +6504,7 @@ function renderResult(res) {
   const vipLostLine = (!win && res.vipKeyLost)
     ? `<div class="stat-line"><span>🗝️ Wagered ${BALANCE.VIP_KEY_COST} keys</span><span style="color:var(--bad)">lost!</span></div>` : "";
   const earnedRow = win
-    ? `<div class="stat-line"><span>Earned</span><span class="gold">🪙 ${res.gold}</span></div>${quickLine}${qualLine}${rushLine}${vipWinLine}`
+    ? `<div class="stat-line"><span>Earned</span><span class="gold">${coin} ${res.gold}${ROUND.currency === "pearls" ? " pearls" : ""}</span></div>${quickLine}${qualLine}${rushLine}${vipWinLine}`
     : `<div class="stat-line"><span>Earned</span><span class="muted">no coins — just trash!</span></div>
        <div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${trashN}</b> piece${trashN === 1 ? "" : "s"}</span></div>${vipLostLine}
        <div class="stat-line"><span>🔥 Win streak</span><span class="muted">broken</span></div>`;
@@ -6568,9 +6601,10 @@ function resultStreaksMarkup(res) {
 }
 function rewardBubblesMarkup(res) {
   const tips = Math.max(0, res.tip);
+  const coin = ROUND && ROUND.currency === "pearls" ? "🦪" : "🪙";
   const dust = res.cleanDust > 0 ? ` <span class="dust">✨ <b id="rb-dust">0</b></span>` : "";
   return `<div class="reward-bubbles" id="reward-bubbles">
-    <div class="rb-total">Collected <span class="gold">🪙 <b id="rb-count">0</b></span>${dust}</div>
+    <div class="rb-total">Collected <span class="gold">${coin} <b id="rb-count">0</b></span>${dust}</div>
     <div class="rb-hint muted" id="rb-hint">${res.cleanDust > 0 ? "Pop for coins — and your allergy‑free Stardust! 🫧" : tips > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧"}</div>
   </div>`;
 }
@@ -6605,7 +6639,8 @@ function wireRewardBubbles(res) {
     const btn = document.createElement("button");
     btn.className = "rbub " + cls; btn.dataset.amt = amt; if (big) btn.dataset.big = "1"; btn.dataset.flavor = opts.flavor || (big ? "gold" : "coin");
     btn.setAttribute("aria-label", cls === "dust" ? "stardust reward" : cls === "streak" ? "win-streak bonus" : big ? "gold reward" : "tip coin");
-    btn.innerHTML = cls === "dust" ? `<span class="rb-amt">✨ ${amt}</span>` : cls === "streak" ? `<span class="rb-amt">🔥 ${amt}</span>` : big ? `<span class="rb-amt">🪙 ${amt}</span>` : "🪙";
+    const coin = ROUND && ROUND.currency === "pearls" ? "🦪" : "🪙";
+    btn.innerHTML = cls === "dust" ? `<span class="rb-amt">✨ ${amt}</span>` : cls === "streak" ? `<span class="rb-amt">🔥 ${amt}</span>` : big ? `<span class="rb-amt">${coin} ${amt}</span>` : coin;
     wrap.appendChild(btn); layer.appendChild(wrap);
     return btn;
   };
@@ -6623,7 +6658,7 @@ function wireRewardBubbles(res) {
     checkDone();
   };
   const checkDone = () => setTimeout(() => {
-    if (!layer.querySelector(".rbub:not(.popped)") && hintEl) hintEl.textContent = `All collected! 🪙 ${res.gold}${dustAmt ? ` · ✨ ${dustAmt}` : ""}`;
+    if (!layer.querySelector(".rbub:not(.popped)") && hintEl) hintEl.textContent = `All collected! ${ROUND && ROUND.currency === "pearls" ? "🦪" : "🪙"} ${res.gold}${dustAmt ? ` · ✨ ${dustAmt}` : ""}`;
   }, 260);
   const bigBtn = makeBubble("big", base, { big: true });
   const littleBtns = [];

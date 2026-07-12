@@ -684,6 +684,11 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cust-coin { display: flex; align-items: center; gap: 6px; padding: 3px 14px 3px 4px; border-radius: 16px; font-family: var(--ff-display); font-weight: 700; font-size: 18px; color: #fff;
   background: linear-gradient(180deg, rgba(58,38,86,.85), rgba(26,15,46,.9)); border: 2px solid rgba(240,200,110,.6); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
 .cust-coin img { height: 30px; width: auto; }
+.cust-wallet { display: flex; align-items: center; gap: 6px; }
+.cust-coin.pearls { padding: 3px 12px; border-color: rgba(150,210,255,.7); background: linear-gradient(180deg, rgba(40,60,96,.9), rgba(20,34,60,.92)); }
+.pay-alt { white-space: nowrap; }
+.res-chip.pearls { color: #d8ecff; }
+.cust-badge.pearl { background: radial-gradient(circle at 38% 32%, #eaf6ff, #6fb6e6 80%); border-color: #cfeaff; }
 .cust-banner { position: relative; width: 96%; max-width: 372px; margin: 0 auto -52px; z-index: 5; }
 .cust-banner img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
 .cust-banner span { position: absolute; left: 8%; right: 8%; top: 46%; transform: translateY(-50%); text-align: center;

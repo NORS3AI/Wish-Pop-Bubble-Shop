@@ -261,6 +261,8 @@ const CUSTOMERS = [
     line: "Name’s Dash — racer number ONE! I’m so far ahead of that tortoise I’ve time for a wish. Keep these legs springy for me?" },
   { id: "tortoise",    name: "The Tortoise", emoji: "🐢", location: "Willow-Wish Village", wishType: "SleepySweet",
     line: "Phew… I’m plumb tuckered. I wish there was a way I could walk AND sleep at the same time." },
+  { id: "fish",        name: "Wishy the Fish", emoji: "🐟", location: "Willow-Wish Village", wishType: "GlowTreat", pays: "pearls",
+    line: "Ha — a wish-fish at a wish SHOP! I grant everyone else’s coin-wishes down my well, but never my own. Payment’s in pearls, I’m afraid — it’s all a well-fish has." },
 ];
 
 /* Retired from the active Willow roster — kept here to reintroduce in a future
@@ -274,7 +276,7 @@ const RETIRED_CUSTOMERS = [
 const ALLERGY_IDEAS = {
   wolf: "Beauty", gingerbread: "Sleep", baker: "Energy", mouse: "Courage",
   owl: "Light", gnome: "Mischief", goldilocks: "Mischief",
-  hare: "Calm", tortoise: "Energy",
+  hare: "Calm", tortoise: "Energy", fish: "Mischief",
 };
 
 /* --- 7. Familiar (Pet) upgrade table — the pet's default look is a Toad, but it
