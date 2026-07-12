@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v187"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v188"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -611,6 +611,7 @@ const WOLF_VISITS = [
     wish: "One proper feast-in-a-bottle. No tricks this time — I mean it. A wolf can only skulk about hungry for so long.",
     outroWin: "…Thank you. Truly. For a moment there, I forgot I was hungry. <i>(quietly)</i> …It’s back now. But — thank you." },
 ];
+let WOLF_DEMO = false;   // admin: play all his visits back-to-back (no customers between)
 function currentWolfVisit() { return WOLF_VISITS[Math.min(GAME.wolfArcStep || 0, WOLF_VISITS.length - 1)]; }
 function playWolfVisit() {
   const i = GAME.wolfArcStep || 0; if (i >= WOLF_VISITS.length) return;
@@ -647,7 +648,8 @@ function storyWishOutro(tag, win) {
     const i = GAME.wolfArcStep || 0, v = WOLF_VISITS[Math.min(i, WOLF_VISITS.length - 1)];
     GAME.wolfArcStep = i + 1; save();
     const beats = [{ name: v.name, fig: v.costume, cta: "Off he skulks  ▸", text: win ? v.outroWin : "Bah! Barely took the edge off. I’ll be BACK. Hungrier. You’ll see." }];
-    renderStoryBeats(beats, () => { save(); renderStart(); });
+    // "play all back-to-back" mode: roll straight into his next disguise instead of going home
+    renderStoryBeats(beats, () => { save(); if (WOLF_DEMO && (GAME.wolfArcStep || 0) < WOLF_VISITS.length) playWolfVisit(); else { WOLF_DEMO = false; renderStart(); } });
     return;
   }
   if (tag === "wolf-buttons") {
@@ -1003,9 +1005,11 @@ function renderAdmin() {
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:8px">🐺 The Wolf <span class="muted" style="font-weight:600;font-size:12px">· visit ${Math.min((GAME.wolfArcStep||0)+1, WOLF_VISITS.length)}/${WOLF_VISITS.length}${(GAME.wolfArcStep||0)>=WOLF_VISITS.length?" (done)":""}</span></div>
         <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn good small" id="ad-wolf-all">▶️ Play all ${WOLF_VISITS.length} back-to-back</button>
           <button class="btn small" id="ad-wolf-visit">🐺 Wolf visit (next disguise)</button>
           <button class="btn secondary small" id="ad-wolf-reset">↺ Reset wolf arc</button>
         </div>
+        <p class="muted" style="font-size:11px;text-align:center;margin:6px 0 0">“Play all” runs his 4 disguises in a row (you still make each wish) — no other customers between.</p>
       </div>
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:8px">🔎 Button Clue-Chain <span class="muted" style="font-weight:600;font-size:12px">· step ${GAME.buttonStep || 0}/3</span></div>
@@ -1064,8 +1068,9 @@ function renderAdmin() {
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
   on("#ad-satchel", "click", renderSatchel);
-  on("#ad-wolf-visit", "click", () => { if ((GAME.wolfArcStep || 0) >= WOLF_VISITS.length) { GAME.wolfArcStep = 0; save(); } playWolfVisit(); });
-  on("#ad-wolf-reset", "click", () => { GAME.wolfArcStep = 0; GAME.wolfArcAt = -1; save(); toast("Wolf arc reset"); renderAdmin(); });
+  on("#ad-wolf-all", "click", () => { WOLF_DEMO = true; GAME.wolfArcStep = 0; save(); playWolfVisit(); });
+  on("#ad-wolf-visit", "click", () => { WOLF_DEMO = false; if ((GAME.wolfArcStep || 0) >= WOLF_VISITS.length) { GAME.wolfArcStep = 0; save(); } playWolfVisit(); });
+  on("#ad-wolf-reset", "click", () => { WOLF_DEMO = false; GAME.wolfArcStep = 0; GAME.wolfArcAt = -1; save(); toast("Wolf arc reset"); renderAdmin(); });
   on("#ad-btn-wolf", "click", playWolfButtons);
   on("#ad-btn-red", "click", playRedButtons);
   on("#ad-btn-ginger", "click", playGingerbreadButton);
