@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v186"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v187"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -39,6 +39,8 @@ function normalizeGame(g) {
   if (typeof g.pigsMoved !== "boolean") g.pigsMoved = false;  // the two pigs have moved out of Willow (to the brick house)
   if (typeof g.buttonStep !== "number") g.buttonStep = 0;     // button clue-chain: 0=none,1=collected,2=shown Red,3=returned
   if (typeof g.buttonChainAt !== "number") g.buttonChainAt = -1; // servedTotal when the next button-chain beat is due
+  if (typeof g.wolfArcStep !== "number") g.wolfArcStep = 0;   // the Wolf's own visit count (disguise/hunger arc)
+  if (typeof g.wolfArcAt !== "number") g.wolfArcAt = -1;      // servedTotal when the Wolf's next visit is due
   if (typeof g.realm !== "string" || !D.REALM_BY_ID[g.realm]) g.realm = "willow"; // current location
   if (!g.unlockedRealms || typeof g.unlockedRealms !== "object") g.unlockedRealms = {};
   g.unlockedRealms.willow = true; // the starter realm is always unlocked
@@ -487,7 +489,7 @@ function startStoryWish(cust, tag, line, opts) {
 }
 function startRedWish(tag, line, opts) { startStoryWish(redCust(), tag || "red-arrival", line, opts); }
 // tags that route the result screen's Next button into a story-mode goodbye
-function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag === "bo-peep" || tag === "pigs-moving" || tag === "wolf-buttons"); }
+function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag === "bo-peep" || tag === "pigs-moving" || tag === "wolf-buttons" || tag === "wolf-arc"); }
 // Bo Peep — a story-mode shepherd (like Red). Meeting her turns ON the sheep hunt.
 function boPeepCust() { return { id: "bo_peep", name: "Bo Peep", emoji: "👧", wishType: "SafeSpell", location: "Willow-Wish Village", line: "" }; }
 function playBoPeep() {
@@ -531,7 +533,7 @@ function maybePigsMoving() {
 /* except his gumdrop button has gone magical and won't come loose (you keep   */
 /* it, give him a spare). GAME.buttonStep tracks the chain.                    */
 /* ======================================================================= */
-function wolfCust() { return { id: "wolf", name: "“Sir Reginald Notawolf”", emoji: "🐺", wishType: "PrettyPotion", location: "Willow-Wish Village", line: "" }; }
+function wolfCust(name) { return { id: "wolf", name: name || "“Sir Reginald Notawolf”", emoji: "🐺", wishType: "PrettyPotion", location: "Willow-Wish Village", line: "" }; }
 function playWolfButtons() {
   SFX.unlock();
   ART.ensure("wolf_tophat", () => {});
@@ -571,6 +573,60 @@ function maybeButtonChain() {
   if (s === 2) { playGingerbreadButton(); return true; }
   return false;
 }
+
+/* ======================================================================= */
+/* THE WOLF'S OWN ARC — a recurring, non-main-story regular. Every visit he    */
+/* turns up in a fresh ridiculous disguise with a new fake name (fooling no    */
+/* one), makes a wish, and the running gag is his bottomless hunger. Plays as  */
+/* short story-mode scenes → a real wish. GAME.wolfArcStep tracks his visits.  */
+/* Independent of the button chain — he can show up before Red's warning.      */
+/* ======================================================================= */
+const WOLF_VISITS = [
+  { costume: "wolf_tourist", name: "“Hank, a Tourist”",
+    intro: [
+      { text: "Aloha! Just a normal tourist — name’s Hank. Lovely little village. Big fan. Definitely not scoping the place out." },
+      { text: "Say, between us… I’m hungry <i>all</i> the time. Concerning amounts. Whip me up something to take the edge off? Asking for a friend. The friend is me.", cta: "Sure, ‘Hank’  ▸" },
+    ],
+    wish: "Something to quiet a rumbling tummy, if you’d be so kind — I’ve a very full itinerary. Of snacking.",
+    outroWin: "Mwah — <i>delicious</i>. I mean… adequate. For a tourist. Ahem. I’ll just be… touristing. Elsewhere. Ta!" },
+  { costume: "wolf_delivery", name: "“Wally, W. Wolf Deliveries”",
+    intro: [
+      { text: "Delivery for— oh. No package. Just me: <i>Wally</i>. W. Wolf Deliveries. Completely unrelated surname, don’t read into it." },
+      { text: "That last charm? DIDN’T WORK. I could eat a whole <b>sheep</b> right now. A WHOLE one. You owe me a freebie — that’s just good business.", cta: "Riiight  ▸" },
+    ],
+    wish: "A free re-do, on the house — extra filling this time. I’ve deliveries to… deliver. Not eat. Deliver!",
+    outroWin: "Now THAT’S service. Package received — by my stomach. Wally, signing off! <i>(scurries)</i>" },
+  { costume: "wolf_sherlock", name: "“Detective Sherwood Woolf”",
+    intro: [
+      { text: "Ahem — Detective Sherwood Woolf. I’m investigating a most troubling case: someone’s been eating <i>all</i> the pies in Willow. Fiendish business." },
+      { text: "Suspects? None. Leads? None. Motive? Extreme deliciousness. …I’ll require sustenance for the investigation. Something hearty. For clue-related reasons.", cta: "Case closed  ▸" },
+    ],
+    wish: "A detective’s ration, piping hot — purely to fuel my brilliant deductions, which are ongoing and unrelated to pie.",
+    outroWin: "Aha! The case remains open, but I am no longer peckish. Elementary. Toodle-oo!" },
+  { costume: "wolf_bowler", name: "“Baron von Nothungry”",
+    intro: [
+      { text: "Good evening. Baron von Nothungry. As the name suggests, I am <i>not</i> remotely hungry. Never think about it. Certainly not about sheep." },
+      { text: "…Okay. Off the record? It’s getting embarrassing. Everyone <i>knows</i>. Just — one more wish. A big one. Make the hunger <b>stop</b>. Please?", cta: "Oh, Wolf…  ▸" },
+    ],
+    wish: "One proper feast-in-a-bottle. No tricks this time — I mean it. A wolf can only skulk about hungry for so long.",
+    outroWin: "…Thank you. Truly. For a moment there, I forgot I was hungry. <i>(quietly)</i> …It’s back now. But — thank you." },
+];
+function currentWolfVisit() { return WOLF_VISITS[Math.min(GAME.wolfArcStep || 0, WOLF_VISITS.length - 1)]; }
+function playWolfVisit() {
+  const i = GAME.wolfArcStep || 0; if (i >= WOLF_VISITS.length) return;
+  const v = WOLF_VISITS[i];
+  SFX.unlock(); ART.ensure(v.costume, () => {});
+  const beats = v.intro.map((b, idx) => ({ name: v.name, fig: v.costume, text: b.text, cta: b.cta || (idx === v.intro.length - 1 ? "Make his wish  ▸" : undefined) }));
+  renderStoryBeats(beats, () => startStoryWish(wolfCust(v.name), "wolf-arc", v.wish));
+}
+// A wolf visit comes due every few customers (Willow, after the tutorial). Can precede Red's warning.
+function maybeWolfArc() {
+  if (GAME.realm !== "willow" || !GAME.seenIntro) return false;
+  if ((GAME.wolfArcStep || 0) >= WOLF_VISITS.length) return false;
+  if (GAME.wolfArcAt < 0) { GAME.wolfArcAt = servedTotal + 5; save(); return false; }
+  if (servedTotal < GAME.wolfArcAt) return false;
+  GAME.wolfArcAt = -1; save(); playWolfVisit(); return true;
+}
 // After a story wish resolves, the character's goodbye plays (and story progress advances).
 function storyWishOutro(tag, win) {
   if (tag === "bo-peep") {
@@ -584,6 +640,13 @@ function storyWishOutro(tag, win) {
     const beats = win
       ? [{ name: "The Two Pigs", figEmoji: "🧳", cta: "Off they go  ▸", text: "<b>Pig Two:</b> See? Upgrade.<br><b>Pig One:</b> …I’m gonna miss this village.<br><b>Pig Two:</b> We’ll visit! Once the brick sets. Thanks, friend!" }]
       : [{ name: "The Two Pigs", figEmoji: "🧳", cta: "Off they go  ▸", text: "<b>Pig One:</b> It’s a <i>little</i> lumpy.<br><b>Pig Two:</b> It’s CHARACTER. Close enough — we’ve a cart to catch. See you around, friend!" }];
+    renderStoryBeats(beats, () => { save(); renderStart(); });
+    return;
+  }
+  if (tag === "wolf-arc") {
+    const i = GAME.wolfArcStep || 0, v = WOLF_VISITS[Math.min(i, WOLF_VISITS.length - 1)];
+    GAME.wolfArcStep = i + 1; save();
+    const beats = [{ name: v.name, fig: v.costume, cta: "Off he skulks  ▸", text: win ? v.outroWin : "Bah! Barely took the edge off. I’ll be BACK. Hungrier. You’ll see." }];
     renderStoryBeats(beats, () => { save(); renderStart(); });
     return;
   }
@@ -938,9 +1001,16 @@ function renderAdmin() {
         </div>
       </div>
       <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:8px">🐺 The Wolf <span class="muted" style="font-weight:600;font-size:12px">· visit ${Math.min((GAME.wolfArcStep||0)+1, WOLF_VISITS.length)}/${WOLF_VISITS.length}${(GAME.wolfArcStep||0)>=WOLF_VISITS.length?" (done)":""}</span></div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn small" id="ad-wolf-visit">🐺 Wolf visit (next disguise)</button>
+          <button class="btn secondary small" id="ad-wolf-reset">↺ Reset wolf arc</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:8px">🔎 Button Clue-Chain <span class="muted" style="font-weight:600;font-size:12px">· step ${GAME.buttonStep || 0}/3</span></div>
         <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">
-          <button class="btn small" id="ad-btn-wolf">1️⃣ 🐺 Wolf drops buttons</button>
+          <button class="btn small" id="ad-btn-wolf">1️⃣ 🎩 Wolf drops buttons</button>
           <button class="btn small" id="ad-btn-red">2️⃣ 👧 Show Red</button>
           <button class="btn small" id="ad-btn-ginger">3️⃣ 🍪 Gingerbread hand-off</button>
           <button class="btn small" id="ad-satchel">🎒 Open Satchel</button>
@@ -994,6 +1064,8 @@ function renderAdmin() {
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
   on("#ad-satchel", "click", renderSatchel);
+  on("#ad-wolf-visit", "click", () => { if ((GAME.wolfArcStep || 0) >= WOLF_VISITS.length) { GAME.wolfArcStep = 0; save(); } playWolfVisit(); });
+  on("#ad-wolf-reset", "click", () => { GAME.wolfArcStep = 0; GAME.wolfArcAt = -1; save(); toast("Wolf arc reset"); renderAdmin(); });
   on("#ad-btn-wolf", "click", playWolfButtons);
   on("#ad-btn-red", "click", playRedButtons);
   on("#ad-btn-ginger", "click", playGingerbreadButton);
@@ -4856,6 +4928,7 @@ function startRound() {
   if (maybeBoPeep()) return;     // Bo Peep drops by early to give her sheep quest
   if (maybePigsMoving()) return; // the two pigs come in together to move out (once their arcs are done)
   if (maybeButtonChain()) return; // the button clue-chain (Wolf drop → show Red → Gingerbread)
+  if (maybeWolfArc()) return;    // the Wolf's own recurring visits (disguises + hunger gag)
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
   // once the pigs have moved, they no longer wander into the Willow shop
@@ -6292,7 +6365,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

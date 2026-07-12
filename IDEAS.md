@@ -862,3 +862,16 @@ appearing as a regular customer possibly before Red's warning.
   so any character with full-body art appears in story mode.
 - TODO: build the Wolf's OWN customer arc (hunger wishes) using normal-wear poses +
   rotate his costumes/fake names on his appearances. Grandma finale art pending.
+
+### BUILT v187 — the Wolf's own arc (recurring, non-main-story)
+4 story-mode visits, each a different costume + fake name, running gag = his
+bottomless hunger (WOLF_VISITS + maybeWolfArc, paced ~every 5 customers, can
+precede Red's warning). Each: costume banter → hunger wish → outro.
+1. "Hank, a Tourist" (wolf_tourist) — hungry all the time.
+2. "Wally, W. Wolf Deliveries" (wolf_delivery) — "didn't work, I could eat a whole
+   sheep, free wish!"
+3. "Detective Sherwood Woolf" (wolf_sherlock) — investigating who ate all the pies.
+4. "Baron von Nothungry" (wolf_bowler) — drops the act, near-sincere plea.
+Uses one pose per costume (enough). Optional future polish: extra expression
+variants of tourist/delivery/sherlock/bowler (hungry/caught faces) for in-scene
+emoting. Grandma finale art still pending.
