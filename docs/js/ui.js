@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v211"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v212"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5012,6 +5012,23 @@ function startRound() {
 }
 // Which arched portrait frame each realm uses (falls back to the gold one)
 function realmFrame() { return (currentRealm().custFrame) || "cframe_01"; }
+// Special-customer "badges": tappable bubbles beside the portrait that explain
+// what kind of guest this is. One entry per special trait — the array shape lets
+// us add new special customer types later without touching the layout.
+function custBadges() {
+  const w = ROUND.wish, out = [];
+  if (w.boss) out.push({ icon: "👑", cls: "boss", title: "Boss Customer",
+    text: `A royal, very fussy guest! Tiny green zones, only ${BALANCE.BOSS_SLOTS} slots, and two allergies to avoid. Delight them for a grand reward.` });
+  else if (ROUND.rush) out.push({ icon: "⏱️", cls: "rush", title: "In a Hurry",
+    text: `This guest is in a rush! Serve them quickly for a +${BALANCE.RUSH_BONUS} gold bonus — don't dawdle.` });
+  else if (ROUND.vip) out.push({ icon: "⭐", cls: "vip", title: "VIP Guest",
+    text: "A Very Important guest has come to your shop. Impress them with a lovely wish for a fine reward!" });
+  else if (ROUND.story === "red-arrival") out.push({ icon: "🌟", cls: "vip", title: "Little Red's First Wish",
+    text: "Little Red's very first wish — take your time and enjoy this special moment." });
+  else if (isStoryWish(ROUND.story)) out.push({ icon: "🌟", cls: "vip", title: "A Special Wish",
+    text: "A heartfelt wish from a dear friend — grant it with extra care." });
+  return out;
+}
 function renderCustomer() {
   const c = ROUND.customer, w = ROUND.wish, realm = currentRealm();
   const allergyList = [w.allergy, w.allergy2].filter(Boolean);
@@ -5024,19 +5041,12 @@ function renderCustomer() {
   // baked-text title banner (VIP gets its own; others use the standard arrival banner)
   const bannerImg = ROUND.vip ? "banner_vip" : "banner_new";
   const keys = GAME.keys || 0, vipCost = BALANCE.VIP_KEY_COST || 1, canWager = ROUND.vip && keys >= vipCost;
-  // special-customer text lives INSIDE the wish box (no separate notice line).
-  // VIP wager is offered in an overlay now, so the wish box just gets a flavor line.
-  const extra = w.boss
-    ? `<div class="cust-wish-extra boss">👑 Extra fussy — tiny green zones, only ${BALANCE.BOSS_SLOTS} slots, two allergies!</div>`
-    : ROUND.rush
-    ? `<div class="cust-wish-extra rush">⏱️ Serve fast for a +${BALANCE.RUSH_BONUS} bonus — don't dawdle!</div>`
-    : ROUND.vip
-    ? `<div class="cust-wish-extra vip">⭐ A VIP guest — impress them for a fine reward!</div>`
-    : ROUND.story === "red-arrival"
-    ? `<div class="cust-wish-extra vip">🌟 Little Red’s very first wish — take your time and enjoy it!</div>`
-    : isStoryWish(ROUND.story)
-    ? `<div class="cust-wish-extra vip">🌟 A special wish for a friend — grant it with care!</div>`
-    : "";
+  // Special-customer info NO LONGER lives in the wish box (that box is for the
+  // customer's speech only). Instead each special type gets a tappable "badge"
+  // bubble beside the portrait; tapping it opens an overlay that explains it.
+  const badges = custBadges();
+  const badgesHtml = badges.length ? `<div class="cust-badges">${badges.map((b, i) =>
+    `<button class="cust-badge ${b.cls}" data-bi="${i}" aria-label="${b.title}"><span class="cust-badge-ic">${b.icon}</span></button>`).join("")}</div>` : "";
   const streakChip = GAME.streak >= 2 ? `<div class="cust-streak">🔥 ${GAME.streak}</div>` : "";
   const bcell = (icon, label, value, cls) => `<div class="bcell">${icon ? `<img class="bic" src="art/ui/${icon}.png" alt="">` : ""}<div class="bval ${cls || ""}">${value}</div><div class="blbl">${label}</div></div>`;
   // Full-bleed scene image only on realms that have one (currently Willow); other realms keep the normal padded layout.
@@ -5050,17 +5060,17 @@ function renderCustomer() {
       <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
       <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
     </div>
-    <div class="grow" style="overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:4px">
+    <div class="grow" style="overflow:hidden; display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:4px">
       <div class="cust-banner"><img src="art/ui/${bannerImg}.png" alt="A New Customer Arrives" draggable="false"></div>
       ${huntChipHtml()}
       <div class="cust-portrait">
         ${streakChip}
+        ${badgesHtml}
         <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1}">${custArt(c, "cust-char-art")}</div>
       </div>
       <div class="cust-nameplate"><img src="art/ui/kit_02.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
       <div class="cust-wishbox${wishSteps.length > 1 ? " has-next" : ""}">
         <div class="cust-wish-text" id="cust-wish-text">“${wishSteps[0].text}”</div>
-        ${extra}
         ${wishSteps.length > 1 ? `<button class="wish-next" id="wish-next" aria-label="Read more">▸</button>` : ""}
       </div>
       <div class="cust-bottombar">
@@ -5081,11 +5091,36 @@ function renderCustomer() {
           <button class="vip-no" id="vip-no">Play as normal</button>
         </div>
       </div>` : ""}
+    ${badges.length ? `
+      <div class="badge-overlay hidden" id="badge-overlay">
+        <div class="badge-modal" id="badge-modal">
+          <div class="badge-modal-ic" id="badge-modal-ic"></div>
+          <div class="badge-modal-title" id="badge-modal-title"></div>
+          <div class="badge-modal-text" id="badge-modal-text"></div>
+          <button class="badge-modal-ok" id="badge-modal-ok">Got it</button>
+        </div>
+      </div>` : ""}
   `);
   if (w.boss || ROUND.rush || ROUND.vip) { SFX.unlock(); SFX.fanfare(); } // special arrival — hard to miss
   const closeVip = () => { const o = document.getElementById("vip-overlay"); if (o) o.remove(); };
   on("#vip-yes", "click", () => { ROUND.keyStaked = true; SFX.unlock(); SFX.charm(); toast(`🗝️ ${vipCost} keys wagered — make it count!`); closeVip(); });
   on("#vip-no", "click", () => { SFX.unlock(); closeVip(); });
+  // Badge bubbles: tap one to open its info overlay; tap the backdrop (or "Got
+  // it") to close — the bubble always stays so it can be re-opened anytime.
+  const badgeOv = document.getElementById("badge-overlay");
+  const openBadge = (b) => {
+    if (!badgeOv) return;
+    document.getElementById("badge-modal-ic").textContent = b.icon;
+    document.getElementById("badge-modal-title").textContent = b.title;
+    document.getElementById("badge-modal-text").textContent = b.text;
+    badgeOv.classList.remove("hidden"); SFX.unlock(); SFX.pop(1);
+  };
+  const closeBadge = () => { if (badgeOv) badgeOv.classList.add("hidden"); };
+  document.querySelectorAll(".cust-badge").forEach((el) => {
+    el.addEventListener("click", (e) => { e.stopPropagation(); openBadge(badges[+el.dataset.bi] || badges[0]); });
+  });
+  on("#badge-modal-ok", "click", (e) => { e.stopPropagation(); SFX.unlock(); closeBadge(); });
+  if (badgeOv) badgeOv.addEventListener("click", (e) => { if (e.target === badgeOv) { SFX.unlock(); closeBadge(); } });
   // ▸ arrow reveals the next line of a long wish; Start Scoop unlocks once it's all been read.
   on("#wish-next", "click", () => {
     if (!WISH_STEPS || WISH_STEP >= WISH_STEPS.length - 1) return;

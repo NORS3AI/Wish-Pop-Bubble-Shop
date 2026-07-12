@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 👑 **Special-guest bubbles.** VIPs and other special customers now show a little tappable
+  bubble beside them (mid-screen). Tap it to read what that guest is about, tap away to close —
+  the bubble always stays. The speech box is just their words now, locked in place so nothing
+  slides around or makes you scroll.
 - 🍄 **Meet Bramble.** The garden gnome now has a name and hand-drawn art — thoughtful when he
   arrives about his stubborn mushrooms, delighted on a win, grumpy on a miss, and a shimmering
   rainbow-faced mess if the magic disagrees with him.
