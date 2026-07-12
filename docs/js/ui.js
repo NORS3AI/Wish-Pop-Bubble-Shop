@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v219"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v220"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5268,18 +5268,20 @@ function applyCustArc(round) {
  * (with per-part art) win; otherwise a long line auto-splits at a sentence boundary. */
 function autoSplitWish(line) {
   const s = (line || "").trim();
-  const sentences = s.match(/[^.!?]+[.!?]+["”’]?(?:\s+|$)/g);
-  if (!sentences || sentences.length < 2 || s.length < 96) return [{ text: s }];
-  // Greedily pack whole sentences into parts, each kept short enough to fit the fixed-height
-  // wish box (~3 lines). Long paragraphs become as many short pages as needed — no clipping.
-  const BUDGET = 92;
+  if (s.length <= 84) return [{ text: s }];   // short enough for ≤3 lines — no pagination
+  // Pack whole WORDS into pages, each capped so it never exceeds ~3 lines in the fixed box.
+  // Prefer to end a page at a sentence boundary once it's reasonably full, so pages read
+  // naturally. Works for long single-sentence wishes too (word-wrap fallback).
+  const BUDGET = 84, SOFT = 46;
+  const words = s.split(/\s+/);
   const parts = []; let cur = "";
-  for (const sen of sentences) {
-    if (cur && (cur + sen).trim().length > BUDGET) { parts.push(cur.trim()); cur = sen; }
-    else cur += sen;
+  for (const w of words) {
+    const cand = cur ? cur + " " + w : w;
+    if (cur && cand.length > BUDGET) { parts.push(cur); cur = w; }
+    else { cur = cand; if (/[.!?]["”’]?$/.test(w) && cur.length >= SOFT) { parts.push(cur); cur = ""; } }
   }
   if (cur.trim()) parts.push(cur.trim());
-  return (parts.length > 1 ? parts : [s]).map(t => ({ text: t }));
+  return (parts.length > 1 ? parts : [s]).map(t => ({ text: t.trim() }));
 }
 function wishParts(c) {
   if (c && Array.isArray(c.parts) && c.parts.length) return c.parts;
@@ -5386,7 +5388,6 @@ function renderCustomer() {
     </div>
     <div class="grow" style="overflow:hidden; display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:4px">
       <div class="cust-banner"><img src="art/ui/${bannerImg}.png" alt="A New Customer Arrives" draggable="false"></div>
-      ${huntChipHtml()}
       <div class="cust-portrait">
         ${streakChip}
         ${badgesHtml}
