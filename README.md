@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐺 **The village story ties together.** When the finale is due, the disguised Wolf finally
+  slips into your shop in Grandma's bonnet — and when he scurries off, you match him to Little
+  Red's sketch and send word to her, leading straight into the rescue at Grandma's cottage.
+- 🦉 **More to do between story beats.** Sleepy Owl and the Village Baker now have their own
+  wish sagas, and everyone in town has a whole rotation of fresh, non-repeating wishes —
+  with little nods to what's stirring in Willow (missing buttons, a suspicious hooded customer,
+  a pile of straw and sticks that turned up in someone's yard). Lots more rounds to play.
 - 🐑 **Bo Peep & her ten lost sheep.** Bo Peep now has real hand-drawn art (no more emoji
   stand-ins), and her sheep hunt has grown to **ten** wonderfully different woolly friends —
   a sunglasses-wearing loafer, a singer, a daisy-chewer, and more. Each one you discover pops
