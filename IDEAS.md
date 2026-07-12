@@ -637,3 +637,61 @@ connected fairy-tale world that unfolds through the wishes the player answers.
 ## TUTORIAL NOTE — allergy explanation wording (use language VERY close to this)
 > "Every answer to every wish is made from magic. Every magic has ingredients.
 >  Some people don't react well to certain kinds of magic… so be careful!"
+
+---
+
+# 📖 WILLOW WISH — CUSTOMER ARCS & THE BUTTON CLUE-CHAIN (owner brainstorm, v2)
+
+_Refines the arcs above with concrete wishes and the connective payoff. Not built._
+
+## Gingerbread Man (CONFIRMED intro arc)
+1. Wishes for an extra layer of frosting to protect him from the sun. ✅
+2. Now chased by ants — wishes them away.
+3. Wishes for a new coat; the coat cracks → wishes for extra frosting.
+(Great character intro. Later ties into the button chain — see below.)
+
+## Tiny Mouse — she's opening a SEWING SHOP in the village
+- Intro wishes establish her: magical scissors that cut on their own, bows that
+  tie themselves, etc.
+- Then a specific plot wish: "My buttons keep disappearing. I wish for a button
+  jar that never empties." (This is the hook into the button chain.)
+
+## The Two Pigs (start right away with their problem)
+- "Somebody blew my house down — I wish for stronger hay."
+- "Somebody blew my house down — I wish for stronger sticks."
+- (Later: move in with the third brother in a different realm → brick house.)
+
+## Bo Peep (a talking STORY character, like Little Red)
+- Starts strong: she's losing her sheep. Pops up and talks to us like Red does.
+- We make her a potion so she stops losing sheep — AND we auto-accept her quest
+  to FIND the lost sheep ("we can't not accept"). Accepting the quest is what
+  TURNS ON the sheep collection (⇒ wire Bo Peep's dialogue to the EXISTING
+  Willow sheep hunt).
+
+## ⭐ THE BUTTON CLUE-CHAIN (the payoff that connects everyone)
+1. Tiny Mouse's wish: "my buttons keep disappearing… button jar that never empties."
+2. The WOLF comes in: "I wish to have the best button collection the world has
+   ever seen." — and he DROPS 3 CLUES into our Satchel:
+   - a gumdrop button, a regular blue button, a heart-shaped button.
+3. We call Little Red: "we saw him — he left these." We show her the 3 buttons.
+4. Red: "I recognize that heart button — that's Grandma's." She deduces the rest:
+   "that one's Tiny Mouse's, and that one's the Gingerbread Man's. He's up to no
+   good, pestering everyone." Red then asks us for a wish.
+5. Gingerbread Man returns: "I've lost my button. Have you seen it?" We give him a
+   button and KEEP one as a keepsake; his sprite updates to show the blue button
+   where the gumdrop button was. (⇒ CONFIRM exact mapping: which button is whose,
+   which we give vs. keep — owner said give blue / keep gumdrop; needs art of the
+   updated Gingerbread sprite, owner will supply.)
+
+Buttons become Satchel items with a "Show Little Red" purpose → first real use of
+the Satchel "deliver to a character" mechanic.
+
+## Background customers (flavor only — no quests/collectibles)
+- Sleepy Owl, Village Baker (+ maybe one more the owner is forgetting): give their
+  wishes light arcs/meaning, but they don't pull the player into a quest.
+
+## Build-order implication
+Bo Peep (reuses the sheep hunt), the pig wishes, and the Gingerbread/Mouse intro
+wishes are INDEPENDENT and can come first. The button clue-chain has cross-customer
+GATES (mouse button wish → wolf button drop → show Red → gingerbread's lost button)
+and should be built as one connected finale of the Willow web, last.
