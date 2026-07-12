@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v213"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v214"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -649,13 +649,13 @@ function maybeWolfArc() {
 /* ======================================================================= */
 function playGoldiMouse() {
   SFX.unlock();
-  ART.ensure("customer_mouse", () => {});
+  ["mouse_gesture", "mouse_bears", "mouse_point"].forEach(f => ART.ensure(f, () => {}));
   satchelAdd("teddy", 3);
   GAME.goldilocksStep = 1; GAME.goldilocksAt = -1; save();
   renderStoryBeats([
-    { name: "Tiny Mouse", fig: "customer_mouse", text: "Oh, thank goodness you’re here! Goldilocks put in an order — one teddy bear — but I <i>cannot</i> get hold of her. Never home, that girl! Could you deliver it for me?" },
-    { name: "Tiny Mouse", fig: "customer_mouse", text: "Here’s my trouble… I didn’t know what <b>size</b> she wanted. So I stitched up <b>three</b> — a big one, a small one, and one in between. Give her the one that’s <i>just right</i> and she’ll tip you something lovely, mark my words." },
-    { name: "Tiny Mouse", fig: "customer_mouse", cta: "Take the bears  ▸", text: "They’re tucked in your Satchel now. Next time Goldilocks drops by, let her try them and see which one fits. Thank you — you’re an absolute treasure!" },
+    { name: "Tiny Mouse", fig: "mouse_gesture", text: "Oh, thank goodness you’re here! Goldilocks put in an order — one teddy bear — but I <i>cannot</i> get hold of her. Never home, that girl! Could you deliver it for me?" },
+    { name: "Tiny Mouse", fig: "mouse_bears", text: "Here’s my trouble… I didn’t know what <b>size</b> she wanted. So I stitched up <b>three</b> — a big one, a small one, and one in between. Give her the one that’s <i>just right</i> and she’ll tip you something lovely, mark my words." },
+    { name: "Tiny Mouse", fig: "mouse_point", cta: "Take the bears  ▸", text: "They’re tucked in your Satchel now. Next time Goldilocks drops by, let her try them and see which one fits. Thank you — you’re an absolute treasure!" },
   ], () => { toast("🧸 Tiny Mouse gave you 3 teddy bears — deliver one to Goldilocks!"); save(); renderStart(); });
 }
 // The interactive delivery. Click order is FIXED (never mind which bear): 1st = too big,
