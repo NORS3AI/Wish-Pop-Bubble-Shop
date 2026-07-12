@@ -16,8 +16,10 @@ const ART = (() => {
   const EXT = ".png";
   const state = {};   // key -> 'ok' | 'missing' | 'pending'
   const okCb = {};     // key -> [callbacks fired once when it loads]
+  let VER = "";        // cache-bust suffix (set to the build once at boot)
 
-  function url(key) { return DIR + key + EXT; }
+  function setVersion(v) { VER = v ? ("?v=" + v) : ""; }
+  function url(key) { return DIR + key + EXT + VER; }
 
   function swapPlaceholders(key) {
     document.querySelectorAll('[data-art="' + key + '"]').forEach(el => {
@@ -61,5 +63,5 @@ const ART = (() => {
   function getScale(key) { return scales[key] || 1; }
   function setScale(key, v) { scales[key] = v; try { localStorage.setItem(SCALE_KEY, JSON.stringify(scales)); } catch (e) {} }
 
-  return { tag, ensure, isReady, url, DIR, EXT, getScale, setScale };
+  return { tag, ensure, isReady, url, DIR, EXT, getScale, setScale, setVersion };
 })();
