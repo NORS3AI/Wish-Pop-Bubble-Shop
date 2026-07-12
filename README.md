@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧑‍🤝‍🧑 **Customers have stories now.** Recurring customers' wishes evolve chapter by chapter —
+  each time you grant one, they come back a little later with the *next* part of their tale. The
+  **Gingerbread Man** (frosting → ants → a cracked coat) and **Tiny Mouse** (opening her sewing shop
+  → the case of the vanishing buttons) lead the way; more of the village's stories are on the way.
 - 🎒 **New: the Satchel (your inventory).** A single place (in the Shop menu) for the keepsakes and
   quest items you collect. Grant the **Gingerbread Man's** wish and he leaves you a gumdrop to carry
   toward Drury Lane; your realm collectibles (Bo Peep's sheep, the Stepsister's beads) live here too.

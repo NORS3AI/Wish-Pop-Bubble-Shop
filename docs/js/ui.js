@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v180"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v181"; // bump on each deploy; shown on the start screen to verify the live version
 
 /* --- persistent save ---------------------------------------------------- */
 const SAVE_KEY = "wishpop_save_v1";
@@ -44,6 +44,7 @@ function normalizeGame(g) {
   if (!g.hunts || typeof g.hunts !== "object") g.hunts = {}; // realmId -> { found, done } collection scavenger hunt
   if (typeof g.huntCelebrate === "undefined") g.huntCelebrate = null; // realmId pending a completion thank-you card
   if (!g.satchel || typeof g.satchel !== "object") g.satchel = {}; // main inventory: itemId -> count (quest / keepsake items)
+  if (!g.custStory || typeof g.custStory !== "object") g.custStory = {}; // customerId -> chapter index (their wishes tell an ongoing arc)
   if (!g.carpetSkin || g.carpetSkin < 1 || g.carpetSkin > 10) g.carpetSkin = 5; // Magic Carpet Dash chosen rug (5 = moon carpet)
   if (!Array.isArray(g.carpetBest)) g.carpetBest = []; // top-3 Magic Carpet Dash Infinite survival times (seconds)
   if (!g.stats || typeof g.stats !== "object") g.stats = {};
@@ -754,7 +755,19 @@ function adminRush() {
   ROUND.rush = true; ROUND.rushMs = BALANCE.RUSH_MS; ROUND.rushStart = null;
   renderCustomer();
 }
+// Force a specific customer to walk in now (at their current story chapter) — for testing arcs.
+function adminCustomer(id) {
+  SFX.unlock(); stopRoundTimers(); refreshQuests();
+  const rec = (D.CUSTOMERS || []).find(c => c.id === id) || (currentRealm().customers || []).find(c => c.id === id);
+  if (!rec) { toast("Customer not found in this realm."); return; }
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: [rec], ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
+  injectInfused(ROUND); injectKeys(ROUND);
+  ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
+  applyCustArc(ROUND);
+  renderCustomer();
+}
 function renderAdmin() {
+  const arcRow = (id, label) => { const a = custArc(id), s = custStoryStep(id); const tag = a ? (s < a.length ? `ch ${s + 1}/${a.length}` : "done") : ""; return `<button class="btn small" id="ad-cust-${id}">${label} <span class="muted" style="font-weight:600;font-size:11px">· ${tag}</span></button>`; };
   html("admin", `
     ${hud("Admin & Testing")}
     <div class="grow" style="overflow-y:auto">
@@ -764,6 +777,15 @@ function renderAdmin() {
         <button class="btn" id="ad-intro" style="margin-bottom:8px">1️⃣ 📖 Arrival + Tutorial (Replay Intro)</button>
         <button class="btn" id="ad-red2" style="margin-bottom:8px">2️⃣ 📸 Visit: Grandma's Vacation Photos</button>
         <button class="btn" id="ad-red3">3️⃣ 🐺 Visit: The Impostor Sketch</button>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:6px">🧑‍🤝‍🧑 Customer Arcs <span class="muted" style="font-weight:600;font-size:12px">(wishes evolve as you serve them)</span></div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px">
+          ${arcRow("gingerbread", "🍪 Gingerbread")}
+          ${arcRow("mouse", "🐭 Tiny Mouse")}
+          <button class="btn secondary small" id="ad-cust-reset">↺ Reset arcs</button>
+        </div>
+        <p class="muted" style="font-size:11px;text-align:center;margin:0">Spawn them at their current chapter; grant the wish to advance to the next.</p>
       </div>
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:6px">🎬 Jump to an event</div>
@@ -845,6 +867,9 @@ function renderAdmin() {
   on("#ad-intro", "click", playArrivalIntro);
   on("#ad-red2", "click", playRedVacation);
   on("#ad-red3", "click", playRedImpostor);
+  on("#ad-cust-gingerbread", "click", () => adminCustomer("gingerbread"));
+  on("#ad-cust-mouse", "click", () => adminCustomer("mouse"));
+  on("#ad-cust-reset", "click", () => { GAME.custStory = {}; save(); toast("Customer story arcs reset"); renderAdmin(); });
   on("#ad-boss", "click", adminBoss);
   on("#ad-rush", "click", adminRush);
   on("#ad-satchel", "click", renderSatchel);
@@ -4658,6 +4683,37 @@ function renderQueenResult(win, sc, poisoned, required) {
 /* ======================================================================= */
 /* CUSTOMER                                                                */
 /* ======================================================================= */
+/* ======================================================================= */
+/* CUSTOMER ARCS — a recurring customer's WISHES tell an ongoing story.       */
+/* Each customer can have an ordered list of "chapters"; the one they're on   */
+/* (GAME.custStory[id]) supplies the wish line they say at the counter, and   */
+/* it advances one step each time you SUCCESSFULLY grant their wish. Order is  */
+/* always preserved (random appearance only affects spacing). After the last  */
+/* chapter they fall back to their generic line until more chapters are added.*/
+/* The mix mechanics stay standard — the STORY is told through the dialogue.  */
+/* ======================================================================= */
+const CUSTOMER_ARCS = {
+  gingerbread: [
+    { line: "Whoa — is it always this hot?! I’m meltin’ and I’ve got places to be. Frost me up so I don’t turn into a puddle? You’re a lifesaver. Literally, maybe." },
+    { line: "Okay, the frosting’s amazing — but now there’s ants following me like I’m a walking picnic! A whole line of ’em! Can you shoo ’em somewhere else? I don’t wanna be rude, but I am NOT lunch." },
+    { line: "Don’t laugh — okay, you can laugh a little. I snuggled up to a warm oven ’cause it felt like home, and I cracked right down the middle! Patch me up? Tougher batch this time, maybe. I’m kinda delicate." },
+  ],
+  mouse: [
+    { line: "Big day — I’m opening a sewing shop! Well, it’ll be a shop once I catch up. Orders out the door and I’ve got two paws. I wish for scissors that snip on their own — tidy lines only, I’ve a reputation to build." },
+    { line: "Forty-one bows by Friday. Forty. ONE. My paws cramp just saying it. Charm me some ribbon that ties its own bows? Neat ones! Not those sad droopy loops." },
+    { line: "Third drawer of buttons gone this week — THIRD! I lock up every night, I swear it. Down to safety pins and stubbornness. I wish for a button jar that never runs empty. Humor a mouse." },
+  ],
+};
+function custArc(id) { return CUSTOMER_ARCS[id] || null; }
+function custStoryStep(id) { return (GAME.custStory && GAME.custStory[id]) || 0; }
+function custChapter(id) { const a = custArc(id); if (!a) return null; const s = custStoryStep(id); return s < a.length ? a[s] : null; }
+function advanceCustStory(id) { const a = custArc(id); if (!a) return; const s = custStoryStep(id); if (s < a.length) { GAME.custStory[id] = s + 1; save(); } }
+// swap in the customer's current chapter line (copy the record so we never mutate shared data)
+function applyCustArc(round) {
+  if (!round || !round.customer || round.story) return;
+  const chap = custChapter(round.customer.id);
+  if (chap) round.customer = Object.assign({}, round.customer, { line: chap.line });
+}
 function startRound() {
   SFX.unlock();
   stopRoundTimers();
@@ -4671,6 +4727,7 @@ function startRound() {
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   setupHunt(ROUND);       // maybe a hidden collection item (sheep/bead) turns up this round
+  applyCustArc(ROUND);    // if this customer has an ongoing story, use their current wish line
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
   // when scooping begins.
   ROUND.rush = !ROUND.wish.boss && Math.random() < BALANCE.RUSH_CHANCE;
@@ -5750,6 +5807,7 @@ function serve() {
     if (ROUND.rush) bumpStat("rushWins");
     if (isPerfect) bumpStat("perfect");
     res.satchelDrop = maybeSatchelDrop(ROUND.customer);   // a keepsake from certain customers
+    if (ROUND.customer && !ROUND.story) advanceCustStory(ROUND.customer.id);   // next chapter of their story
   }
   servedTotal++; localStorage.setItem("wishpop_served", servedTotal); save();
   renderResult(res);
@@ -6096,7 +6154,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, redVisitOutro, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, redVisitOutro, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
