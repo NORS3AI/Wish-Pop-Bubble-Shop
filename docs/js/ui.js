@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v225"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v226"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -120,7 +120,7 @@ function charmArt(id, cls) { const ch = D.SPECIAL_CHARMS[id]; return ART.tag("ch
 function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoji, cls || "cust-art"); }
 // Per-customer size tweaks in the arch frame (1 = default). Some art fills its
 // canvas more than others, so a few get scaled down to sit comfortably.
-const CHAR_SCALE = { owl: 0.82, tortoise: 0.82, hare: 0.9, fish: 0.86 };
+const CHAR_SCALE = { owl: 0.82, tortoise: 0.82, hare: 0.9, fish: 0.66 };
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 // A customer's face with an EXPRESSION. "normal" is the base customer_<id>.png;
 // happy / angry / allergic are customer_<id>_<mood>.png. If that art isn't there,
