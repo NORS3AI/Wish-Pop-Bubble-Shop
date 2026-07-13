@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v244"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v245"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1803,11 +1803,16 @@ function refreshWellChip() { const c = $(".well-dustchip"); if (c) c.innerHTML =
 // Wishy's well: a top-down well backdrop. During the tutorial (first-ever visit)
 // Wishy floats in the water circle and explains; after your first wish he swims off
 // for good. Toss a coin → it drops in → three bubbles rise from the water → pop one.
+let wellTutorialLayout = false;
 function renderWell() {
   const cost = BALANCE.WELL_COST;
-  const tutorial = GAME.wellIntro === 1;
-  const canToss = tutorial || GAME.gold >= cost;   // the tutorial toss is Wishy's free coin
+  const tutorial = GAME.wellIntro === 1;   // first-ever visit: Wishy + his free coin, kept in the bottom row
+  wellTutorialLayout = tutorial;
+  const canToss = tutorial || GAME.gold >= cost;
   ART.ensure("customer_fish", () => {}); ART.ensure("stack_coin_front", () => {});
+  // Tutorial keeps today's look (Toss + Back in the bottom row). Once Wishy's gone, the
+  // Toss button lives on the cobblestones under the well and Back sits centred at the foot.
+  const tossBtn = `<button class="btn good" id="well-toss" ${canToss ? "" : "disabled"}>${tutorial ? "Toss the free coin ✨" : "Toss 🪙" + cost}</button>`;
   html("well", `
     ${hud("Wishing Well")}
     <div class="well-scene mg-fullbleed" id="well-scene">
@@ -1818,9 +1823,10 @@ function renderWell() {
       <div class="well-speech" id="well-speech">${tutorial
         ? `<b>Wishy:</b> Here — your first coin’s on me! Toss it in, then <b>pop one of the three bubbles</b> that float up. Go on, give it a try!`
         : `Toss a coin in and pop a bubble to see what floats up.`}</div>
+      ${tutorial ? "" : `<div class="well-toss-cobble">${tossBtn}</div>`}
     </div>
-    <div class="row well-actions">
-      <button class="btn good" id="well-toss" ${canToss ? "" : "disabled"}>${tutorial ? "Toss the free coin ✨" : "Toss 🪙" + cost}</button>
+    <div class="row well-actions${tutorial ? "" : " solo"}">
+      ${tutorial ? tossBtn : ""}
       <button class="btn secondary" id="well-back">←  Back</button>
     </div>
   `);
@@ -1922,6 +1928,13 @@ function wellReveal(prize) {
   const toss = $("#well-toss"); if (toss) { toss.textContent = "Toss 🪙" + BALANCE.WELL_COST; toss.disabled = GAME.gold < BALANCE.WELL_COST; }
   const back = $("#well-back"); if (back) back.disabled = false;
   wellBusy = false;
+  // After the tutorial's free wish, Wishy has gone — settle the well into its normal layout
+  // (Toss button down onto the cobblestones, Back centred) once the prize has been admired.
+  if (wellTutorialLayout && GAME.wellIntro === 2) {
+    wellTutorialLayout = false;
+    if (toss) toss.disabled = true;   // no tossing during the brief settle
+    setTimeout(() => { const sc = screen("well"); if (sc && sc.classList.contains("active")) renderWell(); }, 3200);
+  }
 }
 function wellConfetti() {
   const sc = screen("well"); if (!sc) return;

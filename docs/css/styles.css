@@ -590,6 +590,12 @@ html, body {
 .well-scene { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden;
   background: url('../art/well_bg.webp') center 42% / cover no-repeat; }
 .well-actions { padding: 8px 12px calc(8px + var(--safe-b)); gap: 10px; }
+/* once Wishy's gone, only Back is in the foot row — centre it at a comfortable width */
+.well-actions.solo { justify-content: center; }
+.well-actions.solo .btn { flex: 0 1 260px; max-width: 300px; }
+/* the Toss button sits on the cobblestones below the well (normal play, no Wishy) */
+.well-toss-cobble { position: absolute; left: 50%; bottom: 25%; transform: translateX(-50%); z-index: 7; }
+.well-toss-cobble .btn { box-shadow: 0 4px 14px rgba(0,0,0,.5), 0 0 0 2px rgba(255,255,255,.18); }
 /* invisible anchor over the water hole (bg: centre x50%, ~43% down, radius ~28% of width) */
 .well-circle { position: absolute; left: 50%; top: 43%; width: 56%; aspect-ratio: 1;
   transform: translate(-50%, -50%); pointer-events: none; }
@@ -799,17 +805,18 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .item-reveal-overlay.closing { animation: fade .2s ease reverse forwards; }
 .ir-card { position: relative; width: 92%; max-width: 340px; display: flex; flex-direction: column; align-items: center; text-align: center;
   animation: irPop .42s cubic-bezier(.2,1.5,.4,1); }
-.ir-burst { position: absolute; top: 4%; width: 300px; height: 300px; border-radius: 50%; pointer-events: none;
+.ir-burst { position: absolute; top: 2%; width: 360px; height: 360px; border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle, rgba(255,236,170,.85) 0%, rgba(255,214,120,.4) 30%, transparent 66%); animation: irGlow 2.2s ease-in-out infinite; }
-.ir-sparkles { position: absolute; top: 4%; width: 300px; height: 300px; pointer-events: none; }
+.ir-sparkles { position: absolute; top: 2%; width: 360px; height: 360px; pointer-events: none; }
 .ir-sparkles i { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: #fff6cf;
   box-shadow: 0 0 8px #ffe08a; animation: irTwinkle 1.7s ease-in-out infinite; animation-delay: calc(var(--i) * .12s); }
-.ir-art { position: relative; z-index: 2; height: 210px; display: flex; align-items: center; justify-content: center; animation: irFloat 2.4s ease-in-out infinite; }
+/* Bigger art so the piece can be properly admired */
+.ir-art { position: relative; z-index: 2; height: 288px; display: flex; align-items: center; justify-content: center; animation: irFloat 2.4s ease-in-out infinite; }
 /* Only a soft depth shadow — NO silhouette glow. A glow that hugs the alpha edge
    traces a rectangle on tightly-cropped items (the sheep); the radial burst behind
    already supplies the golden halo. */
-.ir-art .ir-img.art { height: 210px; width: auto; max-width: 78vw; filter: drop-shadow(0 10px 22px rgba(0,0,0,.55)); }
-.ir-art .ir-emoji { font-size: 128px; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
+.ir-art .ir-img.art { height: 288px; width: auto; max-width: 88vw; filter: drop-shadow(0 10px 22px rgba(0,0,0,.55)); }
+.ir-art .ir-emoji { font-size: 160px; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
 .ir-x { position: absolute; right: 4%; bottom: 6%; z-index: 3; font-family: var(--ff-display); font-weight: 900; font-size: 34px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.75); }
 .ir-name { position: relative; z-index: 2; margin-top: 6px; font-family: var(--ff-display); font-size: 30px; color: #fff2c8; text-shadow: 0 2px 6px rgba(0,0,0,.7); }
 .ir-desc { position: relative; z-index: 2; margin-top: 8px; max-width: 300px; font-family: var(--ff-display); font-size: 16px; line-height: 1.4; color: #ece0ff; }
