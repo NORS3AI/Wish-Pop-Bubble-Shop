@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v227"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v228"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5239,77 +5239,138 @@ function renderQueenResult(win, sc, poisoned, required) {
 /* The mix mechanics stay standard — the STORY is told through the dialogue.  */
 /* ======================================================================= */
 const CUSTOMER_ARCS = {
+  // Gingerbread Man — chipper, breathless, food-punny; forever dodging mouths while
+  // gathering the realm's finest baking supplies to carry home to Drury Lane.
   gingerbread: [
-    { line: "Whoa — is it always this hot?! I’m meltin’ and I’ve got places to be. Frost me up so I don’t turn into a puddle? You’re a lifesaver. Literally, maybe." },
-    { line: "Okay, the frosting’s amazing — but now there’s ants following me like I’m a walking picnic! A whole line of ’em! Can you shoo ’em somewhere else? I don’t wanna be rude, but I am NOT lunch." },
-    { line: "Don’t laugh — okay, you can laugh a little. I snuggled up to a warm oven ’cause it felt like home, and I cracked right down the middle! Patch me up? Tougher batch this time, maybe. I’m kinda delicate." },
+    { line: "Just baked and already three kids are eyeing me! A speed charm so I stay uneaten?" },
+    { line: "In Willow! Best baking supplies around, they say. A charm to find the finest?" },
+    { line: "Market day — a fox keeps licking his lips at me! A “not-food” charm while I shop?" },
+    { line: "The Baker’s vanilla is heaven! A freshness charm to save a jar for home?" },
+    { line: "A magpie swiped my sugar stash! A charm to get it back before it’s gone for good?" },
+    { line: "Sugar rescued! Now for Willow’s rarest spice — a little luck charm for the hunt?" },
+    { line: "I’m crumbling at the seams from all this hustle! Patch me tough for the road?" },
+    { line: "An ant parade found my honey! Shoo them off kindly — that jar’s bound for home." },
+    { line: "The village saves me burnt bits so nibblers leave me be! A thank-you charm to bake?" },
+    { line: "My travel-sack’s full of Willow’s finest at last! A charm to keep it from spilling?" },
+    { line: "Sending a supply package home to Drury Lane! A charm so it arrives safe?" },
+    { line: "Package sent! One treat for the road — no biting, please! A safe-travels charm?" },
+    { line: "Off to the next realm for supplies! A farewell charm — see you in Drury Lane!" },
   ],
+  // Tiny Mouse — earnest, industrious, counts everything, "paws," building her sewing empire.
   mouse: [
-    { line: "Big day — I’m opening a sewing shop! Well, it’ll be a shop once I catch up. Orders out the door and I’ve got two paws. I wish for scissors that snip on their own — tidy lines only, I’ve a reputation to build." },
-    { line: "Forty-one bows by Friday. Forty. ONE. My paws cramp just saying it. Charm me some ribbon that ties its own bows? Neat ones! Not those sad droopy loops." },
-    { line: "Third drawer of buttons gone this week — THIRD! I lock up every night, I swear it. Down to safety pins and stubbornness. I wish for a button jar that never runs empty. Humor a mouse." },
+    { line: "Sewing shop opens today! Two paws, a hundred orders. Self-snipping scissors?" },
+    { line: "Forty-one bows by Friday! A charm for ribbon that ties its own — neat ones, mind!" },
+    { line: "My button drawer keeps emptying, and I LOCK up nightly! A jar that never runs dry?" },
+    { line: "A lady wants a gown “the color of a good mood.” A dye charm that does just that?" },
+    { line: "Buttons vanishing all over town now — not just me! A charm to guard my stock?" },
+    { line: "Little Red asked me to mend her cloak — honored! A stitch charm that never frays?" },
+    { line: "So many orders I’m sewing in my sleep! A needle that threads itself, maybe?" },
+    { line: "Found a lost button under my floor — heart-shaped, odd! A charm to keep it safe?" },
+    { line: "Hired a beetle apprentice — keen but clumsy! A patience charm, for the both of us?" },
+    { line: "The whole village wants my winter coats! A charm for wool that weaves itself warm?" },
+    { line: "Someone ordered bonnets with room for BIG ears. Gave me a chill. A courage charm?" },
+    { line: "My shop won “Finest in Willow”! A charm to keep my thimble from swelling my head?" },
+    { line: "Stitching a red cloak for a brave little errand. A blessing charm to sew right in?" },
   ],
-  // Thatch (straw house) — catastrophizes everything. Walk-in face changes per chapter: first ruined
-  // house (grumpy arms-crossed) → second ruined house (frustrated, covered in straw). He stays
-  // distressed while stating the wish — no cheery swap.
+  // Thatch (straw house) — catastrophizes everything, ALL CAPS panic. Walk-in art changes on ch.2.
   pig_straw: [
-    { line: "So my house is GONE. Big windbag huffed and — poof — straw everywhere. I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof.",
-      parts: [
-        { text: "So my house is GONE. Big windbag huffed and — poof — straw everywhere." },
-        { text: "I wish for stronger hay. Reinforced. Windproof. Possibly bulletproof." },
-      ] },
-    { art: "customer_pig_straw_ruined2", line: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof! I wish for… okay, iron hay. Is iron hay a thing? Make it a thing.",
-      parts: [
-        { text: "The reinforced hay? GONE. He huffed, he puffed — you know the drill. It was supposed to be windproof!" },
-        { text: "I wish for… okay, iron hay. Is iron hay a thing? Make it a thing." },
-      ] },
+    { line: "My house is GONE — he huffed and straw flew everywhere! Bulletproof hay this time?" },
+    { art: "customer_pig_straw_ruined2", line: "Reinforced hay? GONE too! “Windproof,” they SAID. Iron hay next — make it real!" },
+    { line: "I tried STONE and the chimney fell on ME! A charm for a roof that refuses to fall?" },
+    { line: "Now I’m sleeping in a BARREL! A charm to keep rain off till I sort this disaster?" },
+    { line: "Woody says bunk with him — his house is STICKS! We’re doomed. A courage charm?" },
+    { line: "Two panicked pigs plan better than one, it turns out! A charm to build SOLID?" },
+    { line: "We built with BRICK, together — and it STAYED UP! A charm to celebrate? I’m stunned." },
   ],
-  // Woody (stick house) — aggressively in denial. Walk-in face changes per chapter: first ruined
-  // house (sad, the base art) → second ruined house (muddy, covered in straw).
+  // Woody (stick house) — cocky, in denial, "it's FINE." Walk-in art changes on ch.2.
   pig_stick: [
-    { line: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair. It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother.",
-      parts: [
-        { text: "Okay, so maybe sticks weren’t the upgrade I bragged about. One breeze and the whole place folded like a lawn chair." },
-        { text: "It’s fine! Totally fine. I wish for stronger sticks — the good stuff this time. Don’t tell my brother." },
-      ] },
-    { art: "customer_pig_stick_ruined2", line: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best. I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them.",
-      parts: [
-        { text: "Update: the new sticks lasted a whole DAY. Personal best! Then… less of a best." },
-        { text: "I’m not panicking, YOU’RE panicking. I wish for sticks that don’t give up the second somebody sighs near them." },
-      ] },
+    { line: "Sticks folded like a lawn chair in one breeze! It’s FINE. Better sticks, please?" },
+    { art: "customer_pig_stick_ruined2", line: "New sticks lasted a whole DAY — personal best! Then less so. Sticks that don’t quit?" },
+    { line: "Added MORE sticks — obviously the answer is more sticks! A charm to keep it up?" },
+    { line: "Pile fell again. I’m not panicking, YOU’RE panicking! A confidence charm?" },
+    { line: "Fine. Sticks were a mistake. Don’t tell Thatch I said it. A small humility charm?" },
+    { line: "Thatch and I are teaming up — two heads, one wall! A charm to build it right?" },
+    { line: "We went BRICK, together — held through a huff! Don’t tell I cried. A joy charm?" },
   ],
-  // Sleepy Owl — a running saga about his ruined sleep schedule (energy / PowerPop).
+  // Sleepy Owl — dignified, bookish, dry wit; his ruined sleep turns him into the night-watch.
   owl: [
-    { line: "I slept clean through the moon again — third time this week! My whole schedule’s gone to feathers. I wish for a proper jolt of energy, enough to keep my eyes open past dusk for once." },
-    { line: "So I flipped myself to a daytime schedule to fix things. Owls are NOT built for sunshine. I’m a bleary-eyed disaster by noon. I wish for the energy to power through until I’ve sorted myself out." },
-    { line: "New plan: if I can’t beat the night, I’ll host it — a midnight book club, first meeting tomorrow! I wish for one grand burst of energy so I can dazzle my guests and not, you know, doze off mid-chapter." },
+    { line: "Slept clean through the moon again — third time this week! A proper jolt of energy?" },
+    { line: "Flipped to a daytime schedule — owls are NOT built for sun! Energy to push through?" },
+    { line: "New plan: I’ll HOST the night — a midnight book club! Energy to dazzle my guests?" },
+    { line: "Book club argued the ending four hours — glorious! Stamina to host again Thursday?" },
+    { line: "I filed my library by moon phase and now find NOTHING! Energy to redo it sensibly?" },
+    { line: "The village made me night-watch, since I’m up anyway. A charm for good sharp eyes?" },
+    { line: "Straw and sticks dumped under my tree — can’t nap! Strength to haul it off?" },
+    { line: "On watch I glimpsed a bonnet — and paws far too big for any granny! Nerve to hoot?" },
+    { line: "I hooted and woke the whole village! Mortifying if I’m wrong. A certainty charm?" },
+    { line: "Turns out I wasn’t wrong — good owl! A charm for MY nap now, finally?" },
+    { line: "They’ve named me Night-Warden of Willow! A charm to patrol with the proper flair?" },
+    { line: "Made peace with the dark — it’s rather mine now! A charm to see the stars clearer?" },
+    { line: "Hosting a rooftop stargazing night — no dozing! Energy for one grand evening?" },
   ],
-  // Village Baker — his bakery keeps testing his nerves (calm / CalmCup).
+  // Village Baker — frazzled, warm, perfectionist; names his living sourdough starter "Herman."
   baker: [
-    { line: "The ovens are roaring before the sun’s even up and my nerves are already shot. I wish for something calm — just enough to steady my hands through the morning bake." },
-    { line: "I tried a fancy new sourdough starter and I regret everything. The thing is ALIVE. It bubbles. It GROWLS. I wish for a calming charm — for me, and honestly maybe for the starter too." },
-    { line: "Grand opening of my new pastry counter tomorrow and I cannot stop shaking. Half the village is coming! I wish for one more calm cup — the biggest, gentlest one you’ve got." },
+    { line: "Ovens roaring before sunup, my nerves are shot! Something calm to steady my hands?" },
+    { line: "My sourdough starter is ALIVE — it bubbles, it GROWLS! A calming charm, for us both?" },
+    { line: "I’ve named the starter Herman. Herman has OPINIONS. A charm to keep him in his jar?" },
+    { line: "Pastry counter opens tomorrow — half the village is coming! Calm, I beg you!" },
+    { line: "A cookie fellow bought my finest vanilla — sweet chap! A charm to restock fast?" },
+    { line: "Six-tier wedding cake due at noon, it’s already eleven! Deep, deep calm — do hurry!" },
+    { line: "A hooded man bought 13 loaves for “granny,” paid in ACORNS! My nerves need calm." },
+    { line: "That grin had too many teeth — I keep thinking on it! A charm to bake brave?" },
+    { line: "Brass buttons pinched off my coat — third this week! A charm to keep the rest on?" },
+    { line: "I told Little Red about the acorn man. Felt right. A calm charm while it’s sorted?" },
+    { line: "Booming since the fright passed! Steady hands for a hundred loaves today?" },
+    { line: "Invented my signature loaf — the Willow Wreath! A charm for a perfect first batch?" },
+    { line: "Packed a supply crate for the cookie traveler heading home. A charm to send it warm?" },
   ],
-  // The Hare — cocky racer who keeps getting distracted by the village. Arrives EARLY
-  // each realm (he's "winning"). The classic fable, told a chapter at a time.
-  hare: [
-    { line: "Name’s Dash — racer number ONE, obviously. Big cross-country race on: me versus some… tortoise. A TORTOISE. I’m so far ahead I’ve stopped for a wish! Keep these legs springy for me?" },
-    { line: "Still miles ahead — MILES. Though I did stop to watch some pigs move house, and a shepherdess counting sheep, and… okay, this village is DISTRACTING. Buzz me up something to shake off the dawdles?" },
-    { line: "Alright, alright — MAYBE I had a little nap in a sunbeam. Maybe two. That slowpoke can’t have caught up though… right? …Right? Quick — a jolt of pep before I peek over my shoulder!" },
+  // Goldilocks — fussy, particular, speaks in threes; the three-bears mishap teaches her moderation.
+  goldilocks: [
+    { line: "My porridge ran too hot last time. This time — just right, please! You know me." },
+    { line: "My chair’s too hard, the spare too soft. A cushion charm perfectly in between?" },
+    { line: "One inn bed too lumpy, one too flat! A sleep charm measured just right?" },
+    { line: "Reading lamp’s too bright, then too dim. A charm balanced just so? Fussy? Never." },
+    { line: "I wandered into a cottage that wasn’t mine — awkward! Courage to go apologize?" },
+    { line: "Bringing the three bears porridge to make amends. A “just right” warmth charm?" },
+    { line: "Baby Bear forgave me! A charm for a gift — not too big, not too small — for Papa?" },
+    { line: "The bears invited me to supper! Nervous. A charm for manners that are exactly right?" },
+    { line: "Mama Bear’s teaching me porridge — mine’s too salty! A balanced taste charm?" },
+    { line: "I made a batch that was JUST right! A charm to remember exactly how, forever?" },
+    { line: "The bears and I are friends now — who knew? A perfectly-measured thank-you charm?" },
+    { line: "Turns out “just right” means caring, not fussing. A charm to pass it on?" },
+    { line: "Opening a porridge cart — all just right! A charm for a perfect first morning?" },
   ],
-  // The Tortoise — slow, cheerful, unstoppable. Plods in LAST each realm (still going).
-  // His line advances across realms; in Willow you'll only ever see the first.
-  tortoise: [
-    { line: "Phew… I’m plumb tuckered. I wish there was a way I could walk AND sleep at the same time. That hare zipped off ages ago… but slow and steady, that’s me. I’ll get there." },
-    { line: "Oh — you again! Small world… or a very long road. That hare blew through here days back, they tell me, then vanished clean off. No matter. Still going. Could you soften the ground for these old feet?" },
-    { line: "Still plodding, still smiling. Funny — haven’t spotted that hare in a good while now. A little charm to keep my shell cozy through another night on the trail?" },
+  // Bramble the Gnome — gruff, terse, competitive gardener, secretly soft. Rival: Thornby.
+  gnome: [
+    { line: "My mushrooms are stubborn this year. A growth charm. Don’t tell ’em I asked nicely." },
+    { line: "Prize mushroom’s coming in lovely. The fair’s Sunday. A charm to keep it perfect?" },
+    { line: "Won “Most Alarming” at the fair! Now it’s stool-sized and smug. A shrink charm?" },
+    { line: "Folk come miles to see my mushroom — Bramble the Great, they call me! A crowd charm?" },
+    { line: "Rival gnome Thornby brags his marrow beats mine! A charm for the biggest ever?" },
+    { line: "Thornby’s marrow IS bigger. Rot! A charm to grow mine overnight — no cheating?" },
+    { line: "My rushed marrow burst all over the fair. Humbling. A charm to clean it up quietly?" },
+    { line: "The slugs unionized during the chaos — with DEMANDS! A charm to move them on nicely?" },
+    { line: "Thornby helped haul my burst marrow — decent of him! A charm to grow a peace-gift?" },
+    { line: "Thornby and I share seed now. Don’t make it weird. A charm for our plot to thrive?" },
+    { line: "We’re growing a village pumpkin together! A charm to keep it steady and round?" },
+    { line: "Tomatoes still won’t ripen before frost! Some things never change. A warm week?" },
+    { line: "Our shared pumpkin won the fair — one ribbon, two names! A charm for next year’s?" },
   ],
-  // Wishy the Fish — the wishing-well fish who grants everyone's wishes but his own.
-  // Pays in pearls. His arc ties into the village mess (pigs' debris, lost buttons).
+  // Wishy the Fish — wry, watery puns, pays pearls; his lonely well becomes the village heart.
   fish: [
-    { line: "Ha — a wish-fish at a wish SHOP! Irony’s not lost on me. See, I grant everyone else’s coin-wishes down my well… but never my own. So here I am! I wish for a bit of company — it’s awful quiet down there. Payment’s in pearls, mind; it’s all a well-fish has." },
-    { line: "Company worked a TREAT — the whole village tosses coins now! But my water’s gone murky: a heap of straw and sticks splashed in (those PIGS), and I keep spitting up lost buttons. I wish for a charm to keep my well crystal-clear. More pearls for you." },
-    { line: "My well’s the talk of Willow now — bright as glass, wishes flying! One more, if you’d be so kind: make my little water bubble shimmer, so I can watch the stars while I work. Take these pearls — you’ve earned every one." },
+    { line: "A wish-fish at a wish shop! I wish for company down my lonely well. Pearls, mind." },
+    { line: "The village tosses coins now! A charm to sort wishes from bottle-caps? Pearls." },
+    { line: "Straw and sticks splashed in my well — those PIGS! A clarity charm, for pearls?" },
+    { line: "A heron eyes me like a buffet! A charm to look less snackable? Pearls, naturally." },
+    { line: "Two lovesick newts keep circling my well! A charm to send them off happy? Pearls." },
+    { line: "I keep coughing up lost buttons from my well! A charm to gather the hoard? Pearls." },
+    { line: "My well’s the talk of Willow, bright as glass! A charm to keep it sparkling? Pearls." },
+    { line: "A toothy shadow wished “a snack for granny” over my well! A bravery charm? Pearls." },
+    { line: "I told Little Red about the toothy shadow. A calming charm now? Pearls for you." },
+    { line: "The village guards my well now — safe again! A thank-you charm to bubble up? Pearls." },
+    { line: "Kids toss crumbs with their wishes now — I’m plump! A fair-sharing charm? Pearls." },
+    { line: "My well’s the heart of Willow now, not lonely at all! A charm to keep it so? Pearls." },
+    { line: "One last wish: make my water shimmer, so I can watch the stars as I work. Pearls!" },
   ],
 };
 function custArc(id) { return CUSTOMER_ARCS[id] || null; }
@@ -5321,51 +5382,83 @@ function advanceCustStory(id) { const a = custArc(id); if (!a) return; const s =
 // story progress (the `when` predicate) — little nods to what's stirring in the village.
 const TOWN_WISHES = {
   gingerbread: [
-    "The bakery cranked the cold-storage and I’m shivering my gumdrops off — a little warmth charm? Not TOO much. I’ve learned my lesson about heat.",
-    "A kid tried to dunk me in cocoa “just to see what happens.” I wish for a quick slip-away charm — I am NOT a biscuit.",
-    "I want to go for a jog without a conga line of ants behind me. A little freshness charm, maybe?",
-    { t: "Everyone’s losing buttons this week and it’s got me nervous about my gumdrop ones. A wish to keep mine firmly ON, please.", when: () => (GAME.buttonStep || 0) >= 1 },
+    "The cold-store has me shivering my gumdrops! A little warmth — not too much?",
+    "A kid tried to dunk me in cocoa “to see what happens”! A quick slip-away charm?",
+    "Found a realm-map home! A luck charm to gather the best supplies out there?",
+    { t: "Everyone’s losing buttons — now I fret for my gumdrop ones! A charm to keep them ON?", when: () => (GAME.buttonStep || 0) >= 1 },
   ],
   mouse: [
-    "The sewing shop’s booming but my paws ache. A wish for a needle that threads itself — I’ll handle the rest, promise.",
-    "A bulk order of ribbon came in one enormous knot. I wish for a charm that combs tangles smooth. Neatly, mind!",
-    "A customer asked for a dress “the color of a good mood.” I wish for a dye that actually does that. No pressure at all.",
-    { t: "Buttons STILL vanishing all over town — and now it’s not just me! A wish to keep my button jar safe and full.", when: () => (GAME.buttonStep || 0) >= 1 },
+    "Shop’s booming but my paws ache! A self-threading needle charm — I’ll do the rest?",
+    "A ribbon order came as one enormous knot! A charm to comb it smooth — neatly, mind!",
+    "My apprentice sewed a sleeve to a hat — bless him! A patience charm, for us both?",
+    { t: "Buttons STILL vanishing townwide — not just me now! A charm to keep my jar full?", when: () => (GAME.buttonStep || 0) >= 1 },
   ],
   gnome: [
-    "My prize mushroom won “Most Alarming” at the fair and it’s gone to its head — literally, it’s the size of a stool now. A wish to keep it a REASONABLE size.",
-    "The garden slugs have unionized. I’m not joking. A gentle charm to relocate them somewhere nicer — with their little list of demands.",
-    "I’d like my tomatoes to ripen before the frost for ONCE. A wish for a warm, growing week?",
-    { t: "Found a heap of straw and busted sticks composting behind my shed — not mine! A wish to turn the mess into good mulch. Waste not.", when: () => GAME.pigsMoved },
+    "Prize mushroom’s stool-sized again! A charm to keep it a reasonable size?",
+    "The slug union wants nicer lodging! A gentle charm to relocate them — list and all?",
+    "Thornby and I race turnips now — friendly, mostly! A charm for a fine fat crop?",
+    { t: "Straw and busted sticks behind my shed — not mine! A charm to turn it to mulch?", when: () => GAME.pigsMoved },
   ],
   goldilocks: [
-    "That porridge charm? A touch too warm last time. This time — just right, please. You know how I am.",
-    "My chair’s too hard and the spare’s too soft. I wish for a cushion charm that’s perfectly, precisely in between.",
-    "The inn gave me one bed too lumpy and one too flat. I wish for a night’s sleep measured exactly right.",
-    "Not too bright, not too dim — a reading-lamp charm balanced just so. Fussy? Me? Never.",
+    "That porridge charm ran a touch warm. This time — just right, you know how I am.",
+    "One bed too lumpy, one too flat. A sleep charm measured exactly right?",
+    "Not too bright, not too dim — a reading-lamp charm balanced just so?",
+    "My porridge cart’s first rush! A charm so every bowl comes out precisely right?",
   ],
   owl: [
-    "I reorganized my library by moon phase and now I can’t find a thing. A wish for the energy to redo it by SUBJECT, like a sensible bird.",
-    "Book club was a triumph — we argued about the ending for four hours. I wish for the stamina to host again Thursday.",
-    { t: "Someone dumped a whole ruined house of straw and sticks under my tree — can’t nap for the mess! A wish for the strength to haul it off.", when: () => GAME.pigsMoved },
-    { t: "On my night watch I saw it — a bonnet, a shawl, and paws FAR too big for any granny, creeping toward the woods. A wish for the nerve to hoot the alarm if it comes back.", when: () => GAME.storyStep >= 4 },
+    "Book club argued one ending for four hours — bliss! Stamina to host again Thursday?",
+    "I filed my shelves by SUBJECT at last. Energy to actually keep them that way?",
+    "Night-watch is quiet and lovely. A charm to keep my eyes sharp till dawn?",
+    { t: "Someone dumped a ruined stick-house under my tree! Strength to haul it off?", when: () => GAME.pigsMoved },
+    { t: "Still spy that big-pawed “granny” creeping woodward at night! Nerve to hoot again?", when: () => GAME.storyStep >= 4 },
   ],
   baker: [
-    "The starter’s calmed down — mostly. It only hums now. I wish for a steady hand for today’s hundred loaves.",
-    "Six-tier wedding cake due at noon and it’s already eleven. I wish for calm. Deep, deep calm.",
-    { t: "A hooded customer bought thirteen loaves “for a poorly grandmother” and paid in acorns. ACORNS. And that grin — too many teeth. A settling cup for my nerves?", when: () => GAME.storyStep >= 4 },
-    { t: "Someone’s pinching the brass buttons clean off my coat — third this week! A wish to keep the rest where they belong.", when: () => (GAME.buttonStep || 0) >= 1 },
+    "Herman the starter only hums now, mostly. A steady hand for today’s hundred loaves?",
+    "Wedding cake due at noon and it’s eleven! Calm. Deep, deep calm, I beg you.",
+    "The Willow Wreath loaf sells out daily! A charm for a golden crust every time?",
+    { t: "That acorn-paying “granny” shopper still haunts me. A settling cup for my nerves?", when: () => GAME.storyStep >= 4 },
+    { t: "Someone’s still pinching my brass coat buttons! A charm to keep the rest on?", when: () => (GAME.buttonStep || 0) >= 1 },
   ],
   wolf: [
-    "Between us? Folk still cross the street when I smile. A wish for a charm that reads “friendly,” not “famished.”",
-    "I tried a book club, a knitting circle, a choir — they all “suddenly remembered somewhere to be.” A little charm of good company?",
-    "I’m on a strict no-sheep diet. Day two. It is NOT going well. A wish to quiet the cravings, please.",
+    "Folk cross the street when I smile! A charm that reads “friendly,” not “famished”?",
+    "Joined a choir — they all “remembered somewhere to be”! A charm for good company?",
+    "Strict no-sheep diet, day two. It is NOT going well. A charm to quiet the cravings?",
+    "Bought a darling bonnet — for THEATRE, of course! A charm to look convincing?",
+    "Thirteen loaves left at my door — rude assumptions! A charm to seem less hungry?",
+    "That owl keeps watching me, nosy bird! A charm to look boringly harmless?",
+    "A diet of acorns and regret. A charm to make salad taste like anything else at all?",
+    "Everyone’s so JUMPY lately, like they expect some big bad wolf! A fresh-start charm?",
+  ],
+  little_red: [
+    "The forest path gets dark so fast! A protection charm for my walk to Grandma’s?",
+    "Grandma’s cottage is deep in the woods. A charm to keep the way safe and clear?",
+    "Mother packed a basket for Grandma. A charm to keep the bread warm the whole way?",
+    "The Mouse mended my cloak beautifully! A charm to keep it clean on the muddy paths?",
+    { t: "Found a heart-shaped button on the path — spooky. A charm to feel brave carrying it?", when: () => (GAME.buttonStep || 0) >= 1 },
+    { t: "Folk say something wears a bonnet in these woods! A courage charm for my visit?", when: () => GAME.storyStep >= 4 },
   ],
   fish: [
-    "The village keeps tossing wishes down my well — I’m run off my fins! A charm to sort the real wishes from the bottle-caps? Pearls for your trouble.",
-    "A heron’s been eyeing my bubble like it’s a buffet. A little charm to look less… snackable? Paid in pearls, naturally.",
-    "Someone wished for “true love” down my well and now there are TWO lovesick newts circling me. A charm to send them off happy together? Pearls, as ever.",
-    { t: "A shadow leaned over my well last night — a bonnet, and an awful lot of teeth — and wished for “a plump little snack to visit grandma.” Gave me the shivers, fins to tail! A bravery charm, please — and do be careful up there. Pearls for you.", when: () => GAME.storyStep >= 4 },
+    "The village tosses so many wishes down my well — a sorting charm? Pearls for you.",
+    "A heron eyes my bubble like a buffet! A charm to look less snackable? Pearls.",
+    "Two lovesick newts still circle me! A charm to send them off together? Pearls.",
+    "Coins pile up down here! A charm to tidy my well into a proper treasury? Pearls.",
+    { t: "That toothy shadow still visits my well at night! A bravery charm, please? Pearls.", when: () => GAME.storyStep >= 4 },
+  ],
+  pig_straw: [
+    "Our brick house still stands — I keep checking hourly! A charm to quiet my worrying?",
+    { t: "Visiting from the new brick place! Still can’t believe it holds. A calm charm?", when: () => GAME.pigsMoved },
+  ],
+  pig_stick: [
+    "Brick house is holding. I KNEW it would. (I did not.) A charm to keep it standing?",
+    { t: "Popped by from the brick place — solid as ever! A little charm to gloat gently?", when: () => GAME.pigsMoved },
+  ],
+  hare: [
+    "Still winning, obviously! A quick pep charm before that tortoise catches up?",
+    "Stopped to admire my reflection — as one does! A charm to spring me to top speed?",
+  ],
+  tortoise: [
+    "Slow road, happy heart. A charm to keep these old feet plodding one more mile?",
+    "Haven’t spotted that hare in ages. No matter. A charm to keep my shell cozy tonight?",
   ],
 };
 function everydayWishes(id) {
