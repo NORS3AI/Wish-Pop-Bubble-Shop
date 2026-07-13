@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v229"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v230"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -122,6 +122,39 @@ function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoj
 // canvas more than others, so a few get scaled down to sit comfortably.
 const CHAR_SCALE = { owl: 0.82, tortoise: 0.82, hare: 0.9, fish: 0.66 };
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * REALM PACING — the one place to tune how long a realm runs and how its
+ * story beats, quests, and events are spread out. All numbers are counted in
+ * "orders" (customers served).
+ *
+ * REALM LENGTH is set by two knobs:
+ *   • eventEvery  (here)            — orders between fairytale events
+ *   • eventsNeeded (in data.js REALMS) — events before the finale
+ *   The finale lands at roughly  eventsNeeded × eventEvery  orders.
+ *   Willow: 5 × 18 ≈ 90 orders ≈ ~2 hours (the opening realm).
+ *
+ * To MOVE A BEAT earlier/later, change its "...After"/"...Every" number below.
+ * To ADD A QUEST later, give it a trigger + a number here and read it with
+ *   pacing("yourKey", fallback).  Nothing else in the code hard-codes timing.
+ * A realm with no entry here just uses the fallbacks (its old behavior).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+const REALM_PACING = {
+  willow: {
+    eventEvery:       22,  // orders between events (was 10). Finale lands at ~(eventsNeeded−1)×eventEvery ≈ 88 orders. 4 mini-games + finale.
+    boPeepAfter:       4,  // Bo Peep's sheep quest opens this many orders in
+    hareFirstAfter:    6,  // the Hare's first zoom-through
+    hareAgainEvery:   14,  // orders between his later race cameos
+    goldilocksAfter:  44,  // Tiny Mouse's teddy → Goldilocks bear-delivery quest begins (mid-game, once her Bandit-Bears fandom is set)
+    goldilocksDeliver: 4,  // orders between getting the bears and Goldilocks collecting
+    buttonChainGap:    6,  // orders between each of the 3 dropped-button clues
+    wolfArcEvery:     12,  // orders between the Wolf's recurring disguise visits
+    redVacationAfter: 24,  // Red's "vacation" beat (after her arrival wish is done)
+    redImpostorAfter: 28,  // Red's "impostor" beat (after the vacation)
+  },
+};
+// Read a pacing number for the current realm, falling back to the old default.
+function pacing(key, dflt) { const p = REALM_PACING[GAME.realm]; return p && p[key] != null ? p[key] : dflt; }
 // A customer's face with an EXPRESSION. "normal" is the base customer_<id>.png;
 // happy / angry / allergic are customer_<id>_<mood>.png. If that art isn't there,
 // it falls back to the given emoji (the emotion face we've always shown).
@@ -456,8 +489,8 @@ function playRedImpostor() {
 // Fire Red's next story visit when it comes due (a few served customers apart, Willow only).
 function maybeRedVisit() {
   if (GAME.realm !== "willow") return false;
-  if (GAME.storyStep === 2 && GAME.storyNextAt < 0) { GAME.storyNextAt = servedTotal + 3; save(); }
-  else if (GAME.storyStep === 3 && GAME.storyNextAt < 0) { GAME.storyNextAt = servedTotal + 4; save(); }
+  if (GAME.storyStep === 2 && GAME.storyNextAt < 0) { GAME.storyNextAt = servedTotal + pacing("redVacationAfter", 3); save(); }
+  else if (GAME.storyStep === 3 && GAME.storyNextAt < 0) { GAME.storyNextAt = servedTotal + pacing("redImpostorAfter", 4); save(); }
   if (GAME.storyNextAt >= 0 && servedTotal >= GAME.storyNextAt) {
     if (GAME.storyStep === 2) { GAME.storyStep = 3; GAME.storyNextAt = -1; save(); playRedVacation(); return true; }
     if (GAME.storyStep === 3) { GAME.storyStep = 4; GAME.storyNextAt = -1; save(); playRedImpostor(); return true; }
@@ -517,7 +550,7 @@ function playBoPeep() {
 // Bo Peep drops by once, early, after the arrival tutorial (Willow only).
 function maybeBoPeep() {
   if (GAME.realm !== "willow" || !GAME.seenIntro || GAME.bopeepMet) return false;
-  if (servedTotal < 2) return false;   // let the player settle in first
+  if (servedTotal < pacing("boPeepAfter", 2)) return false;   // let the player settle in first
   playBoPeep(); return true;
 }
 // The Two Pigs' finale — once BOTH have exhausted their blow-down arcs, they come in
@@ -579,7 +612,7 @@ function maybeButtonChain() {
   const s = GAME.buttonStep || 0;
   if (s >= 3) return false;
   if (s === 0 && custStoryStep("mouse") < 3) return false;   // Tiny Mouse must have wished for the never-empty button jar first
-  if (GAME.buttonChainAt < 0) { GAME.buttonChainAt = servedTotal + 2; save(); return false; }
+  if (GAME.buttonChainAt < 0) { GAME.buttonChainAt = servedTotal + pacing("buttonChainGap", 2); save(); return false; }
   if (servedTotal < GAME.buttonChainAt) return false;
   GAME.buttonChainAt = -1; save();
   if (s === 0) { playWolfButtons(); return true; }        // buttonStep advances to 1 when he drops them (in the outro)
@@ -644,7 +677,7 @@ function playWolfVisit() {
 function maybeWolfArc() {
   if (GAME.realm !== "willow" || !GAME.seenIntro) return false;
   if ((GAME.wolfArcStep || 0) >= WOLF_VISITS.length) return false;
-  if (GAME.wolfArcAt < 0) { GAME.wolfArcAt = servedTotal + 5; save(); return false; }
+  if (GAME.wolfArcAt < 0) { GAME.wolfArcAt = servedTotal + pacing("wolfArcEvery", 5); save(); return false; }
   if (servedTotal < GAME.wolfArcAt) return false;
   GAME.wolfArcAt = -1; save(); playWolfVisit(); return true;
 }
@@ -731,13 +764,13 @@ function maybeGoldilocksQuest() {
   const s = GAME.goldilocksStep || 0;
   if (s >= 2) return false;
   if (s === 0) {
-    if (servedTotal < 3) return false;   // let the player meet a few folks first
+    if (servedTotal < pacing("goldilocksAfter", 3)) return false;   // let the player meet a few folks first
     if (GAME.goldilocksAt < 0) { GAME.goldilocksAt = servedTotal + 1; save(); return false; }
     if (servedTotal < GAME.goldilocksAt) return false;
     GAME.goldilocksAt = -1; save(); playGoldiMouse(); return true;
   }
   // s === 1: we have the bears — Goldilocks comes to collect a couple rounds later
-  if (GAME.goldilocksAt < 0) { GAME.goldilocksAt = servedTotal + 2; save(); return false; }
+  if (GAME.goldilocksAt < 0) { GAME.goldilocksAt = servedTotal + pacing("goldilocksDeliver", 2); save(); return false; }
   if (servedTotal < GAME.goldilocksAt) return false;
   GAME.goldilocksAt = -1; save(); playGoldiDeliver(); return true;
 }
@@ -762,7 +795,7 @@ function hareArcLen() { return CUSTOMER_ARCS.hare ? CUSTOMER_ARCS.hare.length : 
 function maybeHare() {
   if (GAME.realm !== "willow" || !GAME.seenIntro) return false;
   if (custStoryStep("hare") >= hareArcLen()) return false;   // his Willow race arc is done
-  if (GAME.hareAt < 0) { GAME.hareAt = servedTotal + (custStoryStep("hare") === 0 ? 1 : 3); save(); return false; }
+  if (GAME.hareAt < 0) { GAME.hareAt = servedTotal + (custStoryStep("hare") === 0 ? pacing("hareFirstAfter", 1) : pacing("hareAgainEvery", 3)); save(); return false; }
   if (servedTotal < GAME.hareAt) return false;
   GAME.hareAt = -1; save(); return forceCustomer("hare");
 }
@@ -2070,9 +2103,9 @@ function eventPlanPreview(realmId) {
   return seq;
 }
 function maybeEvent() {
-  if (GAME.nextEventAt < 0) { GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save(); return false; }
+  if (GAME.nextEventAt < 0) { GAME.nextEventAt = servedTotal + pacing("eventEvery", BALANCE.EVENT_EVERY); save(); return false; }
   if (servedTotal < GAME.nextEventAt) return false;
-  GAME.nextEventAt = servedTotal + BALANCE.EVENT_EVERY; save();
+  GAME.nextEventAt = servedTotal + pacing("eventEvery", BALANCE.EVENT_EVERY); save();
   const realm = currentRealm(), need = realmEventsNeeded(realm.id), finale = realmFinale(realm.id);
   // FINALE: once the story events are done, the realm's must-win finale appears (drops a Realm Key).
   // It keeps re-appearing until you win it.
