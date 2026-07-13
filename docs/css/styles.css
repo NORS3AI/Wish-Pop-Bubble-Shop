@@ -586,6 +586,84 @@ html, body {
 .well-prize.jackpot .wp-emoji { font-size: 68px; animation: charmpop 1s cubic-bezier(.2,1.4,.4,1); }
 .well-prize.jackpot .wp-label { color: var(--gold); }
 
+/* --- Wishy's Wishing Well: top-down scene (well_bg), coin drop, rising bubbles --- */
+.well-scene { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden;
+  background: url('../art/well_bg.webp') center 42% / cover no-repeat; }
+.well-actions { padding: 8px 12px calc(8px + var(--safe-b)); gap: 10px; }
+/* invisible anchor over the water hole (bg: centre x50%, ~43% down, radius ~28% of width) */
+.well-circle { position: absolute; left: 50%; top: 43%; width: 56%; aspect-ratio: 1;
+  transform: translate(-50%, -50%); pointer-events: none; }
+/* Wishy floats in the water during the tutorial, his bubble filling the well circle */
+.wishy-well { position: absolute; left: 50%; top: 43%; width: 66%; transform: translate(-50%, -50%);
+  z-index: 4; animation: wishyBob 3.4s ease-in-out infinite; filter: drop-shadow(0 8px 18px rgba(0,0,0,.5)); }
+.wishy-well .wishy-well-img.art { width: 100%; height: auto; max-width: none; display: block; }
+.wishy-well.leaving { animation: wishyDive .9s ease-in forwards; }
+@keyframes wishyBob { 0%,100% { transform: translate(-50%,-50%); } 50% { transform: translate(-50%, calc(-50% - 10px)); } }
+@keyframes wishyDive { 0% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, calc(-50% + 66px)) scale(.36); opacity: 0; } }
+/* the tossed coin dropping into the water */
+.well-coin { position: absolute; left: 50%; top: -8%; width: 26%; transform: translate(-50%, 0);
+  z-index: 5; animation: wellCoinDrop .72s cubic-bezier(.5,0,.85,1) forwards; }
+.well-coin .well-coin-img.art { width: 100%; height: auto; max-width: none; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+@keyframes wellCoinDrop {
+  0%   { top: -8%;  transform: translate(-50%, 0) scale(1) rotate(0); opacity: 1; }
+  68%  { top: 44%;  transform: translate(-50%, -50%) scale(.66) rotate(230deg); opacity: 1; }
+  100% { top: 50%;  transform: translate(-50%, -50%) scale(.24) rotate(340deg); opacity: 0; } }
+/* three bubbles rising from the water to hover just above the well */
+.well-bubbles2 { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.wbub2 { position: absolute; left: calc(50% + var(--bx) * 30%); top: 15%;
+  width: 33%; aspect-ratio: 1; transform: translate(-50%, -50%); border: none; padding: 0; cursor: pointer;
+  border-radius: 50%; pointer-events: auto;
+  background: radial-gradient(circle at 36% 30%, rgba(255,255,255,.98), rgba(198,234,255,.82) 38%, rgba(120,184,238,.72) 64%, rgba(78,142,212,.6) 85%, rgba(64,124,196,.42));
+  box-shadow: inset 0 -7px 15px rgba(56,114,184,.55), inset 0 5px 13px rgba(255,255,255,.9), 0 5px 14px rgba(0,0,0,.42), 0 0 0 2px rgba(255,255,255,.4), 0 0 16px rgba(150,210,255,.55);
+  animation: wbubRise .55s cubic-bezier(.3,1,.5,1) var(--bd) backwards, wbubFloat 2.6s ease-in-out var(--bd) infinite; }
+.wbub2-sheen { position: absolute; left: 22%; top: 15%; width: 28%; height: 24%; border-radius: 50%; background: rgba(255,255,255,.92); filter: blur(1px); }
+@keyframes wbubRise { 0% { top: 50%; transform: translate(-50%,-50%) scale(.3); opacity: 0; } 100% { top: 15%; opacity: 1; } }
+@keyframes wbubFloat { 0%,100% { margin-top: 0; } 50% { margin-top: -8px; } }
+.wbub2.chosen { animation: wbubChosen .34s ease-out forwards; z-index: 8; }
+.wbub2.fizz { animation: wbubFizz .4s ease-out forwards; pointer-events: none; }
+@keyframes wbubChosen { 0% { transform: translate(-50%,-50%) scale(1); } 45% { transform: translate(-50%,-50%) scale(1.4); } 100% { transform: translate(-50%,-50%) scale(0); opacity: 0; } }
+@keyframes wbubFizz { to { transform: translate(-50%,-50%) scale(.2); opacity: 0; } }
+/* the prize floating up out of the well */
+.well-prize2 { position: absolute; left: 50%; top: 6%; transform: translate(-50%,-50%); z-index: 9;
+  display: flex; flex-direction: column; align-items: center; text-align: center; width: 84%;
+  animation: wellPrizeUp .5s cubic-bezier(.2,1.4,.4,1); }
+.well-prize2.fade { opacity: 0; transition: opacity .4s ease; }
+.wp2-emoji { font-size: 52px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
+.wp2-label { font-family: var(--ff-display); font-weight: 900; font-size: 19px; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,.85); }
+.well-prize2.jackpot .wp2-emoji { font-size: 62px; animation: charmpop 1s cubic-bezier(.2,1.4,.4,1); }
+.well-prize2.jackpot .wp2-label { color: var(--gold); }
+.wp2-sub { font-family: var(--ff-display); font-size: 12px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.9); margin-top: 2px; }
+@keyframes wellPrizeUp { 0% { transform: translate(-50%, 30%) scale(.4); opacity: 0; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
+/* Wishy's speech / status line over the stone, plus the top info chips */
+.well-speech { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); z-index: 7;
+  width: 90%; max-width: 344px; text-align: center; padding: 9px 14px; border-radius: 14px;
+  background: rgba(20,12,36,.74); color: #f6efff; font-family: var(--ff-display); font-size: 14.5px; line-height: 1.35;
+  box-shadow: 0 3px 12px rgba(0,0,0,.4); }
+.well-speech b { color: #ffe08a; }
+.well-dustchip { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 7;
+  padding: 4px 14px; border-radius: 999px; background: rgba(20,12,36,.68); color: #f6efff;
+  font-family: var(--ff-display); font-size: 13px; white-space: nowrap; }
+.well-dustchip b { color: #ffe08a; }
+.well-odds-btn { position: absolute; right: 8px; top: 46px; z-index: 7; border: none; cursor: pointer;
+  padding: 5px 11px; border-radius: 999px; background: rgba(20,12,36,.62); color: #dcd2f0;
+  font-family: var(--ff-display); font-size: 12px; }
+.well-odds-btn:active { transform: scale(.95); }
+.well-odds-modal { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center;
+  background: rgba(6,3,14,.62); animation: fade .2s ease; padding: 20px; }
+.wom-card { width: 92%; max-width: 320px; }
+/* Home-screen Well button (mirrors Dailies on the right) + its "new!" arrow.
+   Extra #app on the selector out-specifies "#screen-start.has-home-bg > *" (which
+   would otherwise force position:relative and drop it into the layout flow). */
+#app #screen-start .home-well { position: absolute; right: 2px; top: 45%; transform: translateY(-50%); z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; cursor: pointer; }
+#screen-start .home-well .nav-lbl { font-size: 17px; }
+.home-well:active .home-daily-plaque { transform: scale(.92); }
+.home-well.nudge-well { animation: wellNudge 1.1s ease-in-out infinite; }
+@keyframes wellNudge { 0%,100% { transform: translateY(-50%); } 50% { transform: translate(3px, -50%); } }
+.well-arrow { position: absolute; left: -30px; top: 40%; font-size: 30px; animation: wellArrow 1s ease-in-out infinite; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+@keyframes wellArrow { 0%,100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
+
 /* ==========================================================================
  * WARDROBE (My Skins)
  * ======================================================================== */

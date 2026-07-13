@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v241"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v242"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -59,6 +59,7 @@ function normalizeGame(g) {
   if (!Array.isArray(g.stackBest)) g.stackBest = []; // top-3 Sky-High Savings Infinite scores
   if (!g.hunts || typeof g.hunts !== "object") g.hunts = {}; // realmId -> { found, done } collection scavenger hunt
   if (typeof g.huntCelebrate === "undefined") g.huntCelebrate = null; // realmId pending a completion thank-you card
+  if (typeof g.wellIntro !== "number") g.wellIntro = 0; // Wishy's wishing well: 0 not introduced · 1 introduced (home button + arrow, tutorial pending) · 2 first wish made (Wishy has left)
   if (!g.satchel || typeof g.satchel !== "object") g.satchel = {}; // main inventory: itemId -> count (quest / keepsake items)
   if (!g.custStory || typeof g.custStory !== "object") g.custStory = {}; // customerId -> chapter index (their wishes tell an ongoing arc)
   if (!g.carpetSkin || g.carpetSkin < 1 || g.carpetSkin > 10) g.carpetSkin = 5; // Magic Carpet Dash chosen rug (5 = moon carpet)
@@ -153,6 +154,7 @@ const REALM_PACING = {
     wolfArcEvery:     12,  // orders between the Wolf's recurring disguise visits
     redVacationAfter: 24,  // Red's "vacation" beat (after her arrival wish is done)
     redImpostorAfter: 28,  // Red's "impostor" beat (after the vacation)
+    wellAfter:        30,  // Wishy the Fish introduces his wishing well (mid-game — also gated on having gold to spend)
     bandAfter:        52,  // the Bandit Bears come to town (you get the blank tour poster)
     bandVisitGap:      6,  // orders between the announcement and each member's autograph visit (and the final delivery)
   },
@@ -344,6 +346,11 @@ function renderStart() {
       <span class="nav-plaque home-daily-plaque"><img src="art/ui/btn_11.png" alt="" draggable="false"><span class="nav-ic">🎁</span>${dailyBadge}</span>
       <span class="nav-lbl">Dailies</span>
     </button>
+    ${GAME.wellIntro >= 1 ? `<button class="home-well${GAME.wellIntro === 1 ? " nudge-well" : ""}" id="home-well">
+      <span class="nav-plaque home-daily-plaque"><img src="art/ui/btn_11.png" alt="" draggable="false"><span class="nav-ic">🌟</span></span>
+      <span class="nav-lbl">Well</span>
+      ${GAME.wellIntro === 1 ? `<span class="well-arrow" aria-hidden="true">👉</span>` : ""}
+    </button>` : ""}
     <div class="home-logo">
       <div class="logo-stage">
         <div class="logo-sparkles" aria-hidden="true">${logoSparkles()}</div>
@@ -366,6 +373,7 @@ function renderStart() {
   `);
   on("#play-btn", "click", startRound);
   on("#home-daily", "click", renderQuests);
+  on("#home-well", "click", renderWell);
   on("#nav-shop", "click", renderMenu);
   on("#nav-satchel", "click", renderSatchel);
   on("#nav-map", "click", renderMap);
@@ -506,6 +514,28 @@ function maybeRedVisit() {
     if (GAME.storyStep === 3) { GAME.storyStep = 4; GAME.storyNextAt = -1; save(); playRedImpostor(); return true; }
   }
   return false;
+}
+/* --- Wishy the Fish's Wishing Well. Mid-Willow (once you've a little gold to spend),
+   Wishy swims up to introduce the well: toss a coin, pop a bubble, something lovely
+   floats back. Ends by lighting up a 🌟 Well button on the home screen. We only have a
+   few Wishy pictures, so his beats lean on his normal + happy face. --- */
+function playWellIntro() {
+  SFX.unlock();
+  ["customer_fish", "customer_fish_happy"].forEach(k => ART.ensure(k, () => {}));
+  renderStoryBeats([
+    { name: "Wishy the Fish", fig: "customer_fish", text: "Blub — hello again! You grant wishes up here in your lovely shop… but did you know <i>I</i> keep the old <b>wishing well</b> at the edge of the village?" },
+    { name: "Wishy the Fish", fig: "customer_fish_happy", text: "It’s where the village tosses their coins to me. Drop one in, make a wish, and something lovely floats back up — a bit of sparkle, a treat, sometimes a whole new look for your cauldron!" },
+    { name: "Wishy the Fish", fig: "customer_fish", cta: "Follow him  ▸", text: "Your purse is looking heavy enough — come, <b>follow me to my well</b> and make a wish! I’ve popped a little <b>🌟 Well</b> button on your shopfront. Meet me at the water." },
+  ], () => { GAME.wellIntro = 1; save(); renderStart(); });
+}
+// Wishy introduces his well mid-Willow, once you've enough gold to actually toss a coin.
+function maybeWellIntro() {
+  if (GAME.realm !== "willow") return false;
+  if (GAME.wellIntro !== 0) return false;
+  if (servedTotal < pacing("wellAfter", 30)) return false;
+  if ((GAME.gold || 0) < BALANCE.WELL_COST) return false;   // wait until a wish is actually affordable
+  playWellIntro();
+  return true;
 }
 // One smooth, continuous zoom straight in through the shop's open door (the backdrop
 // has already drifted to the shopfront during the chat), then a soft fade into the
@@ -1601,7 +1631,7 @@ function renderMenu() {
       </div>
       <button class="btn ${anyQuestClaimable() ? "good" : ""}" id="quests-btn" style="margin-bottom:10px">📋 Quests${anyQuestClaimable() ? ` <span class="q-badge">!</span>` : ""}</button>
       <div class="row" style="margin-bottom:10px;gap:10px">
-        <button class="btn" id="well-btn" style="flex:1">🌟 Wishing Well</button>
+        ${GAME.wellIntro >= 1 ? `<button class="btn" id="well-btn" style="flex:1">🌟 Wishing Well</button>` : ""}
         <button class="btn secondary" id="wardrobe-btn" style="flex:1">🎨 My Skins</button>
       </div>
       <div class="row" style="margin-bottom:10px;gap:10px">
@@ -1748,32 +1778,54 @@ function grantWellPrize(p) {
   GAME.owned[p.cosmetic.id] = true; save();
   return { emoji: p.cosmetic.chip, label: `New skin: ${p.cosmetic.name}!`, sub: "Equip it in 🎨 My Skins.", jackpot: true };
 }
+function wellDustChip() {
+  const totalSkins = allSkins().length, ownedSkins = allSkins().filter(c => GAME.owned[c.id]).length;
+  return `🪙 <b>${(GAME.gold || 0).toLocaleString()}</b> · ✨ <b>${GAME.stardust}</b> · 🎁 <b>${ownedSkins}/${totalSkins}</b>`;
+}
+function refreshWellChip() { const c = $(".well-dustchip"); if (c) c.innerHTML = wellDustChip(); }
+// Wishy's well: a top-down well backdrop. During the tutorial (first-ever visit)
+// Wishy floats in the water circle and explains; after your first wish he swims off
+// for good. Toss a coin → it drops in → three bubbles rise from the water → pop one.
 function renderWell() {
   const cost = BALANCE.WELL_COST, canAfford = GAME.gold >= cost;
-  const totalSkins = allSkins().length, ownedSkins = allSkins().filter(c => GAME.owned[c.id]).length;
+  const tutorial = GAME.wellIntro === 1;
+  ART.ensure("customer_fish", () => {}); ART.ensure("stack_coin_front", () => {});
   html("well", `
     ${hud("Wishing Well")}
-    <div class="grow center" style="gap:14px;overflow-y:auto">
-      <div class="well-visual" id="well-visual"><div class="well-emoji">${ART.tag("well_star", "🌟")}</div><div class="well-ripple"></div></div>
-      <div class="rb-total">✨ <b id="well-dust">${GAME.stardust}</b> Stardust · 🎁 <b>${ownedSkins}/${totalSkins}</b> skins</div>
-      <div id="well-stage" class="well-stage muted">Toss a coin in and pop a bubble to see what floats up!</div>
-      <div class="card" style="width:100%;max-width:320px">
-        <div style="font-weight:800;text-align:center;margin-bottom:6px">What might rise up?</div>
-        <div class="stat-line"><span>🪙 A little gold back</span><span class="muted">common</span></div>
-        <div class="stat-line"><span>🐸 A handful of treats</span><span class="muted">common</span></div>
-        <div class="stat-line"><span>✨ Stardust (buys any skin)</span><span class="muted">uncommon</span></div>
-        <div class="stat-line"><span>🎁 A brand-new skin!</span><span style="color:var(--gold);font-weight:800">rare</span></div>
-      </div>
-      <p class="muted" style="font-size:12px;max-width:280px">You always get something — the fun is <i>how big</i>. Duplicate skins turn into Stardust.</p>
+    <div class="well-scene mg-fullbleed" id="well-scene">
+      <div class="well-circle" id="well-circle"></div>
+      ${tutorial ? `<div class="wishy-well" id="wishy-well">${ART.tag("customer_fish", "🐟", "wishy-well-img")}</div>` : ""}
+      <div class="well-dustchip">${wellDustChip()}</div>
+      <button class="well-odds-btn" id="well-odds">ⓘ What floats up?</button>
+      <div class="well-speech" id="well-speech">${tutorial
+        ? `<b>Wishy:</b> Toss a coin into my well, then <b>pop one of the three bubbles</b> that float up. Something lovely is always inside — go on, try it!`
+        : `Toss a coin in and pop a bubble to see what floats up.`}</div>
     </div>
-    <div class="row">
+    <div class="row well-actions">
       <button class="btn good" id="well-toss" ${canAfford ? "" : "disabled"}>Toss 🪙${cost}</button>
       <button class="btn secondary" id="well-back">←  Back</button>
     </div>
   `);
   on("#well-toss", "click", wellToss);
-  on("#well-back", "click", renderMenu);
+  on("#well-back", "click", renderStart);
+  on("#well-odds", "click", showWellOdds);
   show("well");
+}
+function showWellOdds() {
+  if (document.getElementById("well-odds-modal")) return;
+  const ov = document.createElement("div"); ov.className = "well-odds-modal"; ov.id = "well-odds-modal";
+  ov.innerHTML = `<div class="card wom-card">
+    <div style="font-weight:800;text-align:center;margin-bottom:8px">What might rise up?</div>
+    <div class="stat-line"><span>🪙 A little gold back</span><span class="muted">common</span></div>
+    <div class="stat-line"><span>🐸 A handful of treats</span><span class="muted">common</span></div>
+    <div class="stat-line"><span>✨ Stardust (buys any skin)</span><span class="muted">uncommon</span></div>
+    <div class="stat-line"><span>🎁 A brand-new skin!</span><span style="color:var(--gold);font-weight:800">rare</span></div>
+    <p class="muted" style="font-size:12px;margin-top:8px">You always get something — the fun is <i>how big</i>. Duplicate skins turn into Stardust.</p>
+    <button class="btn" id="wom-ok" style="margin-top:6px">Got it</button>
+  </div>`;
+  const host = screen("well") || document.body; host.appendChild(ov);
+  on("#wom-ok", "click", () => ov.remove());
+  ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
 }
 let wellBusy = false;
 function wellToss() {
@@ -1782,40 +1834,62 @@ function wellToss() {
   if (GAME.gold < cost) { toast("Not enough gold."); return; }
   SFX.unlock();
   wellBusy = true;
-  GAME.gold -= cost; save(); syncHud("well");
+  GAME.gold -= cost; save(); syncHud("well"); refreshWellChip();
   const prize = rollWellPrize();
-  const stage = $("#well-stage"); if (!stage) { wellBusy = false; return; }
-  // three mystery bubbles rise; pop any one to reveal the (already-rolled) prize
-  stage.classList.remove("muted");
-  stage.innerHTML = `<div class="well-bubbles" id="well-bubbles">
-    ${[0, 1, 2].map(i => `<button class="wbub" data-i="${i}">🫧</button>`).join("")}
-  </div><div class="muted" style="font-size:12px;margin-top:6px">Pop one!</div>`;
   const toss = $("#well-toss"); if (toss) toss.disabled = true;
+  const back = $("#well-back"); if (back) back.disabled = true;
+  const firstWish = GAME.wellIntro === 1;
+  if (firstWish) { GAME.wellIntro = 2; save(); }   // the first wish sends Wishy on his way for good
+  // Wishy swims off down the well as the coin drops
+  const wishy = $("#wishy-well"); if (wishy) { wishy.classList.add("leaving"); setTimeout(() => wishy.remove(), 900); }
+  const speech = $("#well-speech");
+  if (speech) speech.innerHTML = firstWish ? `<b>Wishy:</b> Off I go — enjoy your wish! 🐟💨` : `Plink…`;
+  // 1) the coin drops into the water
+  const circle = $("#well-circle");
+  if (circle) {
+    const coin = document.createElement("div"); coin.className = "well-coin";
+    coin.innerHTML = ART.tag("stack_coin_front", "🪙", "well-coin-img");
+    circle.appendChild(coin);
+    if (SFX.coin) SFX.coin(0);
+    setTimeout(() => { if (SFX.pop) SFX.pop(0); }, 480);      // little plink as it hits the water
+    setTimeout(() => { coin.remove(); spawnWellBubbles(prize); }, 720);
+  } else { spawnWellBubbles(prize); }
+}
+// three mystery bubbles rise out of the water; pop any one to reveal the rolled prize
+function spawnWellBubbles(prize) {
+  const circle = $("#well-circle"); if (!circle) { wellBusy = false; return; }
+  const wrap = document.createElement("div"); wrap.className = "well-bubbles2"; wrap.id = "well-bubbles2";
+  wrap.innerHTML = [0, 1, 2].map(i => `<button class="wbub2" data-i="${i}" style="--bx:${[-1, 0, 1][i]};--bd:${i * 0.12}s"><span class="wbub2-sheen"></span></button>`).join("");
+  circle.appendChild(wrap);
+  const speech = $("#well-speech"); if (speech) speech.innerHTML = `<b>Pop a bubble!</b> Whichever one you like…`;
   let revealed = false;
-  stage.querySelectorAll(".wbub").forEach(b => b.addEventListener("click", () => {
+  wrap.querySelectorAll(".wbub2").forEach(b => b.addEventListener("click", () => {
     if (revealed) return; revealed = true;
-    SFX.pop(2);
-    const others = [...stage.querySelectorAll(".wbub")];
-    others.forEach(o => { if (o !== b) { o.classList.add("fizz"); } });
+    if (SFX.pop) SFX.pop(2);
+    wrap.querySelectorAll(".wbub2").forEach(o => { if (o !== b) o.classList.add("fizz"); });
     b.classList.add("chosen");
-    setTimeout(() => wellReveal(prize), 260);
+    setTimeout(() => wellReveal(prize), 240);
   }));
 }
 function wellReveal(prize) {
   const info = grantWellPrize(prize);
-  const stage = $("#well-stage"); if (!stage) { wellBusy = false; return; }
-  stage.innerHTML = `<div class="well-prize ${info.jackpot ? "jackpot" : ""}">
-    <div class="wp-emoji">${info.emoji}</div>
-    <div class="wp-label">${info.label}</div>
-    <div class="muted" style="font-size:12px">${info.sub}</div>
-  </div>`;
+  const bub = $("#well-bubbles2"); if (bub) bub.remove();
+  const circle = $("#well-circle");
+  if (circle) {
+    const p = document.createElement("div"); p.className = "well-prize2" + (info.jackpot ? " jackpot" : "");
+    p.innerHTML = `<div class="wp2-emoji">${info.emoji}</div><div class="wp2-label">${info.label}</div><div class="wp2-sub">${info.sub}</div>`;
+    circle.appendChild(p);
+    setTimeout(() => { if (p.parentNode) p.classList.add("fade"); }, 2600);
+    setTimeout(() => { if (p.parentNode) p.remove(); }, 3050);
+  }
   syncHud("well");
-  const dust = $("#well-dust"); if (dust) dust.textContent = GAME.stardust;
+  const chip = $(".well-dustchip"); if (chip) chip.innerHTML = wellDustChip();
   if (info.jackpot) { SFX.perfect(); wellConfetti(); }
   else if (prize.kind === "stardust") SFX.charm();
   else SFX.coin(0);
-  // re-enable tossing (unless you can no longer afford it)
+  const speech = $("#well-speech"); if (speech) speech.innerHTML = `Toss again whenever you like!`;
   const toss = $("#well-toss"); if (toss) toss.disabled = GAME.gold < BALANCE.WELL_COST;
+  const back = $("#well-back"); if (back) back.disabled = false;
   wellBusy = false;
 }
 function wellConfetti() {
@@ -5724,6 +5798,7 @@ function startRound() {
   if (maybePigsMoving()) return; // the two pigs come in together to move out (once their arcs are done)
   if (maybeButtonChain()) return; // the button clue-chain (Wolf drop → show Red → Gingerbread)
   if (maybeWolfArc()) return;    // the Wolf's own recurring visits (disguises + hunger gag)
+  if (maybeWellIntro()) return;  // Wishy the Fish introduces his wishing well (mid-game, once you can afford a toss)
   if (maybeGoldilocksQuest()) return; // Tiny Mouse's teddy-bear delivery → Goldilocks' three-bears visit
   if (maybeBandVisit()) return;  // the Bandit Bears tour → autograph poster → deliver to Goldilocks
   if (maybeTortoise()) return;   // the Tortoise plods in as the very last customer before the finale
@@ -7241,7 +7316,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
