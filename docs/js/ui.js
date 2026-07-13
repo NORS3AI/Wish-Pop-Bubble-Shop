@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v224"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v225"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -921,6 +921,22 @@ function refreshItemBubble() {
   const cnt = bub.querySelector(".ib-count");
   if (ITEM_REVEALS.length > 1) { cnt.textContent = ITEM_REVEALS.length; cnt.style.display = ""; }
   else cnt.style.display = "none";
+}
+// While a "!" quest-item bubble is waiting to be collected, you can't move on to
+// the next screen. Returns true (and makes the bubble pulse big) if a tap on a
+// "next" button should be blocked so the find is never skipped.
+function itemGateBlocks() {
+  if (!ITEM_REVEALS.length) return false;
+  if (document.getElementById("item-reveal-overlay")) return true;   // reveal already open — let them finish it
+  pulseItemBubble();
+  toast("Tap the glowing <b>!</b> to collect your find first!");
+  return true;
+}
+function pulseItemBubble() {
+  const bub = document.getElementById("item-bubble"); if (!bub) return;
+  SFX.err && SFX.err();
+  bub.classList.remove("nudge"); void bub.offsetWidth; bub.classList.add("nudge");
+  setTimeout(() => bub.classList.remove("nudge"), 650);
 }
 function openItemReveal() {
   const it = ITEM_REVEALS[0]; if (!it || document.getElementById("item-reveal-overlay")) return;
@@ -5684,6 +5700,7 @@ function renderScoop() {
   // Skip the remaining scoop visuals and go straight to popping. Still hands out
   // any jackpot charms from scoops that haven't been revealed yet, so nothing is lost.
   function skipToPopping() {
+    if (itemGateBlocks()) return;   // collect a waiting quest item before leaving the scoop screen
     if (autoIv) { clearInterval(autoIv); autoIv = null; }
     for (let i = 0; i < scoops; i++) {
       if (isJackpot(i) && !jackDone[i]) {
@@ -5727,7 +5744,7 @@ function renderScoop() {
     }, 150);
     ROUND._scoopIv = autoIv; // let round-ending paths (rush expire / home) clear it
   });
-  on("#scoop-continue", "click", () => { if (autoIv) clearInterval(autoIv); renderPop(); });
+  on("#scoop-continue", "click", () => { if (itemGateBlocks()) return; if (autoIv) clearInterval(autoIv); renderPop(); });
   on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
   const resizeSpoon = delta => {
     const s = Math.max(0.4, Math.min(2.2, +(ART.getScale("scoop_spoon") + delta).toFixed(2)));
@@ -5812,7 +5829,7 @@ function renderPop() {
   applyBubbleArt($("#bubble-field"));
   document.querySelectorAll("#bubble-field .pbubble").forEach(wireBubble);
   on("#pop-all", "click", popCascade);
-  on("#pop-continue", "click", collectAndContinue);
+  on("#pop-continue", "click", () => { if (itemGateBlocks()) return; collectAndContinue(); });
   on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
   wireFamiliar("pop");
   show("pop");
@@ -6278,7 +6295,7 @@ function wireDoubleTapServe() {
   let last = 0;
   el.addEventListener("click", () => {
     const now = Date.now();
-    if (now - last < 350) { last = 0; if (ROUND.slots.length === 0) { toast("Add some ingredients first!"); return; } serve(); }
+    if (now - last < 350) { last = 0; if (itemGateBlocks()) return; if (ROUND.slots.length === 0) { toast("Add some ingredients first!"); return; } serve(); }
     else { last = now; if (ROUND.slots.length) toast("Double-tap the cauldron to serve!"); }
   });
 }
@@ -6623,14 +6640,14 @@ function renderResult(res) {
       <button class="btn" id="next-btn">Next Customer  →</button>
     </div>
   `);
-  on("#next-btn", "click", (ROUND && isStoryWish(ROUND.story)) ? () => storyWishOutro(ROUND.story, res.success) : startRound);
+  on("#next-btn", "click", () => { if (itemGateBlocks()) return; (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound(); });
   on("#recap-btn", "click", showRoundRecap);
   show("result");
   if (win) wireRewardBubbles(res);
   // fallback: if this round was meant to reveal a hunt item but its phase never happened
   // (e.g. a fail with no tip, or no knife cut), reveal it here so it's never skipped.
   if (ROUND && ROUND.huntPending && !ROUND.huntFound) setTimeout(() => { if (ROUND && ROUND.huntPending && !ROUND.huntFound) doHuntFind(null); }, 1300);
-  else if (trashN) wireTrashBubbles(res);
+  if (trashN) wireTrashBubbles(res);   // trash always spawns on a loss, even if a quest item turned up too
   if (isPerfect) setTimeout(celebratePerfect, 260);
 }
 // --- Loss: disgruntled customer throws trash. It floats around the result

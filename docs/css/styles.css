@@ -696,15 +696,21 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cust-badge.pearl .pearl-ic { width: 30px; height: 30px; }
 .badge-modal-ic .pearl-ic { width: 46px; height: 46px; }
 /* --- Item reveal: the "!" bubble that waits on screen, + the big glowing reveal --- */
-.item-bubble { position: fixed; right: 14px; top: 21%; z-index: 80; width: 66px; height: 66px; border-radius: 50%; border: 3px solid #fff2c8; cursor: pointer; padding: 0;
+/* The waiting "!" bubble floats dead-center of the play column (anchored to #app's
+   centered box, not the raw viewport, so it stays on-screen on wide tablets too). */
+.item-bubble { position: fixed; left: 50%; top: 50%; z-index: 82; width: 76px; height: 76px; border-radius: 50%; border: 3px solid #fff2c8; cursor: pointer; padding: 0;
   background: radial-gradient(circle at 38% 30%, #fff7da, #ffcf5a 58%, #ef9328); color: #7a3d08;
-  box-shadow: 0 4px 14px rgba(0,0,0,.5), 0 0 18px rgba(255,200,90,.75); display: flex; align-items: center; justify-content: center;
-  animation: ibBob 1.5s ease-in-out infinite; }
-.item-bubble .ib-bang { font-family: var(--ff-display); font-weight: 900; font-size: 42px; line-height: 1; text-shadow: 0 1px 2px rgba(255,255,255,.55); }
+  box-shadow: 0 6px 18px rgba(0,0,0,.5), 0 0 22px rgba(255,200,90,.8); display: flex; align-items: center; justify-content: center;
+  transform: translate(-50%, -50%); animation: ibBob 1.6s ease-in-out infinite; }
+.item-bubble .ib-bang { font-family: var(--ff-display); font-weight: 900; font-size: 46px; line-height: 1; text-shadow: 0 1px 2px rgba(255,255,255,.55); }
 .item-bubble .ib-count { position: absolute; right: -5px; top: -5px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px;
   background: #ff5a5a; border: 2px solid #fff; color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-.item-bubble:active { transform: scale(.92); }
-@keyframes ibBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.item-bubble:active { animation: none; transform: translate(-50%, -50%) scale(.92); }
+@keyframes ibBob { 0%,100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 7px)); } }
+/* When the player tries to move on without collecting it, the bubble swells big. */
+.item-bubble.nudge { animation: ibNudge .6s ease; }
+@keyframes ibNudge { 0% { transform: translate(-50%,-50%) scale(1); } 30% { transform: translate(-50%,-50%) scale(1.55); }
+  55% { transform: translate(-50%,-50%) scale(.95); } 100% { transform: translate(-50%,-50%) scale(1); } }
 .item-reveal-overlay { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 26px;
   background: radial-gradient(circle at 50% 42%, rgba(24,14,44,.9), rgba(8,4,16,.97)); animation: fade .25s ease; }
 .item-reveal-overlay.closing { animation: fade .2s ease reverse forwards; }
@@ -716,7 +722,10 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .ir-sparkles i { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: #fff6cf;
   box-shadow: 0 0 8px #ffe08a; animation: irTwinkle 1.7s ease-in-out infinite; animation-delay: calc(var(--i) * .12s); }
 .ir-art { position: relative; z-index: 2; height: 210px; display: flex; align-items: center; justify-content: center; animation: irFloat 2.4s ease-in-out infinite; }
-.ir-art .ir-img.art { height: 210px; width: auto; max-width: 78vw; filter: drop-shadow(0 8px 20px rgba(0,0,0,.5)) drop-shadow(0 0 16px rgba(255,220,140,.6)); }
+/* Only a soft depth shadow — NO silhouette glow. A glow that hugs the alpha edge
+   traces a rectangle on tightly-cropped items (the sheep); the radial burst behind
+   already supplies the golden halo. */
+.ir-art .ir-img.art { height: 210px; width: auto; max-width: 78vw; filter: drop-shadow(0 10px 22px rgba(0,0,0,.55)); }
 .ir-art .ir-emoji { font-size: 128px; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
 .ir-x { position: absolute; right: 4%; bottom: 6%; z-index: 3; font-family: var(--ff-display); font-weight: 900; font-size: 34px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.75); }
 .ir-name { position: relative; z-index: 2; margin-top: 6px; font-family: var(--ff-display); font-size: 30px; color: #fff2c8; text-shadow: 0 2px 6px rgba(0,0,0,.7); }
