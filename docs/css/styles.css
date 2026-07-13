@@ -547,6 +547,10 @@ html, body {
 .cauldron.skin-cauldron_sapphire { border-color: #7fb0ff; background: rgba(110,150,255,.12); box-shadow: inset 0 -8px 20px rgba(0,0,0,.22), 0 0 16px rgba(110,150,255,.35); }
 .cauldron.skin-cauldron_amethyst { border-color: #c48bff; background: rgba(170,110,230,.14); box-shadow: inset 0 -8px 20px rgba(0,0,0,.22), 0 0 16px rgba(170,110,230,.4); }
 .cauldron.skin-cauldron_gold     { border-color: #ffd76a; background: rgba(255,200,90,.12); box-shadow: inset 0 -8px 20px rgba(0,0,0,.22), 0 0 20px rgba(255,210,90,.5); }
+.cauldron.skin-cauldron_pearlshell { border-color: #ffe9f3;
+  background: linear-gradient(140deg, rgba(255,240,250,.20), rgba(200,235,255,.14) 55%, rgba(240,225,255,.18));
+  box-shadow: inset 0 -8px 20px rgba(0,0,0,.2), 0 0 20px rgba(255,225,245,.55); }
+.cauldron.skin-cauldron_tide     { border-color: #5fd6d0; background: rgba(50,180,190,.14); box-shadow: inset 0 -8px 20px rgba(0,0,0,.24), 0 0 18px rgba(60,190,200,.5); }
 .cauldron.skin-cauldron_rainbow  { border-color: transparent;
   background:
     linear-gradient(rgba(40,26,74,.6), rgba(40,26,74,.6)) padding-box,
@@ -739,6 +743,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes irTwinkle { 0%,100% { opacity: .2; transform: rotate(calc(var(--i)*36deg)) translateY(-128px) scale(.6); } 50% { opacity: 1; transform: rotate(calc(var(--i)*36deg)) translateY(-140px) scale(1.2); } }
 /* --- Inventory (Satchel): big-icon grid, grouped by quest --- */
 .inv-screen { display: flex; flex-direction: column; gap: 14px; }
+.inv-purse { width: 100%; margin: 0 0 14px; padding: 10px 14px; border-radius: 14px; cursor: pointer;
+  border: 2px solid rgba(210,230,255,.45); background: linear-gradient(180deg, rgba(210,235,255,.14), rgba(180,215,255,.08));
+  color: var(--ink, #f3ecff); font-family: var(--ff-display); font-size: 17px; display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.22); }
+.inv-purse b { font-size: 20px; }
+.inv-purse .muted { font-size: 12px; font-family: inherit; font-weight: 600; margin-left: auto; }
+.inv-purse:active { transform: scale(.98); }
 .inv-group { border-radius: 16px; }
 .inv-group.quest { border: 2px solid rgba(255,214,120,.5); background: rgba(255,222,150,.06); padding: 8px 10px 12px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
 .inv-group.story { border: none; padding: 2px 2px 4px; }

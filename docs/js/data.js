@@ -319,6 +319,9 @@ const COSMETICS = {
     { id: "cauldron_glass",    name: "Glass Slipper",    chip: "👠", ball: true },
     // hunt-only: earned by finding all the Stepsister's beads in King's Courtyard
     { id: "cauldron_pearl",    name: "Pearl Necklace",   chip: "📿", hunt: "courtyard" },
+    // pearl-only: bought with the rare pearls Wishy the Fish pays (never with gold/Stardust)
+    { id: "cauldron_pearlshell", name: "Pearl Shell",    chip: "🐚", pearl: 6 },
+    { id: "cauldron_tide",     name: "Deep Tide",        chip: "🌊", pearl: 12 },
   ],
   familiar: [
     { id: "toad_classic", name: "Toad",    chip: "🐸", default: true },
@@ -332,6 +335,8 @@ const COSMETICS = {
     { id: "toad_raccoon", name: "Trash Bandit", chip: "🦝", achievement: { stat: "recycled", need: 1000, desc: "Recycle 1000 junk" } },
     // hunt-only: earned by finding all of Bo Peep's lost sheep in Willow-Wish Village
     { id: "toad_lamb",    name: "Little Lamb",   chip: "🐑", hunt: "willow" },
+    // pearl-only: bought with Wishy the Fish's rare pearls
+    { id: "toad_wishy",   name: "Wishy Fish",    chip: "🐠", pearl: 8 },
   ],
 };
 // flat lookup by id, plus which kind each belongs to

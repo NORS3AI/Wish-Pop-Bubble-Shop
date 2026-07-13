@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v226"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v227"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1090,14 +1090,19 @@ function renderSatchel() {
       </div>
     </div>`).join("")
     : `<div class="inv-empty"><div class="inv-empty-ic">🎒</div><p>Your satchel is empty for now.<br>Quest items and treasures you find while you play collect here — tap one to see what it’s for.</p></div>`;
+  const purse = (GAME.pearls || 0) > 0
+    ? `<button class="inv-purse" id="inv-pearls" aria-label="${GAME.pearls} pearls — spend on rare skins">${PEARL} <b>${GAME.pearls}</b> Pearls <span class="muted">· spend in 🎨 My Skins</span></button>`
+    : "";
   html("satchel", `
     ${hud("Inventory")}
     <div class="grow" style="overflow-y:auto; padding: 6px 8px 10px">
+      ${purse}
       <div class="inv-screen">${body}</div>
     </div>
     <button class="btn secondary" id="sat-back">←  Back</button>
   `);
   document.querySelectorAll("#screen-satchel .inv-item").forEach(el => el.addEventListener("click", () => openInvQuest(el.dataset.g)));
+  on("#inv-pearls", "click", renderWardrobe);
   on("#sat-back", "click", renderStart);
   show("satchel");
 }
@@ -1538,8 +1543,8 @@ function openChest() {
 /* ======================================================================= */
 function ownedCount(kind) { return D.COSMETICS[kind].filter(c => GAME.owned[c.id]).length; }
 function allSkins() { return [].concat(D.COSMETICS.cauldron, D.COSMETICS.familiar); }
-// the Well only awards buyable skins — achievement-only skins are earned, never rolled
-function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain && !c.ball && !c.hunt); }
+// the Well only awards Stardust-buyable skins — achievement/villain/ball/hunt/pearl skins are earned or pearl-only, never rolled
+function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain && !c.ball && !c.hunt && !c.pearl); }
 // Roll a prize from the weighted tiers. Always returns a prize object.
 function rollWellPrize() {
   const rndInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -1558,7 +1563,7 @@ function rollWellPrize() {
 function grantWellPrize(p) {
   if (p.kind === "gold") { GAME.gold += p.amt; save(); return { emoji: "🪙", label: `+${p.amt} gold back`, sub: "A little something — try again!" }; }
   if (p.kind === "treats") { GAME.treats += p.amt; save(); return { emoji: "🐸", label: `+${p.amt} treats`, sub: "Your pet is pleased." }; }
-  if (p.kind === "stardust") { GAME.stardust += p.amt; save(); return { emoji: "✨", label: `+${p.amt} Stardust`, sub: p.wasSkin ? "You own every skin — extra Stardust!" : "Save it to buy any skin you like." }; }
+  if (p.kind === "stardust") { GAME.stardust += p.amt; save(); return { emoji: "✨", label: `+${p.amt} Stardust`, sub: p.wasSkin ? "You own every Stardust skin — extra Stardust!" : "Save it to buy any skin you like." }; }
   // skin
   GAME.owned[p.cosmetic.id] = true; save();
   return { emoji: p.cosmetic.chip, label: `New skin: ${p.cosmetic.name}!`, sub: "Equip it in 🎨 My Skins.", jackpot: true };
@@ -1656,10 +1661,11 @@ function renderWardrobe() {
   const dustCost = BALANCE.STARDUST_SKIN_COST;
   const section = (kind, title) => {
     const tiles = D.COSMETICS[kind].map(c => {
-      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball, hunt = c.hunt;
+      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball, hunt = c.hunt, pearl = c.pearl;
       const hh = hunt ? huntFor(hunt) : null, hs = hunt ? huntState(hunt) : null;
-      const special = ach || vil || ball || hunt; // earned, never bought
-      const canBuy = !owned && !special && GAME.stardust >= dustCost;
+      const special = ach || vil || ball || hunt; // earned, never bought with currency
+      const canBuy = !owned && !special && !pearl && GAME.stardust >= dustCost;
+      const canBuyPearl = !owned && pearl && (GAME.pearls || 0) >= pearl;
       const btn = equipped
         ? `<span class="skin-tag equipped">✓ On</span>`
         : owned
@@ -1672,15 +1678,19 @@ function renderWardrobe() {
                 ? `<span class="skin-tag muted">👠 Dazzle at the Ball</span>`
                 : hunt
                   ? `<span class="skin-tag muted">${hh ? hh.itemEmoji : "🔎"} ${hs ? hs.found : 0}/${hh ? hh.need : "?"}</span>`
-                  : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
-      // achievement/villain/ball/hunt skins reveal their look + how to earn; other unowned stay a mystery
+                  : pearl
+                    ? `<button class="btn small ${canBuyPearl ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuyPearl ? "" : "disabled"}>${PEARL} ${pearl}</button>`
+                    : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
+      // achievement/villain/ball/hunt/pearl skins reveal their look; other unowned stay a mystery
+      const revealed = owned || special || pearl;
       const chip = owned
         ? (kind === "familiar" ? buddyArt(c.id, "skin-art") : ART.tag("cauldron_" + c.id, c.chip, "skin-art"))
-        : special ? c.chip : "❔";
-      const nameShown = owned || special ? c.name : "???";
+        : revealed ? c.chip : "❔";
+      const nameShown = revealed ? c.name : "???";
       const hint = ach && !owned ? ach.desc : vil && !owned ? "Win a villain event" : ball && !owned ? "Dazzle Cinderella at the Royal Ball"
-        : hunt && !owned ? `Find all of ${hh ? hh.char + "'s " + hh.item + "s" : "them"} while you play` : "";
-      return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${special && !owned ? "ach" : ""}">
+        : hunt && !owned ? `Find all of ${hh ? hh.char + "'s " + hh.item + "s" : "them"} while you play`
+        : pearl && !owned ? "Rare — only Wishy’s pearls buy this" : "";
+      return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${(special || pearl) && !owned ? "ach" : ""}">
         <div class="skin-chip">${chip}</div>
         <div class="skin-name">${nameShown}${hint ? `<div class="muted" style="font-size:10px;font-weight:600">${hint}</div>` : ""}</div>
         ${btn}</div>`;
@@ -1691,7 +1701,7 @@ function renderWardrobe() {
   };
   html("wardrobe", `
     ${hud("My Skins")}
-    <div class="rb-total" style="text-align:center;margin:2px 0 8px">✨ <b>${GAME.stardust}</b> Stardust <span class="muted" style="font-size:12px">· spend it to buy any skin</span></div>
+    <div class="rb-total" style="text-align:center;margin:2px 0 8px">✨ <b>${GAME.stardust}</b> Stardust${(GAME.pearls || 0) > 0 ? ` &nbsp;·&nbsp; ${PEARL} <b>${GAME.pearls}</b> Pearls` : ""} <span class="muted" style="font-size:12px">· Stardust buys most skins; ${PEARL} pearls buy the rare ones</span></div>
     <div class="grow" style="overflow-y:auto">
       ${section("cauldron", "🫕 Cauldron Skins")}
       ${section("familiar", "🐾 Pet Skins")}
@@ -1715,6 +1725,12 @@ function buySkin(id) {
   if (cz && cz.villain) { toast("👑 Win it from a villain event!"); return; }
   if (cz && cz.ball) { toast("👠 Dazzle Cinderella at the Royal Ball to earn this!"); return; }
   if (cz && cz.hunt) { const hh = huntFor(cz.hunt); toast(`🔎 Find them all${hh ? ` — help ${hh.char}!` : ""}`); return; }
+  if (cz && cz.pearl) {
+    if ((GAME.pearls || 0) < cz.pearl) { toast(`Need ${cz.pearl} pearls — Wishy the Fish pays in those!`); return; }
+    GAME.pearls -= cz.pearl; GAME.owned[id] = true; save();
+    SFX.bigCoin && SFX.bigCoin();
+    toast(`${PEARL} Bought ${cz.name}!`); renderWardrobe(); return;
+  }
   const cost = BALANCE.STARDUST_SKIN_COST;
   if (GAME.stardust < cost) { toast("Not enough Stardust."); return; }
   GAME.stardust -= cost; GAME.owned[id] = true; save();
@@ -6566,8 +6582,11 @@ function serve() {
       res.vipKeyLost = true;
     }
   }
-  if (ROUND.currency === "pearls") { GAME.pearls = (GAME.pearls || 0) + res.gold; res.paidPearls = res.gold; }
-  else { GAME.gold += res.gold; }
+  if (ROUND.currency === "pearls") {
+    GAME.pearls = (GAME.pearls || 0) + res.gold; res.paidPearls = res.gold;
+    // one-time nudge so players learn where pearls are spent
+    if (res.gold > 0 && !GAME.pearlHintSeen) { GAME.pearlHintSeen = true; setTimeout(() => toast("Spend pearls on rare skins in 🎨 My Skins!"), 2200); }
+  } else { GAME.gold += res.gold; }
   // tracked stats for quests
   if (res.success) {
     bumpStat("served");
@@ -6925,7 +6944,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
