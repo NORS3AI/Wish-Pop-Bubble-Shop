@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v221"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v222"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -121,6 +121,7 @@ function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoj
 // Per-customer size tweaks in the arch frame (1 = default). Some art fills its
 // canvas more than others, so a few get scaled down to sit comfortably.
 const CHAR_SCALE = { owl: 0.82, tortoise: 0.82, hare: 0.9, fish: 0.86 };
+const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 // A customer's face with an EXPRESSION. "normal" is the base customer_<id>.png;
 // happy / angry / allergic are customer_<id>_<mood>.png. If that art isn't there,
 // it falls back to the given emoji (the emotion face we've always shown).
@@ -276,7 +277,7 @@ function homeBar() {
   return `<div class="home-bar">
     <div class="home-pet" title="Your buddy">${buddyArt(GAME.equipped.familiar, "home-pet-art")}</div>
     <div class="home-res">
-      ${GAME.pearls > 0 ? `<span class="res-chip pearls"><span class="res-ic">🦪</span><b>${GAME.pearls.toLocaleString()}</b></span>` : ""}
+      ${GAME.pearls > 0 ? `<span class="res-chip pearls"><span class="res-ic"></span><b>${GAME.pearls.toLocaleString()}</b></span>` : ""}
       <span class="res-chip"><span class="res-ic">🗝️</span><b>${GAME.keys || 0}</b></span>
       <span class="res-chip"><span class="res-ic">🪙</span><b>${(GAME.gold || 0).toLocaleString()}</b></span>
     </div>
@@ -320,6 +321,7 @@ function renderStart() {
     </button>
     <div class="home-nav">
       ${navBtn("nav-shop", "🛍️", "Shop")}
+      ${navBtn("nav-satchel", "🎒", "Satchel")}
       ${navBtn("nav-map", "🗺️", "Realms")}
       ${navBtn("nav-vault", "🧰", "Collection")}
     </div>
@@ -328,6 +330,7 @@ function renderStart() {
   on("#play-btn", "click", startRound);
   on("#home-daily", "click", renderQuests);
   on("#nav-shop", "click", renderMenu);
+  on("#nav-satchel", "click", renderSatchel);
   on("#nav-map", "click", renderMap);
   on("#nav-vault", "click", renderVault);
   on("#home-gear", "click", renderAdmin);
@@ -656,14 +659,17 @@ function maybeWolfArc() {
 /* ======================================================================= */
 function playGoldiMouse() {
   SFX.unlock();
-  ["mouse_gesture", "mouse_bears", "mouse_point"].forEach(f => ART.ensure(f, () => {}));
-  satchelAdd("teddy", 3);
+  ["mouse_gesture", "mouse_bears", "mouse_point", "bear_1"].forEach(f => ART.ensure(f, () => {}));
   GAME.goldilocksStep = 1; GAME.goldilocksAt = -1; save();
   renderStoryBeats([
     { name: "Tiny Mouse", fig: "mouse_gesture", text: "Oh, thank goodness you’re here! Goldilocks put in an order — one teddy bear — but I <i>cannot</i> get hold of her. Never home, that girl! Could you deliver it for me?" },
     { name: "Tiny Mouse", fig: "mouse_bears", text: "Here’s my trouble… I didn’t know what <b>size</b> she wanted. So I stitched up <b>three</b> — a big one, a small one, and one in between. Give her the one that’s <i>just right</i> and she’ll tip you something lovely, mark my words." },
     { name: "Tiny Mouse", fig: "mouse_point", cta: "Take the bears  ▸", text: "They’re tucked in your Satchel now. Next time Goldilocks drops by, let her try them and see which one fits. Thank you — you’re an absolute treasure!" },
-  ], () => { toast("🧸 Tiny Mouse gave you 3 teddy bears — deliver one to Goldilocks!"); save(); renderStart(); });
+  ], () => {
+    revealItem({ art: "bear_1", emoji: "🧸", count: 3, name: "Teddy Bears ×3", desc: "Tiny Mouse’s three hand-sewn bears — big, small, and just-right. Deliver the right one to Goldilocks!",
+      onAdd: () => satchelAdd("teddy", 3) });
+    save(); renderStart();
+  });
 }
 // The interactive delivery. Click order is FIXED (never mind which bear): 1st = too big,
 // 2nd = too small, 3rd = just right. GOLDI_REACT[picks] is the face+line shown.
@@ -798,13 +804,16 @@ function storyWishOutro(tag, win) {
     return;
   }
   if (tag === "wolf-buttons") {
-    satchelAdd("button_gumdrop"); satchelAdd("button_blue"); satchelAdd("button_heart");
     GAME.buttonStep = 1; GAME.buttonChainAt = -1; save();
     ART.ensure("wolf_tophat_point", () => {});
     const beats = [{ name: "“Sir Reginald Notawolf”", fig: "wolf_tophat_point", cta: "Wait…  ▸", text: win
       ? "Magnificent! Simply— oh. <i>OH.</i> I seem to have <b>dropped</b> a few things. No matter — keep them! I’ve HUNDREDS. Toodle-oo!"
       : "Hmph. Amateur polish. I’ll take my custom elsewhere — after I— oh. I’ve <b>dropped</b> some buttons. Ah well, keep ’em. Ta!" }];
-    renderStoryBeats(beats, () => { toast("🔎 The “collector” dropped 3 buttons — they’re in your Satchel!"); save(); renderStart(); });
+    renderStoryBeats(beats, () => {
+      revealItem({ emoji: "🔘", count: 3, name: "Three Dropped Buttons", desc: "The “collector” left behind a heart button, a blue one, and a gumdrop. Show them to Little Red!",
+        onAdd: () => { satchelAdd("button_gumdrop"); satchelAdd("button_blue"); satchelAdd("button_heart"); } });
+      save(); renderStart();
+    });
     return;
   }
   let beats, step;
@@ -874,19 +883,67 @@ function tryHuntFind(source, anchorEl) {
 function doHuntFind(anchorEl) {
   const h = activeHunt(); if (!h) return false; const st = huntState(h.realm); if (st.done) return false;
   if (ROUND) ROUND.huntFound = true;
-  let foundId = null;
+  const item = h.item[0].toUpperCase() + h.item.slice(1);
   if (h.items) {
-    const pool = h.items.filter(id => st.seen.indexOf(id) < 0);   // pick a sheep we haven't found yet
-    foundId = pool.length ? R.pick(pool) : null;
-    if (foundId) st.seen.push(foundId);
-    st.found = st.seen.length;
+    const pool = h.items.filter(id => st.seen.indexOf(id) < 0);   // a sheep we haven't found yet
+    const foundId = pool.length ? R.pick(pool) : null;
+    if (!foundId) return true;
+    revealItem({ art: foundId, emoji: h.itemEmoji, name: `A Lost ${item}!`,
+      desc: `One of ${h.char}'s missing ${h.item}, turned up while you played! Add it to your collection.`,
+      onAdd: () => { const s = huntState(h.realm); if (s.seen.indexOf(foundId) < 0) { s.seen.push(foundId); s.found = s.seen.length; save(); if (s.found >= h.need) huntComplete(h); } } });
   } else {
-    st.found = Math.min(h.need, (st.found || 0) + 1);
+    revealItem({ emoji: h.itemEmoji, name: `A Lost ${item}!`,
+      desc: `One of ${h.char}'s missing ${h.item}. Add it to your collection.`,
+      onAdd: () => { const s = huntState(h.realm); s.found = Math.min(h.need, (s.found || 0) + 1); save(); if (s.found >= h.need) huntComplete(h); } });
   }
-  save();
-  huntFindFx(h, st, anchorEl, foundId);
-  if (st.found >= h.need) huntComplete(h);
   return true;
+}
+/* ---- Item reveal: a "!" bubble that WAITS on screen → tap → big glowing reveal → "Add to
+   inventory". So finds never zip past unseen. Used for every collectible / inventory item. ---- */
+let ITEM_REVEALS = [];
+function itemHost() { return document.getElementById("app") || document.body; }
+function revealItem(opts) {   // { art?, emoji?, name, desc?, count?, onAdd? }
+  ITEM_REVEALS.push(opts);
+  if (opts.art) ART.ensure(opts.art, () => {});
+  SFX.bonus && SFX.bonus();     // a soft chime so you notice the bubble appear
+  refreshItemBubble();
+}
+function refreshItemBubble() {
+  let bub = document.getElementById("item-bubble");
+  if (!ITEM_REVEALS.length) { if (bub) bub.remove(); return; }
+  if (!bub) {
+    bub = document.createElement("button");
+    bub.id = "item-bubble"; bub.className = "item-bubble"; bub.setAttribute("aria-label", "You found something — tap to see!");
+    bub.innerHTML = `<span class="ib-bang">!</span><span class="ib-count"></span>`;
+    bub.addEventListener("click", openItemReveal);
+    itemHost().appendChild(bub);
+  }
+  const cnt = bub.querySelector(".ib-count");
+  if (ITEM_REVEALS.length > 1) { cnt.textContent = ITEM_REVEALS.length; cnt.style.display = ""; }
+  else cnt.style.display = "none";
+}
+function openItemReveal() {
+  const it = ITEM_REVEALS[0]; if (!it || document.getElementById("item-reveal-overlay")) return;
+  SFX.reveal ? SFX.reveal() : (SFX.charm && SFX.charm());
+  const artHtml = it.art ? ART.tag(it.art, it.emoji || "🎁", "ir-img") : `<span class="ir-emoji">${it.emoji || "🎁"}</span>`;
+  const ov = document.createElement("div"); ov.id = "item-reveal-overlay"; ov.className = "item-reveal-overlay";
+  ov.innerHTML = `
+    <div class="ir-card">
+      <div class="ir-burst" aria-hidden="true"></div>
+      <div class="ir-sparkles" aria-hidden="true">${Array.from({ length: 10 }).map((_, i) => `<i style="--i:${i}"></i>`).join("")}</div>
+      <div class="ir-art">${artHtml}${it.count > 1 ? `<span class="ir-x">×${it.count}</span>` : ""}</div>
+      <div class="ir-name">${it.name}</div>
+      ${it.desc ? `<div class="ir-desc">${it.desc}</div>` : ""}
+      <button class="ir-add" id="ir-add">Add to inventory  ▸</button>
+    </div>`;
+  itemHost().appendChild(ov);
+  on("#ir-add", "click", () => {
+    SFX.bigCoin && SFX.bigCoin();
+    const done = ITEM_REVEALS.shift();
+    if (done && done.onAdd) { try { done.onAdd(); } catch (e) {} }
+    ov.classList.add("closing"); setTimeout(() => { if (ov.parentNode) ov.remove(); }, 200);
+    refreshItemBubble();
+  });
 }
 function huntFindFx(h, st, anchorEl, foundId) {
   SFX.bonus();
@@ -1186,7 +1243,7 @@ function renderAdmin() {
         <div style="font-weight:800;margin-bottom:8px">💰 Give yourself resources</div>
         <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">
           <button class="btn good small" id="ad-gold">+1000 🪙</button>
-          <button class="btn good small" id="ad-pearls">+25 🦪</button>
+          <button class="btn good small" id="ad-pearls">+25 pearls</button>
           <button class="btn good small" id="ad-dust">+100 ✨</button>
           <button class="btn good small" id="ad-treats">+10 🐸</button>
           <button class="btn good small" id="ad-keys">+10 🗝️</button>
@@ -1276,7 +1333,7 @@ function renderAdmin() {
   on("#ad-btn-ginger", "click", playGingerbreadButton);
   on("#ad-btn-reset", "click", () => { GAME.buttonStep = 0; GAME.buttonChainAt = -1; GAME.satchel = {}; save(); toast("Button chain reset"); renderAdmin(); });
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
-  on("#ad-pearls", "click", () => { GAME.pearls = (GAME.pearls || 0) + 25; save(); toast("+25 pearls 🦪"); renderAdmin(); });
+  on("#ad-pearls", "click", () => { GAME.pearls = (GAME.pearls || 0) + 25; save(); toast("+25 pearls"); renderAdmin(); });
   on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
   on("#ad-treats", "click", () => { GAME.treats += 10; save(); toast("+10 treats 🐸"); renderAdmin(); });
   on("#ad-keys", "click", () => { GAME.keys = (GAME.keys || 0) + 10; save(); toast("+10 keys 🗝️"); renderAdmin(); });
@@ -5336,7 +5393,7 @@ function realmFrame() { return (currentRealm().custFrame) || "cframe_01"; }
 function custBadges() {
   const w = ROUND.wish, out = [];
   // rare-currency badge (its own bubble — always shows for pearl-payers, alongside any other badge)
-  if (ROUND.currency === "pearls") out.push({ icon: "🦪", cls: "pearl", title: "Pays in Pearls!",
+  if (ROUND.currency === "pearls") out.push({ icon: PEARL, cls: "pearl", title: "Pays in Pearls!",
     text: "This customer pays in Pearls — a rare currency, not gold! Grab them while you can; they’re bound to be worth something down the road." });
   if (w.boss) out.push({ icon: "👑", cls: "boss", title: "Boss Customer",
     text: `A royal, very fussy guest! Tiny green zones, only ${BALANCE.BOSS_SLOTS} slots, and two allergies to avoid. Delight them for a grand reward.` });
@@ -5353,7 +5410,7 @@ function custBadges() {
 function renderCustomer() {
   const c = ROUND.customer, w = ROUND.wish, realm = currentRealm();
   ROUND.currency = (c && c.pays) || "gold";   // which currency this customer pays in (gold, pearls, …)
-  const payGlyph = ROUND.currency === "pearls" ? "🦪" : null;   // non-gold currencies show an emoji instead of the coin icon
+  const payGlyph = ROUND.currency === "pearls" ? PEARL : null;   // non-gold currencies show an emoji instead of the coin icon
   const allergyList = [w.allergy, w.allergy2].filter(Boolean);
   // allergy shows a simple mark: ✕ none, ✔ one, ✔✔ two
   const allergyMark = allergyList.length === 0
@@ -5382,7 +5439,7 @@ function renderCustomer() {
     <div class="cust-top">
       <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
       <div class="cust-wallet">
-        ${GAME.pearls > 0 ? `<div class="cust-coin pearls">🦪 <b>${GAME.pearls.toLocaleString()}</b></div>` : ""}
+        ${GAME.pearls > 0 ? `<div class="cust-coin pearls">${PEARL} <b>${GAME.pearls.toLocaleString()}</b></div>` : ""}
         <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
       </div>
     </div>
@@ -5435,7 +5492,7 @@ function renderCustomer() {
   const badgeOv = document.getElementById("badge-overlay");
   const openBadge = (b) => {
     if (!badgeOv) return;
-    document.getElementById("badge-modal-ic").textContent = b.icon;
+    document.getElementById("badge-modal-ic").innerHTML = b.icon;
     document.getElementById("badge-modal-title").textContent = b.title;
     document.getElementById("badge-modal-text").textContent = b.text;
     badgeOv.classList.remove("hidden"); SFX.unlock(); SFX.pop(1);
@@ -6474,7 +6531,7 @@ function renderResult(res) {
   const win = res.success, c = ROUND.customer, zone = res.allergy && res.allergy.zone;
   const allergyLine = (win && (zone === "yellow" || zone === "red"))
     ? `<div class="stat-line"><span>⚠️ Allergy (${zone})</span><span style="color:var(--bad)">${zone === "red" ? "−50%" : "−25%"} pay</span></div>` : "";
-  const coin = ROUND.currency === "pearls" ? "🦪" : "🪙";   // the fish (and future rare-currency folk) pay in pearls
+  const coin = ROUND.currency === "pearls" ? PEARL : "🪙";   // the fish (and future rare-currency folk) pay in pearls
   const quickLine = (win && res.quickTip > 0)
     ? `<div class="stat-line"><span>⚡ Quick‑service tip</span><span class="gold">${coin} +${res.quickTip}</span></div>` : "";
   const qualLine = (win && res.qualityTip > 0)
@@ -6602,7 +6659,7 @@ function resultStreaksMarkup(res) {
 }
 function rewardBubblesMarkup(res) {
   const tips = Math.max(0, res.tip);
-  const coin = ROUND && ROUND.currency === "pearls" ? "🦪" : "🪙";
+  const coin = ROUND && ROUND.currency === "pearls" ? PEARL : "🪙";
   const dust = res.cleanDust > 0 ? ` <span class="dust">✨ <b id="rb-dust">0</b></span>` : "";
   return `<div class="reward-bubbles" id="reward-bubbles">
     <div class="rb-total">Collected <span class="gold">${coin} <b id="rb-count">0</b></span>${dust}</div>
@@ -6640,7 +6697,7 @@ function wireRewardBubbles(res) {
     const btn = document.createElement("button");
     btn.className = "rbub " + cls; btn.dataset.amt = amt; if (big) btn.dataset.big = "1"; btn.dataset.flavor = opts.flavor || (big ? "gold" : "coin");
     btn.setAttribute("aria-label", cls === "dust" ? "stardust reward" : cls === "streak" ? "win-streak bonus" : big ? "gold reward" : "tip coin");
-    const coin = ROUND && ROUND.currency === "pearls" ? "🦪" : "🪙";
+    const coin = ROUND && ROUND.currency === "pearls" ? PEARL : "🪙";
     btn.innerHTML = cls === "dust" ? `<span class="rb-amt">✨ ${amt}</span>` : cls === "streak" ? `<span class="rb-amt">🔥 ${amt}</span>` : big ? `<span class="rb-amt">${coin} ${amt}</span>` : coin;
     wrap.appendChild(btn); layer.appendChild(wrap);
     return btn;
@@ -6659,7 +6716,7 @@ function wireRewardBubbles(res) {
     checkDone();
   };
   const checkDone = () => setTimeout(() => {
-    if (!layer.querySelector(".rbub:not(.popped)") && hintEl) hintEl.textContent = `All collected! ${ROUND && ROUND.currency === "pearls" ? "🦪" : "🪙"} ${res.gold}${dustAmt ? ` · ✨ ${dustAmt}` : ""}`;
+    if (!layer.querySelector(".rbub:not(.popped)") && hintEl) hintEl.innerHTML = `All collected! ${ROUND && ROUND.currency === "pearls" ? PEARL : "🪙"} ${res.gold}${dustAmt ? ` · ✨ ${dustAmt}` : ""}`;
   }, 260);
   const bigBtn = makeBubble("big", base, { big: true });
   const littleBtns = [];
@@ -6815,7 +6872,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

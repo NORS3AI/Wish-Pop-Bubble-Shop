@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ✨ **See what you found.** When an item turns up while you play (a lost sheep, teddy bears,
+  buttons), a glowing "!" bubble now waits on screen. Tap it and the item appears big and
+  sparkling, tells you what it is, and you tap "Add to inventory" to keep it — no more blink-
+  and-you-miss-it. There's also a **Satchel** button right on the home screen now, and pearls
+  got a prettier icon.
 - 🐟 **Wishy the Fish & a new rare currency.** The wishing-well fish drifts into your shop in
   his own little water bubble — and he doesn't pay in gold. He pays in **Pearls**, a rare
   currency that trickles in only when he visits. A tappable bubble beside him explains it, and
