@@ -594,8 +594,8 @@ html, body {
 .well-actions.solo { justify-content: center; }
 .well-actions.solo .btn { flex: 0 1 260px; max-width: 300px; }
 /* the Toss button sits on the cobblestones below the well (normal play, no Wishy) */
-.well-toss-cobble { position: absolute; left: 50%; bottom: 25%; transform: translateX(-50%); z-index: 7; }
-.well-toss-cobble .btn { box-shadow: 0 4px 14px rgba(0,0,0,.5), 0 0 0 2px rgba(255,255,255,.18); }
+.well-toss-cobble { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%); z-index: 7; }
+.well-toss-cobble .btn { width: auto; white-space: nowrap; padding: 17px 50px; font-size: 23px; box-shadow: 0 5px 16px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.2); }
 /* invisible anchor over the water hole (bg: centre x50%, ~43% down, radius ~28% of width) */
 .well-circle { position: absolute; left: 50%; top: 43%; width: 56%; aspect-ratio: 1;
   transform: translate(-50%, -50%); pointer-events: none; }

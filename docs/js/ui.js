@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v247"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v248"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -754,7 +754,7 @@ function playGoldiMouse() {
 let GOLDI_PICKS = 0, GOLDI_BEARS = [];
 const GOLDI_REACT = [
   { fig: "customer_goldilocks", text: "Ooh — Bandit Bears plushies?! For <i>me</i>?! Quick, let me try one — hand it over!" },
-  { fig: "goldi_toobig",   text: "Eee — this one’s <b>too big</b>, I can’t cuddle it AND hold my poster! Have you another?" },
+  { fig: "goldi_toobig",   text: "Eee — this one’s <b>too big</b>, I can’t even get my arms all the way round it! Have you another?" },
   { fig: "goldi_toosmall", text: "Aw, now <i>that</i> one’s <b>too small</b> — teeny! There’s got to be one that’s <b>just right</b>… one more?" },
 ];
 function playGoldiDeliver() {
@@ -793,7 +793,7 @@ function renderGoldiDeliver() {
 }
 function goldiFinale() {
   renderStoryBeats([
-    { name: "Goldilocks", fig: "goldi_sparkle", cta: "Aww  ▸", text: "Oh! Oh, <i>this</i> one is <b>juuust right</b> — not too big, not too small, <b>perfect</b> for my shelf! Right next to my signed poster. ✨" },
+    { name: "Goldilocks", fig: "goldi_sparkle", cta: "Aww  ▸", text: "Oh! Oh, <i>this</i> one is <b>juuust right</b> — not too big, not too small, <b>perfect</b> for my shelf! He’ll have the comfiest spot in my room. ✨" },
     { name: "Goldilocks", fig: "goldi_hug", cta: "You’re so welcome  ▸", text: "Biggest Bandit Bears fan in the WORLD, official! Thank you — take this for your trouble, and tell Tiny Mouse she’s the finest stitcher in the village!" },
   ], () => {
     satchelRemove("teddy", 3);
