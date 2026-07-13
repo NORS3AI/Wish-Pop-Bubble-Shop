@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v233"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v234"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -801,10 +801,10 @@ function playBandAnnounce() {
 }
 // Once all three have signed, Goldilocks comes to collect her treasure.
 function playBandDeliver() {
-  ["autograph_3", "customer_goldilocks", "goldi_sparkle", "goldi_hug"].forEach(k => ART.ensure(k, () => {}));
+  ["goldi_poster", "customer_goldilocks", "goldi_hug"].forEach(k => ART.ensure(k, () => {}));
   renderStoryBeats([
     { name: "Goldilocks", fig: "customer_goldilocks", text: "Is that— is that a— <b>THE BANDIT BEARS TOUR POSTER?!</b> Signed?! For ME?!" },
-    { name: "Goldilocks", fig: "goldi_sparkle", text: "Honey AND Roxie AND Pepper — all three?! I’m the luckiest fan-club president in the WHOLE WORLD! ✨" },
+    { name: "Goldilocks", fig: "goldi_poster", text: "Honey AND Roxie AND Pepper — all three signatures?! I’m the luckiest fan-club president in the WHOLE WORLD! ✨" },
     { name: "Goldilocks", fig: "goldi_hug", cta: "You’re so welcome  ▸", text: "I’m framing this FOREVER, right above my bed. Take everything I’ve got — you’re officially my favorite person!" },
   ], () => {
     GAME.bandStep = 5; GAME.bandAt = -1; save();
