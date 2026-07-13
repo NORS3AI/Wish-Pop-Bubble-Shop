@@ -999,7 +999,13 @@ const HUNTS = {
   willow: { realm: "willow", char: "Bo Peep", charEmoji: "👧", charArt: "bopeep_sheephug", item: "sheep", itemEmoji: "🐑",
     need: 10, chance: 0.42, skin: "toad_lamb",
     items: ["sheep_01", "sheep_02", "sheep_03", "sheep_04", "sheep_05", "sheep_06", "sheep_07", "sheep_08", "sheep_09", "sheep_10"],
-    done: "Every last lamb is home safe — Bo Peep hugs you tight!" },
+    done: "Every last lamb is home safe — Bo Peep hugs you tight!",
+    // A short thank-you conversation when the flock is complete. {skin} is filled in.
+    celebrate: [
+      { fig: "bopeep_sheephug", text: "You found them! Every last woolly! Oh — come <i>here</i>. <i>(She hugs you, and about three sheep, all at once.)</i> I truly feared my field would stay empty forever." },
+      { fig: "bopeep_delight", text: "Look at them — home and grumbling for supper, just as they should be. Turning up strays in bubbles and scoops and teacups… I don’t know how you did it, but you did." },
+      { fig: "bopeep_warm", cta: "Aw, thank you!  ▸", text: "Take this, from me and the whole flock — a little <b>{skin}</b> to wear in the shop. Find it any time in 🎨 My Skins. Now off you go — they’re demanding hay!" },
+    ] },
   courtyard: { realm: "courtyard", char: "the Stepsister", charEmoji: "💃", item: "bead", itemEmoji: "📿",
     need: 8, chance: 0.34, skin: "cauldron_pearl",
     done: "Every bead recovered — the Stepsister can go to the royal ball after all!" },
@@ -1130,27 +1136,28 @@ function huntComplete(h) {
   GAME.owned = GAME.owned || {}; GAME.owned[h.skin] = true;
   GAME.huntCelebrate = h.realm; save();
   SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
-  const skin = D.COSMETIC_BY_ID[h.skin];
-  toast(`${h.itemEmoji} ${h.need}/${h.need}! ${h.char} is overjoyed — you earned the ${skin ? skin.chip + " " + skin.name : "new"} skin!`);
+  // The full reveal (and reward) is delivered as a conversation on the home screen; here we
+  // just mark the moment you found the last one so it doesn't spoil the thank-you.
+  toast(`${h.itemEmoji} The last ${h.item}! All ${h.need} home — ${h.char} will want to thank you…`);
 }
-// One-time thank-you card, shown on the home screen after a hunt completes.
+// One-time thank-you when a hunt completes — played as a little story-mode
+// conversation (not a pop-up card) the next time you land on the home screen.
 function maybeShowHuntCelebrate() {
   const realm = GAME.huntCelebrate; if (!realm) return;
   const h = huntFor(realm); GAME.huntCelebrate = null; save();
   if (!h) return;
   const skin = D.COSMETIC_BY_ID[h.skin];
-  if (h.charArt) ART.ensure(h.charArt, () => {});
-  const ov = document.createElement("div"); ov.className = "recap-overlay";
-  ov.innerHTML = `<div class="recap-sheet" style="text-align:center">
-    ${h.charArt ? `<div class="hunt-cel-fig">${ART.tag(h.charArt, h.charEmoji, "hunt-cel-art")}</div>` : `<div class="ph big">${h.charEmoji}</div>`}
-    <div class="result-title win">${h.char} is overjoyed!</div>
-    <p class="muted" style="max-width:300px;margin:0 auto">${h.done}</p>
-    <div class="card" style="max-width:300px;margin:10px auto"><div class="stat-line"><span>${skin ? skin.chip : "🎁"} New skin: ${skin ? skin.name : "reward"}</span><span style="color:var(--gold)">earned!</span></div></div>
-    <p class="muted" style="font-size:12px">Equip it any time in 🎨 My Skins.</p>
-    <button class="btn good" id="hunt-cel-ok">Lovely! →</button></div>`;
-  const app = $("#app") || document.body; app.appendChild(ov);
-  const ok = ov.querySelector("#hunt-cel-ok"); if (ok) ok.addEventListener("click", () => ov.remove());
-  SFX.fanfare();
+  const skinLabel = skin ? `${skin.chip} ${skin.name}` : "new skin";
+  // Bespoke conversation if the hunt defines one; otherwise a warm generic two-beat.
+  const raw = h.celebrate || [
+    h.charArt ? { fig: h.charArt } : { figEmoji: h.charEmoji, text: "" },
+    { cta: "Lovely!  ▸", text: `${h.done} <br><br>Take this <b>{skin}</b> to wear in the shop — find it any time in 🎨 My Skins.` },
+  ];
+  if (!h.celebrate) raw[0].text = raw[0].text || h.done;
+  const beats = raw.map(b => ({ ...b, name: b.name || h.char, text: (b.text || "").replace(/\{skin\}/g, skinLabel) }));
+  beats.forEach(b => { if (b.fig) ART.ensure(b.fig, () => {}); });
+  SFX.fanfare(); confettiOver($("#app"));
+  renderStoryBeats(beats, () => renderStart());
 }
 
 /* ======================================================================= */
