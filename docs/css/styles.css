@@ -202,6 +202,42 @@ html, body {
   0% { transform: scale(1); filter: brightness(1); }
   100% { transform: scale(1.85); filter: brightness(1.35); box-shadow: 0 0 30px rgba(255,255,255,.75), inset 0 -6px 10px rgba(90,50,140,.3); }
 }
+/* --- Pop-phase wooden wall backdrop + the rare "smash the X" treasure stash --- */
+#screen-pop.pop-woodbg { position: relative; isolation: isolate; }
+.pop-bg { position: absolute; top: 0; bottom: 0; left: -14px; right: -14px; z-index: -1; pointer-events: none;
+  background-size: cover; background-position: center; background-repeat: no-repeat; background-color: #000; }
+.pop-hole-layer { position: absolute; top: 0; bottom: 0; left: -14px; right: -14px; z-index: 5; pointer-events: none; }
+.pop-hole-layer > * { pointer-events: auto; }
+/* the carved X you tap to break open (a soft pulsing ring hints that it's tappable) */
+.pop-x-target { position: absolute; transform: translate(-50%,-50%); border: none; background: none; padding: 0; cursor: pointer;
+  border-radius: 50%; -webkit-tap-highlight-color: transparent; --shake: 2px; }
+.pop-x-target::before { content: ""; position: absolute; inset: 8%; border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(255,222,140,.45), 0 0 16px rgba(255,205,110,.5); animation: popXRing 1.3s ease-in-out infinite; }
+@keyframes popXRing { 0%,100% { opacity: .3; transform: scale(.82); } 50% { opacity: .8; transform: scale(1); } }
+.pop-x-target.hit { animation: popXHit .18s ease; }
+@keyframes popXHit { 0% { transform: translate(-50%,-50%); } 30% { transform: translate(calc(-50% - var(--shake)), calc(-50% + 1px)) scale(.94) rotate(-3deg); }
+  65% { transform: translate(calc(-50% + var(--shake)), -50%) rotate(3deg); } 100% { transform: translate(-50%,-50%); } }
+/* the treasure floating in the smashed hole — glows and pulses, tap to grab */
+.pop-treasure { position: absolute; transform: translate(-50%,-50%); border: none; background: none; padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+  animation: popTreasureBob 1.9s ease-in-out infinite; }
+.pop-treasure::before { content: ""; position: absolute; inset: -28%; border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, rgba(0,0,0,.7), rgba(0,0,0,.35) 55%, transparent 72%); }
+.pop-treasure-ic { display: flex; align-items: center; justify-content: center; font-size: 34px; line-height: 1;
+  animation: popTreasurePulse 1.5s ease-in-out infinite; }
+.pop-treasure .pearl-ic { width: 34px; height: 34px; }
+.pop-treasure.gold  .pop-treasure-ic { filter: drop-shadow(0 0 9px rgba(255,208,90,.95)); }
+.pop-treasure.dust  .pop-treasure-ic { filter: drop-shadow(0 0 9px rgba(150,220,255,.95)); }
+.pop-treasure.pearl .pop-treasure-ic { filter: drop-shadow(0 0 9px rgba(255,190,235,.95)); }
+@keyframes popTreasureBob { 0%,100% { transform: translate(-50%,-50%); } 50% { transform: translate(-50%, calc(-50% - 5px)); } }
+@keyframes popTreasurePulse { 0%,100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.14); opacity: 1; } }
+.pop-treasure.grabbed { animation: popTreasureGrab .42s ease-out forwards; pointer-events: none; }
+@keyframes popTreasureGrab { 0% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -170%) scale(1.6); opacity: 0; } }
+/* wood splinters flung out when the wall smashes */
+.pop-splinter { position: absolute; width: 9px; height: 9px; border-radius: 2px; transform: translate(-50%,-50%); pointer-events: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,.5); animation: popSplinter .6s ease-out forwards; }
+@keyframes popSplinter { 0% { transform: translate(-50%,-50%) scale(1) rotate(0); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.35) rotate(var(--rot)); opacity: 0; } }
 /* an ingredient that pops out and floats up — tap to catch it */
 .ing-token { position: fixed; width: 52px; height: 52px; transform: translate(-50%,-50%); pointer-events: auto; cursor: pointer;
   border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;

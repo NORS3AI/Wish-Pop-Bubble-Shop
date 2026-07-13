@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🪵 **A hidden stash in the wall.** The popping phase now plays against a cozy wooden wall.
+  Once in a while you'll spot a little **X carved in the wood** — tap it a handful of times to
+  smash it open (splinters fly!) and a glowing treasure floats up in the hole. Tap it to grab
+  it: a bit of gold, Stardust, or — if you're lucky — a rare Pearl.
+
 - 🌟 **Wishy's Wishing Well.** Partway through Willow — once you've a little gold to spare —
   Wishy the Fish swims up and invites you to his well. A new **🌟 Well** button appears on the
   home screen. Open it and you drop into a lovely top-down well: toss a coin (watch it splash
