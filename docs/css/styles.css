@@ -609,17 +609,17 @@ html, body {
   0%   { top: -8%;  transform: translate(-50%, 0) scale(1) rotate(0); opacity: 1; }
   68%  { top: 44%;  transform: translate(-50%, -50%) scale(.66) rotate(230deg); opacity: 1; }
   100% { top: 50%;  transform: translate(-50%, -50%) scale(.24) rotate(340deg); opacity: 0; } }
-/* three bubbles rising from the water to hover just above the well */
+/* three bubbles rising from the water into a pyramid (one above, two below) over the well */
 .well-bubbles2 { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
-.wbub2 { position: absolute; left: calc(50% + var(--bx) * 30%); top: 15%;
-  width: 33%; aspect-ratio: 1; transform: translate(-50%, -50%); border: none; padding: 0; cursor: pointer;
+.wbub2 { position: absolute; left: var(--bl); top: var(--bt);
+  width: 27%; aspect-ratio: 1; transform: translate(-50%, -50%); border: none; padding: 0; cursor: pointer;
   border-radius: 50%; pointer-events: auto;
   background: radial-gradient(circle at 36% 30%, rgba(255,255,255,.98), rgba(198,234,255,.82) 38%, rgba(120,184,238,.72) 64%, rgba(78,142,212,.6) 85%, rgba(64,124,196,.42));
   box-shadow: inset 0 -7px 15px rgba(56,114,184,.55), inset 0 5px 13px rgba(255,255,255,.9), 0 5px 14px rgba(0,0,0,.42), 0 0 0 2px rgba(255,255,255,.4), 0 0 16px rgba(150,210,255,.55);
   animation: wbubRise .55s cubic-bezier(.3,1,.5,1) var(--bd) backwards, wbubFloat 2.6s ease-in-out var(--bd) infinite; }
 .wbub2-sheen { position: absolute; left: 22%; top: 15%; width: 28%; height: 24%; border-radius: 50%; background: rgba(255,255,255,.92); filter: blur(1px); }
-@keyframes wbubRise { 0% { top: 50%; transform: translate(-50%,-50%) scale(.3); opacity: 0; } 100% { top: 15%; opacity: 1; } }
-@keyframes wbubFloat { 0%,100% { margin-top: 0; } 50% { margin-top: -8px; } }
+@keyframes wbubRise { 0% { transform: translate(-50%, calc(-50% + 64px)) scale(.3); opacity: 0; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
+@keyframes wbubFloat { 0%,100% { margin-top: 0; } 50% { margin-top: -7px; } }
 .wbub2.chosen { animation: wbubChosen .34s ease-out forwards; z-index: 8; }
 .wbub2.fizz { animation: wbubFizz .4s ease-out forwards; pointer-events: none; }
 @keyframes wbubChosen { 0% { transform: translate(-50%,-50%) scale(1); } 45% { transform: translate(-50%,-50%) scale(1.4); } 100% { transform: translate(-50%,-50%) scale(0); opacity: 0; } }
@@ -635,19 +635,20 @@ html, body {
 .well-prize2.jackpot .wp2-label { color: var(--gold); }
 .wp2-sub { font-family: var(--ff-display); font-size: 12px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.9); margin-top: 2px; }
 @keyframes wellPrizeUp { 0% { transform: translate(-50%, 30%) scale(.4); opacity: 0; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
-/* Wishy's speech / status line over the stone, plus the top info chips */
+/* Wishy's speech / status line over the stone, plus the top info chips.
+   These use the plain body (story-mode) font — easier to read than the display face. */
 .well-speech { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); z-index: 7;
-  width: 90%; max-width: 344px; text-align: center; padding: 9px 14px; border-radius: 14px;
-  background: rgba(20,12,36,.74); color: #f6efff; font-family: var(--ff-display); font-size: 14.5px; line-height: 1.35;
-  box-shadow: 0 3px 12px rgba(0,0,0,.4); }
+  width: 92%; max-width: 360px; text-align: center; padding: 12px 16px; border-radius: 15px;
+  background: rgba(20,12,36,.8); color: #f8f2ff; font-size: 17px; line-height: 1.42; font-weight: 500;
+  box-shadow: 0 3px 12px rgba(0,0,0,.45); }
 .well-speech b { color: #ffe08a; }
 .well-dustchip { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 7;
-  padding: 4px 14px; border-radius: 999px; background: rgba(20,12,36,.68); color: #f6efff;
-  font-family: var(--ff-display); font-size: 13px; white-space: nowrap; }
-.well-dustchip b { color: #ffe08a; }
-.well-odds-btn { position: absolute; right: 8px; top: 46px; z-index: 7; border: none; cursor: pointer;
-  padding: 5px 11px; border-radius: 999px; background: rgba(20,12,36,.62); color: #dcd2f0;
-  font-family: var(--ff-display); font-size: 12px; }
+  padding: 6px 18px; border-radius: 999px; background: rgba(20,12,36,.74); color: #f8f2ff;
+  font-size: 16px; font-weight: 600; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+.well-dustchip b { color: #ffe08a; font-weight: 800; }
+.well-odds-btn { position: absolute; right: 8px; top: 48px; z-index: 7; border: none; cursor: pointer;
+  padding: 6px 12px; border-radius: 999px; background: rgba(20,12,36,.68); color: #e6ddf5;
+  font-size: 13px; font-weight: 600; }
 .well-odds-btn:active { transform: scale(.95); }
 .well-odds-modal { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center;
   background: rgba(6,3,14,.62); animation: fade .2s ease; padding: 20px; }
@@ -1915,6 +1916,10 @@ img.story-face { height: 100%; width: auto; max-width: 96vw; object-fit: contain
    margin, so both pigs are fully visible above the dialogue (not squeezed edge-to-edge). */
 .story-figure.wide { height: auto; bottom: auto; top: 9%; align-items: center; }
 .story-figure.wide img.story-face { height: auto; width: auto; max-height: 55vh; max-width: 82vw; object-position: center; }
+/* Wishy the Fish sits in a round water-bubble — bottom-anchored at full height he's huge and
+   clipped, so show him small and centred in the upper area with the whole bubble visible. */
+.story-figure.round { height: auto; bottom: auto; top: 10%; align-items: center; }
+.story-figure.round img.story-face { height: auto; width: auto; max-height: 44vh; max-width: 74vw; object-position: center; }
 span.story-face { display: inline-flex; align-items: center; justify-content: center; height: 40vh; font-size: 32vh; line-height: 1; } /* emoji fallback */
 .story-figure.scene { height: auto; bottom: auto; top: 16%; }
 /* emoji placeholder for characters without full-body art: float it up where it's visible */

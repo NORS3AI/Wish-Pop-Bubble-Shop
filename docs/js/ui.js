@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v242"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v243"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -403,6 +403,11 @@ function redPose(pose) { return ART.tag("red_" + (pose || "wave"), "👧", "stor
 // prefix here for each future short character.
 const SHORT_FIGS = ["goldi", "customer_goldilocks"];
 function isShortFig(fig) { return !!fig && SHORT_FIGS.some(pre => fig.indexOf(pre) === 0); }
+// ROUND characters are drawn inside a circular bubble (Wishy the Fish). Bottom-anchored
+// at full height they're enormous and get clipped by the screen edge, so they get the
+// ".round" treatment: smaller and floated in the middle so the whole bubble shows.
+const ROUND_FIGS = ["customer_fish"];
+function isRoundFig(fig) { return !!fig && ROUND_FIGS.some(pre => fig.indexOf(pre) === 0); }
 
 let STORY_BEATS = null, STORY_I = 0, STORY_DONE = null, GALLERY = null, GALLERY_I = 0, STORY_BG_PREV = null;
 const STORY_DEF_BG = "village_far";   // default story backdrop (a beat can override with `bg`)
@@ -439,7 +444,7 @@ function storyPaint() {
   if (b.vista) { cls = "vista"; }
   else if (b.gallery) { cls = "gallery-beat"; GALLERY = b.gallery; GALLERY_I = 0; top = galleryHtml(); }
   else if (b.scene) { top = `<div class="story-figure scene"><div class="story-scene">${b.scene}</div></div>`; }
-  else if (b.fig) { const fc = /duo/.test(b.fig) ? " wide" : /^autograph/.test(b.fig) ? " poster" : (isShortFig(b.fig) ? " tall" : ""); top = `<div class="story-figure${fc}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // duo art smaller to fit width; a poster shows centred; short characters (kids) get the taller boost
+  else if (b.fig) { const fc = /duo/.test(b.fig) ? " wide" : /^autograph/.test(b.fig) ? " poster" : isRoundFig(b.fig) ? " round" : (isShortFig(b.fig) ? " tall" : ""); top = `<div class="story-figure${fc}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // duo art smaller to fit width; a poster shows centred; a bubble-character (Wishy) shows small & centred; short characters (kids) get the taller boost
   else if (b.figEmoji) { top = `<div class="story-figure emoji"><span class="story-face">${b.figEmoji}</span></div>`; }  // a character without art yet (emoji placeholder)
   else { top = `<div class="story-figure">${redPose(b.pose)}</div>`; }
   // backdrop: crossfade from the previous beat's scene to this one's (village → shop, etc.)
@@ -523,9 +528,9 @@ function playWellIntro() {
   SFX.unlock();
   ["customer_fish", "customer_fish_happy"].forEach(k => ART.ensure(k, () => {}));
   renderStoryBeats([
-    { name: "Wishy the Fish", fig: "customer_fish", text: "Blub — hello again! You grant wishes up here in your lovely shop… but did you know <i>I</i> keep the old <b>wishing well</b> at the edge of the village?" },
+    { name: "Wishy the Fish", fig: "customer_fish", text: "Blub — hello again! You grant wishes up here in your lovely shop… but did you know that I keep the old <b>wishing well</b> at the edge of the village?" },
     { name: "Wishy the Fish", fig: "customer_fish_happy", text: "It’s where the village tosses their coins to me. Drop one in, make a wish, and something lovely floats back up — a bit of sparkle, a treat, sometimes a whole new look for your cauldron!" },
-    { name: "Wishy the Fish", fig: "customer_fish", cta: "Follow him  ▸", text: "Your purse is looking heavy enough — come, <b>follow me to my well</b> and make a wish! I’ve popped a little <b>🌟 Well</b> button on your shopfront. Meet me at the water." },
+    { name: "Wishy the Fish", fig: "customer_fish", cta: "Follow him  ▸", text: "Your purse is looking heavy enough — come, <b>follow me to my well</b>! And here, your very first coin is on me. I’ve popped a little <b>🌟 Well</b> button on your shopfront — meet me at the water!" },
   ], () => { GAME.wellIntro = 1; save(); renderStart(); });
 }
 // Wishy introduces his well mid-Willow, once you've enough gold to actually toss a coin.
@@ -1787,8 +1792,9 @@ function refreshWellChip() { const c = $(".well-dustchip"); if (c) c.innerHTML =
 // Wishy floats in the water circle and explains; after your first wish he swims off
 // for good. Toss a coin → it drops in → three bubbles rise from the water → pop one.
 function renderWell() {
-  const cost = BALANCE.WELL_COST, canAfford = GAME.gold >= cost;
+  const cost = BALANCE.WELL_COST;
   const tutorial = GAME.wellIntro === 1;
+  const canToss = tutorial || GAME.gold >= cost;   // the tutorial toss is Wishy's free coin
   ART.ensure("customer_fish", () => {}); ART.ensure("stack_coin_front", () => {});
   html("well", `
     ${hud("Wishing Well")}
@@ -1798,11 +1804,11 @@ function renderWell() {
       <div class="well-dustchip">${wellDustChip()}</div>
       <button class="well-odds-btn" id="well-odds">ⓘ What floats up?</button>
       <div class="well-speech" id="well-speech">${tutorial
-        ? `<b>Wishy:</b> Toss a coin into my well, then <b>pop one of the three bubbles</b> that float up. Something lovely is always inside — go on, try it!`
+        ? `<b>Wishy:</b> Here — your first coin’s on me! Toss it in, then <b>pop one of the three bubbles</b> that float up. Go on, give it a try!`
         : `Toss a coin in and pop a bubble to see what floats up.`}</div>
     </div>
     <div class="row well-actions">
-      <button class="btn good" id="well-toss" ${canAfford ? "" : "disabled"}>Toss 🪙${cost}</button>
+      <button class="btn good" id="well-toss" ${canToss ? "" : "disabled"}>${tutorial ? "Toss the free coin ✨" : "Toss 🪙" + cost}</button>
       <button class="btn secondary" id="well-back">←  Back</button>
     </div>
   `);
@@ -1831,36 +1837,49 @@ let wellBusy = false;
 function wellToss() {
   if (wellBusy) return;
   const cost = BALANCE.WELL_COST;
-  if (GAME.gold < cost) { toast("Not enough gold."); return; }
+  const firstWish = GAME.wellIntro === 1;   // the tutorial toss is free (Wishy's coin)
+  if (!firstWish && GAME.gold < cost) { toast("Not enough gold."); return; }
   SFX.unlock();
   wellBusy = true;
-  GAME.gold -= cost; save(); syncHud("well"); refreshWellChip();
+  if (firstWish) { GAME.wellIntro = 2; save(); }        // his coin, on the house — no gold spent
+  else { GAME.gold -= cost; save(); syncHud("well"); refreshWellChip(); }
   const prize = rollWellPrize();
   const toss = $("#well-toss"); if (toss) toss.disabled = true;
   const back = $("#well-back"); if (back) back.disabled = true;
-  const firstWish = GAME.wellIntro === 1;
-  if (firstWish) { GAME.wellIntro = 2; save(); }   // the first wish sends Wishy on his way for good
-  // Wishy swims off down the well as the coin drops
-  const wishy = $("#wishy-well"); if (wishy) { wishy.classList.add("leaving"); setTimeout(() => wishy.remove(), 900); }
   const speech = $("#well-speech");
-  if (speech) speech.innerHTML = firstWish ? `<b>Wishy:</b> Off I go — enjoy your wish! 🐟💨` : `Plink…`;
-  // 1) the coin drops into the water
+  // On the tutorial toss, Wishy first dives back into the well and only THEN does the coin
+  // drop — so his big picture never covers the coin splash or the rising bubbles.
+  const wishy = $("#wishy-well");
+  if (wishy) {
+    if (speech) speech.innerHTML = `<b>Wishy:</b> In it goes — watch the water! 🐟💨`;
+    wishy.classList.add("leaving");
+    if (SFX.whoosh) SFX.whoosh();
+    setTimeout(() => { wishy.remove(); dropWellCoin(prize); }, 820);
+  } else {
+    dropWellCoin(prize);
+  }
+}
+// the tossed coin falls into the water, then the bubbles rise
+function dropWellCoin(prize) {
   const circle = $("#well-circle");
-  if (circle) {
-    const coin = document.createElement("div"); coin.className = "well-coin";
-    coin.innerHTML = ART.tag("stack_coin_front", "🪙", "well-coin-img");
-    circle.appendChild(coin);
-    if (SFX.coin) SFX.coin(0);
-    setTimeout(() => { if (SFX.pop) SFX.pop(0); }, 480);      // little plink as it hits the water
-    setTimeout(() => { coin.remove(); spawnWellBubbles(prize); }, 720);
-  } else { spawnWellBubbles(prize); }
+  const speech = $("#well-speech"); if (speech && !document.getElementById("wishy-well")) speech.innerHTML = `Plink…`;
+  if (!circle) { spawnWellBubbles(prize); return; }
+  const coin = document.createElement("div"); coin.className = "well-coin";
+  coin.innerHTML = ART.tag("stack_coin_front", "🪙", "well-coin-img");
+  circle.appendChild(coin);
+  if (SFX.coin) SFX.coin(0);
+  setTimeout(() => { if (SFX.pop) SFX.pop(0); }, 480);      // little plink as it hits the water
+  setTimeout(() => { coin.remove(); spawnWellBubbles(prize); }, 720);
 }
 // three mystery bubbles rise out of the water; pop any one to reveal the rolled prize
 function spawnWellBubbles(prize) {
   const circle = $("#well-circle"); if (!circle) { wellBusy = false; return; }
   const wrap = document.createElement("div"); wrap.className = "well-bubbles2"; wrap.id = "well-bubbles2";
-  wrap.innerHTML = [0, 1, 2].map(i => `<button class="wbub2" data-i="${i}" style="--bx:${[-1, 0, 1][i]};--bd:${i * 0.12}s"><span class="wbub2-sheen"></span></button>`).join("");
+  // pyramid: one bubble on top, two beneath — spread so none overlap, all over the well circle
+  const pos = [{ l: 50, t: 17 }, { l: 30, t: 55 }, { l: 70, t: 55 }];
+  wrap.innerHTML = [0, 1, 2].map(i => `<button class="wbub2" data-i="${i}" style="--bl:${pos[i].l}%;--bt:${pos[i].t}%;--bd:${i * 0.11}s"><span class="wbub2-sheen"></span></button>`).join("");
   circle.appendChild(wrap);
+  if (SFX.bonus) SFX.bonus();   // a soft rising flourish as the three bubbles float up
   const speech = $("#well-speech"); if (speech) speech.innerHTML = `<b>Pop a bubble!</b> Whichever one you like…`;
   let revealed = false;
   wrap.querySelectorAll(".wbub2").forEach(b => b.addEventListener("click", () => {
@@ -1888,7 +1907,7 @@ function wellReveal(prize) {
   else if (prize.kind === "stardust") SFX.charm();
   else SFX.coin(0);
   const speech = $("#well-speech"); if (speech) speech.innerHTML = `Toss again whenever you like!`;
-  const toss = $("#well-toss"); if (toss) toss.disabled = GAME.gold < BALANCE.WELL_COST;
+  const toss = $("#well-toss"); if (toss) { toss.textContent = "Toss 🪙" + BALANCE.WELL_COST; toss.disabled = GAME.gold < BALANCE.WELL_COST; }
   const back = $("#well-back"); if (back) back.disabled = false;
   wellBusy = false;
 }
