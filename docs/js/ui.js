@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v254"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v255"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -645,10 +645,11 @@ function playRedButtons() {
 }
 function playGingerbreadButton() {
   SFX.unlock();
+  ["gingerbread_lost", "gingerbread_spot", "gingerbread_fixed"].forEach(k => ART.ensure(k, () => {}));
   renderStoryBeats([
-    { name: "Gingerbread Man", figEmoji: "🍪", text: "Hey hey — you got a sec? I lost a button! The gumdrop one, right off my front. Looked everywhere. I even asked a pigeon! Pigeon just stared at me." },
-    { name: "Gingerbread Man", figEmoji: "🍪", text: "…Is that it?! All glowy in your bag? Aw, it went and got magical on me. Figures — right when I want it back! That’s okay. You keep it. Looks like it likes you." },
-    { name: "Gingerbread Man", figEmoji: "🍪", cta: "Good as new  ▸", text: "One of yours? For me? Aw, gosh. …It’s even better! Don’t tell the gumdrop I said that. <i>(He pops the spare button on.)</i> Good as new! …Hey — between us, someone’s been takin’ buttons all over town. I got a hunch who." },
+    { name: "Gingerbread Man", fig: "gingerbread_lost", text: "Hey hey — you got a sec? I lost a button! The gumdrop one, right off my front. Looked everywhere. I even asked a pigeon! Pigeon just stared at me." },
+    { name: "Gingerbread Man", fig: "gingerbread_spot", text: "…Is that it?! All glowy in your bag? Aw, it went and got magical on me. Figures — right when I want it back! That’s okay. You keep it. Looks like it likes you." },
+    { name: "Gingerbread Man", fig: "gingerbread_fixed", cta: "Good as new  ▸", text: "One of yours? For me? Aw, gosh. …It’s even better! Don’t tell the gumdrop I said that. <i>(He pops the spare button on.)</i> Good as new! …Hey — between us, someone’s been takin’ buttons all over town. I got a hunch who." },
   ], () => { satchelRemove("button_blue"); GAME.buttonStep = 3; GAME.buttonChainAt = -1; save(); toast("🍪 You gave the Gingerbread Man a button — the sparkly gumdrop keepsake stays with you."); renderStart(); });
 }
 // Drive the chain: Mouse's button-jar wish is the gate, then the beats pace a few rounds apart.
@@ -1244,7 +1245,7 @@ function inventoryGroups() {
   if (btnIds.length) {
     const s = GAME.buttonStep || 0;
     groups.push({ id: "buttons", kind: "story", name: "Mystery Buttons",
-      items: btnIds.map(id => ({ emoji: SATCHEL_ITEMS[id].emoji, name: SATCHEL_ITEMS[id].name })),
+      items: btnIds.map(id => ({ art: id, emoji: SATCHEL_ITEMS[id].emoji, name: SATCHEL_ITEMS[id].name })),
       title: "The Vanishing Buttons",
       desc: "Buttons have been going missing all over Willow-Wish — and the “collector” dropped these three right in your shop. There’s a story here…",
       progress: s >= 3 ? "Solved! You returned the others; the magical gumdrop button stays with you as a keepsake."

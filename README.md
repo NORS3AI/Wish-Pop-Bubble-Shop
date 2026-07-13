@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🍪 **The Gingerbread Man has a face!** He's no longer a cookie emoji — he now has real
+  artwork with all his moods (cheery, cross, and a very itchy allergic one), and his
+  button-quest scene shows him losing his button and proudly wearing the new one. The three
+  mystery buttons (heart, blue, gumdrop) show their real art in your Satchel too.
+
 - 🪵 **A hidden stash in the wall.** The popping phase now plays against a cozy wooden wall.
   Once in a while you'll spot a little **X carved in the wood** — tap it a handful of times to
   smash it open (splinters fly!) and a glowing treasure floats up in the hole. Tap it to grab
