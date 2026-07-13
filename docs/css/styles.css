@@ -204,19 +204,18 @@ html, body {
 }
 /* --- Pop-phase wooden wall backdrop + the rare "smash the X" treasure stash --- */
 #screen-pop.pop-woodbg { position: relative; isolation: isolate; }
-.pop-bg { position: absolute; top: 0; bottom: 0; left: -14px; right: -14px; z-index: -1; pointer-events: none;
+.pop-bg { position: absolute; top: 0; bottom: 0; left: -14px; right: -14px; z-index: -2; pointer-events: none;
   background-size: cover; background-position: center; background-repeat: no-repeat; background-color: #000; }
-.pop-hole-layer { position: absolute; top: 0; bottom: 0; left: -14px; right: -14px; z-index: 5; pointer-events: none; }
+/* the X / hole / treasure sit BEHIND the floating bubbles, so tapping always pops a bubble
+   first — the stash is a pure Easter egg you only reach once the bubbles above it clear. */
+.pop-hole-layer { position: absolute; top: 0; bottom: 0; left: -14px; right: -14px; z-index: -1; pointer-events: none; }
 .pop-hole-layer > * { pointer-events: auto; }
-/* the carved X you tap to break open (a soft pulsing ring hints that it's tappable) */
+/* the bubble field lets empty-area taps fall through to the wall behind it */
+.bubble-field { pointer-events: none; }
+.bubble-field .pbubble { pointer-events: auto; }
+/* the carved X is an invisible hotspot over the art — no hint (it's an Easter egg) */
 .pop-x-target { position: absolute; transform: translate(-50%,-50%); border: none; background: none; padding: 0; cursor: pointer;
-  border-radius: 50%; -webkit-tap-highlight-color: transparent; --shake: 2px; }
-.pop-x-target::before { content: ""; position: absolute; inset: 8%; border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(255,222,140,.45), 0 0 16px rgba(255,205,110,.5); animation: popXRing 1.3s ease-in-out infinite; }
-@keyframes popXRing { 0%,100% { opacity: .3; transform: scale(.82); } 50% { opacity: .8; transform: scale(1); } }
-.pop-x-target.hit { animation: popXHit .18s ease; }
-@keyframes popXHit { 0% { transform: translate(-50%,-50%); } 30% { transform: translate(calc(-50% - var(--shake)), calc(-50% + 1px)) scale(.94) rotate(-3deg); }
-  65% { transform: translate(calc(-50% + var(--shake)), -50%) rotate(3deg); } 100% { transform: translate(-50%,-50%); } }
+  border-radius: 50%; -webkit-tap-highlight-color: transparent; }
 /* the treasure floating in the smashed hole — glows and pulses, tap to grab */
 .pop-treasure { position: absolute; transform: translate(-50%,-50%); border: none; background: none; padding: 0; cursor: pointer;
   display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
@@ -238,6 +237,7 @@ html, body {
   box-shadow: 0 1px 2px rgba(0,0,0,.5); animation: popSplinter .6s ease-out forwards; }
 @keyframes popSplinter { 0% { transform: translate(-50%,-50%) scale(1) rotate(0); opacity: 1; }
   100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.35) rotate(var(--rot)); opacity: 0; } }
+.pop-splinter.chip { width: 6px; height: 6px; animation-duration: .42s; }
 /* an ingredient that pops out and floats up — tap to catch it */
 .ing-token { position: fixed; width: 52px; height: 52px; transform: translate(-50%,-50%); pointer-events: auto; cursor: pointer;
   border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;

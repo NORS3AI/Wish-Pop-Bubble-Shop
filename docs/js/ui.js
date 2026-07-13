@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v251"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v252"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6320,11 +6320,23 @@ function popTapX(t) {
   ROUND.popXTaps = (ROUND.popXTaps || 0) + 1;
   SFX.unlock(); if (SFX.chop) SFX.chop();
   if (navigator.vibrate) navigator.vibrate(12);
-  t.classList.remove("hit"); void t.offsetWidth; t.classList.add("hit");
-  // the wood loosens as you go — a little more wobble the closer it is to giving way
-  const prog = Math.min(1, ROUND.popXTaps / (ROUND.popXNeed || 6));
-  t.style.setProperty("--shake", (2 + prog * 4).toFixed(1) + "px");
+  // a few wood chips fly off with each knock (feedback, not a hint), more as it loosens
+  const g = popHoleGeom(); if (g) popWoodChips(g.x, g.y, 3 + Math.floor((ROUND.popXTaps / (ROUND.popXNeed || 6)) * 3));
   if (ROUND.popXTaps >= (ROUND.popXNeed || 6)) breakPopWood();
+}
+// a small spray of wood chips at the X on each knock
+function popWoodChips(cx, cy, n) {
+  const layer = $("#pop-hole-layer"); if (!layer) return;
+  const cols = ["#8a5a2b", "#a9743a", "#6e4420", "#c89257"];
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement("i"); p.className = "pop-splinter chip";
+    const ang = Math.random() * Math.PI * 2, dist = 14 + Math.random() * 26;
+    p.style.left = cx + "px"; p.style.top = cy + "px"; p.style.background = cols[i % cols.length];
+    p.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+    p.style.setProperty("--dy", Math.sin(ang) * dist + "px");
+    p.style.setProperty("--rot", (Math.random() * 360 - 180) + "deg");
+    layer.appendChild(p); p.addEventListener("animationend", () => p.remove());
+  }
 }
 function breakPopWood() {
   ROUND.popXBroken = true; ROUND.popTreasure = rollPopTreasure(); save && save();
