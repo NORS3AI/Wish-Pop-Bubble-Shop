@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v250"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v251"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1497,6 +1497,7 @@ function renderAdmin() {
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:6px">🎬 Jump to an event</div>
         <p class="muted" style="font-size:12px;margin-bottom:10px">Launch a special encounter right now — no need to play through normal rounds to find one.</p>
+        <button class="btn good" id="ad-popx" style="margin-bottom:8px">🪵 Force treasure X (next Pop phase)</button>
         <button class="btn" id="ad-duel" style="margin-bottom:8px">⚔️ Mixing Duel</button>
         <button class="btn" id="ad-fairy" style="margin-bottom:8px">🧚 Fairy's Matching Boon</button>
         <button class="btn" id="ad-rumpel" style="margin-bottom:8px">🧵 Rumpelstiltskin</button>
@@ -1552,6 +1553,7 @@ function renderAdmin() {
     </div>
     <button class="btn secondary" id="ad-back">←  Back</button>
   `);
+  on("#ad-popx", "click", () => { GAME.forcePopX = true; save(); toast("🪵 Next Pop phase will hide the treasure X — start a round and pop through to it!"); });
   on("#ad-duel", "click", renderDuelIntro);
   on("#ad-fairy", "click", renderFairyIntro);
   on("#ad-rumpel", "click", renderRumpelIntro);
@@ -6251,7 +6253,8 @@ function renderPop() {
   // Once per round: is there a hidden treasure stash behind the wall? (5–10% — an X shows,
   // tap it 5–10× to smash it open for a random prize.)
   if (typeof ROUND.popX !== "boolean") {
-    ROUND.popX = Math.random() < 0.08;
+    ROUND.popX = GAME.forcePopX || Math.random() < 0.08;
+    if (GAME.forcePopX) { GAME.forcePopX = false; save(); }   // admin test: one forced X, then back to random
     ROUND.popXNeed = 5 + Math.floor(Math.random() * 5);   // taps to break it (5–9)
     ROUND.popXTaps = 0; ROUND.popXBroken = false; ROUND.popTreasure = null; ROUND.popTreasureGot = false;
   }
