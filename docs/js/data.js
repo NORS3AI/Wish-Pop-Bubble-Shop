@@ -241,7 +241,7 @@ const CUSTOMERS = [
     line: "I wish for something strong so I don’t crumble!" },
   { id: "goldilocks",  name: "Goldilocks",      emoji: "👱‍♀️", location: "Willow-Wish Village", wishType: "CalmCup",
     line: "Something that’s just right, please — not too much, not too little!" },
-  { id: "baker",       name: "Village Baker",   emoji: "👨‍🍳", location: "Drury Lane", wishType: "CalmCup",
+  { id: "baker",       name: "Village Baker",   emoji: "👩‍🍳", location: "Willow-Wish Village", wishType: "CalmCup",
     line: "I wish for something calm before the ovens explode again!" },
   { id: "mouse",       name: "Tiny Mouse",      emoji: "🐭", location: "Drury Lane", wishType: "BraveBite",
     line: "I wish for courage before I face the kitchen cat!" },
@@ -263,6 +263,8 @@ const CUSTOMERS = [
     line: "Phew… I’m plumb tuckered. I wish there was a way I could walk AND sleep at the same time." },
   { id: "fish",        name: "Wishy the Fish", emoji: "🐟", location: "Willow-Wish Village", wishType: "GlowTreat", pays: "pearls",
     line: "Ha — a wish-fish at a wish SHOP! I grant everyone else’s coin-wishes down my well, but never my own. Payment’s in pearls, I’m afraid — it’s all a well-fish has." },
+  { id: "bo_peep",     name: "Bo Peep",        emoji: "👧", location: "Willow-Wish Village", wishType: "SafeSpell",
+    line: "A little homing charm, please — so my woollies keep close and quit their wandering!" },
 ];
 
 /* Retired from the active Willow roster — kept here to reintroduce in a future
