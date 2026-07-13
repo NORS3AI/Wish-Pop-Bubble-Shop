@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v252"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v253"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6295,8 +6295,10 @@ function setupPopWood() {
   const img = ROUND.popXBroken ? "pop_bg_broken" : (ROUND.popX ? "pop_bg_x" : "pop_bg");
   bg.style.backgroundImage = `url('art/${img}.webp?v=${BUILD}')`;
   const layer = $("#pop-hole-layer"); if (layer) layer.innerHTML = "";
-  if (ROUND.popX && !ROUND.popXBroken) addPopX();
-  else if (ROUND.popXBroken && !ROUND.popTreasureGot) showPopTreasure();
+  if (ROUND.popX && !ROUND.popXBroken) {
+    addPopX();
+    const pre = new Image(); pre.src = `art/pop_bg_broken.webp?v=${BUILD}`;   // warm the broken art so the smash swaps instantly
+  } else if (ROUND.popXBroken && !ROUND.popTreasureGot) showPopTreasure();
 }
 // where the hole/X sits on screen, given the cover-fit background
 function popHoleGeom() {
@@ -6346,7 +6348,9 @@ function breakPopWood() {
   if (SFX.clang) SFX.clang(); setTimeout(() => { if (SFX.perfect) SFX.perfect(); }, 90);
   if (navigator.vibrate) navigator.vibrate([12, 30, 40]);
   const scr = document.getElementById("screen-pop"); if (scr) { scr.classList.remove("shake"); void scr.offsetWidth; scr.classList.add("shake"); }
-  showPopTreasure();
+  // Hold the treasure back ~0.6s so the smash is enjoyed first and you can't accidentally
+  // spam-tap it collected before you even see the wall break open.
+  setTimeout(() => { if (ROUND && ROUND.popXBroken && !ROUND.popTreasureGot) showPopTreasure(); }, 600);
 }
 // pick a random stash prize — gold most often, then Stardust, then rare Pearls
 function rollPopTreasure() {
