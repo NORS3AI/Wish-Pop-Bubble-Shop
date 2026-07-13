@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v222"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v223"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1020,60 +1020,96 @@ function satchelRemove(id, n) {
 }
 // hook for future customer keepsake drops on a successful serve (none active right now).
 function maybeSatchelDrop(customer) { return null; }
+// Build the inventory as GROUPS: storyline items (no border) pushed to the front,
+// then active-quest groups (bordered). Each group carries the quest info shown on tap.
+function inventoryGroups() {
+  const groups = [];
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const plur = w => (w === "sheep" ? "sheep" : w + "s");   // "sheep" is already plural
+  // --- STORY (no border, first): the vanishing buttons ---
+  const btnIds = ["button_heart", "button_blue", "button_gumdrop"].filter(id => satchelCount(id) > 0);
+  if (btnIds.length) {
+    const s = GAME.buttonStep || 0;
+    groups.push({ id: "buttons", kind: "story", name: "Mystery Buttons",
+      items: btnIds.map(id => ({ emoji: SATCHEL_ITEMS[id].emoji, name: SATCHEL_ITEMS[id].name })),
+      title: "The Vanishing Buttons",
+      desc: "Buttons have been going missing all over Willow — and the “collector” dropped these three right in your shop. There’s a story here…",
+      progress: s >= 3 ? "Solved! You returned the others; the magical gumdrop button stays with you as a keepsake."
+        : s >= 2 ? "Little Red kept Grandma’s button. The gumdrop’s gone magical and won’t come loose — it’s yours now."
+        : s >= 1 ? "Show these to Little Red — she may recognize one of them."
+        : "Freshly dropped in your shop by that “collector.”" });
+  }
+  // --- QUEST (bordered): Goldilocks' teddy bears ---
+  const teddyN = satchelCount("teddy");
+  if (teddyN > 0) {
+    ["bear_1", "bear_2", "bear_3"].forEach(a => ART.ensure(a, () => {}));
+    groups.push({ id: "teddy", kind: "quest", name: "Teddy Bears", count: "×" + teddyN,
+      items: ["bear_1", "bear_2", "bear_3"].slice(0, teddyN).map(a => ({ art: a, emoji: "🧸", name: "Teddy Bear" })),
+      title: "Goldilocks’ Teddy Bears",
+      desc: "Tiny Mouse sewed three bears — big, small, and just-right — for you to deliver to Goldilocks.",
+      progress: `Carrying ${teddyN} bear${teddyN === 1 ? "" : "s"}. Next time Goldilocks drops by, give her the one that’s just right for a big tip.` });
+  }
+  // --- QUEST (bordered): realm scavenger hunts (Bo Peep's sheep, etc.) ---
+  Object.keys(HUNTS).forEach(realm => {
+    const h = HUNTS[realm], st = huntState(realm);
+    if (!st.found) return;
+    if (h.items) h.items.forEach(id => { if (st.seen.indexOf(id) >= 0) ART.ensure(id, () => {}); });
+    const items = h.items ? st.seen.map(id => ({ art: id, emoji: h.itemEmoji, name: cap(h.item) }))
+      : Array.from({ length: st.found }).map(() => ({ emoji: h.itemEmoji, name: cap(h.item) }));
+    groups.push({ id: "hunt_" + realm, kind: "quest", name: cap(plur(h.item)), hunt: realm, count: st.found + "/" + h.need,
+      items,
+      title: `${h.char}’s Lost ${cap(plur(h.item))}`,
+      desc: `${h.char}’s little ones wandered off. Find them all as you play to earn ${h.char}’s thanks — and a special skin!`,
+      progress: `${st.found} of ${h.need} rounded up${st.done ? " — complete! 🎉" : ""}.` });
+  });
+  return groups;
+}
 function renderSatchel() {
-  const items = Object.keys(GAME.satchel || {}).filter(id => satchelCount(id) > 0 && satchelItem(id));
-  const itemCards = items.map(id => {
-    const it = satchelItem(id), n = satchelCount(id), locked = satchelLocked(id);
-    return `<div class="sat-item${locked ? " locked" : ""}">
-      <div class="sat-ic">${it.emoji}${n > 1 ? `<span class="sat-n">${n}</span>` : ""}${locked ? `<span class="sat-lock">✨</span>` : ""}</div>
-      <div class="sat-body">
-        <div class="sat-name">${it.name}</div>
-        <div class="sat-from">from ${it.from}</div>
-        <div class="sat-note">${locked ? "It’s gone all sparkly and magical — a keepsake now. It won’t come loose." : it.note}</div>
+  const groups = inventoryGroups();
+  const body = groups.length ? groups.map(g => `
+    <div class="inv-group ${g.kind}">
+      <div class="inv-group-head"><span class="inv-group-name">${g.name}</span>${g.count ? `<span class="inv-group-count">${g.count}</span>` : ""}</div>
+      <div class="inv-items">
+        ${g.items.map(it => `<button class="inv-item" data-g="${g.id}" aria-label="${it.name}">${it.art ? ART.tag(it.art, it.emoji, "inv-art") : `<span class="inv-emoji">${it.emoji}</span>`}</button>`).join("")}
       </div>
-    </div>`;
-  }).join("");
-  // realm scavenger-hunt collectibles, reflected from the hunts
-  const huntCards = Object.keys(HUNTS).map(realm => {
-    const h = HUNTS[realm], st = huntState(realm), pct = Math.round(100 * st.found / h.need);
-    const realmName = (D.REALM_BY_ID[realm] || {}).name || realm;
-    // for hunts with distinct art (Bo Peep's sheep), show a grid: found ones as their picture, the rest as empty slots.
-    let grid = "";
-    if (h.items) {
-      h.items.forEach(id => { if (st.seen.indexOf(id) >= 0) ART.ensure(id, () => {}); });
-      grid = `<div class="sheep-grid">${h.items.map(id => {
-        const got = st.seen.indexOf(id) >= 0;
-        return `<div class="sheep-slot${got ? " got" : ""}">${got ? ART.tag(id, h.itemEmoji, "sheep-slot-img") : "<span class=\"sheep-q\">?</span>"}</div>`;
-      }).join("")}</div>`;
-    }
-    return `<div class="sat-item hunt">
-      <div class="sat-ic">${h.itemEmoji}</div>
-      <div class="sat-body">
-        <div class="sat-name">${h.item[0].toUpperCase() + h.item.slice(1)} collection <span class="muted" style="font-weight:600">· ${realmName}</span></div>
-        <div class="sat-from">for ${h.char}${st.done ? " — complete! 🎉" : ""}</div>
-        <div class="sat-bar"><i style="width:${pct}%"></i></div>
-      </div>
-      <div class="sat-count">${st.found}/${h.need}</div>
-    </div>${grid}`;
-  }).join("");
+    </div>`).join("")
+    : `<div class="inv-empty"><div class="inv-empty-ic">🎒</div><p>Your satchel is empty for now.<br>Quest items and treasures you find while you play collect here — tap one to see what it’s for.</p></div>`;
   html("satchel", `
-    ${hud("Your Satchel")}
-    <div class="grow" style="overflow-y:auto">
-      <p class="muted" style="text-align:center;font-size:12px;margin:2px 0 12px">Keepsakes and quest items you’ve collected. Carry them until there’s someone to give them to — or somewhere to use them.</p>
-      <div class="card" style="margin-bottom:10px">
-        <div style="font-weight:800;margin-bottom:10px">🎒 Quest Items ${items.length ? `<span class="muted" style="font-weight:600;font-size:13px">· ${satchelTotal()}</span>` : ""}</div>
-        ${items.length ? itemCards : `<p class="muted" style="text-align:center;font-size:13px;margin:6px 0">Empty for now — keep an eye out! Some customers leave a little something behind when you grant their wish.</p>`}
-      </div>
-      <div class="card">
-        <div style="font-weight:800;margin-bottom:10px">🔎 Collectibles</div>
-        ${huntCards}
-        <p class="muted" style="font-size:11px;margin-top:8px">These turn up while you play in each realm. Find the whole set to earn a special skin.</p>
-      </div>
+    ${hud("Inventory")}
+    <div class="grow" style="overflow-y:auto; padding: 6px 8px 10px">
+      <div class="inv-screen">${body}</div>
     </div>
     <button class="btn secondary" id="sat-back">←  Back</button>
   `);
-  on("#sat-back", "click", renderMenu);
+  document.querySelectorAll("#screen-satchel .inv-item").forEach(el => el.addEventListener("click", () => openInvQuest(el.dataset.g)));
+  on("#sat-back", "click", renderStart);
   show("satchel");
+}
+// Tapping an inventory item opens its quest / story info + progress.
+function openInvQuest(groupId) {
+  const g = inventoryGroups().find(x => x.id === groupId); if (!g) return;
+  SFX.unlock && SFX.unlock(); SFX.pop && SFX.pop(1);
+  let collection = "";
+  if (g.hunt) {   // for hunts, show the whole set: found pictures + still-missing ghosts
+    const h = HUNTS[g.hunt], st = huntState(g.hunt);
+    if (h.items) collection = `<div class="invq-collection">${h.items.map(id => {
+      const got = st.seen.indexOf(id) >= 0;
+      return `<div class="invq-slot${got ? " got" : ""}">${got ? ART.tag(id, h.itemEmoji, "invq-slot-img") : `<span class="invq-q">?</span>`}</div>`;
+    }).join("")}</div>`;
+  }
+  const ov = document.createElement("div"); ov.className = "invq-overlay"; ov.id = "invq-overlay";
+  ov.innerHTML = `
+    <div class="invq-card">
+      <div class="invq-kind ${g.kind}">${g.kind === "quest" ? "◆ Quest" : "◆ Storyline"}</div>
+      <div class="invq-title">${g.title}</div>
+      <div class="invq-desc">${g.desc}</div>
+      ${collection}
+      <div class="invq-progress">${g.progress}</div>
+      <button class="invq-ok" id="invq-ok">Got it</button>
+    </div>`;
+  itemHost().appendChild(ov);
+  on("#invq-ok", "click", () => ov.remove());
+  ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
 }
 
 /* ======================================================================= */
@@ -6872,7 +6908,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

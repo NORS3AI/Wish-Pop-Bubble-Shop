@@ -728,6 +728,43 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes irGlow { 0%,100% { transform: scale(.92); opacity: .82; } 50% { transform: scale(1.08); opacity: 1; } }
 @keyframes irFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes irTwinkle { 0%,100% { opacity: .2; transform: rotate(calc(var(--i)*36deg)) translateY(-128px) scale(.6); } 50% { opacity: 1; transform: rotate(calc(var(--i)*36deg)) translateY(-140px) scale(1.2); } }
+/* --- Inventory (Satchel): big-icon grid, grouped by quest --- */
+.inv-screen { display: flex; flex-direction: column; gap: 14px; }
+.inv-group { border-radius: 16px; }
+.inv-group.quest { border: 2px solid rgba(255,214,120,.5); background: rgba(255,222,150,.06); padding: 8px 10px 12px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.inv-group.story { border: none; padding: 2px 2px 4px; }
+.inv-group-head { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 8px; }
+.inv-group-name { font-family: var(--ff-display); font-size: 18px; color: #ffe7ac; }
+.inv-group.story .inv-group-name { color: #d3c4f2; }
+.inv-group-count { font-family: var(--ff-display); font-weight: 800; font-size: 15px; color: #ffd873; background: rgba(0,0,0,.28); border-radius: 10px; padding: 2px 10px; }
+.inv-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.inv-item { position: relative; aspect-ratio: 1; border-radius: 14px; border: 1px solid rgba(255,255,255,.12); cursor: pointer; padding: 6px;
+  background: radial-gradient(circle at 50% 38%, rgba(255,255,255,.1), rgba(255,255,255,.03)); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.inv-group.story .inv-item { background: radial-gradient(circle at 50% 38%, rgba(180,160,230,.16), rgba(120,100,180,.05)); border-color: rgba(200,180,240,.22); }
+.inv-item:active { transform: scale(.95); }
+.inv-item .inv-art.art { width: 92%; height: 92%; max-width: none; object-fit: contain; filter: drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
+.inv-item .inv-emoji { font-size: 52px; line-height: 1; filter: drop-shadow(0 2px 5px rgba(0,0,0,.4)); }
+.inv-empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+.inv-empty-ic { font-size: 64px; opacity: .5; margin-bottom: 12px; }
+.inv-empty p { font-size: 14px; line-height: 1.5; max-width: 280px; margin: 0 auto; }
+/* quest-info overlay (tap an item) */
+.invq-overlay { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 26px;
+  background: rgba(12,6,24,.8); animation: fade .2s ease; }
+.invq-card { position: relative; width: 94%; max-width: 350px; padding: 24px 28px 22px; text-align: center;
+  background: url('../art/ui/name_plate.png') no-repeat center; background-size: 100% 100%; animation: irPop .3s cubic-bezier(.2,1.4,.4,1); }
+.invq-kind { font-family: var(--ff-display); font-size: 13px; letter-spacing: 1px; color: #b5842a; margin-bottom: 4px; }
+.invq-kind.story { color: #8a5ab0; }
+.invq-title { font-family: var(--ff-display); font-size: 25px; color: #7a3410; margin-bottom: 8px; }
+.invq-desc { font-family: var(--ff-display); font-size: 16px; line-height: 1.42; color: #4a3212; }
+.invq-collection { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 14px 2px 2px; }
+.invq-slot { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(90,60,20,.14); border: 1px solid rgba(90,60,20,.2); }
+.invq-slot.got { background: rgba(120,80,30,.22); border-color: rgba(150,100,40,.4); }
+.invq-slot .invq-slot-img.art { width: 88%; height: 88%; max-width: none; object-fit: contain; }
+.invq-q { font-family: var(--ff-display); font-weight: 800; font-size: 18px; color: rgba(90,60,20,.4); }
+.invq-progress { margin-top: 14px; font-family: var(--ff-display); font-size: 15px; line-height: 1.4; color: #6a4310; font-weight: 700; }
+.invq-ok { margin-top: 16px; padding: 10px 30px; border-radius: 22px; border: 2px solid #7a4e1a; cursor: pointer;
+  background: linear-gradient(180deg, #f7d488, #d49a3a); color: #4a2c08; font-family: var(--ff-display); font-size: 18px; }
+.invq-ok:active { transform: scale(.96); }
 .cust-banner { position: relative; width: 96%; max-width: 372px; margin: 0 auto -52px; z-index: 5; }
 .cust-banner img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
 .cust-banner span { position: absolute; left: 8%; right: 8%; top: 46%; transform: translateY(-50%); text-align: center;
