@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v248"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v249"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -480,7 +480,7 @@ function playArrivalIntro() {
   ["wave", "explain", "idea"].forEach(p => ART.ensure("red_" + p, () => {})); // pre-warm Red's arrival poses
   ["village_mid", "village_door"].forEach(n => { try { const im = new Image(); im.src = "art/" + n + ".jpg?v=" + BUILD; } catch (e) {} }); // preload the zoom frames
   renderStoryBeats([
-    { vista: true, bg: "village_far", text: "A little path winds down into <b>Willow Wish Village</b> — lanterns in the trees, banners on the rooftops, a castle beyond. And there, with its striped awning and bubbles drifting from the chimney, is your very own <b>Wish Pop Bubble Shop</b>." },
+    { vista: true, bg: "village_far", text: "A little path winds down into <b>Willow-Wish Village</b> — lanterns in the trees, banners on the rooftops, a castle beyond. And there, with its striped awning and bubbles drifting from the chimney, is your very own <b>Wish Pop Bubble Shop</b>." },
     { name: "Little Red", pose: "wave", bg: "village_far", text: "Oh — hello! I just arrived too. I’m off through the woods to visit my grandma. But everyone says the new wish‑shop is the heart of the village… is that <i>you</i>?" },
     { name: "Little Red", pose: "explain", bg: "village_mid", text: "Then let me be your very first customer! It’s a long walk to Grandma’s cottage… could you mix me a little charm of <b>safe passage</b>?" },
     { name: "Little Red", pose: "idea", bg: "village_door", cta: "Step inside  ▸", text: "Come on — let’s pop into the shop and I’ll show you how it works: <b>scoop</b> up some sparkle, <b>pop</b> the bubbles for magic, then <b>mix</b> it to match my wish!" },
@@ -692,7 +692,7 @@ const WOLF_VISITS = [
     outroWin: "Now THAT’S service. Package received — by my stomach. Wally, signing off! <i>(scurries)</i>" },
   { costume: "wolf_sherlock", custArt: "wolf_sherlock_pie", name: "“Detective Sherwood Woolf”",
     intro: [
-      { fig: "wolf_sherlock_pie", text: "Ahem — Detective Sherwood Woolf. I’m investigating a most troubling case: someone’s been eating <i>all</i> the pies in Willow. Fiendish business. <i>(He brandishes a pie. Evidence.)</i>" },
+      { fig: "wolf_sherlock_pie", text: "Ahem — Detective Sherwood Woolf. I’m investigating a most troubling case: someone’s been eating <i>all</i> the pies in Willow-Wish. Fiendish business. <i>(He brandishes a pie. Evidence.)</i>" },
       { fig: "wolf_sherlock_ponder", text: "Suspects? None. Leads? None. Motive? Extreme deliciousness. …I’ll require sustenance for the investigation. Something hearty. For clue-related reasons.", cta: "Case closed  ▸" },
     ],
     wish: "A detective’s ration, piping hot — purely to fuel my brilliant deductions, which are ongoing and unrelated to pie.",
@@ -857,7 +857,7 @@ function playBandAnnounce() {
   ART.ensure("autograph_0", () => {});
   GAME.bandStep = 1; GAME.bandAt = -1; save();
   renderStoryBeats([
-    { name: "A Blank Poster!", fig: "autograph_0", text: "📣 The <b>Bandit Bears</b> are touring Willow — Goldilocks’ favorite band in the WHOLE world! And someone left a <b>blank tour poster</b> right here at your shop." },
+    { name: "A Blank Poster!", fig: "autograph_0", text: "📣 The <b>Bandit Bears</b> are touring Willow-Wish — Goldilocks’ favorite band in the WHOLE world! And someone left a <b>blank tour poster</b> right here at your shop." },
     { name: "A Blank Poster!", fig: "autograph_0", cta: "Grab the poster!  ▸", text: "Imagine if you got all three bears to <b>sign</b> it… Goldilocks, their #1 fan, would faint clean away. Worth a shot, hm?" },
   ], () => {
     revealItem({ art: "autograph_0", name: "Blank Bandit Bears Poster", desc: "A pristine tour poster. Get Honey, Roxie & Pepper to sign it — then give it to superfan Goldilocks!" });
@@ -1246,7 +1246,7 @@ function inventoryGroups() {
     groups.push({ id: "buttons", kind: "story", name: "Mystery Buttons",
       items: btnIds.map(id => ({ emoji: SATCHEL_ITEMS[id].emoji, name: SATCHEL_ITEMS[id].name })),
       title: "The Vanishing Buttons",
-      desc: "Buttons have been going missing all over Willow — and the “collector” dropped these three right in your shop. There’s a story here…",
+      desc: "Buttons have been going missing all over Willow-Wish — and the “collector” dropped these three right in your shop. There’s a story here…",
       progress: s >= 3 ? "Solved! You returned the others; the magical gumdrop button stays with you as a keepsake."
         : s >= 2 ? "Little Red kept Grandma’s button. The gumdrop’s gone magical and won’t come loose — it’s yours now."
         : s >= 1 ? "Show these to Little Red — she may recognize one of them."
@@ -1270,7 +1270,7 @@ function inventoryGroups() {
     groups.push({ id: "band", kind: "quest", name: "Bandit Bears Poster", count: sigs + "/3",
       items: [{ art, emoji: "🎤", name: "Signed Poster" }],
       title: "The Bandit Bears’ Autograph",
-      desc: "Goldilocks’ favorite band is touring Willow! Get Honey, Roxie & Pepper to sign this tour poster, then deliver it to her.",
+      desc: "Goldilocks’ favorite band is touring Willow-Wish! Get Honey, Roxie & Pepper to sign this tour poster, then deliver it to her.",
       progress: sigs >= 3 ? "All three signed! Deliver it to superfan Goldilocks — she’ll faint. 🎤"
         : sigs > 0 ? `Signed by ${signed.join(" & ")}. ${3 - sigs} to go — the band keeps touring through your shop.`
         : "Blank so far. Serve each Bandit Bear when they drop by and they’ll sign it." });
@@ -3043,7 +3043,7 @@ function renderWolfFinale() {
     ${hud("The Wolf at Grandma's!")}
     <div class="grow center" style="gap:14px">
       <div class="ph big">🐺</div>
-      <div class="result-title" style="color:var(--gold)">Willow's Finale</div>
+      <div class="result-title" style="color:var(--gold)">Willow-Wish's Finale</div>
       <div class="speech">“Come a little closer, dearie… Grandma's been waiting for you…”</div>
       <div class="card" style="width:100%;max-width:320px">
         <div class="stat-line"><span>Stall the wolf</span><span>until the huntsman comes 🏹</span></div>
@@ -3214,7 +3214,7 @@ function wolfFinish(result) {
     outcome = { emoji: finale ? "🗝️" : "🏹", title: finale ? "Grandma is saved!" : "The huntsman arrives!", cls: "win",
       lines: [`<div class="stat-line"><span>You stalled him</span><span>${secs}s · ${WOLF_MODES[WOLF.mode].label}</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`, keyLine],
-      note: finale ? "You beat Willow's finale! The huntsman saves Grandma, and you've earned the 🗝️ Realm Key — head to the map to open King's Courtyard." : "You kept the wolf busy long enough — the huntsman bursts in and rescues Grandma! 🎉" };
+      note: finale ? "You beat Willow-Wish's finale! The huntsman saves Grandma, and you've earned the 🗝️ Realm Key — head to the map to open King's Courtyard." : "You kept the wolf busy long enough — the huntsman bursts in and rescues Grandma! 🎉" };
   } else {
     save(); SFX.sneeze();
     const why = result === "allergen"
@@ -5544,15 +5544,15 @@ const CUSTOMER_ARCS = {
   // the realm's finest baking supplies to carry home to Drury Lane.
   gingerbread: [
     { line: "Just baked and already three kids are eyeing me! I wish for speed — I stay uneaten!" },
-    { line: "In Willow at last! Finest supplies around, they say. A nose for the good stuff?" },
+    { line: "In Willow-Wish at last! Finest supplies around, they say. A nose for the good stuff?" },
     { line: "Market day — a fox keeps eyeing me like a snack! Bubble me “not food” while I shop?" },
     { line: "The Baker’s vanilla is heaven! Wish it fresh so I can carry a jar all the way home?" },
     { line: "A magpie swiped my sugar! Grant me it back before it’s gone for good?" },
-    { line: "Sugar rescued! Now for Willow’s rarest spice — a little luck for the hunt?" },
+    { line: "Sugar rescued! Now for Willow-Wish’s rarest spice — a little luck for the hunt?" },
     { line: "I’m crumbling at the seams from all this hustle! Wish me tough enough for the road?" },
     { line: "An ant parade found my honey! Shoo them off gently — that jar’s bound for home." },
     { line: "Villagers save me the burnt bits so nibblers leave me be! A thank-you treat to bake?" },
-    { line: "My travel-sack’s full of Willow’s finest! Seal it so nothing spills on the road?" },
+    { line: "My travel-sack’s full of Willow-Wish’s finest! Seal it so nothing spills on the road?" },
     { line: "Sending a supply package home to Drury Lane! A wish so it arrives safe and sound?" },
     { line: "Package sent! One treat for the road — no biting, please! Bubble me safe travels?" },
     { line: "Off to the next realm for supplies! A parting wish — see you in Drury Lane!" },
@@ -5570,7 +5570,7 @@ const CUSTOMER_ARCS = {
     { line: "Hired a beetle apprentice — keen but clumsy! Wish us both a dab of patience?" },
     { line: "The whole village wants my winter coats! Charm me wool that weaves itself warm?" },
     { line: "Someone ordered bonnets with room for BIG ears. Gave me a chill! Wish me courage?" },
-    { line: "My shop won “Finest in Willow”! A wish to keep my thimble from swelling my head?" },
+    { line: "My shop won “Finest in Willow-Wish”! A wish to keep my thimble from swelling my head?" },
     { line: "Stitching a red cloak for a brave little errand. Sew a blessing right into it?" },
   ],
   // Thatch (straw house) — catastrophizes everything, ALL CAPS panic. Walk-in art changes on ch.2.
@@ -5595,7 +5595,7 @@ const CUSTOMER_ARCS = {
   ],
   // Sleepy Owl — a BABY owl in the Willow Scouts, earning badges one eager beat at a time.
   owl: [
-    { line: "I joined the Willow Scouts! First badge is Wide-Awake. Wish me the pep to earn it?" },
+    { line: "I joined the Willow-Wish Scouts! First badge is Wide-Awake. Wish me the pep to earn it?" },
     { line: "Nature badge today — I must hoot ten birdcalls! Grant me a clear little voice?" },
     { line: "Knot-tying badge and my talons are all thumbs! Wish me steady, clever claws?" },
     { line: "Baking badge! I’m to make one honest muffin. Bubble me luck — I burn everything." },
@@ -5607,7 +5607,7 @@ const CUSTOMER_ARCS = {
     { line: "On patrol I spied a bonnet — and paws too big for any granny! Nerve to hoot?" },
     { line: "I hooted and woke the village! Mortifying if I’m wrong. Wish me a little certainty?" },
     { line: "Turns out I wasn’t wrong — good scout! Now grant me one long, proud nap?" },
-    { line: "I earned every badge — Willow’s top Scout! Wish me a grand sash-pinning day?" },
+    { line: "I earned every badge — Willow-Wish’s top Scout! Wish me a grand sash-pinning day?" },
   ],
   // Village Baker — frazzled, warm, perfectionist; names her living sourdough starter "Herman."
   baker: [
@@ -5622,7 +5622,7 @@ const CUSTOMER_ARCS = {
     { line: "Brass buttons pinched off my apron — third this week! Charm the rest to stay put?" },
     { line: "I told Little Red about the acorn man. Felt right. A calm wish while it’s sorted?" },
     { line: "Booming since the fright passed! Wish me steady hands for a hundred loaves today?" },
-    { line: "Invented my signature loaf — the Willow Wreath! Bubble the first batch out perfect?" },
+    { line: "Invented my signature loaf — the Willow-Wish Wreath! Bubble the first batch out perfect?" },
     { line: "Packed a crate for the cookie traveler heading home. Wish it warm all the way?" },
   ],
   // Goldilocks — an excitable KID, mega-fan of the Bandit Bears (a famous three-bear band);
@@ -5636,7 +5636,7 @@ const CUSTOMER_ARCS = {
     { line: "I GOT tickets — front row! Bubble me calm so I don’t faint when the bears play?" },
     { line: "Best night EVER — Baby Bear waved at ME! Wish me the courage to say hi after?" },
     { line: "I met the band! Too starstruck to speak. Grant me the words for next time?" },
-    { line: "The Bandit Bears are visiting Willow! Wish me the perfect welcome banner?" },
+    { line: "The Bandit Bears are visiting Willow-Wish! Wish me the perfect welcome banner?" },
     { line: "I’m THIS close to their autograph! Bubble me the boldness to finally ask?" },
     { line: "Papa Bear signed my poster!! Wish it protected forever — no smudges, ever?" },
     { line: "As club president, I’m throwing the bears a thank-you party! Wish it just right?" },
@@ -5666,12 +5666,12 @@ const CUSTOMER_ARCS = {
     { line: "A heron eyes me like a buffet! Make me look less snackable? Pearls, naturally." },
     { line: "Two lovesick newts keep circling my well! Send them off happy for me? Pearls." },
     { line: "I keep coughing up lost buttons from my well! Gather the odd hoard? Pearls for you." },
-    { line: "My well’s the talk of Willow, bright as glass! Wish it sparkling for good? Pearls." },
+    { line: "My well’s the talk of Willow-Wish, bright as glass! Wish it sparkling for good? Pearls." },
     { line: "A toothy shadow wished “a snack for granny” over my well! Bubble me bravery? Pearls." },
     { line: "I told Little Red about the toothy shadow. A calming wish now? Pearls for you." },
     { line: "The village guards my well now — safe again! A thank-you charm to bubble up? Pearls." },
     { line: "Kids toss crumbs with their wishes — I’m plump! Wish me a fair share-out? Pearls." },
-    { line: "My well’s the heart of Willow now, not lonely at all! Keep it so? Pearls for you." },
+    { line: "My well’s the heart of Willow-Wish now, not lonely at all! Keep it so? Pearls for you." },
     { line: "One last wish: make my water shimmer, so I can watch the stars as I work. Pearls!" },
   ],
   // Bo Peep — fretful, gentle shepherdess; counts her "woollies," a touch scattered.
@@ -5732,7 +5732,7 @@ const TOWN_WISHES = {
   baker: [
     "Herman the starter only hums now, mostly! Steady my hands for a hundred loaves?",
     "Wedding cake due at noon and it’s eleven! Grant me calm — deep, deep calm.",
-    "The Willow Wreath loaf sells out daily! Wish me a golden crust every time?",
+    "The Willow-Wish Wreath loaf sells out daily! Wish me a golden crust every time?",
     { t: "That acorn-paying “granny” still haunts me! A settling wish for my nerves?", when: () => GAME.storyStep >= 4 },
     { t: "Someone’s still pinching my apron buttons! Keep the rest where they belong?", when: () => (GAME.buttonStep || 0) >= 1 },
   ],
@@ -5780,6 +5780,7 @@ const TOWN_WISHES = {
     "Stopped to admire my reflection — as one does! Spring me back to top speed?",
   ],
   tortoise: [
+    "Phew… I’m plumb tuckered. Wish I could walk AND sleep at the very same time?",
     "Slow road, happy heart. Wish these old feet one more mile of plodding?",
     "Haven’t spotted that hare in ages. No matter. Keep my shell cozy tonight?",
   ],
