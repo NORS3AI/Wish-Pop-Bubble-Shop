@@ -1881,7 +1881,7 @@ img.gal-pic { max-height: 56vh; max-width: 74vw; width: auto; height: auto; obje
 .story-speech b { color: #a23c6e; } .story-speech i { color: #6a4a2c; }
 /* Goldilocks' three-bears delivery — a tray of tappable teddy bears */
 .story-card.goldi-deliver { padding-bottom: calc(26px + var(--safe-b)); }
-.goldi-deliver .story-figure { height: 78vh; }   /* short kid — give her a boost so she fills the upper screen; the bear tray still pins below */
+.goldi-deliver .story-figure { height: 92vh; }   /* short kid — big boost so she fills the upper screen; feet tuck behind the bear tray below */
 .goldi-deliver .story-below { gap: 9px; }
 .goldi-tray { display: flex; align-items: flex-end; justify-content: center; gap: 18px; margin-top: 2px; }
 .goldi-bear { position: relative; width: 92px; height: 92px; padding: 5px; border: none; cursor: pointer; border-radius: 50%; overflow: hidden;
