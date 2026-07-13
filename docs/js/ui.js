@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v237"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v238"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -389,6 +389,12 @@ function redCust() { return D.CUSTOMERS.find(c => c.id === "little_red") || { id
 // Full-body story poses (art/red_<pose>.png): wave, explain, idea, present, worried,
 // cheer, think, point, offer, angry, annoyed, welcome. Falls back to her emoji.
 function redPose(pose) { return ART.tag("red_" + (pose || "wave"), "👧", "story-face"); }
+// SHORT characters (kids, etc.) read as tiny when a story figure is bottom-anchored
+// at the default height — they sit low. Any fig whose key starts with one of these
+// gets the taller ".tall" treatment so it fills the upper/middle screen. Add a
+// prefix here for each future short character.
+const SHORT_FIGS = ["goldi", "customer_goldilocks"];
+function isShortFig(fig) { return !!fig && SHORT_FIGS.some(pre => fig.indexOf(pre) === 0); }
 
 let STORY_BEATS = null, STORY_I = 0, STORY_DONE = null, GALLERY = null, GALLERY_I = 0, STORY_BG_PREV = null;
 const STORY_DEF_BG = "village_far";   // default story backdrop (a beat can override with `bg`)
@@ -425,7 +431,7 @@ function storyPaint() {
   if (b.vista) { cls = "vista"; }
   else if (b.gallery) { cls = "gallery-beat"; GALLERY = b.gallery; GALLERY_I = 0; top = galleryHtml(); }
   else if (b.scene) { top = `<div class="story-figure scene"><div class="story-scene">${b.scene}</div></div>`; }
-  else if (b.fig) { const wide = /duo/.test(b.fig) ? " wide" : ""; top = `<div class="story-figure${wide}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // any character with full-body art; two-character (duo) art shows smaller so it fits the width
+  else if (b.fig) { const fc = /duo/.test(b.fig) ? " wide" : /^autograph/.test(b.fig) ? " poster" : (isShortFig(b.fig) ? " tall" : ""); top = `<div class="story-figure${fc}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // duo art smaller to fit width; a poster shows centred; short characters (kids) get the taller boost
   else if (b.figEmoji) { top = `<div class="story-figure emoji"><span class="story-face">${b.figEmoji}</span></div>`; }  // a character without art yet (emoji placeholder)
   else { top = `<div class="story-figure">${redPose(b.pose)}</div>`; }
   // backdrop: crossfade from the previous beat's scene to this one's (village → shop, etc.)
@@ -729,7 +735,7 @@ function renderGoldiDeliver() {
     <div class="story-card mg-fullbleed goldi-deliver" id="story-card">
       <div class="story-bg" style="background-image:url(art/${STORY_DEF_BG}.jpg?v=${BUILD})"></div>
       <div class="story-scrim"></div>
-      <div class="story-figure">${ART.tag(r.fig, "👱‍♀️", "story-face")}</div>
+      <div class="story-figure${r.fig === "goldi_toobig" ? " crop" : ""}">${ART.tag(r.fig, "👱‍♀️", "story-face")}</div>
       <div class="story-below">
         <div class="story-name">Goldilocks</div>
         <div class="story-speech">${r.text}</div>
@@ -776,24 +782,48 @@ const BAND = [
   { id: "honey", tag: "band-honey", name: "Honey", emoji: "🎤", wishType: "PrettyPotion", art: "customer_honey",
     line: "Honey here, lead of the Bandit Bears! A shimmer for my high note tonight?",
     convo: ["honey_convo1", "honey_convo2", "honey_convo3"],
+    // 3-beat conversation after her potion (beat 1 reacts to win/lose), then she signs.
+    chat: {
+      win:  "Ooh — that potion? <i>Divine</i>, darling. My high note is going to <b>shimmer</b> tonight.",
+      lose: "Not quite the shimmer I pictured… but you’re a treasure for trying, sweetheart.",
+      mid:  "You know, we don’t sign for just anyone. But a little shop this darling? For you, always.",
+      close:"There — signed with a heart. ♡ Now go on, catch Roxie and Pepper while we’re in town!" },
     sign: "Signed with a heart, darling — one down! Catch the other girls while we’re in town." },
   { id: "roxie", tag: "band-roxie", name: "Roxie", emoji: "🎹", wishType: "GlowTreat", art: "customer_roxie",
     line: "Roxie. Keys. A touch more sparkle on my keytar — effortlessly, mind?",
     convo: ["roxie_convo1", "roxie_convo2", "roxie_convo3"],
-    sign: "Dotted the ‘i’ with a star. Don’t tell anyone I cared that much. …Fine, tell everyone." },
+    chat: {
+      win:  "Hm. The sparkle’s exactly right. Effortless. …Okay. I’m a little impressed.",
+      lose: "Eh — close enough. I’ve played worse rooms. You’ve got spirit, I’ll give you that.",
+      mid:  "People think I don’t care about the fans. People are wrong. Don’t spread it around.",
+      close:"Dotted my ‘i’ with a star. Tell no one I tried that hard. …Fine. Tell everyone." },
+    sign: "Roxie signed it — two down! One more bear to catch." },
   { id: "pepper", tag: "band-pepper", name: "Pepper", emoji: "🥁", wishType: "PowerPop", art: "customer_pepper",
     line: "PEPPER!! Drums!! Bubble me enough bounce to drum through all three encores?!",
     convo: ["pepper_convo1", "pepper_convo2", "pepper_convo3"],
-    sign: "EEE all THREE signatures now?! Goldilocks is gonna FLIP! Best. Day. EVERRR!!" },
+    chat: {
+      win:  "OMG that bounce is PERFECT — I could drum for a MILLION encores!! Feel my paws, they’re VIBRATING!",
+      lose: "Eh, a lil’ flat, but WHO CARES — you’re still the BEST and I’m signing SO hard!",
+      mid:  "You got Honey AND Roxie to sign?! You’re basically famous now! Do you FEEL famous?!",
+      close:"SIGNED IT!! All THREE now!! Goldilocks is gonna LOSE HER MIND — go go GO!!" },
+    sign: "All THREE signatures! Goldilocks is going to FLIP — time to deliver it!" },
 ];
 function bandMember(i) { return BAND[i] || null; }
+// The 3-beat post-potion conversation for a band member (beat 1 reflects win/lose).
+function bandChat(m, win) {
+  return [
+    { name: m.name, fig: m.convo[0], text: win ? m.chat.win : m.chat.lose },
+    { name: m.name, fig: m.convo[1], text: m.chat.mid },
+    { name: m.name, fig: m.convo[2], cta: "✍️ Sign the poster!  ▸", text: m.chat.close },
+  ];
+}
 // The band's tour bus rolls in — you receive the blank poster.
 function playBandAnnounce() {
-  ["autograph_0", "honey_convo1", "honey_convo3"].forEach(k => ART.ensure(k, () => {}));
+  ART.ensure("autograph_0", () => {});
   GAME.bandStep = 1; GAME.bandAt = -1; save();
   renderStoryBeats([
-    { name: "The Bandit Bears!", fig: "honey_convo3", text: "📣 Stop the presses — the <b>Bandit Bears</b> are touring Willow! Goldilocks’ favorite band in the WHOLE world. Their tour bus rolled in this morning." },
-    { name: "The Bandit Bears!", fig: "honey_convo1", cta: "Get it signed!  ▸", text: "Someone left a <b>blank tour poster</b> at your shop. If you got all three bears to sign it… Goldilocks might just faint on the spot." },
+    { name: "A Blank Poster!", fig: "autograph_0", text: "📣 The <b>Bandit Bears</b> are touring Willow — Goldilocks’ favorite band in the WHOLE world! And someone left a <b>blank tour poster</b> right here at your shop." },
+    { name: "A Blank Poster!", fig: "autograph_0", cta: "Grab the poster!  ▸", text: "Imagine if you got all three bears to <b>sign</b> it… Goldilocks, their #1 fan, would faint clean away. Worth a shot, hm?" },
   ], () => {
     revealItem({ art: "autograph_0", name: "Blank Bandit Bears Poster", desc: "A pristine tour poster. Get Honey, Roxie & Pepper to sign it — then give it to superfan Goldilocks!" });
     save(); renderStart();
@@ -801,11 +831,11 @@ function playBandAnnounce() {
 }
 // Once all three have signed, Goldilocks comes to collect her treasure.
 function playBandDeliver() {
-  ["goldi_poster", "customer_goldilocks", "goldi_hug"].forEach(k => ART.ensure(k, () => {}));
+  ["goldi_poster", "customer_goldilocks", "goldi_sparkle"].forEach(k => ART.ensure(k, () => {}));
   renderStoryBeats([
     { name: "Goldilocks", fig: "customer_goldilocks", text: "Is that— is that a— <b>THE BANDIT BEARS TOUR POSTER?!</b> Signed?! For ME?!" },
-    { name: "Goldilocks", fig: "goldi_poster", text: "Honey AND Roxie AND Pepper — all three signatures?! I’m the luckiest fan-club president in the WHOLE WORLD! ✨" },
-    { name: "Goldilocks", fig: "goldi_hug", cta: "You’re so welcome  ▸", text: "I’m framing this FOREVER, right above my bed. Take everything I’ve got — you’re officially my favorite person!" },
+    { name: "Goldilocks", fig: "goldi_sparkle", text: "Honey AND Roxie AND Pepper — all three signatures?! I can’t— my HEART— I’m the luckiest fan in the WHOLE WORLD! ✨" },
+    { name: "Goldilocks", fig: "goldi_poster", cta: "You’re so welcome  ▸", text: "I’m framing this FOREVER, right above my bed! Take everything I’ve got — you’re officially my favorite person EVER!" },
   ], () => {
     GAME.bandStep = 5; GAME.bandAt = -1; save();
     const r = grantReward({ gold: 220, stardust: 24 }); save();
@@ -896,10 +926,8 @@ function storyWishOutro(tag, win) {
     GAME.bandStep = idx + 2;   // Honey→2, Roxie→3, Pepper→4
     GAME.bandAt = -1; save();
     const newArt = "autograph_" + (idx + 1); ART.ensure(newArt, () => {});
-    renderStoryBeats([
-      { name: m.name, fig: m.convo[1], cta: "✍️ Sign the poster!  ▸", text: win
-        ? `“That potion? <b>Chef’s kiss.</b> You’re an absolute darling — hand over that poster, I’m signing it right now!”`
-        : `“Not <i>quite</i> my vibe, but you’re so sweet for trying — course I’ll still sign, come here!”` }],
+    m.convo.forEach(k => ART.ensure(k, () => {}));
+    renderStoryBeats(bandChat(m, win),
       () => { revealItem({ art: newArt, name: m.name + " signed the poster!", desc: m.sign }); save(); renderStart(); });
     return;
   }

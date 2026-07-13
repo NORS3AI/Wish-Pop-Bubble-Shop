@@ -1881,7 +1881,19 @@ img.gal-pic { max-height: 56vh; max-width: 74vw; width: auto; height: auto; obje
 .story-speech b { color: #a23c6e; } .story-speech i { color: #6a4a2c; }
 /* Goldilocks' three-bears delivery — a tray of tappable teddy bears */
 .story-card.goldi-deliver { padding-bottom: calc(26px + var(--safe-b)); }
+/* SHORT characters (kids etc.) — a taller figure so they fill the upper/middle
+   screen instead of sitting low. Applied via SHORT_FIGS/.tall in ui.js. */
+.story-figure.tall { height: 92vh; }
+.story-figure.tall img.story-face { max-width: 128vw; }   /* let medium-width poses fill the height rather than being width-capped */
 .goldi-deliver .story-figure { height: 92vh; }   /* short kid — big boost so she fills the upper screen; feet tuck behind the bear tray below */
+.goldi-deliver .story-figure img.story-face { max-width: 128vw; }
+/* the "too big" reaction is a wide image with Goldilocks on the LEFT — crop to
+   keep her centred; the giant bear runs off the right edge. */
+.goldi-deliver .story-figure.crop img.story-face { width: 100vw; max-width: none; object-fit: cover; object-position: 26% bottom; }
+/* a poster/photo prop (e.g. the blank tour poster) shows centred in the upper area, not bottom-anchored like a character */
+.story-figure.poster { height: auto; bottom: auto; top: 7%; align-items: center; }
+.story-figure.poster img.story-face { height: auto; width: auto; max-height: 64vh; max-width: 84vw; object-position: center;
+  border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.55); }
 .goldi-deliver .story-below { gap: 9px; }
 .goldi-tray { display: flex; align-items: flex-end; justify-content: center; gap: 18px; margin-top: 2px; }
 .goldi-bear { position: relative; width: 92px; height: 92px; padding: 5px; border: none; cursor: pointer; border-radius: 50%; overflow: hidden;
