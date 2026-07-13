@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v243"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v244"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1460,6 +1460,15 @@ function renderAdmin() {
         <button class="btn" id="ad-grandmawolf" style="margin-top:8px">🐺 Grandma-Wolf bridge → Willow Finale</button>
       </div>
       <div class="card" style="margin-bottom:10px">
+        <div style="font-weight:800;margin-bottom:6px">🌟 Wishy's Wishing Well</div>
+        <p class="muted" style="font-size:12px;margin-bottom:10px">Replay Wishy's intro, or jump straight into the well's first-visit tutorial (free coin + Wishy). Use +1000 🪙 below if you need coins to keep tossing.</p>
+        <button class="btn" id="ad-well-intro" style="margin-bottom:8px">🐟 Replay Wishy's well intro</button>
+        <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn small" id="ad-well-open">🌟 Open well (first-visit tutorial)</button>
+          <button class="btn secondary small" id="ad-well-reset">↺ Reset well</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:6px">🧑‍🤝‍🧑 Customer Arcs <span class="muted" style="font-weight:600;font-size:12px">(wishes evolve as you serve them)</span></div>
         <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px">
           ${arcRow("gingerbread", "🍪 Gingerbread")}
@@ -1605,6 +1614,9 @@ function renderAdmin() {
   on("#ad-btn-ginger", "click", playGingerbreadButton);
   on("#ad-btn-reset", "click", () => { GAME.buttonStep = 0; GAME.buttonChainAt = -1; GAME.satchel = {}; save(); toast("Button chain reset"); renderAdmin(); });
   on("#ad-gold", "click", () => { GAME.gold += 1000; save(); toast("+1000 gold 🪙"); renderAdmin(); });
+  on("#ad-well-intro", "click", () => { GAME.wellIntro = 0; save(); playWellIntro(); });
+  on("#ad-well-open", "click", () => { GAME.wellIntro = 1; save(); renderWell(); });
+  on("#ad-well-reset", "click", () => { GAME.wellIntro = 0; save(); toast("Well reset — Wishy will introduce it again"); renderAdmin(); });
   on("#ad-pearls", "click", () => { GAME.pearls = (GAME.pearls || 0) + 25; save(); toast("+25 pearls"); renderAdmin(); });
   on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
   on("#ad-treats", "click", () => { GAME.treats += 10; save(); toast("+10 treats 🐸"); renderAdmin(); });
