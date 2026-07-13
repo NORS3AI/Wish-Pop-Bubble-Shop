@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v231"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v232"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5469,14 +5469,14 @@ const TOWN_WISHES = {
     { t: "Someone’s still pinching my apron buttons! Keep the rest where they belong?", when: () => (GAME.buttonStep || 0) >= 1 },
   ],
   wolf: [
-    "Folk cross the street when I smile! Make me read “friendly,” not “famished”?",
-    "Joined a choir — they all “remembered somewhere to be”! Wish me good company?",
-    "Strict no-sheep diet, day two. It is NOT going well. Bubble me past the cravings?",
-    "Bought a darling bonnet — for THEATRE, of course! Wish me convincing on stage?",
-    "Thirteen loaves left at my door — rude assumptions! Make me seem less hungry?",
-    "That little scout owl keeps watching me! Wish me to look boringly harmless?",
-    "A diet of acorns and regret. Make salad taste like anything else at all?",
-    "Everyone’s so JUMPY, like they expect some big bad wolf! Wish me a fresh start?",
+    "Folk cross the street when I grin! Fix my smile — hide a few too many teeth?",
+    "The plump baker waves hello — so trusting! Keep me looking harmless a while longer?",
+    "Strict no-sheep diet, day two. It is NOT going well! Bubble me past the cravings?",
+    "Bought a darling bonnet — for THEATRE, obviously! A charm to sell the disguise?",
+    "Thirteen loaves at my door — as if I’d settle for BREAD! Hide my appetite better?",
+    "That nosy scout owl keeps watching me! A charm to slip his notice on my errands?",
+    "Salad. SALAD again. Make it taste like something with a bit more… heartbeat?",
+    "The little hooded one asks such questions! Wish me a perfectly innocent face?",
   ],
   little_red: [
     "The forest path gets dark so fast! Wish me safe passage to Grandma’s?",
