@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v253"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v254"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6253,7 +6253,7 @@ function renderPop() {
   // Once per round: is there a hidden treasure stash behind the wall? (5–10% — an X shows,
   // tap it 5–10× to smash it open for a random prize.)
   if (typeof ROUND.popX !== "boolean") {
-    ROUND.popX = GAME.forcePopX || Math.random() < 0.08;
+    ROUND.popX = GAME.forcePopX || Math.random() < 0.05;
     if (GAME.forcePopX) { GAME.forcePopX = false; save(); }   // admin test: one forced X, then back to random
     ROUND.popXNeed = 5 + Math.floor(Math.random() * 5);   // taps to break it (5–9)
     ROUND.popXTaps = 0; ROUND.popXBroken = false; ROUND.popTreasure = null; ROUND.popTreasureGot = false;
