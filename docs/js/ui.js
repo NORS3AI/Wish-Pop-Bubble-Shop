@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v238"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v239"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -796,7 +796,7 @@ const BAND = [
       win:  "Hm. The sparkle’s exactly right. Effortless. …Okay. I’m a little impressed.",
       lose: "Eh — close enough. I’ve played worse rooms. You’ve got spirit, I’ll give you that.",
       mid:  "People think I don’t care about the fans. People are wrong. Don’t spread it around.",
-      close:"Dotted my ‘i’ with a star. Tell no one I tried that hard. …Fine. Tell everyone." },
+      close:"Dotted my ‘i’ with a heart, left a star for flair. Tell no one I tried that hard. …Fine. Tell everyone." },
     sign: "Roxie signed it — two down! One more bear to catch." },
   { id: "pepper", tag: "band-pepper", name: "Pepper", emoji: "🥁", wishType: "PowerPop", art: "customer_pepper",
     line: "PEPPER!! Drums!! Bubble me enough bounce to drum through all three encores?!",
@@ -814,7 +814,7 @@ function bandChat(m, win) {
   return [
     { name: m.name, fig: m.convo[0], text: win ? m.chat.win : m.chat.lose },
     { name: m.name, fig: m.convo[1], text: m.chat.mid },
-    { name: m.name, fig: m.convo[2], cta: "✍️ Sign the poster!  ▸", text: m.chat.close },
+    { name: m.name, fig: m.convo[2], cta: "♡ Thank you!  ▸", text: m.chat.close },
   ];
 }
 // The band's tour bus rolls in — you receive the blank poster.
