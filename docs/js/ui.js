@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v245"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v246"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -770,7 +770,7 @@ function renderGoldiDeliver() {
     <div class="story-card mg-fullbleed goldi-deliver" id="story-card">
       <div class="story-bg" style="background-image:url(art/${STORY_DEF_BG}.jpg?v=${BUILD})"></div>
       <div class="story-scrim"></div>
-      <div class="story-figure${r.fig === "goldi_toobig" ? " crop" : ""}">${ART.tag(r.fig, "👱‍♀️", "story-face")}</div>
+      <div class="story-figure">${ART.tag(r.fig, "👱‍♀️", "story-face")}</div>
       <div class="story-below">
         <div class="story-name">Goldilocks</div>
         <div class="story-speech">${r.text}</div>
