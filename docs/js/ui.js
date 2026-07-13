@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v246"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v247"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1066,7 +1066,10 @@ function setupHunt(round) {
   round.huntPending = false; round.huntFound = false;
   const h = activeHunt(); if (!h) return; const st = huntState(h.realm); if (st.done) return;
   if (h.items) h.items.forEach(id => ART.ensure(id, () => {}));   // warm each sheep's art so the "found!" pop shows the picture
-  if (Math.random() < (h.chance || 0.35)) { round.huntPending = true; round.huntSource = R.pick(["scoop", "pop", "knife", "tip"]); }
+  // A found item turns up in one of the two phases you always play: the scoop reveal or a
+  // bubble pop. ("knife" needs the optional cut charm and "tip" only fires on the result
+  // screen — both meant items slip through to the results page instead of being found live.)
+  if (Math.random() < (h.chance || 0.35)) { round.huntPending = true; round.huntSource = R.pick(["scoop", "pop"]); }
 }
 function tryHuntFind(source, anchorEl) {
   if (!ROUND || !ROUND.huntPending || ROUND.huntFound) return false;
@@ -6133,6 +6136,8 @@ function renderScoop() {
   // any jackpot charms from scoops that haven't been revealed yet, so nothing is lost.
   function skipToPopping() {
     if (itemGateBlocks()) return;   // collect a waiting quest item before leaving the scoop screen
+    tryHuntFind("scoop", $("#scoop-craft"));   // don't let a scoop-hidden find slip past when skipping
+    if (itemGateBlocks()) return;   // if that just turned one up, collect it first
     if (autoIv) { clearInterval(autoIv); autoIv = null; }
     for (let i = 0; i < scoops; i++) {
       if (isJackpot(i) && !jackDone[i]) {
