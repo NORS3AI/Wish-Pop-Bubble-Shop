@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v230"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v231"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -683,23 +683,23 @@ function maybeWolfArc() {
 }
 
 /* ======================================================================= */
-/* GOLDILOCKS & THE THREE BEARS — a two-part quest. Tiny Mouse can't reach   */
-/* Goldilocks, so she asks you to deliver a teddy bear; unsure of the size,  */
-/* she sews THREE. You get 3 bears in your Satchel. Next Goldilocks visit is  */
-/* an interactive delivery: the 1st bear you hand over is always "too big",   */
-/* the 2nd "too small", the 3rd "just right" (sparkle → hug) → a big tip.     */
-/* GAME.goldilocksStep tracks it: 0=none, 1=have the bears, 2=delivered.      */
+/* GOLDILOCKS & THE BANDIT BEARS PLUSHIES — a two-part quest. Superfan       */
+/* Goldilocks ordered a Bandit Bears plushie; Tiny Mouse can't reach her, so */
+/* she sews THREE sizes and asks you to deliver. You get 3 plushies in your   */
+/* Satchel. Next Goldilocks visit is an interactive delivery: the 1st you    */
+/* hand over is always "too big", the 2nd "too small", the 3rd "just right"   */
+/* (sparkle → hug) → a big tip. GAME.goldilocksStep: 0=none,1=have,2=done.    */
 /* ======================================================================= */
 function playGoldiMouse() {
   SFX.unlock();
   ["mouse_gesture", "mouse_bears", "mouse_point", "bear_1"].forEach(f => ART.ensure(f, () => {}));
   GAME.goldilocksStep = 1; GAME.goldilocksAt = -1; save();
   renderStoryBeats([
-    { name: "Tiny Mouse", fig: "mouse_gesture", text: "Oh, thank goodness you’re here! Goldilocks put in an order — one teddy bear — but I <i>cannot</i> get hold of her. Never home, that girl! Could you deliver it for me?" },
-    { name: "Tiny Mouse", fig: "mouse_bears", text: "Here’s my trouble… I didn’t know what <b>size</b> she wanted. So I stitched up <b>three</b> — a big one, a small one, and one in between. Give her the one that’s <i>just right</i> and she’ll tip you something lovely, mark my words." },
-    { name: "Tiny Mouse", fig: "mouse_point", cta: "Take the bears  ▸", text: "They’re tucked in your Satchel now. Next time Goldilocks drops by, let her try them and see which one fits. Thank you — you’re an absolute treasure!" },
+    { name: "Tiny Mouse", fig: "mouse_gesture", text: "Oh, thank goodness! Goldilocks ordered a <b>Bandit Bears plushie</b> — her favorite band, you know how she is — but I <i>cannot</i> get hold of her. Never home, that girl! Deliver it for me?" },
+    { name: "Tiny Mouse", fig: "mouse_bears", text: "Here’s my trouble… she never said what <b>size</b>. So I stitched up the collector set — <b>three</b> band plushies, a big, a small, and one in between. Give her the one that’s <i>just right</i> and she’ll tip you lovely, mark my words." },
+    { name: "Tiny Mouse", fig: "mouse_point", cta: "Take the plushies  ▸", text: "They’re tucked in your Satchel now. Next time Goldilocks drops by, let her try them and see which one fits. Thank you — you’re an absolute treasure!" },
   ], () => {
-    revealItem({ art: "bear_1", emoji: "🧸", count: 3, name: "Teddy Bears ×3", desc: "Tiny Mouse’s three hand-sewn bears — big, small, and just-right. Deliver the right one to Goldilocks!",
+    revealItem({ art: "bear_1", emoji: "🧸", count: 3, name: "Bandit Bears Plushies ×3", desc: "Tiny Mouse’s hand-sewn Bandit Bears merch — big, small, and just-right. Bring the perfect-sized one to superfan Goldilocks!",
       onAdd: () => satchelAdd("teddy", 3) });
     save(); renderStart();
   });
@@ -708,9 +708,9 @@ function playGoldiMouse() {
 // 2nd = too small, 3rd = just right. GOLDI_REACT[picks] is the face+line shown.
 let GOLDI_PICKS = 0, GOLDI_BEARS = [];
 const GOLDI_REACT = [
-  { fig: "customer_goldilocks", text: "Ooh — you’ve brought bears! For <i>me</i>? Let me try one. Go on, hand one over!" },
-  { fig: "goldi_toobig",   text: "Oof! This one’s <b>too big</b> — I can’t even get my arms round it. Have you another?" },
-  { fig: "goldi_toosmall", text: "Hmph — now <i>that</i> one’s <b>too small</b>. Teeny! There’s got to be one that’s <b>just right</b>… one more?" },
+  { fig: "customer_goldilocks", text: "Ooh — Bandit Bears plushies?! For <i>me</i>?! Quick, let me try one — hand it over!" },
+  { fig: "goldi_toobig",   text: "Eee — this one’s <b>too big</b>, I can’t cuddle it AND hold my poster! Have you another?" },
+  { fig: "goldi_toosmall", text: "Aw, now <i>that</i> one’s <b>too small</b> — teeny! There’s got to be one that’s <b>just right</b>… one more?" },
 ];
 function playGoldiDeliver() {
   SFX.unlock();
@@ -748,8 +748,8 @@ function renderGoldiDeliver() {
 }
 function goldiFinale() {
   renderStoryBeats([
-    { name: "Goldilocks", fig: "goldi_sparkle", cta: "Aww  ▸", text: "Oh! Oh, <i>this</i> one… this one is <b>juuust right</b>! Not too big, not too small — <b>perfect</b>. ✨" },
-    { name: "Goldilocks", fig: "goldi_hug", cta: "You’re so welcome  ▸", text: "I’m never letting go! Thank you, truly. Here — take this for your trouble, and do tell Tiny Mouse she’s the finest stitcher in the whole village!" },
+    { name: "Goldilocks", fig: "goldi_sparkle", cta: "Aww  ▸", text: "Oh! Oh, <i>this</i> one is <b>juuust right</b> — not too big, not too small, <b>perfect</b> for my shelf! Right next to my signed poster. ✨" },
+    { name: "Goldilocks", fig: "goldi_hug", cta: "You’re so welcome  ▸", text: "Biggest Bandit Bears fan in the WORLD, official! Thank you — take this for your trouble, and tell Tiny Mouse she’s the finest stitcher in the village!" },
   ], () => {
     satchelRemove("teddy", 3);
     GAME.goldilocksStep = 2; GAME.goldilocksAt = -1; save();
@@ -1047,8 +1047,8 @@ const SATCHEL_ITEMS = {
   button_heart:   { name: "Heart-Shaped Button", emoji: "❤️", from: "the “button collector”", note: "Show this to Little Red." },
   button_blue:    { name: "Blue Button",         emoji: "🔵", from: "the “button collector”", note: "Show this to Little Red." },
   button_gumdrop: { name: "Gumdrop Button",      emoji: "🍬", from: "the “button collector”", note: "Show this to Little Red." },
-  // Tiny Mouse sews three teddy bears (big / small / just-right) to deliver to Goldilocks.
-  teddy:          { name: "Teddy Bear",          emoji: "🧸", from: "Tiny Mouse", note: "Deliver one to Goldilocks — the size that’s just right." },
+  // Tiny Mouse sews three Bandit Bears plushies (big / small / just-right) to deliver to superfan Goldilocks.
+  teddy:          { name: "Bandit Bears Plushie", emoji: "🧸", from: "Tiny Mouse", note: "Bring the just-right size to superfan Goldilocks." },
 };
 function satchelItem(id) { return SATCHEL_ITEMS[id] || null; }
 function satchelCount(id) { return (GAME.satchel && GAME.satchel[id]) || 0; }
@@ -1088,14 +1088,14 @@ function inventoryGroups() {
         : s >= 1 ? "Show these to Little Red — she may recognize one of them."
         : "Freshly dropped in your shop by that “collector.”" });
   }
-  // --- QUEST (bordered): Goldilocks' teddy bears ---
+  // --- QUEST (bordered): Goldilocks' Bandit Bears plushies ---
   const teddyN = satchelCount("teddy");
   if (teddyN > 0) {
     ["bear_1", "bear_2", "bear_3"].forEach(a => ART.ensure(a, () => {}));
-    groups.push({ id: "teddy", kind: "quest", name: "Teddy Bears", count: "×" + teddyN,
-      items: ["bear_1", "bear_2", "bear_3"].slice(0, teddyN).map(a => ({ art: a, emoji: "🧸", name: "Teddy Bear" })),
-      title: "Goldilocks’ Teddy Bears",
-      desc: "Tiny Mouse sewed three bears — big, small, and just-right — for you to deliver to Goldilocks.",
+    groups.push({ id: "teddy", kind: "quest", name: "Bandit Bears Plushies", count: "×" + teddyN,
+      items: ["bear_1", "bear_2", "bear_3"].slice(0, teddyN).map(a => ({ art: a, emoji: "🧸", name: "Bandit Bears Plushie" })),
+      title: "Goldilocks’ Bandit Bears Plushies",
+      desc: "Tiny Mouse sewed three Bandit Bears plushies — big, small, and just-right — for you to bring to superfan Goldilocks.",
       progress: `Carrying ${teddyN} bear${teddyN === 1 ? "" : "s"}. Next time Goldilocks drops by, give her the one that’s just right for a big tip.` });
   }
   // --- QUEST (bordered): realm scavenger hunts (Bo Peep's sheep, etc.) ---
