@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v232"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v233"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -45,6 +45,8 @@ function normalizeGame(g) {
   if (typeof g.wolfArcAt !== "number") g.wolfArcAt = -1;      // servedTotal when the Wolf's next visit is due
   if (typeof g.goldilocksStep !== "number") g.goldilocksStep = 0; // Goldilocks' teddy-bear quest: 0=none,1=have the 3 bears,2=delivered
   if (typeof g.goldilocksAt !== "number") g.goldilocksAt = -1;    // servedTotal when the next Goldilocks-quest beat is due
+  if (typeof g.bandStep !== "number") g.bandStep = 0;    // Bandit Bears autograph quest: 0 none · 1 announced(blank) · 2 Honey · 3 Roxie · 4 Pepper(complete) · 5 delivered
+  if (typeof g.bandAt !== "number") g.bandAt = -1;       // servedTotal when the next Bandit-Bears beat is due
   if (typeof g.grandmaWolfSeen !== "boolean") g.grandmaWolfSeen = false; // played the "disguised wolf visits → tell Red" bridge into the finale
   if (!g.lineRot || typeof g.lineRot !== "object") g.lineRot = {}; // per-customer rotation index for everyday (non-story) wish lines
   if (typeof g.hareAt !== "number") g.hareAt = -1;          // servedTotal when the Hare's next (early) race visit is due
@@ -151,6 +153,8 @@ const REALM_PACING = {
     wolfArcEvery:     12,  // orders between the Wolf's recurring disguise visits
     redVacationAfter: 24,  // Red's "vacation" beat (after her arrival wish is done)
     redImpostorAfter: 28,  // Red's "impostor" beat (after the vacation)
+    bandAfter:        52,  // the Bandit Bears come to town (you get the blank tour poster)
+    bandVisitGap:      6,  // orders between the announcement and each member's autograph visit (and the final delivery)
   },
 };
 // Read a pacing number for the current realm, falling back to the old default.
@@ -534,7 +538,7 @@ function startStoryWish(cust, tag, line, opts) {
 }
 function startRedWish(tag, line, opts) { startStoryWish(redCust(), tag || "red-arrival", line, opts); }
 // tags that route the result screen's Next button into a story-mode goodbye
-function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag === "bo-peep" || tag === "pigs-moving" || tag === "wolf-buttons" || tag === "wolf-arc"); }
+function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag.indexOf("band-") === 0 || tag === "bo-peep" || tag === "pigs-moving" || tag === "wolf-buttons" || tag === "wolf-arc"); }
 // Bo Peep — a story-mode shepherd (like Red). Meeting her turns ON the sheep hunt.
 function boPeepCust() { return { id: "bo_peep", name: "Bo Peep", emoji: "👧", wishType: "SafeSpell", location: "Willow-Wish Village", line: "" }; }
 function playBoPeep() {
@@ -758,6 +762,81 @@ function goldiFinale() {
     renderStart();
   });
 }
+
+/* ======================================================================= */
+/* THE BANDIT BEARS — autograph quest. The girl-group Goldilocks adores     */
+/* tours Willow: you get a blank tour poster, then Honey → Roxie → Pepper    */
+/* each drop in as a one-time customer. Serve them and they sign the poster  */
+/* (art advances autograph_0 → autograph_3). All three signatures → deliver  */
+/* to superfan Goldilocks for a big reward. Signing order is fixed to match  */
+/* the poster art. GAME.bandStep: 0 none · 1 blank · 2 Honey · 3 Roxie ·      */
+/* 4 Pepper (complete) · 5 delivered.                                        */
+/* ======================================================================= */
+const BAND = [
+  { id: "honey", tag: "band-honey", name: "Honey", emoji: "🎤", wishType: "PrettyPotion", art: "customer_honey",
+    line: "Honey here, lead of the Bandit Bears! A shimmer for my high note tonight?",
+    convo: ["honey_convo1", "honey_convo2", "honey_convo3"],
+    sign: "Signed with a heart, darling — one down! Catch the other girls while we’re in town." },
+  { id: "roxie", tag: "band-roxie", name: "Roxie", emoji: "🎹", wishType: "GlowTreat", art: "customer_roxie",
+    line: "Roxie. Keys. A touch more sparkle on my keytar — effortlessly, mind?",
+    convo: ["roxie_convo1", "roxie_convo2", "roxie_convo3"],
+    sign: "Dotted the ‘i’ with a star. Don’t tell anyone I cared that much. …Fine, tell everyone." },
+  { id: "pepper", tag: "band-pepper", name: "Pepper", emoji: "🥁", wishType: "PowerPop", art: "customer_pepper",
+    line: "PEPPER!! Drums!! Bubble me enough bounce to drum through all three encores?!",
+    convo: ["pepper_convo1", "pepper_convo2", "pepper_convo3"],
+    sign: "EEE all THREE signatures now?! Goldilocks is gonna FLIP! Best. Day. EVERRR!!" },
+];
+function bandMember(i) { return BAND[i] || null; }
+// The band's tour bus rolls in — you receive the blank poster.
+function playBandAnnounce() {
+  ["autograph_0", "honey_convo1", "honey_convo3"].forEach(k => ART.ensure(k, () => {}));
+  GAME.bandStep = 1; GAME.bandAt = -1; save();
+  renderStoryBeats([
+    { name: "The Bandit Bears!", fig: "honey_convo3", text: "📣 Stop the presses — the <b>Bandit Bears</b> are touring Willow! Goldilocks’ favorite band in the WHOLE world. Their tour bus rolled in this morning." },
+    { name: "The Bandit Bears!", fig: "honey_convo1", cta: "Get it signed!  ▸", text: "Someone left a <b>blank tour poster</b> at your shop. If you got all three bears to sign it… Goldilocks might just faint on the spot." },
+  ], () => {
+    revealItem({ art: "autograph_0", name: "Blank Bandit Bears Poster", desc: "A pristine tour poster. Get Honey, Roxie & Pepper to sign it — then give it to superfan Goldilocks!" });
+    save(); renderStart();
+  });
+}
+// Once all three have signed, Goldilocks comes to collect her treasure.
+function playBandDeliver() {
+  ["autograph_3", "customer_goldilocks", "goldi_sparkle", "goldi_hug"].forEach(k => ART.ensure(k, () => {}));
+  renderStoryBeats([
+    { name: "Goldilocks", fig: "customer_goldilocks", text: "Is that— is that a— <b>THE BANDIT BEARS TOUR POSTER?!</b> Signed?! For ME?!" },
+    { name: "Goldilocks", fig: "goldi_sparkle", text: "Honey AND Roxie AND Pepper — all three?! I’m the luckiest fan-club president in the WHOLE WORLD! ✨" },
+    { name: "Goldilocks", fig: "goldi_hug", cta: "You’re so welcome  ▸", text: "I’m framing this FOREVER, right above my bed. Take everything I’ve got — you’re officially my favorite person!" },
+  ], () => {
+    GAME.bandStep = 5; GAME.bandAt = -1; save();
+    const r = grantReward({ gold: 220, stardust: 24 }); save();
+    toast("🎤 Goldilocks is over the moon! " + r);
+    renderStart();
+  });
+}
+// Trigger: announce the band, then one member per pacing beat, then the delivery.
+function maybeBandVisit() {
+  if (GAME.realm !== "willow" || !GAME.seenIntro) return false;
+  const step = GAME.bandStep || 0;
+  if (step >= 5) return false;   // quest complete
+  if (step === 4) {              // all signed → Goldilocks collects
+    if (GAME.bandAt < 0) { GAME.bandAt = servedTotal + pacing("bandVisitGap", 6); save(); return false; }
+    if (servedTotal < GAME.bandAt) return false;
+    GAME.bandAt = -1; save(); playBandDeliver(); return true;
+  }
+  if (step === 0) {              // waiting to announce
+    if (servedTotal < pacing("bandAfter", 52)) return false;
+    if (GAME.bandAt < 0) { GAME.bandAt = servedTotal + 1; save(); return false; }
+    if (servedTotal < GAME.bandAt) return false;
+    GAME.bandAt = -1; playBandAnnounce(); return true;
+  }
+  // step 1..3 → the next member (index step-1) drops in to sign
+  if (GAME.bandAt < 0) { GAME.bandAt = servedTotal + pacing("bandVisitGap", 6); save(); return false; }
+  if (servedTotal < GAME.bandAt) return false;
+  GAME.bandAt = -1; save();
+  const m = bandMember(step - 1); ART.ensure(m.art, () => {});
+  startStoryWish({ id: m.id, name: m.name, emoji: m.emoji, wishType: m.wishType, art: m.art, location: "Willow-Wish Village" }, m.tag, m.line);
+  return true;
+}
 // Drive the quest: Tiny Mouse's request fires a few rounds in, then the delivery a couple rounds after.
 function maybeGoldilocksQuest() {
   if (GAME.realm !== "willow" || !GAME.seenIntro) return false;
@@ -812,6 +891,18 @@ function maybeTortoise() {
 }
 // After a story wish resolves, the character's goodbye plays (and story progress advances).
 function storyWishOutro(tag, win) {
+  if (tag && tag.indexOf("band-") === 0) {
+    const idx = BAND.findIndex(m => m.tag === tag), m = bandMember(idx);
+    GAME.bandStep = idx + 2;   // Honey→2, Roxie→3, Pepper→4
+    GAME.bandAt = -1; save();
+    const newArt = "autograph_" + (idx + 1); ART.ensure(newArt, () => {});
+    renderStoryBeats([
+      { name: m.name, fig: m.convo[1], cta: "✍️ Sign the poster!  ▸", text: win
+        ? `“That potion? <b>Chef’s kiss.</b> You’re an absolute darling — hand over that poster, I’m signing it right now!”`
+        : `“Not <i>quite</i> my vibe, but you’re so sweet for trying — course I’ll still sign, come here!”` }],
+      () => { revealItem({ art: newArt, name: m.name + " signed the poster!", desc: m.sign }); save(); renderStart(); });
+    return;
+  }
   if (tag === "bo-peep") {
     ART.ensure(win ? "bopeep_delight" : "bopeep_annoyed", () => {});
     const beats = win
@@ -1098,6 +1189,19 @@ function inventoryGroups() {
       desc: "Tiny Mouse sewed three Bandit Bears plushies — big, small, and just-right — for you to bring to superfan Goldilocks.",
       progress: `Carrying ${teddyN} bear${teddyN === 1 ? "" : "s"}. Next time Goldilocks drops by, give her the one that’s just right for a big tip.` });
   }
+  // --- QUEST (bordered): the Bandit Bears autograph poster (upgrades as they sign) ---
+  const bstep = GAME.bandStep || 0;
+  if (bstep >= 1 && bstep < 5) {
+    const sigs = Math.max(0, Math.min(3, bstep - 1)), art = "autograph_" + sigs; ART.ensure(art, () => {});
+    const signed = ["Honey", "Roxie", "Pepper"].slice(0, sigs);
+    groups.push({ id: "band", kind: "quest", name: "Bandit Bears Poster", count: sigs + "/3",
+      items: [{ art, emoji: "🎤", name: "Signed Poster" }],
+      title: "The Bandit Bears’ Autograph",
+      desc: "Goldilocks’ favorite band is touring Willow! Get Honey, Roxie & Pepper to sign this tour poster, then deliver it to her.",
+      progress: sigs >= 3 ? "All three signed! Deliver it to superfan Goldilocks — she’ll faint. 🎤"
+        : sigs > 0 ? `Signed by ${signed.join(" & ")}. ${3 - sigs} to go — the band keeps touring through your shop.`
+        : "Blank so far. Serve each Bandit Bear when they drop by and they’ll sign it." });
+  }
   // --- QUEST (bordered): realm scavenger hunts (Bo Peep's sheep, etc.) ---
   Object.keys(HUNTS).forEach(realm => {
     const h = HUNTS[realm], st = huntState(realm);
@@ -1300,6 +1404,10 @@ function renderAdmin() {
           <button class="btn small" id="ad-pigs-move">🧳 Pigs: Moving Day</button>
           <button class="btn small" id="ad-goldi-mouse">🐭 Goldilocks: Mouse's bears</button>
           <button class="btn small" id="ad-goldi-deliver">🧸 Goldilocks: Deliver bears</button>
+          <button class="btn small" id="ad-band-announce">🎤 Bandit Bears: announce</button>
+          <button class="btn small" id="ad-band-next">🎸 Bandit Bears: next visit</button>
+          <button class="btn small" id="ad-band-deliver">🖼️ Bandit Bears: deliver poster</button>
+          <button class="btn secondary small" id="ad-band-reset">↺ Reset band quest</button>
           <button class="btn secondary small" id="ad-cust-reset">↺ Reset arcs</button>
         </div>
         <p class="muted" style="font-size:11px;text-align:center;margin:0">Spawn them at their current chapter; grant the wish to advance. (Finish both pig arcs → Moving Day fires on its own.)</p>
@@ -1407,6 +1515,10 @@ function renderAdmin() {
   on("#ad-pigs-move", "click", () => { GAME.pigsMoved = false; playPigsMoving(); });
   on("#ad-goldi-mouse", "click", () => { GAME.goldilocksStep = 0; GAME.goldilocksAt = -1; save(); playGoldiMouse(); });
   on("#ad-goldi-deliver", "click", () => { GAME.goldilocksStep = 1; GAME.goldilocksAt = -1; if (!satchelCount("teddy")) satchelAdd("teddy", 3); save(); playGoldiDeliver(); });
+  on("#ad-band-announce", "click", () => { GAME.bandStep = 0; GAME.bandAt = -1; save(); playBandAnnounce(); });
+  on("#ad-band-next", "click", () => { const s = GAME.bandStep || 0; if (s < 1) GAME.bandStep = 1; if ((GAME.bandStep || 0) > 3) { toast("All three have signed — deliver it!"); return; } const m = bandMember((GAME.bandStep || 1) - 1); GAME.bandAt = -1; save(); ART.ensure(m.art, () => {}); startStoryWish({ id: m.id, name: m.name, emoji: m.emoji, wishType: m.wishType, art: m.art, location: "Willow-Wish Village" }, m.tag, m.line); });
+  on("#ad-band-deliver", "click", () => { GAME.bandStep = 4; GAME.bandAt = -1; save(); playBandDeliver(); });
+  on("#ad-band-reset", "click", () => { GAME.bandStep = 0; GAME.bandAt = -1; save(); toast("Band quest reset"); renderAdmin(); });
   on("#ad-cust-reset", "click", () => { GAME.custStory = {}; GAME.pigsMoved = false; save(); toast("Customer story arcs reset"); renderAdmin(); });
   on("#ad-bopeep", "click", () => { GAME.bopeepMet = false; playBoPeep(); });
   on("#ad-sheep-all", "click", () => { GAME.bopeepMet = true; const h = HUNTS.willow, st = huntState("willow"); st.seen = h.items.slice(); st.found = h.items.length; st.done = false; save(); huntComplete(h); renderStart(); });
@@ -5578,6 +5690,7 @@ function startRound() {
   if (maybeButtonChain()) return; // the button clue-chain (Wolf drop → show Red → Gingerbread)
   if (maybeWolfArc()) return;    // the Wolf's own recurring visits (disguises + hunger gag)
   if (maybeGoldilocksQuest()) return; // Tiny Mouse's teddy-bear delivery → Goldilocks' three-bears visit
+  if (maybeBandVisit()) return;  // the Bandit Bears tour → autograph poster → deliver to Goldilocks
   if (maybeTortoise()) return;   // the Tortoise plods in as the very last customer before the finale
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
@@ -7093,7 +7206,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelBetween, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
