@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v239"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v240"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -410,14 +410,14 @@ function galleryHtml() {
   const dots = many ? `<div class="gal-dots" id="gal-dots">${GALLERY.map((_, i) => `<span class="gal-dot${i === 0 ? " on" : ""}"></span>`).join("")}</div>` : "";
   return `<div class="story-gallery">
     ${many ? `<button class="gal-arrow gal-prev" id="gal-prev" aria-label="Previous">‹</button>` : ""}
-    <div class="gal-frame"><img class="gal-pic" id="gal-pic" src="art/${GALLERY[0]}.png?v=${BUILD}" alt="photo" draggable="false"></div>
+    <div class="gal-frame"><img class="gal-pic" id="gal-pic" src="art/${GALLERY[0]}.webp?v=${BUILD}" alt="photo" draggable="false"></div>
     ${many ? `<button class="gal-arrow gal-next" id="gal-next" aria-label="Next">›</button>` : ""}
     ${dots}
   </div>`;
 }
 function wireGallery() {
   const paint = () => {
-    const im = $("#gal-pic"); if (im) im.src = `art/${GALLERY[GALLERY_I]}.png?v=${BUILD}`;
+    const im = $("#gal-pic"); if (im) im.src = `art/${GALLERY[GALLERY_I]}.webp?v=${BUILD}`;
     const dd = $("#gal-dots"); if (dd) dd.querySelectorAll(".gal-dot").forEach((d, i) => d.classList.toggle("on", i === GALLERY_I));
     SFX.unlock(); SFX.pop(1);
   };
@@ -3549,7 +3549,7 @@ function stackTowerHtml() {
   // Higher pieces (smaller i) get a higher z-index so each one overlaps the piece below it.
   for (let i = 0; i < show; i++) {
     const img = pile[n - 1 - i], gem = img.indexOf("gem") >= 0;
-    s += `<span class="stack-coin2${gem ? " gem" : ""}" style="top:${STACK_SURFACE + i * STACK_PITCH}%;z-index:${show - i};background-image:url('art/${img}.png?v=${BUILD}')"></span>`;
+    s += `<span class="stack-coin2${gem ? " gem" : ""}" style="top:${STACK_SURFACE + i * STACK_PITCH}%;z-index:${show - i};background-image:url('art/${img}.webp?v=${BUILD}')"></span>`;
   }
   if (n <= visible) s += `<div class="stack-base" style="top:${(STACK_SURFACE + n * STACK_PITCH).toFixed(2)}%"></div>`;
   return s;
@@ -3599,7 +3599,7 @@ function stackSpawn() {
     const el = document.createElement("div");
     el.className = "stack-item" + (k.good ? (kind === "gem" ? " gem" : "") : " bad");
     el.style.left = it.x + "%"; el.style.top = "0%";
-    el.style.backgroundImage = `url('art/${art.front}.png?v=${BUILD}')`;
+    el.style.backgroundImage = `url('art/${art.front}.webp?v=${BUILD}')`;
     sky.appendChild(el); it.el = el;
   }
 }
@@ -3903,7 +3903,7 @@ function wineAddDrop(x, y, bloom) {
   el.className = "wine-drop"; el.dataset.uid = d.uid;
   el.style.left = x + "%"; el.style.top = y + "%";
   el.style.setProperty("--rot", rot + "deg");
-  el.style.backgroundImage = `url('art/wine_stain_${stain}.png?v=${BUILD}')`;
+  el.style.backgroundImage = `url('art/wine_stain_${stain}.webp?v=${BUILD}')`;
   el.addEventListener("pointerdown", e => { e.preventDefault(); wineTap(d.uid); });
   cloak.appendChild(el); d.el = el;
 }
@@ -3931,7 +3931,7 @@ function wineAddBall() {
   el.className = "wine-ball"; el.dataset.uid = b.uid;
   el.style.left = b.x + "%"; el.style.top = b.y + "%";
   // a big invisible hit-zone button with a smaller visible ball inside (bigger, more forgiving tap target)
-  el.innerHTML = `<span class="wine-ball-face" style="background-image:url('art/wine_ball_${img}.png?v=${BUILD}')"></span>`;
+  el.innerHTML = `<span class="wine-ball-face" style="background-image:url('art/wine_ball_${img}.webp?v=${BUILD}')"></span>`;
   el.addEventListener("pointerdown", e => { e.preventDefault(); wineThrow(b.uid); });  // fire on touch, not click — reliable on a moving target
   cloak.appendChild(el); b.el = el;
 }
@@ -3971,7 +3971,7 @@ function wineSet(d) {   // a drop finished blooming → a permanent stain (same 
       st.style.left = d.x + "%"; st.style.top = d.y + "%";
       st.style.width = sz + "px"; st.style.height = sz + "px";
       st.style.setProperty("--rot", (d.rot || 0) + "deg");
-      st.style.backgroundImage = `url('art/wine_stain_${d.stain || R.int(1, WINE_STAIN_IMGS)}.png?v=${BUILD}')`;
+      st.style.backgroundImage = `url('art/wine_stain_${d.stain || R.int(1, WINE_STAIN_IMGS)}.webp?v=${BUILD}')`;
       cloak.appendChild(st);
     }
   }
@@ -4118,7 +4118,7 @@ function renderCarpetIntro() {
       <div style="font-weight:800;font-size:20px">Magic Carpet Dash!</div>
       <div class="carpet-pick">
         <button class="carpet-pick-arrow" id="carpet-skin-prev">◀</button>
-        <img class="carpet-pick-art" id="carpet-pick-art" src="art/carpet_rug_${carpetSkin()}.png?v=${BUILD}" alt="carpet" draggable="false">
+        <img class="carpet-pick-art" id="carpet-pick-art" src="art/carpet_rug_${carpetSkin()}.webp?v=${BUILD}" alt="carpet" draggable="false">
         <button class="carpet-pick-arrow" id="carpet-skin-next">▶</button>
       </div>
       <div class="muted" style="margin-top:-4px">Pick your carpet</div>
@@ -4141,7 +4141,7 @@ function renderCarpetIntro() {
     <div style="height:8px"></div>
     <button class="btn secondary" id="carpet-skip">Not now</button>
   `);
-  const cycle = d => { GAME.carpetSkin = ((carpetSkin() - 1 + d + CARPET_RUGS) % CARPET_RUGS) + 1; save(); const a = $("#carpet-pick-art"); if (a) a.src = `art/carpet_rug_${GAME.carpetSkin}.png?v=${BUILD}`; SFX.pop(); };
+  const cycle = d => { GAME.carpetSkin = ((carpetSkin() - 1 + d + CARPET_RUGS) % CARPET_RUGS) + 1; save(); const a = $("#carpet-pick-art"); if (a) a.src = `art/carpet_rug_${GAME.carpetSkin}.webp?v=${BUILD}`; SFX.pop(); };
   on("#carpet-skin-prev", "click", () => cycle(-1));
   on("#carpet-skin-next", "click", () => cycle(1));
   on("#carpet-easy", "click", () => carpetStart("easy"));
@@ -4173,7 +4173,7 @@ function carpetPlay() {
         <div class="stack-chip"><span>⭐</span><b id="carpet-stars">0</b></div>
       </div>
       <div class="carpet-arrow left">◀</div><div class="carpet-arrow right">▶</div>
-      <img class="carpet-rug" id="carpet-rug" src="art/carpet_rug_${carpetSkin()}.png?v=${BUILD}" alt="carpet" draggable="false">
+      <img class="carpet-rug" id="carpet-rug" src="art/carpet_rug_${carpetSkin()}.webp?v=${BUILD}" alt="carpet" draggable="false">
       <div class="carpet-fog" id="carpet-fog"></div>
     </div>
     <p class="muted stack-hint" style="text-align:center;font-size:12px;margin:4px 0 2px">Hold the left or right side of the sky to steer</p>
@@ -4205,7 +4205,7 @@ function carpetAddStar(forceGood) {
   CARPET.stars.push(s);
   const el = document.createElement("div");
   el.className = "carpet-star" + (good ? "" : " bad"); el.style.left = s.x + "%"; el.style.top = s.y + "%";
-  el.style.backgroundImage = `url('art/carpet_star_${s.img}.png?v=${BUILD}')`;
+  el.style.backgroundImage = `url('art/carpet_star_${s.img}.webp?v=${BUILD}')`;
   sky.appendChild(el); s.el = el;
 }
 function carpetAddCloud() {
@@ -4214,7 +4214,7 @@ function carpetAddCloud() {
   CARPET.clouds.push(c);
   const el = document.createElement("div");
   el.className = "carpet-cloud"; el.style.left = c.x + "%"; el.style.top = c.y + "%"; el.style.width = c.w + "%";
-  el.style.backgroundImage = `url('art/carpet_cloud_${c.img}.png?v=${BUILD}')`;
+  el.style.backgroundImage = `url('art/carpet_cloud_${c.img}.webp?v=${BUILD}')`;
   sky.appendChild(el); c.el = el;
 }
 function carpetAddPlanet() {
@@ -4226,7 +4226,7 @@ function carpetAddPlanet() {
   const c = { uid: ++CARPET.uid, x, y: -m.planetR * 0.55, img: R.int(1, CARPET_PLANETS), el: null };
   CARPET.planets.push(c);
   const el = document.createElement("img");
-  el.className = "carpet-planet"; el.src = `art/carpet_planet_${c.img}.png?v=${BUILD}`; el.draggable = false;
+  el.className = "carpet-planet"; el.src = `art/carpet_planet_${c.img}.webp?v=${BUILD}`; el.draggable = false;
   el.style.left = c.x + "%"; el.style.top = c.y + "%"; el.style.width = (m.planetR * 2) + "%";
   sky.appendChild(el); c.el = el;
 }
@@ -4504,12 +4504,12 @@ function boutiquePlay() {
 function boutiqueRemainHtml(o) {
   if (o.station === "supply") return "";   // orders waiting in the line show no recipe icons
   if (o.step >= o.recipe.length) return '<span class="bq-ic now"><span class="bq-ic-done">📦</span></span>';
-  return o.recipe.slice(o.step).map((st, i) => `<span class="bq-ic${i === 0 ? " now" : ""}"><img src="art/bq_ic_${st}.png?v=${BUILD}" alt="${st}"></span>`).join("");
+  return o.recipe.slice(o.step).map((st, i) => `<span class="bq-ic${i === 0 ? " now" : ""}"><img src="art/bq_ic_${st}.webp?v=${BUILD}" alt="${st}"></span>`).join("");
 }
 function boutiqueStateClass(o) { return (o.step >= o.recipe.length && o.ready) ? "done" : o.ready ? "ready" : "proc"; }
 // A never-touched order waiting in the line shows its mouse customer; once it enters
 // a table (started) it becomes the bolt/dress-stage sprite — so the fabric table shows a bolt.
-function boutiqueDressSrc(o) { const st = boutiqueStage(o); return (!o.started && st === "fabric") ? `art/bq_mouse_${o.color}.png?v=${BUILD}` : `art/bq_dress_${o.color}_${st}.png?v=${BUILD}`; }
+function boutiqueDressSrc(o) { const st = boutiqueStage(o); return (!o.started && st === "fabric") ? `art/bq_mouse_${o.color}.webp?v=${BUILD}` : `art/bq_dress_${o.color}_${st}.webp?v=${BUILD}`; }
 function boutiqueAddOrderEl(o) {
   const slot = $("#bq-slot-supply"); if (!slot) return;
   const el = document.createElement("div");
@@ -4758,7 +4758,7 @@ function renderDanceIntro(partnerId) {
   html("event", `
     ${hud("A Royal Ball!")}
     <div class="grow center" style="gap:14px">
-      <div class="dance-hero">${p.poses ? `<img src="art/${p.poses}_1.png?v=${BUILD}" alt="${p.name}" draggable="false">` : `<div class="ph big">${p.emoji}</div>`}</div>
+      <div class="dance-hero">${p.poses ? `<img src="art/${p.poses}_1.webp?v=${BUILD}" alt="${p.name}" draggable="false">` : `<div class="ph big">${p.emoji}</div>`}</div>
       <div style="font-weight:800;font-size:20px">${p.name}</div>
       <div class="speech">${p.line}</div>
       <div class="card" style="width:100%;max-width:330px">
@@ -4880,8 +4880,8 @@ function danceDancerSrc(p, poseNum, worried) {
   // ?v=BUILD cache-busts replaced pose art (the art system doesn't version URLs).
   // The four moves are poses 2..5; their worried faces are frames 1..4 in the same
   // order (twirl-left, twirl-right, tiptoes, curtsey) — so worried frame = pose - 1.
-  if (worried && p.worried) return `art/${p.worried}_${Math.min(4, Math.max(1, poseNum - 1))}.png?v=${BUILD}`;
-  return `art/${p.poses}_${poseNum}.png?v=${BUILD}`;
+  if (worried && p.worried) return `art/${p.worried}_${Math.min(4, Math.max(1, poseNum - 1))}.webp?v=${BUILD}`;
+  return `art/${p.poses}_${poseNum}.webp?v=${BUILD}`;
 }
 // Warm the browser cache with every pose so the swap on a button press is instant
 // (the pose PNGs are big; without this the first show of each pose fetches/decodes
@@ -4889,8 +4889,8 @@ function danceDancerSrc(p, poseNum, worried) {
 function dancePreload(p) {
   if (!p || !p.poses) return;
   const warm = src => { const im = new Image(); im.src = src; };
-  for (let i = 1; i <= 5; i++) warm(`art/${p.poses}_${i}.png?v=${BUILD}`);
-  if (p.worried) for (let i = 1; i <= 4; i++) warm(`art/${p.worried}_${i}.png?v=${BUILD}`);
+  for (let i = 1; i <= 5; i++) warm(`art/${p.poses}_${i}.webp?v=${BUILD}`);
+  if (p.worried) for (let i = 1; i <= 4; i++) warm(`art/${p.worried}_${i}.webp?v=${BUILD}`);
 }
 // Quick fade-out / fade-in when the dancer changes pose (on a button press).
 // The pose is remembered so the dancer HOLDS it until the next button is pressed.
@@ -5165,7 +5165,7 @@ function renderCake() {
         : `Tap the treats in order — they fill left to right (${placedCount}/${n})`}</div>
       <div class="cake-arena">
         <div class="cake-view">
-          <img class="cake-img ${t <= 1 ? "wide" : "tall"}" src="art/cake_stage_${t}.png?v=${BUILD}" alt="cake" draggable="false">
+          <img class="cake-img ${t <= 1 ? "wide" : "tall"}" src="art/cake_stage_${t}.webp?v=${BUILD}" alt="cake" draggable="false">
           ${spots.join("")}
         </div>
       </div>
