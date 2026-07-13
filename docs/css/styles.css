@@ -107,7 +107,7 @@ html, body {
 #screen-start .logo { font-size: 44px; font-weight: 900; letter-spacing: .5px;
   background: linear-gradient(90deg, #fff0fb, #ffd6ea); -webkit-background-clip: text; background-clip: text; color: transparent; }
 #screen-start .sub { font-size: 20px; font-weight: 800; color: var(--pink); margin-top: -4px; }
-/* Custom brand logo (art/logo.png) — replaces the text wordmark when present */
+/* Custom brand logo (art/logo.webp) — replaces the text wordmark when present */
 #screen-start .wp-logo { display: block; width: 82%; max-width: 300px; height: auto; margin: 0 auto; }
 /* Logo stage: a soft pulsing glow behind it, gentle float, drifting sparkles */
 .logo-stage { position: relative; display: flex; align-items: center; justify-content: center;
@@ -1260,7 +1260,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .stack-timer2 i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #c58bff, #ffd76a); transition: width .12s linear; }
 /* Spilled Wish-Wine — dab blooming drops off the King's cloak */
 .wine-cloak { position: relative; flex: 1; min-height: 0; margin: 4px 2px; border-radius: 14px; overflow: hidden;
-  background: #efe7d6 url('../art/wine_cloak.png') center center / cover no-repeat; border: 1px solid rgba(0,0,0,.18);
+  background: #efe7d6 url('../art/wine_cloak.webp') center center / cover no-repeat; border: 1px solid rgba(0,0,0,.18);
   touch-action: manipulation; }
 .wine-drop { position: absolute; transform: translate(-50%,-50%) rotate(var(--rot,0deg)); width: 32px; height: 32px; padding: 0; border: none; cursor: pointer;
   background: center / contain no-repeat; filter: drop-shadow(0 2px 5px rgba(0,0,0,.45)); z-index: 2; }
@@ -1474,7 +1474,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* header: pet badge (left), customer (center), menu (right) */
 .mixv-head { display: flex; align-items: center; gap: 8px; padding: 2px 2px 4px; }
 .petbadge { position: relative; width: 92px; height: 101px; flex: 0 0 auto; cursor: pointer;
-  background: url('../art/pet_frame.png') center/contain no-repeat; }
+  background: url('../art/pet_frame.webp') center/contain no-repeat; }
 .petbadge-pet { position: absolute; left: 50%; top: 32%; transform: translate(-50%,-50%);
   width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; font-size: 46px; }
 .petbadge-pet img.art { width: 60px !important; height: 60px !important; max-width: none; max-height: none; object-fit: contain; }
@@ -1509,11 +1509,11 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* cast bar: color circle + track with fill + green target band */
 .castbar { display: flex; align-items: center; height: 30px; flex: 0 0 auto; }
 .cb-orb { width: 30px; height: 30px; flex: 0 0 auto; position: relative; z-index: 3; display: flex; align-items: center; justify-content: center;
-  font-size: 15px; background: url('../art/cb_circle.png') center/contain no-repeat; }
+  font-size: 15px; background: url('../art/cb_circle.webp') center/contain no-repeat; }
 .cb-orb:not(.myst):not(.danger)::before { content: ""; position: absolute; inset: 26%; border-radius: 50%;
   background: radial-gradient(circle at 38% 32%, rgba(255,255,255,.75), var(--oc, #888)); box-shadow: 0 0 6px var(--oc, #888); }
 .cb-track { flex: 1; height: 27px; position: relative; margin-left: -7px; overflow: hidden; border-radius: 13px;
-  background: url('../art/cb_track.png') left center/100% 100% no-repeat; }
+  background: url('../art/cb_track.webp') left center/100% 100% no-repeat; }
 .cb-band { position: absolute; top: 20%; bottom: 20%; z-index: 1; border-radius: 3px; background: rgba(126,224,138,.42); }
 .cb-fill { position: absolute; left: 0; top: 24%; height: 52%; z-index: 2; border-radius: 7px; transition: width .35s ease, background .35s; }
 .cb-name { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); z-index: 4; font-size: 12px; font-weight: 700;
@@ -1522,8 +1522,8 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .castbar.hit .cb-track { box-shadow: 0 0 9px var(--good); }
 /* ornate Serve button */
 .servebtn { position: relative; width: 100%; max-width: 262px; margin: 1px auto 0; aspect-ratio: 686 / 389; flex: 0 0 auto;
-  background: url('../art/serve_unmet.png') center/contain no-repeat; border: none; cursor: pointer; transition: transform .1s; }
-.servebtn.met { background-image: url('../art/serve_met.png'); }
+  background: url('../art/serve_unmet.webp') center/contain no-repeat; border: none; cursor: pointer; transition: transform .1s; }
+.servebtn.met { background-image: url('../art/serve_met.webp'); }
 .servebtn:active { transform: scale(.97); }
 .servebtn:disabled { opacity: .55; filter: saturate(.6); cursor: default; }
 .serve-label { position: absolute; left: 9%; right: 9%; top: 55%; height: 34%; display: flex; align-items: center; justify-content: center; gap: 6px; }
@@ -1536,12 +1536,12 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 @keyframes hgpulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
 /* ingredient panel (right column) */
 .ipanel { flex: 1; min-height: 0; display: flex; position: relative; padding: 15px 11px 17px;
-  background: url('../art/panel_ingredients.png') center/100% 100% no-repeat; }
+  background: url('../art/panel_ingredients.webp') center/100% 100% no-repeat; }
 .ipanel-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 3px; }
 .ipanel-scroll::-webkit-scrollbar { width: 5px; } .ipanel-scroll::-webkit-scrollbar-thumb { background: rgba(255,214,110,.4); border-radius: 3px; }
 .itag { height: 25px; margin: 3px auto 6px; background-position: center; background-repeat: no-repeat; background-size: contain; }
-.itag-charms { background-image: url('../art/tag_charms.png'); width: 118px; }
-.itag-ing { background-image: url('../art/tag_ingredients.png'); width: 150px; }
+.itag-charms { background-image: url('../art/tag_charms.webp'); width: 118px; }
+.itag-ing { background-image: url('../art/tag_ingredients.webp'); width: 150px; }
 .igrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
 .ptile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0;
   padding: 5px 3px 6px; border-radius: 10px; cursor: pointer; background: rgba(38,18,52,.62);

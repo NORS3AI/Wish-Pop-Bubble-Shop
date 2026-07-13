@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v223"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v224"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -129,7 +129,7 @@ function custMoodArt(c, mood, fallbackEmoji, cls) {
   const key = mood && mood !== "normal" ? "customer_" + c.id + "_" + mood : "customer_" + c.id;
   return ART.tag(key, fallbackEmoji || c.emoji, cls || "cust-art");
 }
-// The main-screen brand mark. If art/logo.png is present, show it; otherwise show
+// The main-screen brand mark. If art/logo.webp is present, show it; otherwise show
 // the "Wish Pop / Bubble Shop" wordmark, and hot-swap to the image if it loads.
 function logoMarkup() {
   if (ART.isReady("logo")) return `<img class="wp-logo" src="${ART.url("logo")}" alt="Wish Pop Bubble Shop" draggable="false">`;
@@ -6912,6 +6912,28 @@ if (localStorage.getItem("wishpop_test") === "1") {
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
-window.addEventListener("load", () => { applyCustomBackground(); refreshQuests(); if (!GAME.seenIntro) playArrivalIntro(); else renderStart(); });
+// Quietly warm the browser cache for the art you're about to need — every customer's
+// four faces, the gameplay pieces, key UI and backdrops — so they appear instantly
+// instead of flashing an emoji/blank placeholder the first time. Runs after the first
+// screen is up, during idle time, so it never slows the initial paint.
+function preloadCommonArt() {
+  const keys = [];
+  [].concat(D.CUSTOMERS || [], currentRealm().customers || []).forEach(c => {
+    if (!c) return;
+    keys.push(c.art || ("customer_" + c.id));
+    if (!c.art) ["_happy", "_angry", "_allergic"].forEach(m => keys.push("customer_" + c.id + m));
+  });
+  ["scoop_spoon", "bubble", "bubble_bonus", "logo", "background"].forEach(k => keys.push(k));
+  Array.from(new Set(keys)).forEach(k => ART.ensure(k, () => {}));   // warms as WebP
+  // hardcoded UI (PNG) + backdrops (JPG) aren't loaded through ART — warm the common ones directly
+  ["banner_new", "banner_vip", "name_plate", "kit_02", "kit_13", "kit_16", "kit_17", "btn_scoop"].forEach(k => { try { new Image().src = "art/ui/" + k + ".png?v=" + BUILD; } catch (e) {} });
+  const rbg = REALM_BG[GAME.realm];
+  ["village_far", "village_mid", "village_door"].concat(rbg ? [rbg.replace(/^art\//, "").replace(/\.jpg$/, "")] : []).forEach(bg => { try { new Image().src = "art/" + bg + ".jpg?v=" + BUILD; } catch (e) {} });
+}
+window.addEventListener("load", () => {
+  applyCustomBackground(); refreshQuests();
+  if (!GAME.seenIntro) playArrivalIntro(); else renderStart();
+  (window.requestIdleCallback || ((f) => setTimeout(f, 1200)))(preloadCommonArt);
+});
 
 })();

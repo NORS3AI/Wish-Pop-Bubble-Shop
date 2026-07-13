@@ -13,7 +13,7 @@
  * ===================================================================== */
 const ART = (() => {
   const DIR = "art/";
-  const EXT = ".png";
+  const EXT = ".webp";   // character/scene art is served as WebP (≈85% smaller than PNG, visually identical)
   const state = {};   // key -> 'ok' | 'missing' | 'pending'
   const okCb = {};     // key -> [callbacks fired once when it loads]
   let VER = "";        // cache-bust suffix (set to the build once at boot)
