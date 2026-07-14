@@ -6,7 +6,9 @@
 @font-face { font-family: 'Wishpop'; src: url('../fonts/medievalsharp.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
 :root {
   color-scheme: dark;
-  --ff-display: 'Wishpop', 'Georgia', 'Times New Roman', serif;
+  --ff-display: 'Wishpop', 'Georgia', 'Times New Roman', serif;   /* decorative — names & titles only */
+  --ff-read: 'Georgia', 'Times New Roman', serif;                 /* readable — descriptions & longer text */
+  --ff-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;  /* clean — numbers */
   --bg1: #3a2166; --bg2: #2a1a4a; --bg3: #160c2c;
   --ink: #fff0fb; --ink-dim: rgba(255,240,251,0.72);
   --card: rgba(255,255,255,0.10); --card2: rgba(255,255,255,0.06);
@@ -674,10 +676,10 @@ html, body {
   animation: wellPrizeUp .5s cubic-bezier(.2,1.4,.4,1); }
 .well-prize2.fade { opacity: 0; transition: opacity .4s ease; }
 .wp2-emoji { font-size: 52px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
-.wp2-label { font-family: var(--ff-display); font-weight: 900; font-size: 19px; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,.85); }
+.wp2-label { font-family: var(--ff-body); font-weight: 900; font-size: 19px; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,.85); }
 .well-prize2.jackpot .wp2-emoji { font-size: 62px; animation: charmpop 1s cubic-bezier(.2,1.4,.4,1); }
 .well-prize2.jackpot .wp2-label { color: var(--gold); }
-.wp2-sub { font-family: var(--ff-display); font-size: 12px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.9); margin-top: 2px; }
+.wp2-sub { font-family: var(--ff-body); font-size: 12px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.9); margin-top: 2px; }
 @keyframes wellPrizeUp { 0% { transform: translate(-50%, 30%) scale(.4); opacity: 0; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
 /* Wishy's speech / status line over the stone, plus the top info chips.
    These use the plain body (story-mode) font — easier to read than the display face. */
@@ -808,7 +810,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cust-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 2px 6px 2px; }
 .cust-realm { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 14px; font-family: var(--ff-display); font-size: 14px; color: #ffe6a8;
   background: linear-gradient(180deg, rgba(58,38,86,.85), rgba(26,15,46,.9)); border: 2px solid rgba(240,200,110,.6); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
-.cust-coin { display: flex; align-items: center; gap: 6px; padding: 3px 14px 3px 4px; border-radius: 16px; font-family: var(--ff-display); font-weight: 700; font-size: 18px; color: #fff;
+.cust-coin { display: flex; align-items: center; gap: 6px; padding: 3px 14px 3px 4px; border-radius: 16px; font-family: var(--ff-body); font-weight: 700; font-size: 18px; color: #fff;
   background: linear-gradient(180deg, rgba(58,38,86,.85), rgba(26,15,46,.9)); border: 2px solid rgba(240,200,110,.6); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
 .cust-coin img { height: 30px; width: auto; }
 .cust-wallet { display: flex; align-items: center; gap: 6px; }
@@ -860,9 +862,9 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
    already supplies the golden halo. */
 .ir-art .ir-img.art { height: 288px; width: auto; max-width: 88vw; filter: drop-shadow(0 10px 22px rgba(0,0,0,.55)); }
 .ir-art .ir-emoji { font-size: 160px; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
-.ir-x { position: absolute; right: 4%; bottom: 6%; z-index: 3; font-family: var(--ff-display); font-weight: 900; font-size: 34px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.75); }
+.ir-x { position: absolute; right: 4%; bottom: 6%; z-index: 3; font-family: var(--ff-body); font-weight: 900; font-size: 34px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.75); }
 .ir-name { position: relative; z-index: 2; margin-top: 6px; font-family: var(--ff-display); font-size: 30px; color: #fff2c8; text-shadow: 0 2px 6px rgba(0,0,0,.7); }
-.ir-desc { position: relative; z-index: 2; margin-top: 8px; max-width: 300px; font-family: var(--ff-display); font-size: 16px; line-height: 1.4; color: #ece0ff; }
+.ir-desc { position: relative; z-index: 2; margin-top: 8px; max-width: 300px; font-family: var(--ff-read); font-size: 16px; line-height: 1.4; color: #ece0ff; }
 .ir-add { position: relative; z-index: 2; margin-top: 20px; padding: 12px 30px; border-radius: 26px; border: 2px solid #7a4e1a; cursor: pointer;
   background: linear-gradient(180deg, #f7d488, #d49a3a); color: #4a2c08; font-family: var(--ff-display); font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
 .ir-add:active { transform: scale(.96); }
@@ -885,7 +887,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .inv-group-head { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 8px; }
 .inv-group-name { font-family: var(--ff-display); font-size: 18px; color: #ffe7ac; }
 .inv-group.story .inv-group-name { color: #d3c4f2; }
-.inv-group-count { font-family: var(--ff-display); font-weight: 800; font-size: 15px; color: #ffd873; background: rgba(0,0,0,.28); border-radius: 10px; padding: 2px 10px; }
+.inv-group-count { font-family: var(--ff-body); font-weight: 800; font-size: 15px; color: #ffd873; background: rgba(0,0,0,.28); border-radius: 10px; padding: 2px 10px; }
 .inv-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .inv-item { position: relative; aspect-ratio: 1; border-radius: 14px; border: 1px solid rgba(255,255,255,.12); cursor: pointer; padding: 6px;
   background: radial-gradient(circle at 50% 38%, rgba(255,255,255,.1), rgba(255,255,255,.03)); display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -904,13 +906,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .invq-kind { font-family: var(--ff-display); font-size: 13px; letter-spacing: 1px; color: #b5842a; margin-bottom: 4px; }
 .invq-kind.story { color: #8a5ab0; }
 .invq-title { font-family: var(--ff-display); font-size: 25px; color: #7a3410; margin-bottom: 8px; }
-.invq-desc { font-family: var(--ff-display); font-size: 16px; line-height: 1.42; color: #4a3212; }
+.invq-desc { font-family: var(--ff-read); font-size: 16px; line-height: 1.42; color: #4a3212; }
 .invq-collection { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 14px 2px 2px; }
 .invq-slot { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(90,60,20,.14); border: 1px solid rgba(90,60,20,.2); }
 .invq-slot.got { background: rgba(120,80,30,.22); border-color: rgba(150,100,40,.4); }
 .invq-slot .invq-slot-img.art { width: 88%; height: 88%; max-width: none; object-fit: contain; }
 .invq-q { font-family: var(--ff-display); font-weight: 800; font-size: 18px; color: rgba(90,60,20,.4); }
-.invq-progress { margin-top: 14px; font-family: var(--ff-display); font-size: 15px; line-height: 1.4; color: #6a4310; font-weight: 700; }
+.invq-progress { margin-top: 14px; font-family: var(--ff-read); font-size: 15px; line-height: 1.4; color: #6a4310; font-weight: 700; }
 .invq-ok { margin-top: 16px; padding: 10px 30px; border-radius: 22px; border: 2px solid #7a4e1a; cursor: pointer;
   background: linear-gradient(180deg, #f7d488, #d49a3a); color: #4a2c08; font-family: var(--ff-display); font-size: 18px; }
 .invq-ok:active { transform: scale(.96); }
@@ -962,7 +964,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes wishFade { from { opacity: .15; } to { opacity: 1; } }
 @keyframes wishNudge { 0%,100% { transform: translateY(-50%) scale(1); } 25% { transform: translateY(-50%) scale(1.28); } 60% { transform: translateY(-50%) scale(1.28); } }
 .cust-char.swap img.art { animation: wishFade .3s ease; }
-.cust-wish-extra { margin-top: 6px; text-align: center; font-family: var(--ff-display); font-size: 13.5px; line-height: 1.22; color: #6a4310; }
+.cust-wish-extra { margin-top: 6px; text-align: center; font-family: var(--ff-read); font-size: 13.5px; line-height: 1.22; color: #6a4310; }
 .cust-wish-extra.boss { color: #9a3410; } .cust-wish-extra.rush { color: #a85410; } .cust-wish-extra.vip { color: #7a5210; }
 /* --- special-customer badge bubbles (beside the portrait) + info overlay --- */
 .cust-badges { position: absolute; left: -3px; top: 25%; z-index: 8; display: flex; flex-direction: column; gap: 10px; }
@@ -986,7 +988,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   background: url('../art/ui/name_plate.png') no-repeat center; background-size: 100% 100%; animation: pop .22s ease; }
 .badge-modal-ic { font-size: 50px; line-height: 1; margin-bottom: 2px; filter: drop-shadow(0 3px 5px rgba(0,0,0,.35)); }
 .badge-modal-title { font-family: var(--ff-display); font-size: 25px; color: #7a3410; margin-bottom: 8px; }
-.badge-modal-text { font-family: var(--ff-display); font-size: 17px; line-height: 1.42; color: #4a3212; }
+.badge-modal-text { font-family: var(--ff-read); font-size: 17px; line-height: 1.42; color: #4a3212; }
 .badge-modal-ok { margin-top: 16px; padding: 9px 28px; border-radius: 22px; border: 2px solid #7a4e1a; cursor: pointer;
   background: linear-gradient(180deg, #f7d488, #d49a3a); color: #4a2c08; font-family: var(--ff-display); font-size: 18px; }
 .badge-modal-ok:active { transform: scale(.96); }
@@ -997,7 +999,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* icon + value side by side (one row) so the box stays short */
 .bcell { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px; text-align: center; cursor: help; }
 .bic { height: 34px; width: auto; flex-shrink: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
-.bval { font-family: var(--ff-display); font-weight: 700; font-size: 23px; color: #3a2408; line-height: 1; white-space: nowrap; }
+.bval { font-family: var(--ff-body); font-weight: 700; font-size: 23px; color: #3a2408; line-height: 1; white-space: nowrap; }
 /* hover (desktop) or tap-and-hold (mobile, via .tip-on) shows the label as a little tooltip */
 .bcell::after, .bcell::before { position: absolute; left: 50%; z-index: 12; opacity: 0; pointer-events: none; transition: opacity .12s ease; }
 .bcell::after { content: attr(data-tip); bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap;
@@ -1028,7 +1030,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .vipo-banner img { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,.7)); }
 .vip-panel { width: 98%; max-width: 360px; padding: 26px 32px 30px;
   background: url('../art/ui/name_plate.png') no-repeat center; background-size: 100% 100%; }
-.vip-panel-text { text-align: center; font-family: var(--ff-display); font-size: 18px; line-height: 1.42; color: #4a3212; }
+.vip-panel-text { text-align: center; font-family: var(--ff-read); font-size: 18px; line-height: 1.42; color: #4a3212; }
 .vip-panel-text b { color: #7a3410; }
 .vip-yes { position: relative; width: 76%; max-width: 292px; margin-top: 2px; padding: 0; border: none; background: none; cursor: pointer; }
 .vip-yes img { display: block; width: 100%; height: auto; filter: drop-shadow(0 5px 12px rgba(0,0,0,.6)); }
@@ -1233,7 +1235,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .story-figure.rumpel.deal, .story-figure.rumpel.fume { height: 80vh; }
 /* "🪙 +X" floating up over the wheel when you land a spin */
 .rumpel-plus { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 9;
-  font-family: var(--ff-display); font-weight: 900; font-size: 34px; color: #ffd76a; white-space: nowrap;
+  font-family: var(--ff-body); font-weight: 900; font-size: 34px; color: #ffd76a; white-space: nowrap;
   text-shadow: 0 2px 6px rgba(0,0,0,.9); pointer-events: none; animation: rumpelPlus 1s ease-out forwards; }
 @keyframes rumpelPlus {
   0%   { opacity: 0; transform: translate(-50%, -20%) scale(.6); }
@@ -1568,7 +1570,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* 3-2-1 shown as a translucent overlay so you can see the stage/buttons behind it */
 .dance-countdown { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
   background: rgba(10,4,24,.42); pointer-events: none; }
-.cd-num { font-family: var(--ff-display); font-weight: 800; font-size: 128px; line-height: 1; color: #fff;
+.cd-num { font-family: var(--ff-body); font-weight: 800; font-size: 128px; line-height: 1; color: #fff;
   text-shadow: 0 4px 18px rgba(0,0,0,.85), 0 0 30px rgba(197,139,255,.75); animation: cdPop .8s ease; }
 .cd-num.go { font-size: 70px; color: #ffe08a; }
 @keyframes cdPop { 0% { transform: scale(.4); opacity: 0; } 30% { transform: scale(1.14); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
@@ -2118,7 +2120,7 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 .goldi-bear:active { transform: scale(.9); }
 .goldi-bear .goldi-bear-img.art { height: 80px; width: auto; max-width: none; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
 .goldi-bear .art-emoji { font-size: 52px; line-height: 1; }
-.goldi-hint { font-family: var(--ff-display); font-size: 14.5px; color: #ffe7ac; text-shadow: 0 1px 3px rgba(0,0,0,.8); letter-spacing: .3px; }
+.goldi-hint { font-family: var(--ff-read); font-size: 14.5px; color: #ffe7ac; text-shadow: 0 1px 3px rgba(0,0,0,.8); letter-spacing: .3px; }
 .btn.story-next { width: 100%; max-width: 400px; }
 @keyframes storyIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes storyFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
