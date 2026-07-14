@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v302"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v303"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6076,7 +6076,7 @@ function renderScoop() {
     <div class="scoop-bg mg-fullbleed" id="scoop-bg"></div>
     <div class="scoop-stage" id="scoop-stage">
       <div class="scoop-craft" id="scoop-craft">
-        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(210 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}</div>
+        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(188 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}</div>
         <div class="scoop-bubbles" id="scoop-bubbles"></div>
         <div class="glitter-cover" id="glitter-cover"></div>
       </div>
@@ -6134,6 +6134,7 @@ function renderScoop() {
     SFX.sift(0.16, Math.max(0.3, Math.min(1, intensity)));
     if (navigator.vibrate) navigator.vibrate(6);
     const bowl = $("#scoop-bowl"); if (bowl) { bowl.classList.remove("jig"); void bowl.offsetWidth; bowl.classList.add("jig"); }
+    if (cover) { cover.classList.remove("jig"); void cover.offsetWidth; cover.classList.add("jig"); } // glow/glitter follows the shake
     left.slice(0, BATCH).forEach(g => { g.classList.add("gone");
       g.style.setProperty("--fx", rnd(-46, 46) + "px"); g.style.setProperty("--fy", (44 + rnd(0, 60)) + "px");
       setTimeout(() => g.remove(), 520); });
@@ -6163,7 +6164,7 @@ function renderScoop() {
     const bubs = $("#scoop-bubbles"); const kids = bubs ? [...bubs.children] : [];
     // bubbles float up ONE AT A TIME, each with its own rising pip so you can hear the count
     kids.forEach((b, k) => setTimeout(() => {
-      b.style.setProperty("--fx", rnd(-40, 40) + "px"); b.classList.add("floatup");
+      b.style.setProperty("--fx", rnd(-24, 24) + "px"); b.classList.add("floatup");
       SFX.count(k); if (navigator.vibrate) navigator.vibrate(5);
     }, 130 + k * 175));
     setTimeout(advance, 130 + found * 175 + 700);
@@ -6224,11 +6225,15 @@ function renderScoop() {
   stage.addEventListener("pointermove", e => {
     if (!dragging || state !== "shaking") return;
     const x = px(e), dx = x - lastX; lastX = x;
-    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.transform = `rotate(${Math.max(-9, Math.min(9, dx * 0.5))}deg)`;
+    const rot = Math.max(-9, Math.min(9, dx * 0.5));
+    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.transform = `rotate(${rot}deg)`;
+    const cov = $("#glitter-cover"); if (cov) cov.style.transform = `translateX(-50%) rotate(${rot}deg)`; // cover tilts with the spoon
     shakeDist += Math.abs(dx);
     if (shakeDist >= 52) { shakeDist = 0; shakeTick(Math.abs(dx) / 40 + 0.4); }
   });
-  const endDrag = () => { dragging = false; const bowl = $("#scoop-bowl"); if (bowl) { bowl.style.transition = "transform .2s"; bowl.style.transform = ""; setTimeout(() => { if (bowl) bowl.style.transition = ""; }, 200); } };
+  const endDrag = () => { dragging = false;
+    const bowl = $("#scoop-bowl"); if (bowl) { bowl.style.transition = "transform .2s"; bowl.style.transform = ""; setTimeout(() => { if (bowl) bowl.style.transition = ""; }, 200); }
+    const cov = $("#glitter-cover"); if (cov) { cov.style.transition = "transform .2s"; cov.style.transform = ""; setTimeout(() => { if (cov) cov.style.transition = ""; }, 200); } };
   stage.addEventListener("pointerup", endDrag);
   stage.addEventListener("pointercancel", endDrag);
 
@@ -6250,7 +6255,7 @@ function renderScoop() {
   const resizeSpoon = delta => {
     const s = Math.max(0.4, Math.min(2.2, +(ART.getScale("scoop_spoon") + delta).toFixed(2)));
     ART.setScale("scoop_spoon", s);
-    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.fontSize = Math.round(210 * s) + "px";
+    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.fontSize = Math.round(188 * s) + "px";
   };
   on("#spoon-smaller", "click", () => resizeSpoon(-0.1));
   on("#spoon-bigger", "click", () => resizeSpoon(0.1));
