@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v277"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v278"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2703,30 +2703,31 @@ function maybeJunkRound() {
   if (goblin) renderGoblinIntro(); else renderRumpelIntro();
   return true;
 }
-function rumpelBgUrl() { return "art/rumpel_bg.webp?v=" + BUILD; }
+// Rumpelstiltskin's story-mode card — same format as Little Red's scenes (character standing in
+// the scene, name plate + speech at the bottom), set in his blurred house.
+function rumpelCard(fig, speech, terms, buttons) {
+  const v = "?v=" + BUILD;
+  return `
+    <div class="story-card mg-fullbleed">
+      <div class="story-bg" style="background-image:url('art/rumpel_bg.webp${v}');background-position:center bottom"></div>
+      <div class="story-scrim"></div>
+      <div class="story-figure rumpel"><img class="story-face" src="art/rumpel_${fig}.webp${v}" alt="Rumpelstiltskin" draggable="false"></div>
+      <div class="story-below">
+        <div class="story-name">Rumpelstiltskin</div>
+        <div class="story-speech">${speech}</div>
+        ${terms ? `<div class="rumpel-terms">${terms}</div>` : ""}
+        <div class="rumpel-btns">${buttons}</div>
+      </div>
+    </div>`;
+}
 function renderRumpelIntro() {
   SFX.unlock(); SFX.fanfare();
-  const line = R.pick(RUMPEL_LINES), v = "?v=" + BUILD;
-  html("event", `
-    ${hud("A Strange Little Man")}
-    <div class="rumpel-story mg-fullbleed" style="background-image:url('${rumpelBgUrl()}')">
-      <div class="rumpel-scrim"></div>
-      <div class="rumpel-content">
-        <img class="rumpel-fig" src="art/rumpel_deal.webp${v}" alt="Rumpelstiltskin" draggable="false">
-        <div class="rumpel-name">Rumpelstiltskin</div>
-        <div class="speech">“${line}”</div>
-        <div class="card rumpel-card">
-          <div class="stat-line"><span>Your straw (junk)</span><span>${GAME.trash.length} bits</span></div>
-          <div class="stat-line"><span>Spin 🪙${RUMPEL_TARGET}+ to win</span><span class="gold">he pays out</span></div>
-          <div class="stat-line"><span>Fall short</span><span style="color:var(--bad)">🪙 ${RUMPEL_FEE} fee</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="rumpel-foot">
-      <button class="btn good" id="rumpel-play">🎡 Spin the wheel!</button>
-      <button class="btn secondary" id="rumpel-skip">Not now</button>
-    </div>
-  `);
+  const line = R.pick(RUMPEL_LINES);
+  const terms = `🌾 ${GAME.trash.length} straw · 🪙${RUMPEL_TARGET} to win · miss → 🪙${RUMPEL_FEE} fee`;
+  const buttons = `
+    <button class="btn good" id="rumpel-play">🎡 Spin the wheel!</button>
+    <button class="btn secondary" id="rumpel-skip">Not now</button>`;
+  html("event", rumpelCard("deal", `“${line}”`, terms, buttons));
   on("#rumpel-play", "click", () => { RUMPEL = { round: 0, tally: 0 }; renderRumpelRound(); });
   on("#rumpel-skip", "click", startRound);
   show("event");
@@ -2798,27 +2799,12 @@ function rumpelStop() {
 function renderRumpelBetween() {
   const justWon = rumpelReward(RUMPEL.round - 1);
   const reached = RUMPEL.tally >= RUMPEL_TARGET;
-  const v = "?v=" + BUILD;
-  html("event", `
-    ${hud("Nice Spin!")}
-    <div class="rumpel-story mg-fullbleed" style="background-image:url('${rumpelBgUrl()}')">
-      <div class="rumpel-scrim"></div>
-      <div class="rumpel-content">
-        <img class="rumpel-fig" src="art/rumpel_glee.webp${v}" alt="Rumpelstiltskin" draggable="false">
-        <div class="result-title win">Landed it! +🪙${justWon}</div>
-        <div class="card rumpel-card">
-          <div class="stat-line"><span>Gold spun so far</span><span class="gold">🪙 ${RUMPEL.tally}</span></div>
-          <div class="stat-line"><span>To win the deal</span><span>${reached ? "✓ reached!" : "🪙 " + RUMPEL_TARGET}</span></div>
-          <div class="stat-line"><span>Next round</span><span>tighter · faster · 🪙${rumpelReward(RUMPEL.round)}</span></div>
-        </div>
-        <p class="muted small">${reached ? "Enough to win — bank it, or press your luck for more!" : "Keep spinning to reach the deal… but each round is harder."}</p>
-      </div>
-    </div>
-    <div class="rumpel-foot">
-      <button class="btn good" id="rumpel-again">🎡 Spin again</button>
-      <button class="btn ${reached ? "" : "secondary"}" id="rumpel-bank">✋ Stop &amp; tally</button>
-    </div>
-  `);
+  const speech = `“A fine spin — that's <b class="gold">🪙${justWon}</b> more! ${reached ? "Enough to win… take it and run, or press your luck?" : "Spin again… or quit while you're ahead?"}”`;
+  const terms = `🪙 ${RUMPEL.tally} spun · ${reached ? "✓ enough to win!" : "🪙" + RUMPEL_TARGET + " to win"} · next 🪙${rumpelReward(RUMPEL.round)}`;
+  const buttons = `
+    <button class="btn good" id="rumpel-again">🎡 Spin again</button>
+    <button class="btn ${reached ? "" : "secondary"}" id="rumpel-bank">✋ Stop &amp; tally</button>`;
+  html("event", rumpelCard("glee", speech, terms, buttons));
   on("#rumpel-again", "click", renderRumpelRound);
   on("#rumpel-bank", "click", () => renderRumpelTally(true));
   show("event");
@@ -2826,42 +2812,24 @@ function renderRumpelBetween() {
 function renderRumpelTally(banked) {
   const strawCount = GAME.trash.length;
   const win = RUMPEL.tally >= RUMPEL_TARGET;
-  let outcome;
+  let speech, terms;
   if (win) {
     GAME.gold += RUMPEL.tally;
     GAME.trash = GAME.trash.filter(isBag);   // spin the junk into gold, but keep unopened bags
     save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
-    outcome = { emoji: "🥇", title: "The straw is gold!", cls: "win",
-      lines: [`<div class="stat-line"><span>Straw spun away</span><span>${strawCount} bits</span></div>`,
-              `<div class="stat-line"><span>Gold he pays you</span><span class="gold">🪙 +${RUMPEL.tally}</span></div>`],
-      note: banked ? "You banked it at just the right moment! ✨" : "You rode the wheel all the way to a fortune! ✨" };
+    speech = `“The straw is <b class="gold">gold!</b> A deal's a deal — <b class="gold">🪙${RUMPEL.tally}</b> is yours. ${banked ? "Banked at just the right moment!" : "You rode the wheel to a fortune!"} Hee hee!”`;
+    terms = `🌾 ${strawCount} straw spun away · 🪙 +${RUMPEL.tally}`;
   } else {
     const fee = Math.min(RUMPEL_FEE, GAME.gold);
     GAME.gold -= fee; save();
     SFX.sneeze();
-    outcome = { emoji: "🪤", title: "Not enough gold spun!", cls: "lose",
-      lines: [`<div class="stat-line"><span>Gold spun</span><span>🪙 ${RUMPEL.tally} / ${RUMPEL_TARGET}</span></div>`,
-              `<div class="stat-line"><span>His fee for the straw</span><span style="color:var(--bad)">🪙 -${fee}</span></div>`],
-      note: "“Hee hee! Not enough, not enough!” Your straw stays in the bin." };
+    speech = `“Not enough, not enough! Your straw stays in my bin… and that's <b>🪙${fee}</b> for my trouble. Hee hee hee!”`;
+    terms = `🪙 ${RUMPEL.tally}/${RUMPEL_TARGET} spun · fee 🪙${fee}`;
   }
   RUMPEL = null;
-  const fig = win ? "gold" : "fume", v = "?v=" + BUILD;
-  html("event", `
-    ${hud("Rumpelstiltskin")}
-    <div class="rumpel-story mg-fullbleed" style="background-image:url('${rumpelBgUrl()}')">
-      <div class="rumpel-scrim"></div>
-      <div class="rumpel-content">
-        <img class="rumpel-fig" src="art/rumpel_${fig}.webp${v}" alt="Rumpelstiltskin" draggable="false">
-        <div class="result-title ${outcome.cls}">${outcome.title}</div>
-        <div class="card rumpel-card">${outcome.lines.join("")}</div>
-        <p class="muted small">${outcome.note}</p>
-      </div>
-    </div>
-    <div class="rumpel-foot">
-      <button class="btn" id="rumpel-next">Next Customer  →</button>
-    </div>
-  `);
+  const fig = win ? "gold" : "fume";
+  html("event", rumpelCard(fig, speech, terms, `<button class="btn" id="rumpel-next">Next Customer  →</button>`));
   on("#rumpel-next", "click", startRound);
   show("event");
 }

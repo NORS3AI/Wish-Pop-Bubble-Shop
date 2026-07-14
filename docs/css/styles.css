@@ -1215,6 +1215,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .rumpel-hint { width: 92%; max-width: 340px; text-align: center; font-size: 13px; color: #f3e8d0; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 .rumpel-bottom .rumpel-stop-btn { width: auto; white-space: nowrap; padding: 17px 50px; font-size: 23px;
   box-shadow: 0 5px 16px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.2); }
+/* Rumpelstiltskin standing in his story-mode scenes (intro / between / win-lose) */
+.story-figure.rumpel { height: 74vh; }
+.story-figure.rumpel img.story-face { max-width: 116vw; }
+.story-below .rumpel-terms { font-size: 12.5px; font-weight: 700; color: #ffe9c0; text-align: center;
+  background: rgba(20,12,30,.5); padding: 5px 14px; border-radius: 999px; }
+.story-below .rumpel-btns { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; }
+.story-below .rumpel-btns .btn { width: 100%; }
 .rumpel-foot { display: flex; flex-direction: column; gap: 8px; padding: 8px 12px calc(8px + var(--safe-b)); }
 .rumpel-foot .btn { width: 100%; }
 /* Rumpelstiltskin's story-mode screens (intro / between / win-lose) — his room, blurred,
