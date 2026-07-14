@@ -1193,6 +1193,15 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   border-radius: 3px; background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.9); }
 .rumpel-stat { font-weight: 800; font-size: 15px; }
 .rumpel-stat.sub { font-weight: 600; font-size: 13px; color: var(--ink-dim); }
+/* Rumpelstiltskin's spinning wheel — layered art (stand behind, wheel spinning, arrow on top),
+   with a generated gold arc that peeks through the wheel's transparent channel. */
+.sw-stage { position: relative; height: min(52vh, 430px); aspect-ratio: 1027 / 1188; margin: 2px auto; }
+.sw-stage > img, .sw-stage > .sw-spin, .sw-spin > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sw-stage img { object-fit: contain; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.sw-stand { z-index: 0; }
+.sw-spin  { z-index: 1; transform-origin: 41.68% 35.90%; will-change: transform; }
+.sw-arrow { z-index: 2; }
+.sw-color { overflow: visible; filter: drop-shadow(0 0 5px rgba(255,205,80,.85)); }
 /* Gribble the Goblin — feed-the-junk timing game */
 .gob-top { display: flex; align-items: center; gap: 12px; padding: 6px 2px 2px; }
 .gob-face { font-size: 54px; line-height: 1; flex: 0 0 auto; }

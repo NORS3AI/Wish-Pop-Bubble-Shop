@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v271"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v272"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2680,9 +2680,20 @@ const RUMPEL_LINES = [
   "A brimming bin of straw! Keep landing my wheel on the gold and you'll be rich… if you're quick enough!",
   "Tsk, so much straw going to waste. Spin enough gold and it's yours — fall short and you'll owe me!"
 ];
-function rumpelBand(r)   { return Math.max(0.09, 0.42 - 0.05 * r); } // golden band width (shrinks each round)
-function rumpelSpeed(r)  { return 0.60 + 0.14 * r; }                 // sweeps/sec (faster each round)
-function rumpelReward(r) { return 30 + 15 * r; }                     // gold for landing round r
+// Difficulty per round — the gold arc (the hit window) SHRINKS and the wheel spins FASTER.
+function rumpelArc(r)    { return Math.max(9, 50 - 6 * r); }   // gold arc HALF-angle, degrees
+function rumpelSpeed(r)  { return 120 + 34 * r; }              // wheel spin, degrees/sec
+function rumpelReward(r) { return 12 + 9 * r; }               // gold for landing round r (small early → more rounds to win)
+// Wheel geometry, measured from the trimmed art (1027×1188 canvas).
+const SW = { cx: 428, cy: 426.5, rIn: 306, rOut: 352, vw: 1027, vh: 1188 };
+// Build an annular-sector (curved gold bar) path centred on due-south (the arrow), spanning ±half°.
+function swArcPath(half) {
+  const rad = d => d * Math.PI / 180;
+  const P = (r, d) => [ +(SW.cx + r * Math.cos(rad(d))).toFixed(1), +(SW.cy + r * Math.sin(rad(d))).toFixed(1) ];
+  const s = 90 - half, e = 90 + half, big = (2 * half) > 180 ? 1 : 0;
+  const [x1,y1]=P(SW.rOut,s), [x2,y2]=P(SW.rOut,e), [x3,y3]=P(SW.rIn,e), [x4,y4]=P(SW.rIn,s);
+  return `M${x1} ${y1} A${SW.rOut} ${SW.rOut} 0 ${big} 1 ${x2} ${y2} L${x3} ${y3} A${SW.rIn} ${SW.rIn} 0 ${big} 0 ${x4} ${y4} Z`;
+}
 function maybeJunkRound() {
   const full = GAME.trash.length >= BALANCE.TRASH_BIN_MAX;
   if (!full) { if (GAME.rumpelSeen) { GAME.rumpelSeen = false; save(); } return false; }
@@ -2717,36 +2728,40 @@ function renderRumpelIntro() {
   show("event");
 }
 function renderRumpelRound() {
-  const r = RUMPEL.round, width = rumpelBand(r), half = width / 2;
-  const center = half + Math.random() * (1 - width);  // keep the whole band on the wheel
-  Object.assign(RUMPEL, { center, half, pos: 0, dir: 1, raf: null, done: false, last: null });
-  const reached = RUMPEL.tally >= RUMPEL_TARGET;
+  const r = RUMPEL.round, half = rumpelArc(r), speed = rumpelSpeed(r);
+  // start the wheel at a random angle so the gold isn't already sitting on the arrow
+  const theta0 = 45 + Math.random() * 270;
+  Object.assign(RUMPEL, { half, speed, theta: theta0, raf: null, done: false, last: null });
+  const reached = RUMPEL.tally >= RUMPEL_TARGET, v = "?v=" + BUILD;
   html("event", `
     ${hud("Spin the Wheel!")}
-    <div class="grow center" style="gap:14px">
+    <div class="grow center" style="gap:8px">
       <div class="rumpel-stat">Round ${r + 1} · land it for <b class="gold">🪙${rumpelReward(r)}</b></div>
       <div class="rumpel-stat sub">Spun so far: <b class="gold">🪙${RUMPEL.tally}</b> / need 🪙${RUMPEL_TARGET}${reached ? " ✓" : ""}</div>
-      <div class="ph big" style="font-size:52px">🎡</div>
-      <div class="rumpel-track">
-        <span class="rumpel-band" style="left:${(center - half) * 100}%;width:${width * 100}%"></span>
-        <span class="rumpel-needle" id="rumpel-needle"></span>
+      <div class="sw-stage">
+        <img class="sw-stand" src="art/spinwheel_stand.webp${v}" alt="" draggable="false">
+        <div class="sw-spin" id="sw-spin" style="transform:rotate(${theta0}deg)">
+          <svg class="sw-color" viewBox="0 0 ${SW.vw} ${SW.vh}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path d="${swArcPath(half)}" fill="#ffce3a" stroke="#a9690f" stroke-width="4"></path>
+          </svg>
+          <img class="sw-wheel" src="art/spinwheel_wheel.webp${v}" alt="" draggable="false">
+        </div>
+        <img class="sw-arrow" src="art/spinwheel_arrow.webp${v}" alt="" draggable="false">
       </div>
-      <div class="muted" style="min-height:20px">Tap <b>Stop!</b> on the gold ✨</div>
+      <div class="muted" style="min-height:18px">Tap <b>Stop!</b> when the <b class="gold">gold</b> reaches the arrow at the bottom</div>
     </div>
     <button class="btn good" id="rumpel-stop">🛑 Stop!</button>
   `);
   on("#rumpel-stop", "click", rumpelStop);
   show("event");
-  const needle = $("#rumpel-needle"), speed = rumpelSpeed(r);
+  const spin = document.getElementById("sw-spin");
   const step = ts => {
     if (!RUMPEL || RUMPEL.done) return;
-    if (!document.getElementById("rumpel-needle")) { RUMPEL = null; return; } // left the screen
+    if (!document.getElementById("sw-spin")) { RUMPEL = null; return; } // left the screen
     if (RUMPEL.last == null) RUMPEL.last = ts;
     const dt = (ts - RUMPEL.last) / 1000; RUMPEL.last = ts;
-    RUMPEL.pos += RUMPEL.dir * speed * dt;
-    if (RUMPEL.pos >= 1) { RUMPEL.pos = 1; RUMPEL.dir = -1; }
-    else if (RUMPEL.pos <= 0) { RUMPEL.pos = 0; RUMPEL.dir = 1; }
-    if (needle) needle.style.left = (RUMPEL.pos * 100) + "%";
+    RUMPEL.theta += RUMPEL.speed * dt;
+    if (spin) spin.style.transform = "rotate(" + RUMPEL.theta + "deg)";
     RUMPEL.raf = requestAnimationFrame(step);
   };
   RUMPEL.raf = requestAnimationFrame(step);
@@ -2755,7 +2770,10 @@ function rumpelStop() {
   if (!RUMPEL || RUMPEL.done) return;
   RUMPEL.done = true;
   if (RUMPEL.raf) cancelAnimationFrame(RUMPEL.raf);
-  const hit = Math.abs(RUMPEL.pos - RUMPEL.center) <= RUMPEL.half;
+  // the gold sits at (south + theta); the arrow is at south — so the miss distance is theta itself
+  const d = ((RUMPEL.theta % 360) + 360) % 360;
+  const off = Math.min(d, 360 - d);          // degrees between the gold's centre and the arrow
+  const hit = off <= RUMPEL.half;
   if (hit) {
     RUMPEL.tally += rumpelReward(RUMPEL.round);
     RUMPEL.round += 1;
