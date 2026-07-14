@@ -992,11 +992,12 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .badge-modal-ok:active { transform: scale(.96); }
 /* stat banner — Payment · Target · Allergy — on a parchment plate like the wish box */
 .cust-bottombar { display: flex; align-items: center; justify-content: space-around; gap: 4px;
-  width: 97%; max-width: 396px; margin: 9px auto 0; padding: 7px 20px 8px;
+  width: 97%; max-width: 396px; margin: 9px auto 0; padding: 6px 16px;
   background: url('../art/ui/name_plate.png') no-repeat center; background-size: 100% 100%; }
-.bcell { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; cursor: help; }
-.bic { height: 39px; width: auto; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
-.bval { font-family: var(--ff-display); font-weight: 700; font-size: 24px; color: #3a2408; line-height: 1.05; word-break: break-word; }
+/* icon + value side by side (one row) so the box stays short */
+.bcell { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px; text-align: center; cursor: help; }
+.bic { height: 34px; width: auto; flex-shrink: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+.bval { font-family: var(--ff-display); font-weight: 700; font-size: 23px; color: #3a2408; line-height: 1; white-space: nowrap; }
 /* hover (desktop) or tap-and-hold (mobile, via .tip-on) shows the label as a little tooltip */
 .bcell::after, .bcell::before { position: absolute; left: 50%; z-index: 12; opacity: 0; pointer-events: none; transition: opacity .12s ease; }
 .bcell::after { content: attr(data-tip); bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap;
