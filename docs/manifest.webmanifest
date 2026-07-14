@@ -1,0 +1,16 @@
+{
+  "name": "Wish Pop: Bubble Shop",
+  "short_name": "Wish Pop",
+  "description": "A cozy bubble-shop game where you grant wishes for the folk of Willow-Wish Village.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2a1a4a",
+  "theme_color": "#2a1a4a",
+  "icons": [
+    { "src": "icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "icon-512.png", "type": "image/png", "sizes": "512x512" },
+    { "src": "icon-512-maskable.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

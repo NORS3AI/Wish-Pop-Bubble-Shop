@@ -6,8 +6,13 @@
 <meta name="theme-color" content="#2a1a4a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wish Pop">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Wish Pop: Bubble Shop</title>
-<link rel="stylesheet" href="css/styles.css?v=267">
+<link rel="manifest" href="manifest.webmanifest?v=268">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=268">
+<link rel="icon" type="image/png" href="icon-192.png?v=268">
+<link rel="stylesheet" href="css/styles.css?v=268">
 </head>
 <body>
 <div id="app">
@@ -35,10 +40,19 @@
   <p class="muted">Wish Pop is played upright. Turn your phone back to keep making wishes come true!</p>
 </div>
 
-<script src="js/audio.js?v=267"></script>
-<script src="js/data.js?v=267"></script>
-<script src="js/engine.js?v=267"></script>
-<script src="js/art.js?v=267"></script>
-<script src="js/ui.js?v=267"></script>
+<script src="js/audio.js?v=268"></script>
+<script src="js/data.js?v=268"></script>
+<script src="js/engine.js?v=268"></script>
+<script src="js/art.js?v=268"></script>
+<script src="js/ui.js?v=268"></script>
+<script>
+  /* Register the service worker so the game can be installed to the home screen
+     and work offline. No notifications are involved. */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
 </body>
 </html>
