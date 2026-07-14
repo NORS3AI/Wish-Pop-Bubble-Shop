@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v293"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v294"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5976,14 +5976,14 @@ function renderCustomer() {
         <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
       </div>
     </div>
-    <div class="grow" style="overflow:hidden; display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:4px">
+    <div class="grow" style="flex:0 1 auto; overflow:hidden; display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:4px">
       <div class="cust-banner"><img src="art/ui/${bannerImg}.png" alt="A New Customer Arrives" draggable="false"></div>
       <div class="cust-portrait">
         ${streakChip}
         ${badgesHtml}
         <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1}">${custArt(c, "cust-char-art")}</div>
       </div>
-      <div class="cust-nameplate"><img src="art/ui/kit_02.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
+      <div class="cust-nameplate"><img src="art/ui/name_plaque.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
       <div class="cust-wishbox${wishSteps.length > 1 ? " has-next" : ""}">
         <div class="cust-wish-text" id="cust-wish-text">“${wishSteps[0].text}”</div>
         ${wishSteps.length > 1 ? `<button class="wish-next" id="wish-next" aria-label="Read more">▸</button>` : ""}
@@ -7589,7 +7589,7 @@ function preloadCommonArt() {
   ["scoop_spoon", "bubble", "bubble_bonus", "logo", "background"].forEach(k => keys.push(k));
   Array.from(new Set(keys)).forEach(k => ART.ensure(k, () => {}));   // warms as WebP
   // hardcoded UI (PNG) + backdrops (JPG) aren't loaded through ART — warm the common ones directly
-  ["banner_new", "banner_vip", "name_plate", "kit_02", "kit_13", "kit_16", "kit_17", "btn_scoop",
+  ["banner_new", "banner_vip", "name_plate", "name_plaque", "kit_13", "kit_16", "kit_17", "btn_scoop",
    "banner_granted", "banner_partial", "banner_failed", "res_streak", "res_clean", "res_results", "res_panel", "btn_next"].forEach(k => { try { new Image().src = "art/ui/" + k + ".png?v=" + BUILD; } catch (e) {} });
   const rbg = REALM_BG[GAME.realm];
   ["village_far", "village_mid", "village_door"].concat(rbg ? [rbg.replace(/^art\//, "").replace(/\.jpg$/, "")] : []).forEach(bg => { try { new Image().src = "art/" + bg + ".jpg?v=" + BUILD; } catch (e) {} });

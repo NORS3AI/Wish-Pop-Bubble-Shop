@@ -1009,10 +1009,11 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cust-char::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 22%; z-index: 3;
   pointer-events: none; background: linear-gradient(180deg, transparent, rgba(16,9,26,.55)); }
 .cust-frame { display: none; }
-/* purple nameplate (kit_02) below the arch — holds the customer NAME */
-.cust-nameplate { position: relative; width: 80%; max-width: 322px; margin: 0 auto 0; z-index: 4; }
+/* purple name plaque below the arch — holds the customer NAME. The plaque is long
+   and slim so it fits longer names without crowding. */
+.cust-nameplate { position: relative; width: 92%; max-width: 384px; margin: 0 auto 0; z-index: 4; }
 .cust-nameplate img { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 7px rgba(0,0,0,.5)); }
-.cust-name { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 16%;
+.cust-name { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 13%;
   font-family: var(--ff-display); font-size: 24px; color: #fff2d0; text-shadow: 0 2px 3px rgba(30,10,50,.8);
   white-space: nowrap; overflow: hidden; }
 .cust-streak { position: absolute; top: 70px; right: 12px; z-index: 6; padding: 3px 10px; border-radius: 12px; font-weight: 800; font-size: 14px; color: #fff;
@@ -1081,7 +1082,9 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .bcell:hover::after, .bcell:hover::before, .bcell.tip-on::after, .bcell.tip-on::before { opacity: 1; }
 .amark { font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: 2px; }
 .amark.ok { color: #2e8b3d; } .amark.x { color: #b23b2e; }
-.cust-scoop { position: relative; align-self: center; width: 80%; max-width: 320px; margin: 3px auto 16px; padding: 0; border: none; background: none; cursor: pointer; }
+/* Start Scoop matches the results screen's Next Customer button: same width and
+   floating placement, so the two screens flow into each other seamlessly. */
+.cust-scoop { position: relative; align-self: center; width: 92%; max-width: 400px; margin: auto auto; padding: 0; border: none; background: none; cursor: pointer; flex-shrink: 0; }
 .cust-scoop img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
 /* locked until the customer has finished speaking (multi-part wishes) */
 .cust-scoop.locked img { filter: grayscale(.9) brightness(.72) drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
