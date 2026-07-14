@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v280"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v281"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2756,7 +2756,9 @@ function renderRumpelRound() {
       </div>
       <div class="rumpel-stats">
         <div class="rumpel-stat">Round ${r + 1} · land it for <b class="gold">🪙${rumpelReward(r)}</b></div>
-        <div class="rumpel-stat sub">Spun so far: <b class="gold">🪙${RUMPEL.tally}</b> / need 🪙${RUMPEL_TARGET}${reached ? " ✓" : ""}</div>
+        <div class="rumpel-stat sub">${reached
+          ? `Spun: <b class="gold">🪙${RUMPEL.tally}</b> · <b style="color:#7ee0a0">deal won ✓ — keep going for more!</b>`
+          : `Spun so far: <b class="gold">🪙${RUMPEL.tally}</b> / need 🪙${RUMPEL_TARGET}`}</div>
       </div>
       <div class="rumpel-bottom">
         <div class="rumpel-hint">Tap <b>Stop!</b> when the <b class="gold">gold</b> reaches the arrow at the bottom</div>
@@ -2786,16 +2788,15 @@ function rumpelStop() {
   const d = ((RUMPEL.theta % 360) + 360) % 360;
   const off = Math.min(d, 360 - d);          // degrees between the gold's centre and the arrow
   const hit = off <= RUMPEL.half;
-  if (!hit) { SFX.sneeze(); renderRumpelTally(false); return; }   // one miss ends the run
-  // Landed it — bank the gold and roll straight into the next spin (no interruption). Reach the
-  // target and the deal is won; otherwise you keep spinning until you finally miss.
+  if (!hit) { SFX.sneeze(); renderRumpelTally(); return; }   // a miss ends the run — the tally decides win/lose
+  // Landed it — bank the gold and roll straight into the next spin. You keep spinning (racking up
+  // more and more) until you finally miss; reaching the target just means the deal's already won.
   const reward = rumpelReward(RUMPEL.round);
   RUMPEL.tally += reward;
   RUMPEL.round += 1;
   SFX.coin();
   rumpelPlusFlash(reward);
-  if (RUMPEL.tally >= RUMPEL_TARGET) setTimeout(() => renderRumpelTally(true), 800);
-  else setTimeout(renderRumpelRound, 850);
+  setTimeout(renderRumpelRound, 850);
 }
 // A little "🪙 +X" that floats up over the wheel when you land a spin (feedback without a full screen).
 function rumpelPlusFlash(amt) {
@@ -2804,7 +2805,7 @@ function rumpelPlusFlash(amt) {
   const f = document.createElement("div"); f.className = "rumpel-plus"; f.textContent = "🪙 +" + amt;
   host.appendChild(f); setTimeout(() => { if (f.parentNode) f.remove(); }, 1000);
 }
-function renderRumpelTally(banked) {
+function renderRumpelTally() {
   const strawCount = GAME.trash.length;
   const win = RUMPEL.tally >= RUMPEL_TARGET;
   let speech, terms;
@@ -2813,7 +2814,7 @@ function renderRumpelTally(banked) {
     GAME.trash = GAME.trash.filter(isBag);   // spin the junk into gold, but keep unopened bags
     save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
-    speech = `“The straw is <b class="gold">gold!</b> You spun the whole deal — <b class="gold">🪙${RUMPEL.tally}</b> is yours, fair and square. Hee hee hee!”`;
+    speech = `“The wheel slips at last — but you'd already spun the straw to <b class="gold">gold!</b> <b class="gold">🪙${RUMPEL.tally}</b> is yours, fair and square. Hee hee!”`;
     terms = `🌾 ${strawCount} straw spun away · 🪙 +${RUMPEL.tally}`;
   } else {
     const fee = Math.min(RUMPEL_FEE, GAME.gold);
