@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v256"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v257"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1156,6 +1156,8 @@ function openItemReveal() {
     if (done && done.onAdd) { try { done.onAdd(); } catch (e) {} }
     ov.classList.add("closing"); setTimeout(() => { if (ov.parentNode) ov.remove(); }, 200);
     refreshItemBubble();
+    // once the last waiting collectible is grabbed, a deferred hunt celebration can take the stage
+    if (!ITEM_REVEALS.length && GAME.huntCelebrate) setTimeout(maybeShowHuntCelebrate, 260);
   });
 }
 function huntFindFx(h, st, anchorEl, foundId) {
@@ -1182,7 +1184,13 @@ function huntComplete(h) {
 // One-time thank-you when a hunt completes — played as a little story-mode
 // conversation (not a pop-up card) the next time you land on the home screen.
 function maybeShowHuntCelebrate() {
-  const realm = GAME.huntCelebrate; if (!realm) return;
+  if (!GAME.huntCelebrate) return;
+  // Don't barge in over a waiting collectible — e.g. the just-signed band poster's "!" bubble,
+  // which floats over the whole screen until you tap to collect it. Leave huntCelebrate set; it
+  // fires the moment that collectible is grabbed (see the reveal "Add" handler) or, failing that,
+  // on your next trip home.
+  if (ITEM_REVEALS.length || document.getElementById("item-reveal-overlay")) return;
+  const realm = GAME.huntCelebrate;
   const h = huntFor(realm); GAME.huntCelebrate = null; save();
   if (!h) return;
   const skin = D.COSMETIC_BY_ID[h.skin];
