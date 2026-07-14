@@ -543,7 +543,9 @@ html, body {
   animation: sbpop .5s .2s cubic-bezier(.2,1.5,.4,1) backwards; }
 .res-atag.yellow { background: #f0b53a; color: #4a2e00; }
 .res-atag.red { background: #d9463a; color: #fff; }
-.res-react { text-align: center; font-family: var(--ff-read); font-size: 18px; line-height: 1.32; color: #5a2a7a; max-width: 320px; }
+/* cap the reaction at 3 lines so it never crowds the badges below it */
+.res-react { text-align: center; font-family: var(--ff-read); font-size: 18px; line-height: 1.32; color: #5a2a7a; max-width: 320px;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .res-hint { font-family: var(--ff-read); font-size: 12.5px; color: #7a5a2a; margin-top: 1px; text-align: center; }
 /* two ornate streak badges; the count sits in the frame's empty slot */
 .res-badges { display: flex; gap: 10px; justify-content: center; align-items: flex-start; width: 100%; margin-top: 2px; }

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v290"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v291"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -206,12 +206,14 @@ function applyHomeBackground() {
 }
 // Per-realm scene background for the customer screen (Willow uses the village art).
 const REALM_BG = { willow: "art/shop_interior.jpg" };
-function applyRealmBackground() {
-  const bg = document.getElementById("cust-bg"); if (!bg) return;
+function applyRealmBackground(el) {
+  // el lets a caller target a SPECIFIC cust-bg (the result screen has its own with the
+  // same id as the arrival screen, so getElementById alone would grab the wrong one).
+  const bg = el || document.getElementById("cust-bg"); if (!bg) return;
   const url = REALM_BG[GAME.realm];
   if (!url) { bg.style.backgroundImage = ""; bg.classList.remove("has-realm-bg"); return; }
   const im = new Image();
-  im.onload = () => { const b = document.getElementById("cust-bg"); if (b) { b.style.backgroundImage = "url('" + url + "')"; b.classList.add("has-realm-bg"); } };
+  im.onload = () => { bg.style.backgroundImage = "url('" + url + "')"; bg.classList.add("has-realm-bg"); };
   im.src = url;
 }
 // apply an optional custom cauldron-pot image over the color skin
@@ -7203,7 +7205,7 @@ function renderResult(res) {
   const bannerImg = !win ? "banner_failed" : allergic ? "banner_partial" : "banner_granted";
   const bannerAlt = !win ? "Wish Failed!" : allergic ? "Wish Worked, But…!" : "Wish Granted!";
   const blurb = !win
-    ? c.name + " storms off in a huff — and pelts you with their trash on the way out! Grab it: junk recycles into coins or Stardust."
+    ? c.name + " storms off in a huff — and pelts you with trash on the way out!"
     : isPerfect ? c.name + " got a flawless potion — 100% perfect! ✨"
     : zone === "red" ? "The wish worked… but " + c.name + " reacted to the " + res.allergy.type + " magic! Half pay."
     : zone === "yellow" ? c.name + " got their wish, but a little " + res.allergy.type + " magic left them itchy."
@@ -7248,7 +7250,7 @@ function renderResult(res) {
   `);
   on("#next-btn", "click", () => { if (itemGateBlocks()) return; (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound(); });
   on("#recap-btn", "click", showRoundRecap);
-  applyRealmBackground();
+  applyRealmBackground(document.querySelector("#screen-result #cust-bg"));
   show("result");
   if (win) wireRewardBubbles(res);
   // fallback: if this round was meant to reveal a hunt item but its phase never happened
