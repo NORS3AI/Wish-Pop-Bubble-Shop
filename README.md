@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🥄 **A gorgeous new scooping phase.** The scoop happens right inside the shop now:
+  a golden sifter dips into a glittering pile, and when you swipe to shake, the glitter
+  sheds off in falling sparkles and your **bubbles rise up out of the sifter**. Each realm
+  will have its own bubble colour (Willow's are blue), with rainbow bubbles saved for
+  something special.
+
 - 🎉 **A brand-new results screen.** After every wish you now get a tidy, storybook-style
   results page: a big picture of the happy (or grumpy!) customer, a "Wish Granted / Worked,
   But… / Failed" banner, your total earned, and two ornate badges for your Win Streak and
