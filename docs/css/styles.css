@@ -1003,7 +1003,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* hover (desktop) or tap-and-hold (mobile, via .tip-on) shows the label as a little tooltip */
 .bcell::after, .bcell::before { position: absolute; left: 50%; z-index: 12; opacity: 0; pointer-events: none; transition: opacity .12s ease; }
 .bcell::after { content: attr(data-tip); bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap;
-  background: rgba(22,13,32,.95); color: #ffeccb; font-family: var(--ff-display); font-size: 14px; letter-spacing: .3px;
+  background: rgba(22,13,32,.95); color: #ffeccb; font-family: var(--ff-read); font-size: 14.5px; letter-spacing: .2px;
   padding: 5px 13px; border-radius: 10px; border: 1px solid rgba(255,255,255,.16); box-shadow: 0 5px 14px rgba(0,0,0,.55); }
 .bcell::before { content: ""; bottom: calc(100% + 2px); transform: translateX(-50%); border: 6px solid transparent; border-top-color: rgba(22,13,32,.95); }
 .bcell:hover::after, .bcell:hover::before, .bcell.tip-on::after, .bcell.tip-on::before { opacity: 1; }
