@@ -1215,9 +1215,18 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .rumpel-hint { width: 92%; max-width: 340px; text-align: center; font-size: 13px; color: #f3e8d0; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 .rumpel-bottom .rumpel-stop-btn { width: auto; white-space: nowrap; padding: 17px 50px; font-size: 23px;
   box-shadow: 0 5px 16px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.2); }
-/* Rumpelstiltskin standing in his story-mode scenes (intro / between / win-lose) */
-.story-figure.rumpel { height: 74vh; }
-.story-figure.rumpel img.story-face { max-width: 116vw; }
+/* Rumpelstiltskin standing in his story-mode scenes — he's a short character, so make him big and
+   lift him off the floor so he sits higher on screen (feet tuck behind the speech card). */
+.story-figure.rumpel { height: 88vh; bottom: 9%; }
+.story-figure.rumpel img.story-face { max-width: 124vw; }
+/* "🪙 +X" floating up over the wheel when you land a spin */
+.rumpel-plus { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 9;
+  font-family: var(--ff-display); font-weight: 900; font-size: 34px; color: #ffd76a; white-space: nowrap;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9); pointer-events: none; animation: rumpelPlus 1s ease-out forwards; }
+@keyframes rumpelPlus {
+  0%   { opacity: 0; transform: translate(-50%, -20%) scale(.6); }
+  25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+  100% { opacity: 0; transform: translate(-50%, -120%) scale(1); } }
 .story-below .rumpel-terms { font-size: 12.5px; font-weight: 700; color: #ffe9c0; text-align: center;
   background: rgba(20,12,30,.5); padding: 5px 14px; border-radius: 999px; }
 .story-below .rumpel-btns { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; }
