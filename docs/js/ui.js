@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v283"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v284"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5854,11 +5854,11 @@ function applyCustArc(round) {
  * (with per-part art) win; otherwise a long line auto-splits at a sentence boundary. */
 function autoSplitWish(line) {
   const s = (line || "").trim();
-  if (s.length <= 84) return [{ text: s }];   // short enough for ≤3 lines — no pagination
-  // Pack whole WORDS into pages, each capped so it never exceeds ~3 lines in the fixed box.
+  if (s.length <= 112) return [{ text: s }];   // short enough for ≤4 lines — no pagination
+  // Pack whole WORDS into pages, each capped so it never exceeds ~4 lines in the fixed box.
   // Prefer to end a page at a sentence boundary once it's reasonably full, so pages read
   // naturally. Works for long single-sentence wishes too (word-wrap fallback).
-  const BUDGET = 84, SOFT = 46;
+  const BUDGET = 112, SOFT = 62;
   const words = s.split(/\s+/);
   const parts = []; let cur = "";
   for (const w of words) {
@@ -5960,7 +5960,7 @@ function renderCustomer() {
   const badgesHtml = badges.length ? `<div class="cust-badges">${badges.map((b, i) =>
     `<button class="cust-badge ${b.cls}" data-bi="${i}" aria-label="${b.title}"><span class="cust-badge-ic">${b.icon}</span></button>`).join("")}</div>` : "";
   const streakChip = GAME.streak >= 2 ? `<div class="cust-streak">🔥 ${GAME.streak}</div>` : "";
-  const bcell = (icon, label, value, cls) => `<div class="bcell">${icon ? `<img class="bic" src="art/ui/${icon}.png" alt="">` : ""}<div class="bval ${cls || ""}">${value}</div><div class="blbl">${label}</div></div>`;
+  const bcell = (icon, label, value, cls) => `<div class="bcell" data-tip="${label}">${icon ? `<img class="bic" src="art/ui/${icon}.png" alt="${label}">` : ""}<div class="bval ${cls || ""}">${value}</div></div>`;
   // Full-bleed scene image only on realms that have one (currently Willow); other realms keep the normal padded layout.
   const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
   // Paginated wish dialogue: long paragraphs reveal a line at a time (see wishParts).
@@ -7537,6 +7537,17 @@ if (localStorage.getItem("wishpop_test") === "1") {
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
+// Tap-and-hold a stat cell (payment / target / allergy) to see its label. Desktop shows it on
+// hover via CSS; this adds the press-and-hold reveal for touch.
+let statTipTimer = null, statTipCell = null;
+function killStatTip() { if (statTipTimer) { clearTimeout(statTipTimer); statTipTimer = null; } if (statTipCell) { statTipCell.classList.remove("tip-on"); statTipCell = null; } }
+document.addEventListener("pointerdown", e => {
+  const cell = e.target.closest && e.target.closest(".bcell[data-tip]");
+  if (!cell) return;
+  killStatTip();
+  statTipTimer = setTimeout(() => { cell.classList.add("tip-on"); statTipCell = cell; }, 300);
+});
+["pointerup", "pointercancel", "pointerleave"].forEach(ev => document.addEventListener(ev, killStatTip));
 // Quietly warm the browser cache for the art you're about to need — every customer's
 // four faces, the gameplay pieces, key UI and backdrops — so they appear instantly
 // instead of flashing an emoji/blank placeholder the first time. Runs after the first

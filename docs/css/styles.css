@@ -948,7 +948,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   z-index: 3; background: url('../art/ui/name_plate.png') no-repeat center; background-size: 100% 100%; }
 /* FIXED height so short and longer (paginated) lines take the same space and
    never push the stat bar below out of view — the box stays put, no scrolling */
-.cust-wish-text { display: flex; align-items: center; justify-content: center; height: 76px; overflow: hidden;
+.cust-wish-text { display: flex; align-items: center; justify-content: center; height: 102px; overflow: hidden;
   text-align: center; font-family: 'Georgia', serif; font-size: 19px; line-height: 1.3; font-style: italic; color: #4a3212; }
 /* paginated wish: leave room for the ▸ arrow, which reveals the next line */
 .cust-wishbox.has-next { padding-right: 46px; }
@@ -992,12 +992,18 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .badge-modal-ok:active { transform: scale(.96); }
 /* stat banner — Payment · Target · Allergy — on a parchment plate like the wish box */
 .cust-bottombar { display: flex; align-items: center; justify-content: space-around; gap: 4px;
-  width: 97%; max-width: 396px; margin: 4px auto 0; padding: 9px 20px 10px;
+  width: 97%; max-width: 396px; margin: 9px auto 0; padding: 7px 20px 8px;
   background: url('../art/ui/name_plate.png') no-repeat center; background-size: 100% 100%; }
-.bcell { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px; text-align: center; }
+.bcell { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; cursor: help; }
 .bic { height: 39px; width: auto; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
-.blbl { font-family: var(--ff-display); font-size: 14px; color: #6a4310; line-height: 1; letter-spacing: .3px; }
 .bval { font-family: var(--ff-display); font-weight: 700; font-size: 24px; color: #3a2408; line-height: 1.05; word-break: break-word; }
+/* hover (desktop) or tap-and-hold (mobile, via .tip-on) shows the label as a little tooltip */
+.bcell::after, .bcell::before { position: absolute; left: 50%; z-index: 12; opacity: 0; pointer-events: none; transition: opacity .12s ease; }
+.bcell::after { content: attr(data-tip); bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap;
+  background: rgba(22,13,32,.95); color: #ffeccb; font-family: var(--ff-display); font-size: 14px; letter-spacing: .3px;
+  padding: 5px 13px; border-radius: 10px; border: 1px solid rgba(255,255,255,.16); box-shadow: 0 5px 14px rgba(0,0,0,.55); }
+.bcell::before { content: ""; bottom: calc(100% + 2px); transform: translateX(-50%); border: 6px solid transparent; border-top-color: rgba(22,13,32,.95); }
+.bcell:hover::after, .bcell:hover::before, .bcell.tip-on::after, .bcell.tip-on::before { opacity: 1; }
 .amark { font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: 2px; }
 .amark.ok { color: #2e8b3d; } .amark.x { color: #b23b2e; }
 .cust-scoop { position: relative; align-self: center; width: 80%; max-width: 320px; margin: 3px auto 0; padding: 0; border: none; background: none; cursor: pointer; }
