@@ -1007,7 +1007,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .bcell:hover::after, .bcell:hover::before, .bcell.tip-on::after, .bcell.tip-on::before { opacity: 1; }
 .amark { font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: 2px; }
 .amark.ok { color: #2e8b3d; } .amark.x { color: #b23b2e; }
-.cust-scoop { position: relative; align-self: center; width: 80%; max-width: 320px; margin: 3px auto 0; padding: 0; border: none; background: none; cursor: pointer; }
+.cust-scoop { position: relative; align-self: center; width: 80%; max-width: 320px; margin: 3px auto 16px; padding: 0; border: none; background: none; cursor: pointer; }
 .cust-scoop img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
 /* locked until the customer has finished speaking (multi-part wishes) */
 .cust-scoop.locked img { filter: grayscale(.9) brightness(.72) drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
