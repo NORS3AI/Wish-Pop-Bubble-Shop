@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v260"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v261"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -447,6 +447,9 @@ function storyPaint() {
   else if (b.fig) { const fc = /duo/.test(b.fig) ? " wide" : /^autograph/.test(b.fig) ? " poster" : isRoundFig(b.fig) ? " round" : (isShortFig(b.fig) ? " tall" : ""); top = `<div class="story-figure${fc}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // duo art smaller to fit width; a poster shows centred; a bubble-character (Wishy) shows small & centred; short characters (kids) get the taller boost
   else if (b.figEmoji) { top = `<div class="story-figure emoji"><span class="story-face">${b.figEmoji}</span></div>`; }  // a character without art yet (emoji placeholder)
   else { top = `<div class="story-figure">${redPose(b.pose)}</div>`; }
+  // an item being handed over this beat (e.g. giving Red the heart button) — shown as a
+  // glowing chip floating in front of the character
+  const giveHtml = b.give ? `<div class="story-give">${ART.tag(b.give, b.giveEmoji || "🎁", "story-give-img")}</div>` : "";
   // backdrop: crossfade from the previous beat's scene to this one's (village → shop, etc.)
   const curBg = b.bg || STORY_DEF_BG, prevBg = STORY_BG_PREV || curBg;
   const bgHtml = `
@@ -458,6 +461,7 @@ function storyPaint() {
     <div class="story-card mg-fullbleed${cls ? " " + cls : ""}" id="story-card">
       ${bgHtml}
       ${top}
+      ${giveHtml}
       <div class="story-below">
         ${b.name ? `<div class="story-name">${b.name}</div>` : ""}
         <div class="story-speech">${b.text}</div>
@@ -473,6 +477,8 @@ function storyPaint() {
     const key = b.fig || ("red_" + (b.pose || "wave"));
     if (!ART.isReady(key)) ART.ensure(key, () => { if (STORY_BEATS && STORY_BEATS[STORY_I] === b) storyPaint(); });
   }
+  // a handed item's art may also load late — repaint so the chip fills in
+  if (b.give && !ART.isReady(b.give)) ART.ensure(b.give, () => { if (STORY_BEATS && STORY_BEATS[STORY_I] === b) storyPaint(); });
 }
 // The very-first-launch arrival: the village, then Little Red, then her tutorial wish.
 function playArrivalIntro() {
@@ -636,20 +642,25 @@ function playWolfButtons() {
 }
 function playRedButtons() {
   SFX.unlock();
-  ["think", "annoyed", "idea"].forEach(p => ART.ensure("red_" + p, () => {}));
+  ["think", "annoyed", "idea", "present"].forEach(p => ART.ensure("red_" + p, () => {}));
+  ART.ensure("button_heart", () => {});
   renderStoryBeats([
     { name: "Little Red", pose: "think", text: "You said the ‘collector’ <i>dropped</i> these? Let me see them… <i>(she turns each one over)</i>" },
     { name: "Little Red", pose: "annoyed", text: "That <b>heart button</b> — I’d know it anywhere. That’s <b>Grandma’s</b>. And this blue one’s Tiny Mouse’s, I’d bet my hood on it. And the gumdrop…" },
-    { name: "Little Red", pose: "idea", cta: "It all connects  ▸", text: "…that’s the Gingerbread Man’s. That ‘collector’ has been pinching from <i>everyone</i>. ‘Notawolf,’ honestly. I’ll take Grandma’s button back — you sort the others out. And keep your eyes <b>open</b>." },
+    { name: "Little Red", pose: "idea", cta: "Give hers back  ▸", text: "…that’s the Gingerbread Man’s. That ‘collector’ has been pinching from <i>everyone</i>. ‘Notawolf,’ honestly. May I have Grandma’s heart button back?" },
+    { name: "Little Red", pose: "present", give: "button_heart", giveEmoji: "❤️", cta: "Hand it over  ▸", text: "You fish the little <b>heart button</b> out of your satchel and hold it out. <i>(Red cups her hands and takes it, holding it close.)</i> Oh — thank you. Grandma will be so glad." },
+    { name: "Little Red", pose: "idea", cta: "I’m on it  ▸", text: "Right — that’s hers safe and sound. You sort the other two back to their owners, and keep your eyes <b>open</b>. That ‘collector’ won’t get away with it." },
   ], () => { satchelRemove("button_heart"); GAME.buttonStep = 2; GAME.buttonChainAt = -1; save(); toast("❤️ Little Red kept Grandma’s button."); renderStart(); });
 }
 function playGingerbreadButton() {
   SFX.unlock();
   ["gingerbread_lost", "gingerbread_spot", "gingerbread_fixed"].forEach(k => ART.ensure(k, () => {}));
+  ART.ensure("button_blue", () => {});
   renderStoryBeats([
     { name: "Gingerbread Man", fig: "gingerbread_lost", cta: "Poor fella  ▸", text: "Whoa there, don’t run off — funny, usually <i>I’m</i> the one doing the running! Listen, I’ve gone and lost a button. My gumdrop one, popped clean off my front. I’ve retraced every step: over the bridge, past the mill, twice round the baker’s window. Not a crumb of it. I even asked a pigeon — he just blinked at me and waddled away. The nerve!" },
     { name: "Gingerbread Man", fig: "gingerbread_spot", cta: "Keep it, then  ▸", text: "Wait — wait just a crumb. That glow, right there in your bag… that’s <b>him!</b> That’s my gumdrop, sparkling like a little star! Well, I’ll be iced. He went and turned all magical on me — and wouldn’t you know it, the moment I want him back, he’s decided he likes <i>you</i> better. Ha! Can’t say I blame him. He’s found himself a good pocket. You hold onto him." },
-    { name: "Gingerbread Man", fig: "gingerbread_fixed", cta: "Good as new  ▸", text: "A spare? For me? One of your very own? Aw, gosh, you didn’t have to — and it’s a real beauty, too. Honestly? A touch handsomer than the gumdrop. <i>(Don’t you dare tell the gumdrop I said that.) (He presses it snug into his icing.)</i> There — good as new, better than new! And say… quiet-like, just between us two: buttons have been going missing all over Willow-Wish. More than just mine. I’ve got a hunch who’s behind it — so keep those clever eyes of yours peeled." },
+    { name: "Gingerbread Man", fig: "gingerbread_fixed", give: "button_blue", giveEmoji: "🔵", cta: "Pin it on  ▸", text: "You dig a spare button from your satchel and hold it out to him. <i>(His eyes go round.)</i> A spare? For me? One of your very own? Aw, gosh, you didn’t have to — and it’s a real beauty, too. Honestly? A touch handsomer than the gumdrop. <i>(Don’t you dare tell the gumdrop I said that.)</i>" },
+    { name: "Gingerbread Man", fig: "gingerbread_fixed", cta: "Good as new  ▸", text: "<i>(He presses it snug into his icing.)</i> There — good as new, better than new! And say… quiet-like, just between us two: buttons have been going missing all over Willow-Wish. More than just mine. I’ve got a hunch who’s behind it — so keep those clever eyes of yours peeled." },
   ], () => { satchelRemove("button_blue"); GAME.buttonStep = 3; GAME.buttonChainAt = -1; save(); toast("🍪 You gave the Gingerbread Man a button — the sparkly gumdrop keepsake stays with you."); renderStart(); });
 }
 // Drive the chain: Mouse's button-jar wish is the gate, then the beats pace a few rounds apart.

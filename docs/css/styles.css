@@ -1972,6 +1972,19 @@ span.story-face { display: inline-flex; align-items: center; justify-content: ce
 /* emoji placeholder for characters without full-body art: float it up where it's visible */
 .story-figure.emoji { height: auto; bottom: auto; top: 12%; align-items: center; }
 .story-figure.emoji span.story-face { height: auto; font-size: 30vh; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
+/* an item handed over during a beat (e.g. giving Red the heart button) — a glowing
+   chip floating in front of the character, gently offered up */
+.story-give { position: absolute; left: 50%; top: 54%; transform: translate(-50%, -50%); z-index: 3;
+  width: 118px; height: 118px; border-radius: 50%; border: 3px solid #fff2c8; pointer-events: none;
+  background: radial-gradient(circle at 38% 30%, #fff7da, #ffd873 58%, #f0a63a);
+  box-shadow: 0 8px 22px rgba(0,0,0,.5), 0 0 26px rgba(255,206,110,.85);
+  display: flex; align-items: center; justify-content: center;
+  animation: storyGiveIn .45s ease-out both, storyGiveBob 2.2s ease-in-out .45s infinite; }
+.story-give .story-give-img { width: 66%; height: 66%; object-fit: contain; font-size: 52px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+@keyframes storyGiveIn { 0% { opacity: 0; transform: translate(-50%, calc(-50% + 28px)) scale(.6); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes storyGiveBob { 0%,100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 8px)); } }
 /* the dialogue stack sits on top of everything, pinned to the bottom */
 .story-below { position: relative; z-index: 3; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 
