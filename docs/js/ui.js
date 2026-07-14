@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v266"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v267"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5658,7 +5658,7 @@ const CUSTOMER_ARCS = {
     { line: "A cookie fellow bought my finest vanilla — sweet chap! Wish me a quick restock?" },
     { line: "Six-tier wedding cake due at noon, it’s eleven! Grant me deep, deep calm — hurry!" },
     { line: "A hooded man bought 13 loaves for “granny,” paid in ACORNS! My nerves need a wish." },
-    { line: "That grin had too many teeth — I keep thinking on it! Wish me brave at the oven?" },
+    { line: "That grin had too many teeth — I keep thinking on it! Steady my nerves at the oven?" },
     { line: "Brass buttons pinched off my apron — third this week! Charm the rest to stay put?" },
     { line: "I told Little Red about the acorn man. Felt right. A calm wish while it’s sorted?" },
     { line: "Booming since the fright passed! Wish me steady hands for a hundred loaves today?" },
@@ -5678,7 +5678,7 @@ const CUSTOMER_ARCS = {
     { line: "I met the band! Too starstruck to speak. Grant me the words for next time?" },
     { line: "The Bandit Bears are visiting Willow-Wish! Wish me the perfect welcome banner?" },
     { line: "I’m THIS close to their autograph! Bubble me the boldness to finally ask?" },
-    { line: "Honey signed my poster!! Wish it protected forever — no smudges, ever?" },
+    { line: "The tour poster you brought me — signed by ALL THREE bears! Keep it safe forever?" },
     { line: "As club president, I’m throwing the bears a thank-you party! Wish it just right?" },
     { line: "The band made me their honorary cub! Bubble me one happy tear that won’t stop?" },
   ],
@@ -5791,7 +5791,7 @@ const TOWN_WISHES = {
     "Grandma’s cottage is deep in the woods. Keep the way clear for me?",
     "Mother packed a basket for Grandma. Wish the bread stays warm the whole way?",
     "The Mouse mended my cloak beautifully! Keep it clean on the muddy paths?",
-    { t: "Found a heart-shaped button on the path — spooky! Wish me brave to carry it?", when: () => (GAME.buttonStep || 0) >= 1 },
+    { t: "More buttons missing — that sneaky ‘collector’ is at it again! Wish them all found?", when: () => (GAME.buttonStep || 0) >= 1 },
     { t: "Folk say something wears a bonnet in these woods! Wish me courage for my visit?", when: () => GAME.storyStep >= 4 },
   ],
   fish: [
