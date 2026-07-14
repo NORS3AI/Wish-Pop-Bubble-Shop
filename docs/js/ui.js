@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v261"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v262"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -123,7 +123,7 @@ function charmArt(id, cls) { const ch = D.SPECIAL_CHARMS[id]; return ART.tag("ch
 function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoji, cls || "cust-art"); }
 // Per-customer size tweaks in the arch frame (1 = default). Some art fills its
 // canvas more than others, so a few get scaled down to sit comfortably.
-const CHAR_SCALE = { owl: 0.82, tortoise: 0.82, hare: 0.9, fish: 0.66 };
+const CHAR_SCALE = { owl: 0.82, tortoise: 0.82, hare: 0.9, fish: 0.66, pigs_moving: 0.78 };
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════

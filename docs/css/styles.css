@@ -632,7 +632,7 @@ html, body {
 .well-toss-cobble { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%); z-index: 7; }
 .well-toss-cobble .btn { width: auto; white-space: nowrap; padding: 17px 50px; font-size: 23px; box-shadow: 0 5px 16px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.2); }
 /* invisible anchor over the water hole (bg: centre x50%, ~43% down, radius ~28% of width) */
-.well-circle { position: absolute; left: 50%; top: 43%; width: 56%; aspect-ratio: 1;
+.well-circle { position: absolute; left: 50%; top: 48%; width: 56%; aspect-ratio: 1;
   transform: translate(-50%, -50%); pointer-events: none; }
 /* Wishy floats in the water during the tutorial, his bubble filling the well circle */
 .wishy-well { position: absolute; left: 50%; top: 43%; width: 66%; transform: translate(-50%, -50%);
@@ -1961,8 +1961,8 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 img.story-face { height: 100%; width: auto; max-width: 96vw; object-fit: contain; object-position: bottom; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
 /* two-character (duo) art is wide — show it in the upper area, sized to fit the width with
    margin, so both pigs are fully visible above the dialogue (not squeezed edge-to-edge). */
-.story-figure.wide { height: auto; bottom: auto; top: 9%; align-items: center; }
-.story-figure.wide img.story-face { height: auto; width: auto; max-height: 55vh; max-width: 82vw; object-position: center; }
+.story-figure.wide { height: auto; bottom: auto; top: 20%; align-items: center; }
+.story-figure.wide img.story-face { height: auto; width: auto; max-height: 52vh; max-width: 82vw; object-position: center; }
 /* Wishy the Fish sits in a round water-bubble — bottom-anchored at full height he's huge and
    clipped, so show him small and centred in the upper area with the whole bubble visible. */
 .story-figure.round { height: auto; bottom: auto; top: 10%; align-items: center; }
@@ -1993,7 +1993,7 @@ span.story-face { display: inline-flex; align-items: center; justify-content: ce
 .story-card.gallery-beat::before { content: ""; position: absolute; inset: 0; background: rgba(14,7,22,.5); z-index: 1; }
 .story-gallery { position: relative; z-index: 2; flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 0 14px; }
 .gal-frame { display: flex; align-items: center; justify-content: center; min-width: 0; }
-img.gal-pic { max-height: 56vh; max-width: 74vw; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 12px 22px rgba(0,0,0,.6)); animation: galPop .32s ease-out; }
+img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 12px 22px rgba(0,0,0,.6)); animation: galPop .32s ease-out; }
 @keyframes galPop { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
 .gal-arrow { flex: none; width: 46px; height: 46px; border-radius: 50%; border: none; font-size: 28px; font-weight: 900; line-height: 1;
   color: #4a2b12; background: rgba(255,248,234,.92); box-shadow: 0 3px 9px rgba(0,0,0,.5); cursor: pointer; -webkit-tap-highlight-color: transparent; }
