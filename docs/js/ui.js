@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v292"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v293"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7191,7 +7191,6 @@ function serve() {
 }
 function renderResult(res) {
   const win = res.success, c = ROUND.customer, realm = currentRealm(), zone = res.allergy && res.allergy.zone;
-  const coin = ROUND.currency === "pearls" ? PEARL : "🪙";   // the fish (and future rare-currency folk) pay in pearls
   const allergic = win && (zone === "yellow" || zone === "red");
   // PERFECT = a spotless 100% win with NO allergy reaction. An allergic win is
   // only "almost perfect", so it does not earn the confetti celebration.
@@ -7213,14 +7212,20 @@ function renderResult(res) {
   ROUND.lastRes = res;   // stashed so the Results scroll can open the full round breakdown
   // The parchment panel: "Total Earned" (tallies as you pop reward bubbles) on a
   // win, or the trash-caught counter on a loss — plus the reaction line + badges.
-  const dustBit = win && res.cleanDust > 0 ? ` <span class="res-dust">✨ <b id="rb-dust">0</b></span>` : "";
+  // Total Earned shows the payment currency icon (gold coin / pearl / …) then any
+  // Stardust earned this round (allergy-free streak + VIP key bonus).
+  const curIcon = ROUND.currency === "pearls"
+    ? `<span class="res-cur">${PEARL}</span>`
+    : `<img class="res-coin" src="art/ui/kit_13.png" alt="🪙">`;   // gold is the default; future currencies extend here
+  const roundDust = (res.cleanDust || 0) + (res.vipStardust || 0);
+  const dustBit = win && roundDust > 0 ? ` <span class="res-dust">✨ <b id="rb-dust">0</b></span>` : "";
   // A little pill by "Total Earned" flags the allergy pay cut (yellow = −25%, red = −50%).
   const allergyTag = allergic ? `<span class="res-atag ${zone}">Allergy −${zone === "red" ? "50" : "25"}%</span>` : "";
   const earnedLine = win
-    ? `<div class="res-earned">Total Earned: <img class="res-coin" src="art/ui/kit_13.png" alt="🪙"> <b id="rb-count">0</b>${dustBit}${allergyTag}</div>`
+    ? `<div class="res-earned">Total Earned: ${curIcon} <b id="rb-count">0</b>${dustBit}${allergyTag}</div>`
     : `<div class="res-earned lose">🗑️ Caught <b id="trash-count">0</b>/${trashN}</div>`;
   const hintTxt = win
-    ? (res.cleanDust > 0 ? "Pop for coins — and your allergy‑free Stardust! 🫧" : res.tip > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧")
+    ? (roundDust > 0 ? "Pop for coins — and your Stardust! 🫧" : res.tip > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧")
     : (trashN ? "Catch the junk to recycle it later! 🍌" : "");
   const hintLine = hintTxt ? `<div class="res-hint muted" id="${win ? "rb-hint" : "trash-hint"}">${hintTxt}</div>` : "";
   const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
@@ -7321,7 +7326,7 @@ function wireRewardBubbles(res) {
   const countEl = document.querySelector("#screen-result #rb-count");
   const dustEl = document.querySelector("#screen-result #rb-dust");
   const hintEl = document.querySelector("#screen-result #rb-hint");
-  const streakAmt = Math.max(0, res.streakBonus || 0), dustAmt = res.cleanDust || 0;
+  const streakAmt = Math.max(0, res.streakBonus || 0), dustAmt = (res.cleanDust || 0) + (res.vipStardust || 0);
   const base = Math.max(0, res.gold - res.tip - streakAmt), tips = Math.max(0, res.tip);
   const layer = document.createElement("div"); layer.className = "rb-float-layer";
   sc.appendChild(layer);
