@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v289"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v290"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1129,10 +1129,9 @@ function refreshItemBubble() {
     bub.className = "item-bubble" + (multi ? " multi" : "");
     if (!multi) bub.id = "item-bubble";   // keep the classic single-find look/selector
     bub.setAttribute("aria-label", "You found something — tap to see!");
-    // A multi-drop shows each item's own art inside its bubble; a lone find keeps the plain "!".
-    bub.innerHTML = (multi && it.art)
-      ? `<span class="ib-art">${ART.tag(it.art, it.emoji || "🎁", "ib-art-img")}</span>`
-      : `<span class="ib-bang">!</span>`;
+    // Every waiting bubble is a plain "!" — even a multi-drop (the Wolf's three
+    // buttons) shows three "!" bubbles side by side, not the items themselves.
+    bub.innerHTML = `<span class="ib-bang">!</span>`;
     if (multi) {
       const off = (i - (n - 1) / 2) * 84;   // fan them into a centered row so all are visible
       bub.style.left = `calc(50% + ${off}px)`;
@@ -7213,12 +7212,14 @@ function renderResult(res) {
   // The parchment panel: "Total Earned" (tallies as you pop reward bubbles) on a
   // win, or the trash-caught counter on a loss — plus the reaction line + badges.
   const dustBit = win && res.cleanDust > 0 ? ` <span class="res-dust">✨ <b id="rb-dust">0</b></span>` : "";
+  // A little pill by "Total Earned" flags the allergy pay cut (yellow = −25%, red = −50%).
+  const allergyTag = allergic ? `<span class="res-atag ${zone}">Allergy −${zone === "red" ? "50" : "25"}%</span>` : "";
   const earnedLine = win
-    ? `<div class="res-earned">Total Earned: <img class="res-coin" src="art/ui/kit_13.png" alt="🪙"> <b id="rb-count">0</b>${dustBit}</div>`
+    ? `<div class="res-earned">Total Earned: <img class="res-coin" src="art/ui/kit_13.png" alt="🪙"> <b id="rb-count">0</b>${dustBit}${allergyTag}</div>`
     : `<div class="res-earned lose">🗑️ Caught <b id="trash-count">0</b>/${trashN}</div>`;
   const hintTxt = win
     ? (res.cleanDust > 0 ? "Pop for coins — and your allergy‑free Stardust! 🫧" : res.tip > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧")
-    : (trashN ? "Catch the junk they hurled — recycle it for coins or Stardust later! 🍌" : "");
+    : (trashN ? "Catch the junk to recycle it later! 🍌" : "");
   const hintLine = hintTxt ? `<div class="res-hint muted" id="${win ? "rb-hint" : "trash-hint"}">${hintTxt}</div>` : "";
   const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
   html("result", `
@@ -7305,11 +7306,12 @@ function resultBadgesMarkup(res) {
   const cleanGrew = res.hadAllergy && res.success && !(res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red"));
   const goldTag = res.streakBonus > 0 ? `<span class="res-tag gold">+${res.streakBonus}🪙</span>` : "";
   const dustTag = res.cleanDust > 0 ? `<span class="res-tag dust">+${res.cleanDust}✨</span>` : "";
-  const badge = (cls, img, n, active, pop, tag) =>
-    `<div class="res-badge ${cls}${active ? "" : " dim"}${pop ? " pop" : ""}"><img src="art/ui/${img}.png" alt="" draggable="false"><span class="res-n">${n}</span>${tag}</div>`;
+  const badge = (cls, img, n, pop, tag) =>
+    `<div class="res-badge ${cls}${pop ? " pop" : ""}"><img src="art/ui/${img}.png" alt="" draggable="false"><span class="res-n">${n}</span>${tag}</div>`;
+  // Badges always show in full colour (no graying out), win or lose.
   return `<div class="res-badges">
-    ${badge("streak", "res_streak", ws, ws >= 1, res.success && res.streakBonus > 0, goldTag)}
-    ${badge("clean", "res_clean", cs, cs >= 1, cleanGrew, dustTag)}
+    ${badge("streak", "res_streak", ws, res.success && res.streakBonus > 0, goldTag)}
+    ${badge("clean", "res_clean", cs, cleanGrew, dustTag)}
   </div>`;
 }
 function wireRewardBubbles(res) {

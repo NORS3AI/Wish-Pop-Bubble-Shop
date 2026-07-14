@@ -515,12 +515,12 @@ html, body {
 .res-top .cust-coin { font-size: 16px; padding: 3px 12px 3px 4px; }
 .res-top .cust-coin img { height: 26px; }
 .res-top .cust-coin.pearls { padding: 3px 10px; }
-.res-body { overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-bottom: 2px; }
+.res-body { flex: 0 1 auto; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-bottom: 2px; }
 /* banner & portrait reuse the arrival classes (.cust-banner/.cust-portrait) verbatim */
 .res-banner { margin-bottom: -46px; }
 .res-portrait { margin-bottom: -40px; }
 /* the "Results" scroll — a tappable badge on the left, like the arrival badges */
-.res-results { position: absolute; left: -4px; top: 15%; z-index: 8; width: 74px; padding: 0; border: none; background: none; cursor: pointer;
+.res-results { position: absolute; left: -13px; top: 15%; z-index: 8; width: 74px; padding: 0; border: none; background: none; cursor: pointer;
   animation: badgeBob 2.4s ease-in-out infinite; }
 .res-results img { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
 .res-results::after { content: ""; position: absolute; right: 4px; top: 2px; width: 14px; height: 14px; border-radius: 50%;
@@ -537,6 +537,12 @@ html, body {
 .res-earned .res-dust { color: #7a3ea0; margin-left: 4px; display: inline-flex; align-items: center; gap: 3px; }
 .res-earned .res-dust #rb-dust { font-family: var(--ff-body); font-size: 22px; display: inline-block; }
 .res-earned.lose { color: #8a3320; }
+/* allergy pay-cut pill beside Total Earned — pops in like the streak/tip tags */
+.res-atag { display: inline-block; margin-left: 7px; font-family: var(--ff-body); font-weight: 900; font-size: 12.5px;
+  padding: 2px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.4); vertical-align: middle; white-space: nowrap;
+  animation: sbpop .5s .2s cubic-bezier(.2,1.5,.4,1) backwards; }
+.res-atag.yellow { background: #f0b53a; color: #4a2e00; }
+.res-atag.red { background: #d9463a; color: #fff; }
 .res-react { text-align: center; font-family: var(--ff-read); font-size: 18px; line-height: 1.32; color: #5a2a7a; max-width: 320px; }
 .res-hint { font-family: var(--ff-read); font-size: 12.5px; color: #7a5a2a; margin-top: 1px; text-align: center; }
 /* two ornate streak badges; the count sits in the frame's empty slot */
@@ -545,7 +551,7 @@ html, body {
 .res-badge img { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 7px rgba(0,0,0,.4)); }
 .res-badge.dim { opacity: .5; filter: saturate(.5); }
 .res-badge.pop { animation: sbpop .55s cubic-bezier(.2,1.5,.4,1); }
-.res-n { position: absolute; left: 72%; top: 41%; transform: translate(-50%,-50%); z-index: 2;
+.res-n { position: absolute; left: 72%; top: 44.5%; transform: translate(-50%,-50%); z-index: 2;
   font-family: var(--ff-body); font-weight: 900; font-size: 33px; color: #6a4310; line-height: 1;
   text-shadow: 0 1px 0 rgba(255,250,235,.7); }
 .res-tag { position: absolute; top: 4%; right: -2px; z-index: 3; font-family: var(--ff-body); font-weight: 900;
@@ -554,7 +560,8 @@ html, body {
 .res-tag.gold { background: var(--gold); color: #4a2e00; }
 .res-tag.dust { background: #c48bff; color: #2a0f45; }
 /* floating "Next Customer" button (baked-text wood plaque) */
-.res-next { align-self: center; width: 92%; max-width: 400px; margin: 4px auto 2px; padding: 0; border: none; background: none; cursor: pointer; flex-shrink: 0; }
+/* float the button, centered in the gap between the panel and the screen bottom */
+.res-next { align-self: center; width: 92%; max-width: 400px; margin: auto auto; padding: 0; border: none; background: none; cursor: pointer; flex-shrink: 0; }
 .res-next img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
 .res-next:active { transform: scale(.98); }
 
