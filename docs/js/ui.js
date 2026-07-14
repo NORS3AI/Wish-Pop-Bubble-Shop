@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v272"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v273"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2735,9 +2735,11 @@ function renderRumpelRound() {
   const reached = RUMPEL.tally >= RUMPEL_TARGET, v = "?v=" + BUILD;
   html("event", `
     ${hud("Spin the Wheel!")}
-    <div class="grow center" style="gap:8px">
-      <div class="rumpel-stat">Round ${r + 1} · land it for <b class="gold">🪙${rumpelReward(r)}</b></div>
-      <div class="rumpel-stat sub">Spun so far: <b class="gold">🪙${RUMPEL.tally}</b> / need 🪙${RUMPEL_TARGET}${reached ? " ✓" : ""}</div>
+    <div class="rumpel-scene mg-fullbleed" style="background-image:url('art/rumpel_bg.webp${v}')">
+      <div class="rumpel-stats">
+        <div class="rumpel-stat">Round ${r + 1} · land it for <b class="gold">🪙${rumpelReward(r)}</b></div>
+        <div class="rumpel-stat sub">Spun so far: <b class="gold">🪙${RUMPEL.tally}</b> / need 🪙${RUMPEL_TARGET}${reached ? " ✓" : ""}</div>
+      </div>
       <div class="sw-stage">
         <img class="sw-stand" src="art/spinwheel_stand.webp${v}" alt="" draggable="false">
         <div class="sw-spin" id="sw-spin" style="transform:rotate(${theta0}deg)">
@@ -2748,9 +2750,11 @@ function renderRumpelRound() {
         </div>
         <img class="sw-arrow" src="art/spinwheel_arrow.webp${v}" alt="" draggable="false">
       </div>
-      <div class="muted" style="min-height:18px">Tap <b>Stop!</b> when the <b class="gold">gold</b> reaches the arrow at the bottom</div>
+      <div class="rumpel-hint">Tap <b>Stop!</b> when the <b class="gold">gold</b> reaches the arrow at the bottom</div>
     </div>
-    <button class="btn good" id="rumpel-stop">🛑 Stop!</button>
+    <div class="row rumpel-foot">
+      <button class="btn good" id="rumpel-stop">🛑 Stop!</button>
+    </div>
   `);
   on("#rumpel-stop", "click", rumpelStop);
   show("event");
