@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v265"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v266"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -657,10 +657,10 @@ function playGingerbreadButton() {
   ["gingerbread_lost", "gingerbread_spot", "gingerbread_fixed"].forEach(k => ART.ensure(k, () => {}));
   ART.ensure("button_blue", () => {});
   renderStoryBeats([
-    { name: "Gingerbread Man", fig: "gingerbread_lost", cta: "Poor fella  ▸", text: "Whoa there, don’t run off — funny, usually <i>I’m</i> the one doing the running! Listen, I’ve gone and lost a button. My gumdrop one, popped clean off my front. I’ve retraced every step: over the bridge, past the mill, twice round the baker’s window. Not a crumb of it. I even asked a pigeon — he just blinked at me and waddled away. The nerve!" },
-    { name: "Gingerbread Man", fig: "gingerbread_spot", cta: "Keep it, then  ▸", text: "Wait — wait just a crumb. That glow, right there in your bag… that’s <b>him!</b> That’s my gumdrop, sparkling like a little star! Well, I’ll be iced. He went and turned all magical on me — and wouldn’t you know it, the moment I want him back, he’s decided he likes <i>you</i> better. Ha! Can’t say I blame him. He’s found himself a good pocket. You hold onto him." },
-    { name: "Gingerbread Man", fig: "gingerbread_fixed", give: "button_blue", giveEmoji: "🔵", cta: "Pin it on  ▸", text: "You dig a spare button from your satchel and hold it out to him. <i>(His eyes go round.)</i> A spare? For me? One of your very own? Aw, gosh, you didn’t have to — and it’s a real beauty, too. Honestly? A touch handsomer than the gumdrop. <i>(Don’t you dare tell the gumdrop I said that.)</i>" },
-    { name: "Gingerbread Man", fig: "gingerbread_fixed", cta: "Good as new  ▸", text: "<i>(He presses it snug into his icing.)</i> There — good as new, better than new! And say… quiet-like, just between us two: buttons have been going missing all over Willow-Wish. More than just mine. I’ve got a hunch who’s behind it — so keep those clever eyes of yours peeled." },
+    { name: "Gingerbread Man", fig: "gingerbread_lost", cta: "Poor fella  ▸", text: "Whoa — no need to chase me, I’m usually the one doing the running! But I’ve got trouble: I’ve lost a button. My gumdrop one, right off my front. I’ve run this whole village twice looking for it — bridge, mill, past the baker’s — and nothing. Even outran a pigeon to ask. He just blinked!" },
+    { name: "Gingerbread Man", fig: "gingerbread_spot", cta: "Keep it, then  ▸", text: "Hold up — stop the presses! That glow in your bag… that’s <b>him!</b> My gumdrop, gone and turned all magical on me. Ha — <i>course</i> he did! And now he’s decided he’d rather ride with <b>you</b>. Fair enough, little guy. You’ve earned yourself a fast friend — keep him!" },
+    { name: "Gingerbread Man", fig: "gingerbread_fixed", give: "button_blue", giveEmoji: "🔵", cta: "Pin it on  ▸", text: "You dig a spare button from your satchel and hold it out. <i>(His eyes light up.)</i> A spare? For me? You didn’t have to — but I’ll take it and run! Fine-looking little thing, too. <i>(Don’t tell the gumdrop I said so.)</i>" },
+    { name: "Gingerbread Man", fig: "gingerbread_fixed", cta: "Good as new  ▸", text: "<i>(He snaps it on and gives a proud little spin.)</i> Good as new — better than new! Now, quick, between us: buttons have been vanishing all over Willow-Wish. More than just mine. I’ve a hunch who’s behind it — so keep those fast eyes peeled!" },
   ], () => { satchelRemove("button_blue"); GAME.buttonStep = 3; GAME.buttonChainAt = -1; save(); toast("🍪 You gave the Gingerbread Man a button — the sparkly gumdrop keepsake stays with you."); renderStart(); });
 }
 // Drive the chain: Mouse's button-jar wish is the gate, then the beats pace a few rounds apart.
@@ -5583,19 +5583,19 @@ const CUSTOMER_ARCS = {
   // Gingerbread Man — chipper, breathless, food-punny; dodging mouths while gathering
   // the realm's finest baking supplies to carry home to Drury Lane.
   gingerbread: [
-    { line: "Fresh from the oven and the kids are eyeing me! Wish me quick, so I stay uneaten?" },
-    { line: "I’ve reached Willow-Wish! Could you wish me a good nose for the finest supplies?" },
-    { line: "A fox keeps eyeing me like a snack! Bubble me “not food” so I can shop in peace?" },
-    { line: "The Baker’s vanilla is heaven! Wish a jar of it fresh for the journey home?" },
-    { line: "A magpie made off with my sugar! Could you wish it back before it’s gone for good?" },
-    { line: "Sugar’s safe! Now wish me luck hunting Willow-Wish’s rarest, finest spice?" },
-    { line: "All this hustle has me crumbling! Wish me sturdy enough for the road home?" },
-    { line: "An ant parade found my honey jar! Shoo them off gently — it’s bound for home?" },
-    { line: "Kind folk save me the burnt bits! Wish me a thank-you treat worth baking?" },
-    { line: "My sack’s packed with the finest! Wish it sealed so nothing spills en route?" },
-    { line: "I’m posting a supply package to Drury Lane! Wish it home safe and sound?" },
-    { line: "Package sent! Now wish me one safe-travel treat for the road — no biting!" },
-    { line: "Off to the next realm for supplies! A fond wish — see you back in Drury Lane?" },
+    { line: "Fresh-baked and the kids want a bite! Wish me fast feet — they’ll never catch me!" },
+    { line: "I’ve dashed all the way to Willow-Wish! Wish me a sharp nose for the best supplies?" },
+    { line: "A fox has his eye on me! Wish me light on my feet — I’ll shop and outrun him?" },
+    { line: "The Baker’s vanilla is the best yet! Wish a jar of it fresh for my run home?" },
+    { line: "A magpie swiped my sugar and flew off! Wish it back — that’s coming home with me!" },
+    { line: "Sugar recovered! Now I’m off to track the realm’s rarest spice — wish me luck?" },
+    { line: "All this running’s got me crumbly! Wish me tough enough to go the distance home?" },
+    { line: "Ants have raided my honey jar! Shoo them off gently — that jar runs home with me?" },
+    { line: "Kind folk leave out burnt bits so I run free! Wish me a thank-you treat to bake?" },
+    { line: "My sack’s packed and I’m set to run! Wish it sealed tight so I don’t lose a crumb?" },
+    { line: "I’m sending a package ahead to Drury Lane! Wish it a safe, speedy trip home?" },
+    { line: "Package away! Now wish me a treat for the run — and no biting this time!" },
+    { line: "Off I run to the next realm for supplies! A fond wish — see you in Drury Lane!" },
   ],
   // Tiny Mouse — earnest, industrious, counts everything, "paws," building her sewing empire.
   mouse: [
@@ -5740,10 +5740,10 @@ function advanceCustStory(id) { const a = custArc(id); if (!a) return; const s =
 // story progress (the `when` predicate) — little nods to what's stirring in the village.
 const TOWN_WISHES = {
   gingerbread: [
-    "This cold-store has me shivering my gumdrops! Wish me warmth — but not a melt?",
-    "A kid tried dunking me in cocoa “to see what happens”! Wish me a quick slip-away?",
-    "I’ve found a map that leads home! Wish me luck gathering the finest supplies?",
-    { t: "Buttons keep vanishing townwide — now I fret for mine! Wish them to stay put?", when: () => (GAME.buttonStep || 0) >= 1 },
+    "This cold-store’s got me shivering! Wish me a little warmth — but no melting, mind?",
+    "A kid tried to dunk me in cocoa! Wish me quick so I can dash clean out of reach?",
+    "I’ve found a map that runs all the way home! Wish me luck gathering supplies?",
+    { t: "Buttons keep vanishing round town — wish mine stay put while I’m on the run?", when: () => (GAME.buttonStep || 0) >= 1 },
   ],
   mouse: [
     "Shop’s booming but my paws ache! A self-threading needle — I’ll do the rest!",
