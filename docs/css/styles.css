@@ -624,7 +624,10 @@ html, body {
 /* --- Wishy's Wishing Well: top-down scene (well_bg), coin drop, rising bubbles --- */
 .well-scene { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden;
   background: url('../art/well_bg.webp') center 42% / cover no-repeat; }
-.well-actions { padding: 8px 12px calc(8px + var(--safe-b)); gap: 10px; }
+/* buttons float over the well image (no solid bar) so the whole background shows */
+.well-actions { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8;
+  padding: 8px 12px calc(8px + var(--safe-b)); gap: 10px; }
+.well-actions .btn { box-shadow: 0 4px 14px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.12); }
 /* once Wishy's gone, only Back is in the foot row — centre it at a comfortable width */
 .well-actions.solo { justify-content: center; }
 .well-actions.solo .btn { flex: 0 1 260px; max-width: 300px; }
@@ -678,9 +681,9 @@ html, body {
 @keyframes wellPrizeUp { 0% { transform: translate(-50%, 30%) scale(.4); opacity: 0; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
 /* Wishy's speech / status line over the stone, plus the top info chips.
    These use the plain body (story-mode) font — easier to read than the display face. */
-.well-speech { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); z-index: 7;
-  width: 92%; max-width: 360px; text-align: center; padding: 12px 16px; border-radius: 15px;
-  background: rgba(20,12,36,.8); color: #f8f2ff; font-size: 17px; line-height: 1.42; font-weight: 500;
+.well-speech { position: absolute; left: 50%; top: 76px; bottom: auto; transform: translateX(-50%); z-index: 7;
+  width: 92%; max-width: 360px; text-align: center; padding: 11px 16px; border-radius: 15px;
+  background: rgba(20,12,36,.8); color: #f8f2ff; font-size: 16px; line-height: 1.4; font-weight: 500;
   box-shadow: 0 3px 12px rgba(0,0,0,.45); }
 .well-speech b { color: #ffe08a; }
 .well-dustchip { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 7;
@@ -743,7 +746,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* Home-screen scene background (art/home_bg.jpg) with a top/bottom readability scrim */
 #screen-start.has-home-bg { position: relative; background-size: cover; background-position: center; }
 #screen-start.has-home-bg::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(18,10,34,.58) 0%, rgba(18,10,34,.26) 34%, rgba(18,10,34,.42) 64%, rgba(18,10,34,.84) 100%); }
+  background: linear-gradient(180deg, rgba(18,10,34,.5) 0%, rgba(18,10,34,.2) 34%, rgba(18,10,34,.32) 64%, rgba(18,10,34,.6) 100%); }
 #screen-start.has-home-bg > * { position: relative; z-index: 1; }
 /* Fantasy display font on buttons and headings (body/stat text stays sans) */
 .btn, .hud .title, .result-title, .realm-here, .home-build { font-family: var(--ff-display); }
