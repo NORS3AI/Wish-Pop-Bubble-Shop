@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v276"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v277"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2757,10 +2757,10 @@ function renderRumpelRound() {
         <div class="rumpel-stat">Round ${r + 1} · land it for <b class="gold">🪙${rumpelReward(r)}</b></div>
         <div class="rumpel-stat sub">Spun so far: <b class="gold">🪙${RUMPEL.tally}</b> / need 🪙${RUMPEL_TARGET}${reached ? " ✓" : ""}</div>
       </div>
-      <div class="rumpel-hint">Tap <b>Stop!</b> when the <b class="gold">gold</b> reaches the arrow at the bottom</div>
-    </div>
-    <div class="rumpel-foot">
-      <button class="btn good" id="rumpel-stop">🛑 Stop!</button>
+      <div class="rumpel-bottom">
+        <div class="rumpel-hint">Tap <b>Stop!</b> when the <b class="gold">gold</b> reaches the arrow at the bottom</div>
+        <button class="btn good rumpel-stop-btn" id="rumpel-stop">🛑 Stop!</button>
+      </div>
     </div>
   `);
   on("#rumpel-stop", "click", rumpelStop);

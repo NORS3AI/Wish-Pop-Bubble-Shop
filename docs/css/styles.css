@@ -1208,8 +1208,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   display: flex; flex-direction: column; align-items: center; gap: 1px; text-align: center;
   padding: 6px 18px; border-radius: 14px; background: rgba(24,14,34,.62); border: 1px solid rgba(255,255,255,.12); }
 .rumpel-stats .rumpel-stat { color: #fff9ee; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
-.rumpel-hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 4;
-  width: 92%; text-align: center; font-size: 13px; color: #f3e8d0; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
+/* Hint + Stop button float over the room (no solid bar) so more of the background shows.
+   The Stop button matches the Wishing Well's toss button size. */
+.rumpel-bottom { position: absolute; left: 50%; bottom: calc(12px + var(--safe-b)); transform: translateX(-50%); z-index: 7;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.rumpel-hint { width: 92%; max-width: 340px; text-align: center; font-size: 13px; color: #f3e8d0; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
+.rumpel-bottom .rumpel-stop-btn { width: auto; white-space: nowrap; padding: 17px 50px; font-size: 23px;
+  box-shadow: 0 5px 16px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.2); }
 .rumpel-foot { display: flex; flex-direction: column; gap: 8px; padding: 8px 12px calc(8px + var(--safe-b)); }
 .rumpel-foot .btn { width: 100%; }
 /* Rumpelstiltskin's story-mode screens (intro / between / win-lose) — his room, blurred,
