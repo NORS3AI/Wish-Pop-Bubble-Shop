@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v279"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v280"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2711,7 +2711,7 @@ function rumpelCard(fig, speech, terms, buttons) {
     <div class="story-card mg-fullbleed">
       <div class="story-bg" style="background-image:url('art/rumpel_bg.webp${v}');background-position:center bottom"></div>
       <div class="story-scrim"></div>
-      <div class="story-figure rumpel"><img class="story-face" src="art/rumpel_${fig}.webp${v}" alt="Rumpelstiltskin" draggable="false"></div>
+      <div class="story-figure rumpel ${fig}"><img class="story-face" src="art/rumpel_${fig}.webp${v}" alt="Rumpelstiltskin" draggable="false"></div>
       <div class="story-below">
         <div class="story-name">Rumpelstiltskin</div>
         <div class="story-speech">${speech}</div>

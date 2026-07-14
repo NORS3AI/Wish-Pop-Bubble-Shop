@@ -1219,6 +1219,8 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
    lift him off the floor so he sits higher on screen (feet tuck behind the speech card). */
 .story-figure.rumpel { height: 88vh; bottom: 9%; }
 .story-figure.rumpel img.story-face { max-width: 124vw; }
+/* his wide arms-out poses (intro offer / loss) read bigger than the compact win pose — trim them */
+.story-figure.rumpel.deal, .story-figure.rumpel.fume { height: 80vh; }
 /* "🪙 +X" floating up over the wheel when you land a spin */
 .rumpel-plus { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 9;
   font-family: var(--ff-display); font-weight: 900; font-size: 34px; color: #ffd76a; white-space: nowrap;
