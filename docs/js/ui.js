@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v273"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v274"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2735,20 +2735,23 @@ function renderRumpelRound() {
   const reached = RUMPEL.tally >= RUMPEL_TARGET, v = "?v=" + BUILD;
   html("event", `
     ${hud("Spin the Wheel!")}
-    <div class="rumpel-scene mg-fullbleed" style="background-image:url('art/rumpel_bg.webp${v}')">
+    <div class="rumpel-scene mg-fullbleed">
+      <div class="rumpel-world">
+        <img class="rumpel-bg" src="art/rumpel_bg.webp${v}" alt="" draggable="false">
+        <div class="sw-stage">
+          <img class="sw-stand" src="art/spinwheel_stand.webp${v}" alt="" draggable="false">
+          <div class="sw-spin" id="sw-spin" style="transform:rotate(${theta0}deg)">
+            <svg class="sw-color" viewBox="0 0 ${SW.vw} ${SW.vh}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <path d="${swArcPath(half)}" fill="#ffce3a" stroke="#a9690f" stroke-width="4"></path>
+            </svg>
+            <img class="sw-wheel" src="art/spinwheel_wheel.webp${v}" alt="" draggable="false">
+          </div>
+          <img class="sw-arrow" src="art/spinwheel_arrow.webp${v}" alt="" draggable="false">
+        </div>
+      </div>
       <div class="rumpel-stats">
         <div class="rumpel-stat">Round ${r + 1} · land it for <b class="gold">🪙${rumpelReward(r)}</b></div>
         <div class="rumpel-stat sub">Spun so far: <b class="gold">🪙${RUMPEL.tally}</b> / need 🪙${RUMPEL_TARGET}${reached ? " ✓" : ""}</div>
-      </div>
-      <div class="sw-stage">
-        <img class="sw-stand" src="art/spinwheel_stand.webp${v}" alt="" draggable="false">
-        <div class="sw-spin" id="sw-spin" style="transform:rotate(${theta0}deg)">
-          <svg class="sw-color" viewBox="0 0 ${SW.vw} ${SW.vh}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-            <path d="${swArcPath(half)}" fill="#ffce3a" stroke="#a9690f" stroke-width="4"></path>
-          </svg>
-          <img class="sw-wheel" src="art/spinwheel_wheel.webp${v}" alt="" draggable="false">
-        </div>
-        <img class="sw-arrow" src="art/spinwheel_arrow.webp${v}" alt="" draggable="false">
       </div>
       <div class="rumpel-hint">Tap <b>Stop!</b> when the <b class="gold">gold</b> reaches the arrow at the bottom</div>
     </div>

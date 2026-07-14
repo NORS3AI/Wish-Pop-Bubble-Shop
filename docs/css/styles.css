@@ -1195,8 +1195,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .rumpel-stat.sub { font-weight: 600; font-size: 13px; color: var(--ink-dim); }
 /* Rumpelstiltskin's spinning wheel — layered art (stand behind, wheel spinning, arrow on top),
    with a generated gold arc that peeks through the wheel's transparent channel, set in his room. */
-.rumpel-scene { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden;
-  background-position: center bottom; background-size: cover; background-repeat: no-repeat; }
+.rumpel-scene { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; background: #191006; }
+/* The "world" is the background image at its own aspect, pinned to the floor and sized to the
+   scene width. The wheel lives INSIDE it, positioned by the exact fractions measured from the
+   reference — so bg and wheel always crop/scale together and stay aligned on any screen. */
+.rumpel-world { position: absolute; left: 0; bottom: 0; width: 100%; aspect-ratio: 853 / 1844; }
+.rumpel-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.sw-stage { position: absolute; left: 9.85%; top: 25.16%; width: 81.48%; height: 43.71%; z-index: 2; }
 .rumpel-stats { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 4;
   display: flex; flex-direction: column; align-items: center; gap: 1px; text-align: center;
   padding: 6px 18px; border-radius: 14px; background: rgba(24,14,34,.62); border: 1px solid rgba(255,255,255,.12); }
@@ -1205,8 +1210,6 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   width: 92%; text-align: center; font-size: 13px; color: #f3e8d0; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 .rumpel-foot { padding: 8px 12px calc(8px + var(--safe-b)); }
 .rumpel-foot .btn { flex: 1; }
-.sw-stage { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%);
-  height: min(60vh, 500px); aspect-ratio: 1027 / 1188; z-index: 2; }
 .sw-stage > img, .sw-stage > .sw-spin, .sw-spin > * { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sw-stage img { object-fit: contain; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .sw-stand { z-index: 0; }
