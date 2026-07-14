@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v298"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v299"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -124,6 +124,8 @@ function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoj
 // Per-customer size tweaks in the arch frame (1 = default). Some art fills its
 // canvas more than others, so a few get scaled down to sit comfortably.
 const CHAR_SCALE = { owl: 0.82, tortoise: 0.82, hare: 0.9, fish: 0.66, pigs_moving: 0.78 };
+// per-character vertical nudge in the portrait frame (% of the frame width; positive = lower)
+const CHAR_OFFY = { fish: 9 };
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -446,7 +448,7 @@ function storyPaint() {
   if (b.vista) { cls = "vista"; }
   else if (b.gallery) { cls = "gallery-beat"; GALLERY = b.gallery; GALLERY_I = 0; top = galleryHtml(); }
   else if (b.scene) { top = `<div class="story-figure scene"><div class="story-scene">${b.scene}</div></div>`; }
-  else if (b.fig) { const fc = /duo/.test(b.fig) ? " wide" : /^autograph/.test(b.fig) ? " poster" : isRoundFig(b.fig) ? " round" : (isShortFig(b.fig) ? " tall" : ""); top = `<div class="story-figure${fc}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // duo art smaller to fit width; a poster shows centred; a bubble-character (Wishy) shows small & centred; short characters (kids) get the taller boost
+  else if (b.fig) { const fc = (/duo/.test(b.fig) ? " wide" : /^autograph/.test(b.fig) ? " poster" : isRoundFig(b.fig) ? " round" : (isShortFig(b.fig) ? " tall" : "")) + (/^wolf/.test(b.fig) ? " wolf" : ""); top = `<div class="story-figure${fc}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // duo art smaller to fit width; a poster shows centred; a bubble-character (Wishy) shows small & centred; short characters (kids) get the taller boost
   else if (b.figEmoji) { top = `<div class="story-figure emoji"><span class="story-face">${b.figEmoji}</span></div>`; }  // a character without art yet (emoji placeholder)
   else { top = `<div class="story-figure">${redPose(b.pose)}</div>`; }
   // an item being handed over this beat (e.g. giving Red the heart button) — shown as a
@@ -5981,7 +5983,7 @@ function renderCustomer() {
       <div class="cust-portrait">
         ${streakChip}
         ${badgesHtml}
-        <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1}">${custArt(c, "cust-char-art")}</div>
+        <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%">${custArt(c, "cust-char-art")}</div>
       </div>
       <div class="cust-nameplate"><img src="art/ui/name_plaque.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
       <div class="cust-wishbox${wishSteps.length > 1 ? " has-next" : ""}">
@@ -7242,7 +7244,7 @@ function renderResult(res) {
       <div class="cust-banner res-banner"><img src="art/ui/${bannerImg}.png" alt="${bannerAlt}" draggable="false"></div>
       <div class="cust-portrait res-portrait">
         <button class="res-results" id="recap-btn" aria-label="Round recap"><img src="art/ui/res_results.png" alt="Results" draggable="false"></button>
-        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1}">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
+        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
       </div>
       <div class="res-panel">
         ${earnedLine}
