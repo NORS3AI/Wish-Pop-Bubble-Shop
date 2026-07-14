@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v300"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v301"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6076,7 +6076,7 @@ function renderScoop() {
     <div class="scoop-bg mg-fullbleed" id="scoop-bg"></div>
     <div class="scoop-stage" id="scoop-stage">
       <div class="scoop-craft" id="scoop-craft">
-        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(120 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}</div>
+        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(210 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}</div>
         <div class="scoop-bubbles" id="scoop-bubbles"></div>
         <div class="glitter-cover" id="glitter-cover"></div>
       </div>
@@ -6099,7 +6099,8 @@ function renderScoop() {
     ${familiarToken("scoop")}
   `);
   { const bgEl = $("#scoop-bg"); if (bgEl) bgEl.style.backgroundImage = `url('art/scoop_bg.webp?v=${BUILD}')`;
-    const frEl = $("#scoop-front"); if (frEl) frEl.style.backgroundImage = `url('art/scoop_front.webp?v=${BUILD}')`; }
+    const frEl = $("#scoop-front"); if (frEl) frEl.style.backgroundImage = `url('art/scoop_front.webp?v=${BUILD}')`;
+    const stEl = $("#scoop-stage"); if (stEl) stEl.style.setProperty("--scoop-glitter", `url('art/scoop_glitter.webp?v=${BUILD}')`); }
 
   const isJackpot = i => !!(ROUND.scoopJackpots && ROUND.scoopJackpots[i]);
   function loadScoop() {
@@ -6109,10 +6110,13 @@ function renderScoop() {
       applyBubbleArt(bubs); }
     const cover = $("#glitter-cover"); if (cover) {
       cover.className = "glitter-cover" + (jackpot ? " rainbow" : "");
-      cover.innerHTML = '<div class="glitter-film" id="glitter-film"></div>'; // opaque cover that hides the bubbles
+      // a real glitter mound (textured) heaped over the sifter, dotted with multicolour sparkles
+      cover.innerHTML = '<div class="glitter-film" id="glitter-film"></div>';
+      const GCOLS = ["#fff7d6", "#ffd76a", "#ffb3e6", "#8fe0ff", "#7ee0b0", "#e0b3ff"];
       for (let i = 0; i < GLITTER; i++) { const g = document.createElement("i"); g.className = "gspeck";
-        g.style.left = rnd(2, 92) + "%"; g.style.top = rnd(4, 88) + "%";
-        g.style.setProperty("--sz", (8 + rnd(0, 6)) + "px");
+        g.style.left = rnd(6, 88) + "%"; g.style.top = rnd(10, 78) + "%";
+        g.style.setProperty("--sz", (5 + rnd(0, 6)) + "px");
+        g.style.setProperty("--gc", jackpot ? "#fff" : GCOLS[Math.floor(Math.random() * GCOLS.length)]);
         g.style.setProperty("--tw", (0.6 + Math.random() * 1.2).toFixed(2) + "s");
         g.style.animationDelay = (-Math.random() * 1.2).toFixed(2) + "s"; cover.appendChild(g); } }
     state = "shaking"; shakeDist = 0;
@@ -6165,15 +6169,20 @@ function renderScoop() {
     setTimeout(advance, 130 + found * 175 + 700);
   }
 
+  // Dip the (empty) sifter down into the glitter and come up full — used for the very
+  // first scoop (so you SEE it dip in) and again between every scoop.
+  function diveThenLoad() {
+    const bowl = $("#scoop-bowl"); state = "diving";
+    if (bowl) { bowl.classList.remove("diving"); void bowl.offsetWidth; bowl.classList.add("diving"); }
+    SFX.scoop();
+    setTimeout(loadScoop, 280);                                   // fill at the bottom of the dip
+    setTimeout(() => { if (bowl) bowl.classList.remove("diving"); }, 560);
+  }
   function advance() {
     if (state === "done") return;                // skipped straight to popping
     idx++;
     if (idx >= scoops) { finish(); return; }
-    const bowl = $("#scoop-bowl"); state = "diving";
-    if (bowl) { bowl.classList.add("diving"); }
-    SFX.scoop();
-    setTimeout(loadScoop, 300);                                   // refill at the bottom of the dive
-    setTimeout(() => { if (bowl) bowl.classList.remove("diving"); }, 560);
+    diveThenLoad();
   }
 
   function finish() {
@@ -6241,12 +6250,15 @@ function renderScoop() {
   const resizeSpoon = delta => {
     const s = Math.max(0.4, Math.min(2.2, +(ART.getScale("scoop_spoon") + delta).toFixed(2)));
     ART.setScale("scoop_spoon", s);
-    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.fontSize = Math.round(120 * s) + "px";
+    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.fontSize = Math.round(210 * s) + "px";
   };
   on("#spoon-smaller", "click", () => resizeSpoon(-0.1));
   on("#spoon-bigger", "click", () => resizeSpoon(0.1));
 
-  loadScoop();
+  // Start with an EMPTY sifter, then dip it into the glitter for the very first scoop.
+  state = "idle";
+  { const tx = $("#scoop-text"); if (tx) tx.innerHTML = "✨ Scooping the glitter…"; }
+  setTimeout(diveThenLoad, 620);
   wireFamiliar("scoop");
   show("scoop");
   startRushClock();      // In-a-Rush patience clock ticks from here through serve
