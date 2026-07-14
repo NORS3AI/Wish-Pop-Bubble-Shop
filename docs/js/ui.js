@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v301"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v302"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5700,7 +5700,7 @@ const CUSTOMER_ARCS = {
     { line: "My rushed marrow burst all over the fair. Humbling. Tidy the mess, quietly?" },
     { line: "The slugs unionized in the chaos — with DEMANDS! Move them on nicely for me?" },
     { line: "Thornby helped haul my burst marrow — decent of him! Grow me a peace-offering?" },
-    { line: "Thornby and I share seed now. Don’t make it weird. Wish our plot to thrive?" },
+    { line: "Thornby and I swap seed packets now — proper garden mates! Wish our patch to thrive?" },
     { line: "We’re growing a village pumpkin together! Keep it steady and round for me?" },
     { line: "Tomatoes still won’t ripen before frost! Some things never change. A warm week?" },
     { line: "Our shared pumpkin won the fair — one ribbon, two names! Bless next year’s crop?" },
