@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v262"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v263"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1209,6 +1209,11 @@ function huntComplete(h) {
 // conversation (not a pop-up card) the next time you land on the home screen.
 function maybeShowHuntCelebrate() {
   if (!GAME.huntCelebrate) return;
+  // Only ever play this on the home screen — never barge into an active round (e.g. finding the
+  // last sheep in the middle of a timed customer). If we're anywhere else, leave huntCelebrate
+  // set and bail; renderStart() replays it the next time you land home.
+  const startScreen = document.getElementById("screen-start");
+  if (!startScreen || !startScreen.classList.contains("active")) return;
   // Don't barge in over a waiting collectible — e.g. the just-signed band poster's "!" bubble,
   // which floats over the whole screen until you tap to collect it. Leave huntCelebrate set; it
   // fires the moment that collectible is grabbed (see the reveal "Add" handler) or, failing that,
