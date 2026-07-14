@@ -1208,8 +1208,21 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .rumpel-stats .rumpel-stat { color: #fff9ee; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
 .rumpel-hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 4;
   width: 92%; text-align: center; font-size: 13px; color: #f3e8d0; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
-.rumpel-foot { padding: 8px 12px calc(8px + var(--safe-b)); }
-.rumpel-foot .btn { flex: 1; }
+.rumpel-foot { display: flex; flex-direction: column; gap: 8px; padding: 8px 12px calc(8px + var(--safe-b)); }
+.rumpel-foot .btn { width: 100%; }
+/* Rumpelstiltskin's story-mode screens (intro / between / win-lose) — his room, blurred,
+   with the character pose and dialogue over a soft scrim. */
+.rumpel-story { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden;
+  background-position: center bottom; background-size: cover; background-repeat: no-repeat; background-color: #191006; }
+.rumpel-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(18,10,26,.22) 0%, rgba(18,10,26,.66) 58%, rgba(18,10,26,.9) 100%); }
+.rumpel-content { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px; padding: 6px 14px; text-align: center; overflow-y: auto; }
+.rumpel-fig { height: min(30vh, 250px); width: auto; object-fit: contain; flex-shrink: 0;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,.6)); user-select: none; -webkit-user-select: none; }
+.rumpel-name { font-family: var(--ff-display); font-weight: 900; font-size: 22px; color: #ffe9b0; text-shadow: 0 2px 5px rgba(0,0,0,.85); }
+.rumpel-content .speech { max-width: 320px; }
+.rumpel-card { width: 100%; max-width: 320px; }
+.muted.small { font-size: 12.5px; }
 .sw-stage > img, .sw-stage > .sw-spin, .sw-spin > * { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sw-stage img { object-fit: contain; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .sw-stand { z-index: 0; }
