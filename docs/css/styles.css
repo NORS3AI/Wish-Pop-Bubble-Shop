@@ -825,7 +825,12 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .item-bubble { position: fixed; left: 50%; top: 50%; z-index: 82; width: 76px; height: 76px; border-radius: 50%; border: 3px solid #fff2c8; cursor: pointer; padding: 0;
   background: radial-gradient(circle at 38% 30%, #fff7da, #ffcf5a 58%, #ef9328); color: #7a3d08;
   box-shadow: 0 6px 18px rgba(0,0,0,.5), 0 0 22px rgba(255,200,90,.8); display: flex; align-items: center; justify-content: center;
-  transform: translate(-50%, -50%); animation: ibBob 1.6s ease-in-out infinite; }
+  transform: translate(-50%, -50%); animation: ibBob 1.6s ease-in-out infinite; animation-delay: var(--ib-delay, 0s); }
+/* Multi-drop (e.g. the Wolf's three buttons): a smaller bubble per item, fanned into a row,
+   each showing that item's own art instead of a "!". */
+.item-bubble.multi { width: 66px; height: 66px; }
+.item-bubble .ib-art { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.item-bubble .ib-art-img { width: 66%; height: 66%; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); font-size: 30px; }
 .item-bubble .ib-bang { font-family: var(--ff-display); font-weight: 900; font-size: 46px; line-height: 1; text-shadow: 0 1px 2px rgba(255,255,255,.55); }
 .item-bubble .ib-count { position: absolute; right: -5px; top: -5px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px;
   background: #ff5a5a; border: 2px solid #fff; color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }

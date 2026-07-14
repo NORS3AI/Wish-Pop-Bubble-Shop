@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v259"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v260"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -998,8 +998,10 @@ function storyWishOutro(tag, win) {
       ? "Magnificent! Simply— oh. <i>OH.</i> I seem to have <b>dropped</b> a few things. No matter — keep them! I’ve HUNDREDS. Toodle-oo!"
       : "Hmph. Amateur polish. I’ll take my custom elsewhere — after I— oh. I’ve <b>dropped</b> some buttons. Ah well, keep ’em. Ta!" }];
     renderStoryBeats(beats, () => {
-      revealItem({ emoji: "🔘", count: 3, name: "Three Dropped Buttons", desc: "The “collector” left behind a heart button, a blue one, and a gumdrop. Show them to Little Red!",
-        onAdd: () => { satchelAdd("button_gumdrop"); satchelAdd("button_blue"); satchelAdd("button_heart"); } });
+      // Three buttons clatter to the floor — one "!" bubble each, showing that button's art.
+      revealItem({ art: "button_heart", emoji: "❤️", name: "Heart-Shaped Button", desc: "One of the buttons the “collector” dropped. Show it to Little Red!", onAdd: () => satchelAdd("button_heart") });
+      revealItem({ art: "button_blue", emoji: "🔵", name: "Blue Button", desc: "One of the buttons the “collector” dropped. Show it to Little Red!", onAdd: () => satchelAdd("button_blue") });
+      revealItem({ art: "button_gumdrop", emoji: "🍬", name: "Gumdrop Button", desc: "One of the buttons the “collector” dropped. Show it to Little Red!", onAdd: () => satchelAdd("button_gumdrop") });
       save(); renderStart();
     });
     return;
@@ -1106,18 +1108,28 @@ function revealItem(opts) {   // { art?, emoji?, name, desc?, count?, onAdd? }
   refreshItemBubble();
 }
 function refreshItemBubble() {
-  let bub = document.getElementById("item-bubble");
-  if (!ITEM_REVEALS.length) { if (bub) bub.remove(); return; }
-  if (!bub) {
-    bub = document.createElement("button");
-    bub.id = "item-bubble"; bub.className = "item-bubble"; bub.setAttribute("aria-label", "You found something — tap to see!");
-    bub.innerHTML = `<span class="ib-bang">!</span><span class="ib-count"></span>`;
-    bub.addEventListener("click", openItemReveal);
+  // Re-render the whole set of waiting "!" bubbles from the queue each time.
+  document.querySelectorAll(".item-bubble").forEach(b => b.remove());
+  const n = ITEM_REVEALS.length;
+  if (!n) return;
+  const multi = n > 1;   // e.g. the Wolf dropping three buttons — a bubble each, side by side
+  ITEM_REVEALS.forEach((it, i) => {
+    const bub = document.createElement("button");
+    bub.className = "item-bubble" + (multi ? " multi" : "");
+    if (!multi) bub.id = "item-bubble";   // keep the classic single-find look/selector
+    bub.setAttribute("aria-label", "You found something — tap to see!");
+    // A multi-drop shows each item's own art inside its bubble; a lone find keeps the plain "!".
+    bub.innerHTML = (multi && it.art)
+      ? `<span class="ib-art">${ART.tag(it.art, it.emoji || "🎁", "ib-art-img")}</span>`
+      : `<span class="ib-bang">!</span>`;
+    if (multi) {
+      const off = (i - (n - 1) / 2) * 84;   // fan them into a centered row so all are visible
+      bub.style.left = `calc(50% + ${off}px)`;
+      bub.style.setProperty("--ib-delay", (i * 0.12) + "s");
+    }
+    bub.addEventListener("click", () => openItemReveal(i));
     itemHost().appendChild(bub);
-  }
-  const cnt = bub.querySelector(".ib-count");
-  if (ITEM_REVEALS.length > 1) { cnt.textContent = ITEM_REVEALS.length; cnt.style.display = ""; }
-  else cnt.style.display = "none";
+  });
 }
 // While a "!" quest-item bubble is waiting to be collected, you can't move on to
 // the next screen. Returns true (and makes the bubble pulse big) if a tap on a
@@ -1130,13 +1142,14 @@ function itemGateBlocks() {
   return true;
 }
 function pulseItemBubble() {
-  const bub = document.getElementById("item-bubble"); if (!bub) return;
+  const bubs = document.querySelectorAll(".item-bubble"); if (!bubs.length) return;
   SFX.err && SFX.err();
-  bub.classList.remove("nudge"); void bub.offsetWidth; bub.classList.add("nudge");
-  setTimeout(() => bub.classList.remove("nudge"), 650);
+  bubs.forEach(bub => { bub.classList.remove("nudge"); void bub.offsetWidth; bub.classList.add("nudge");
+    setTimeout(() => bub.classList.remove("nudge"), 650); });
 }
-function openItemReveal() {
-  const it = ITEM_REVEALS[0]; if (!it || document.getElementById("item-reveal-overlay")) return;
+function openItemReveal(idx) {
+  idx = idx || 0;
+  const it = ITEM_REVEALS[idx]; if (!it || document.getElementById("item-reveal-overlay")) return;
   SFX.reveal ? SFX.reveal() : (SFX.charm && SFX.charm());
   const artHtml = it.art ? ART.tag(it.art, it.emoji || "🎁", "ir-img") : `<span class="ir-emoji">${it.emoji || "🎁"}</span>`;
   const ov = document.createElement("div"); ov.id = "item-reveal-overlay"; ov.className = "item-reveal-overlay";
@@ -1152,7 +1165,7 @@ function openItemReveal() {
   itemHost().appendChild(ov);
   on("#ir-add", "click", () => {
     SFX.bigCoin && SFX.bigCoin();
-    const done = ITEM_REVEALS.shift();
+    const done = ITEM_REVEALS.splice(idx, 1)[0];
     if (done && done.onAdd) { try { done.onAdd(); } catch (e) {} }
     ov.classList.add("closing"); setTimeout(() => { if (ov.parentNode) ov.remove(); }, 200);
     refreshItemBubble();
