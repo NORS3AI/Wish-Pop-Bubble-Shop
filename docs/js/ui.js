@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v291"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v292"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7309,7 +7309,7 @@ function resultBadgesMarkup(res) {
   const goldTag = res.streakBonus > 0 ? `<span class="res-tag gold">+${res.streakBonus}🪙</span>` : "";
   const dustTag = res.cleanDust > 0 ? `<span class="res-tag dust">+${res.cleanDust}✨</span>` : "";
   const badge = (cls, img, n, pop, tag) =>
-    `<div class="res-badge ${cls}${pop ? " pop" : ""}"><img src="art/ui/${img}.png" alt="" draggable="false"><span class="res-n">${n}</span>${tag}</div>`;
+    `<div class="res-badge ${cls}${pop ? " pop" : ""}"><img src="art/ui/${img}.png" alt="" draggable="false"><span class="res-n${n === 0 ? " zero" : ""}">${n}</span>${tag}</div>`;
   // Badges always show in full colour (no graying out), win or lose.
   return `<div class="res-badges">
     ${badge("streak", "res_streak", ws, res.success && res.streakBonus > 0, goldTag)}
