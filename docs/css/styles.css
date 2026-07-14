@@ -1196,10 +1196,12 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* Rumpelstiltskin's spinning wheel — layered art (stand behind, wheel spinning, arrow on top),
    with a generated gold arc that peeks through the wheel's transparent channel, set in his room. */
 .rumpel-scene { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; background: #191006; }
-/* The "world" is the background image at its own aspect, pinned to the floor and sized to the
-   scene width. The wheel lives INSIDE it, positioned by the exact fractions measured from the
-   reference — so bg and wheel always crop/scale together and stay aligned on any screen. */
-.rumpel-world { position: absolute; left: 0; bottom: 0; width: 100%; aspect-ratio: 853 / 1844; }
+/* The "world" is the background image at its own aspect, sized to the scene width. The wheel lives
+   INSIDE it (positioned by fractions measured from the reference), so bg and wheel always crop/scale
+   together. We anchor it so the wheel's centre lands at mid-screen (its centre sits ~41% down the
+   world), which drops everything lower and reveals more of the room up top. */
+.rumpel-world { position: absolute; left: 0; top: 50%; width: 100%; aspect-ratio: 853 / 1844;
+  transform: translateY(-40.85%); }
 .rumpel-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .sw-stage { position: absolute; left: 9.85%; top: 25.16%; width: 81.48%; height: 43.71%; z-index: 2; }
 .rumpel-stats { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 4;
