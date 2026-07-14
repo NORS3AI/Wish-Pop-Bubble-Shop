@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v258"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v259"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5554,19 +5554,19 @@ const CUSTOMER_ARCS = {
   // Gingerbread Man — chipper, breathless, food-punny; dodging mouths while gathering
   // the realm's finest baking supplies to carry home to Drury Lane.
   gingerbread: [
-    { line: "Just baked and already three kids are eyeing me! I wish for speed — I stay uneaten!" },
-    { line: "In Willow-Wish at last! Finest supplies around, they say. A nose for the good stuff?" },
-    { line: "Market day — a fox keeps eyeing me like a snack! Bubble me “not food” while I shop?" },
-    { line: "The Baker’s vanilla is heaven! Wish it fresh so I can carry a jar all the way home?" },
-    { line: "A magpie swiped my sugar! Grant me it back before it’s gone for good?" },
-    { line: "Sugar rescued! Now for Willow-Wish’s rarest spice — a little luck for the hunt?" },
-    { line: "I’m crumbling at the seams from all this hustle! Wish me tough enough for the road?" },
-    { line: "An ant parade found my honey! Shoo them off gently — that jar’s bound for home." },
-    { line: "Villagers save me the burnt bits so nibblers leave me be! A thank-you treat to bake?" },
-    { line: "My travel-sack’s full of Willow-Wish’s finest! Seal it so nothing spills on the road?" },
-    { line: "Sending a supply package home to Drury Lane! A wish so it arrives safe and sound?" },
-    { line: "Package sent! One treat for the road — no biting, please! Bubble me safe travels?" },
-    { line: "Off to the next realm for supplies! A parting wish — see you in Drury Lane!" },
+    { line: "Fresh from the oven and the kids are eyeing me! Wish me quick, so I stay uneaten?" },
+    { line: "I’ve reached Willow-Wish! Could you wish me a good nose for the finest supplies?" },
+    { line: "A fox keeps eyeing me like a snack! Bubble me “not food” so I can shop in peace?" },
+    { line: "The Baker’s vanilla is heaven! Wish a jar of it fresh for the journey home?" },
+    { line: "A magpie made off with my sugar! Could you wish it back before it’s gone for good?" },
+    { line: "Sugar’s safe! Now wish me luck hunting Willow-Wish’s rarest, finest spice?" },
+    { line: "All this hustle has me crumbling! Wish me sturdy enough for the road home?" },
+    { line: "An ant parade found my honey jar! Shoo them off gently — it’s bound for home?" },
+    { line: "Kind folk save me the burnt bits! Wish me a thank-you treat worth baking?" },
+    { line: "My sack’s packed with the finest! Wish it sealed so nothing spills en route?" },
+    { line: "I’m posting a supply package to Drury Lane! Wish it home safe and sound?" },
+    { line: "Package sent! Now wish me one safe-travel treat for the road — no biting!" },
+    { line: "Off to the next realm for supplies! A fond wish — see you back in Drury Lane?" },
   ],
   // Tiny Mouse — earnest, industrious, counts everything, "paws," building her sewing empire.
   mouse: [
@@ -5645,11 +5645,11 @@ const CUSTOMER_ARCS = {
     { line: "Made club bear masks — too big, too small, then JUST right! Wish them sturdy?" },
     { line: "Concert tickets sold out in a blink! Wish me the luck to snag three seats?" },
     { line: "I GOT tickets — front row! Bubble me calm so I don’t faint when the bears play?" },
-    { line: "Best night EVER — Baby Bear waved at ME! Wish me the courage to say hi after?" },
+    { line: "Best night EVER — Pepper waved at ME with a drumstick! Wish me the courage to say hi after?" },
     { line: "I met the band! Too starstruck to speak. Grant me the words for next time?" },
     { line: "The Bandit Bears are visiting Willow-Wish! Wish me the perfect welcome banner?" },
     { line: "I’m THIS close to their autograph! Bubble me the boldness to finally ask?" },
-    { line: "Papa Bear signed my poster!! Wish it protected forever — no smudges, ever?" },
+    { line: "Honey signed my poster!! Wish it protected forever — no smudges, ever?" },
     { line: "As club president, I’m throwing the bears a thank-you party! Wish it just right?" },
     { line: "The band made me their honorary cub! Bubble me one happy tear that won’t stop?" },
   ],
@@ -5711,10 +5711,10 @@ function advanceCustStory(id) { const a = custArc(id); if (!a) return; const s =
 // story progress (the `when` predicate) — little nods to what's stirring in the village.
 const TOWN_WISHES = {
   gingerbread: [
-    "The cold-store has me shivering my gumdrops! A little warmth — not too much?",
-    "A kid tried to dunk me in cocoa “to see what happens”! Wish me a quick slip-away?",
-    "Found a realm-map home! Wish me luck gathering the best supplies out there?",
-    { t: "Everyone’s losing buttons — now I fret for my gumdrop ones! Keep them ON for me?", when: () => (GAME.buttonStep || 0) >= 1 },
+    "This cold-store has me shivering my gumdrops! Wish me warmth — but not a melt?",
+    "A kid tried dunking me in cocoa “to see what happens”! Wish me a quick slip-away?",
+    "I’ve found a map that leads home! Wish me luck gathering the finest supplies?",
+    { t: "Buttons keep vanishing townwide — now I fret for mine! Wish them to stay put?", when: () => (GAME.buttonStep || 0) >= 1 },
   ],
   mouse: [
     "Shop’s booming but my paws ache! A self-threading needle — I’ll do the rest!",
