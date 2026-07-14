@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎉 **A brand-new results screen.** After every wish you now get a tidy, storybook-style
+  results page: a big picture of the happy (or grumpy!) customer, a "Wish Granted / Worked,
+  But… / Failed" banner, your total earned, and two ornate badges for your Win Streak and
+  Allergy-Free streak. Tap the little "Results" scroll for the full round breakdown. The fun
+  part — popping the floating reward bubbles to collect your coins — works just like before.
+
 - 🍪 **The Gingerbread Man has a face!** He's no longer a cookie emoji — he now has real
   artwork with all his moods (cheery, cross, and a very itchy allergic one), and his
   button-quest scene shows him losing his button and proudly wearing the new one. The three

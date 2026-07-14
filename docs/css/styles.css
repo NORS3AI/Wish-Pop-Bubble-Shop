@@ -501,6 +501,63 @@ html, body {
 .recap-sheet { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; animation: sbpop .28s cubic-bezier(.2,1.4,.4,1); }
 .recap-sheet .card { width: 100%; max-width: none; }
 
+/* ============================================================= */
+/* New results screen — mirrors the customer-arrival layout      */
+/* (same top bar, banner, and character frame), then a parchment */
+/* panel with the total earned, reaction, and two streak badges. */
+/* ============================================================= */
+/* lift only the in-flow content above the realm background; the drifting bubble,
+   confetti and particle layers keep their own absolute/fixed positioning */
+#screen-result > .res-top, #screen-result > .res-body, #screen-result > .res-next { position: relative; z-index: 1; }
+.res-top { margin: 2px 6px 4px; }
+/* keep the realm + both currencies on one line (this screen always shows pearls) */
+.res-top .cust-realm { font-size: 13px; white-space: nowrap; }
+.res-top .cust-coin { font-size: 16px; padding: 3px 12px 3px 4px; }
+.res-top .cust-coin img { height: 26px; }
+.res-top .cust-coin.pearls { padding: 3px 10px; }
+.res-body { overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-bottom: 2px; }
+/* banner & portrait reuse the arrival classes (.cust-banner/.cust-portrait) verbatim */
+.res-banner { margin-bottom: -46px; }
+.res-portrait { margin-bottom: -40px; }
+/* the "Results" scroll — a tappable badge on the left, like the arrival badges */
+.res-results { position: absolute; left: -4px; top: 15%; z-index: 8; width: 74px; padding: 0; border: none; background: none; cursor: pointer;
+  animation: badgeBob 2.4s ease-in-out infinite; }
+.res-results img { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
+.res-results::after { content: ""; position: absolute; right: 4px; top: 2px; width: 14px; height: 14px; border-radius: 50%;
+  background: #ff5a5a; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.45); animation: badgePing 1.6s ease-in-out infinite; }
+.res-results:active { transform: scale(.93); }
+/* parchment panel (res_panel.png stretched behind the content) */
+.res-panel { position: relative; width: 97%; max-width: 400px; margin: 0 auto 0; padding: 26px 34px 24px;
+  z-index: 3; background: url('../art/ui/res_panel.png') no-repeat center; background-size: 100% 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.res-earned { font-family: var(--ff-body); font-weight: 800; font-size: 19px; color: #3a2408; display: flex; align-items: center; gap: 5px; }
+.res-earned .res-coin { height: 25px; width: auto; }
+.res-earned #rb-count, .res-earned #trash-count { font-family: var(--ff-body); font-size: 24px; display: inline-block; min-width: 14px; text-align: center; }
+.res-earned #rb-count.bumped, .res-earned #trash-count.bumped { animation: rbbump .3s ease; }
+.res-earned .res-dust { color: #7a3ea0; margin-left: 4px; display: inline-flex; align-items: center; gap: 3px; }
+.res-earned .res-dust #rb-dust { font-family: var(--ff-body); font-size: 22px; display: inline-block; }
+.res-earned.lose { color: #8a3320; }
+.res-react { text-align: center; font-family: var(--ff-read); font-size: 18px; line-height: 1.32; color: #5a2a7a; max-width: 320px; }
+.res-hint { font-family: var(--ff-read); font-size: 12.5px; color: #7a5a2a; margin-top: 1px; text-align: center; }
+/* two ornate streak badges; the count sits in the frame's empty slot */
+.res-badges { display: flex; gap: 10px; justify-content: center; align-items: flex-start; width: 100%; margin-top: 2px; }
+.res-badge { position: relative; flex: 1 1 0; max-width: 176px; }
+.res-badge img { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 7px rgba(0,0,0,.4)); }
+.res-badge.dim { opacity: .5; filter: saturate(.5); }
+.res-badge.pop { animation: sbpop .55s cubic-bezier(.2,1.5,.4,1); }
+.res-n { position: absolute; left: 72%; top: 41%; transform: translate(-50%,-50%); z-index: 2;
+  font-family: var(--ff-body); font-weight: 900; font-size: 33px; color: #6a4310; line-height: 1;
+  text-shadow: 0 1px 0 rgba(255,250,235,.7); }
+.res-tag { position: absolute; top: 4%; right: -2px; z-index: 3; font-family: var(--ff-body); font-weight: 900;
+  font-size: 12.5px; padding: 2px 8px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.45);
+  animation: sbpop .5s .15s cubic-bezier(.2,1.5,.4,1) backwards; white-space: nowrap; }
+.res-tag.gold { background: var(--gold); color: #4a2e00; }
+.res-tag.dust { background: #c48bff; color: #2a0f45; }
+/* floating "Next Customer" button (baked-text wood plaque) */
+.res-next { align-self: center; width: 92%; max-width: 400px; margin: 4px auto 2px; padding: 0; border: none; background: none; cursor: pointer; flex-shrink: 0; }
+.res-next img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
+.res-next:active { transform: scale(.98); }
+
 /* Result-screen reward bubbles — a header that stays put, and bubbles that
    FLOAT freely all over the screen in their own overlay. */
 .reward-bubbles { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 6px; }

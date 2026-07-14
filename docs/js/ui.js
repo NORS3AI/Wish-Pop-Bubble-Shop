@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v288"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v289"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7189,67 +7189,65 @@ function serve() {
   renderResult(res);
 }
 function renderResult(res) {
-  const win = res.success, c = ROUND.customer, zone = res.allergy && res.allergy.zone;
-  const allergyLine = (win && (zone === "yellow" || zone === "red"))
-    ? `<div class="stat-line"><span>⚠️ Allergy (${zone})</span><span style="color:var(--bad)">${zone === "red" ? "−50%" : "−25%"} pay</span></div>` : "";
+  const win = res.success, c = ROUND.customer, realm = currentRealm(), zone = res.allergy && res.allergy.zone;
   const coin = ROUND.currency === "pearls" ? PEARL : "🪙";   // the fish (and future rare-currency folk) pay in pearls
-  const quickLine = (win && res.quickTip > 0)
-    ? `<div class="stat-line"><span>⚡ Quick‑service tip</span><span class="gold">${coin} +${res.quickTip}</span></div>` : "";
-  const qualLine = (win && res.qualityTip > 0)
-    ? `<div class="stat-line"><span>✨ Perfect potion!</span><span class="gold">${coin} +${res.qualityTip}</span></div>` : "";
+  const allergic = win && (zone === "yellow" || zone === "red");
   // PERFECT = a spotless 100% win with NO allergy reaction. An allergic win is
   // only "almost perfect", so it does not earn the confetti celebration.
-  const isPerfect = win && res.weighted === 100 && zone !== "yellow" && zone !== "red";
+  const isPerfect = win && res.weighted === 100 && !allergic;
   const trashN = (res.trash || []).length;
   const emoji = !win ? "😤" : isPerfect ? "🥳" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (res.tip > 0 ? "🤩" : "😊");
   // Which of the customer's four faces to show: angry on a fail, allergic on an
   // allergy reaction, otherwise happy. Falls back to the emotion emoji above.
-  const mood = !win ? "angry" : (zone === "red" || zone === "yellow") ? "allergic" : "happy";
-  const title = win ? (isPerfect ? "Perfect!" : res.type.title) : "Wish Failed!";
+  const mood = !win ? "angry" : allergic ? "allergic" : "happy";
+  // Outcome banner (baked-text image): granted / worked-but / failed.
+  const bannerImg = !win ? "banner_failed" : allergic ? "banner_partial" : "banner_granted";
+  const bannerAlt = !win ? "Wish Failed!" : allergic ? "Wish Worked, But…!" : "Wish Granted!";
   const blurb = !win
     ? c.name + " storms off in a huff — and pelts you with their trash on the way out! Grab it: junk recycles into coins or Stardust."
     : isPerfect ? c.name + " got a flawless potion — 100% perfect! ✨"
     : zone === "red" ? "The wish worked… but " + c.name + " reacted to the " + res.allergy.type + " magic! Half pay."
     : zone === "yellow" ? c.name + " got their wish, but a little " + res.allergy.type + " magic left them itchy."
     : res.qualityTip > 0 ? c.name + " loves it — that potion was practically perfect!" : res.quickTip > 0 ? c.name + " is thrilled with the speedy service!" : c.name + " is happy with their wish!";
-  const rushLine = (win && res.rushBonus > 0)
-    ? `<div class="stat-line"><span>⏱️ Beat the clock!</span><span class="gold">🪙 +${res.rushBonus}</span></div>` : "";
-  // (Win-streak bonus is shown as a "+N 🪙" tag on the big Win Streak badge, not here.)
-  // VIP key wager: on a win the staked key is kept and pays a big bonus; on a
-  // failed wish the key is lost (handled in serve()).
-  const vipWinLine = (win && res.vipKept)
-    ? `<div class="stat-line"><span>⭐ VIP key bonus ×${BALANCE.VIP_GOLD_MULT}!</span><span class="gold">🪙 +${res.vipKeyBonus} · ✨ +${res.vipStardust}</span></div>
-       <div class="stat-line"><span>🗝️ Your ${BALANCE.VIP_KEY_COST} keys</span><span style="color:var(--good)">kept — nice!</span></div>` : "";
-  const vipLostLine = (!win && res.vipKeyLost)
-    ? `<div class="stat-line"><span>🗝️ Wagered ${BALANCE.VIP_KEY_COST} keys</span><span style="color:var(--bad)">lost!</span></div>` : "";
-  const earnedRow = win
-    ? `<div class="stat-line"><span>Earned</span><span class="gold">${coin} ${res.gold}${ROUND.currency === "pearls" ? " pearls" : ""}</span></div>${quickLine}${qualLine}${rushLine}${vipWinLine}`
-    : `<div class="stat-line"><span>Earned</span><span class="muted">no coins — just trash!</span></div>
-       <div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${trashN}</b> piece${trashN === 1 ? "" : "s"}</span></div>${vipLostLine}
-       <div class="stat-line"><span>🔥 Win streak</span><span class="muted">broken</span></div>`;
+  ROUND.lastRes = res;   // stashed so the Results scroll can open the full round breakdown
+  // The parchment panel: "Total Earned" (tallies as you pop reward bubbles) on a
+  // win, or the trash-caught counter on a loss — plus the reaction line + badges.
+  const dustBit = win && res.cleanDust > 0 ? ` <span class="res-dust">✨ <b id="rb-dust">0</b></span>` : "";
+  const earnedLine = win
+    ? `<div class="res-earned">Total Earned: <img class="res-coin" src="art/ui/kit_13.png" alt="🪙"> <b id="rb-count">0</b>${dustBit}</div>`
+    : `<div class="res-earned lose">🗑️ Caught <b id="trash-count">0</b>/${trashN}</div>`;
+  const hintTxt = win
+    ? (res.cleanDust > 0 ? "Pop for coins — and your allergy‑free Stardust! 🫧" : res.tip > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧")
+    : (trashN ? "Catch the junk they hurled — recycle it for coins or Stardust later! 🍌" : "");
+  const hintLine = hintTxt ? `<div class="res-hint muted" id="${win ? "rb-hint" : "trash-hint"}">${hintTxt}</div>` : "";
+  const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
   html("result", `
-    ${hud("Result")}
-    <div class="grow center" style="gap:14px">
-      <div class="ph big">${custMoodArt(c, mood, emoji, "cust-big result-face")}</div>
-      <div class="result-title ${win ? "win" : "lose"} ${isPerfect ? "perfect" : ""}">${title}</div>
-      ${resultStreaksMarkup(res)}
-      ${win ? rewardBubblesMarkup(res) : (trashN ? trashInfoMarkup(res) : "")}
-      <div class="card" style="width:100%;max-width:320px">
-        <div class="stat-line"><span>Your Match</span><span><b>${res.weighted}%</b></span></div>
-        <div class="stat-line"><span>Needed</span><span>${res.required}%</span></div>
-        ${allergyLine}
-        ${earnedRow}
-        ${res.satchelDrop && satchelItem(res.satchelDrop) ? `<div class="stat-line"><span>${satchelItem(res.satchelDrop).emoji} ${satchelItem(res.satchelDrop).name}</span><span style="color:var(--good)">→ your Satchel! 🎒</span></div>` : ""}
+    ${custBgEl}
+    <div class="cust-top res-top">
+      <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
+      <div class="cust-wallet">
+        ${GAME.pearls > 0 ? `<div class="cust-coin pearls">${PEARL} <b>${GAME.pearls.toLocaleString()}</b></div>` : ""}
+        <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold || 0).toLocaleString()}</b></div>
       </div>
-      <p class="muted" style="max-width:300px">${blurb}</p>
     </div>
-    <div class="result-actions">
-      <button class="btn recap-btn" id="recap-btn">📋 Round Recap</button>
-      <button class="btn" id="next-btn">Next Customer  →</button>
+    <div class="grow res-body">
+      <div class="cust-banner res-banner"><img src="art/ui/${bannerImg}.png" alt="${bannerAlt}" draggable="false"></div>
+      <div class="cust-portrait res-portrait">
+        <button class="res-results" id="recap-btn" aria-label="Round recap"><img src="art/ui/res_results.png" alt="Results" draggable="false"></button>
+        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1}">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
+      </div>
+      <div class="res-panel">
+        ${earnedLine}
+        <div class="res-react">${blurb}</div>
+        ${resultBadgesMarkup(res)}
+        ${hintLine}
+      </div>
     </div>
+    <button class="res-next" id="next-btn" aria-label="Next customer"><img src="art/ui/btn_next.png" alt="Next Customer" draggable="false"></button>
   `);
   on("#next-btn", "click", () => { if (itemGateBlocks()) return; (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound(); });
   on("#recap-btn", "click", showRoundRecap);
+  applyRealmBackground();
   show("result");
   if (win) wireRewardBubbles(res);
   // fallback: if this round was meant to reveal a hunt item but its phase never happened
@@ -7261,13 +7259,6 @@ function renderResult(res) {
 // --- Loss: disgruntled customer throws trash. It floats around the result
 // screen like the reward coins; pop each piece to collect it into your bin
 // (capped at TRASH_BIN_MAX). Recycle it later for coins or Stardust. ---------
-function trashInfoMarkup(res) {
-  const n = (res.trash || []).length;
-  return `<div class="reward-bubbles" id="trash-info">
-    <div class="rb-total">🗑️ Caught <span><b id="trash-count">0</b>/${n}</span></div>
-    <div class="rb-hint muted" id="trash-hint">Catch the junk they hurled — recycle it for coins or Stardust later! 🍌</div>
-  </div>`;
-}
 function wireTrashBubbles(res) {
   const sc = screen("result"); if (!sc) return;
   const items = (res.trash || []).slice(); if (!items.length) return;
@@ -7306,25 +7297,19 @@ function wireTrashBubbles(res) {
 // LITTLE bubble per tip coin. They FLOAT freely all over the result screen
 // (drifting up/down/side to side); tap them wherever they wander. Pop the big one
 // first and it auto-pops the little ones; or pop the little ones and save it. ---
-// Two big streak badges on the result screen: the overall Win Streak and the
-// Allergy-Free streak. A freshly-earned Stardust payout shows as a "+N ✨" tag.
-function resultStreaksMarkup(res) {
+// New results screen: the two streak badges use the ornate frame art (res_streak /
+// res_clean). The streak COUNT sits in the badge's empty slot; a "+N" tag shows the
+// reward that streak paid THIS round (gold for wins, Stardust for allergy-free).
+function resultBadgesMarkup(res) {
   const ws = GAME.streak || 0, cs = GAME.cleanStreak || 0;
-  const goldGain = res.streakBonus > 0 ? `<span class="sb-gain gold">+${res.streakBonus}🪙</span>` : "";
-  const dustGain = res.cleanDust > 0 ? `<span class="sb-gain">+${res.cleanDust}✨</span>` : "";
   const cleanGrew = res.hadAllergy && res.success && !(res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red"));
-  return `<div class="result-streaks">
-    <div class="streak-badge fire${ws >= 1 ? "" : " dim"}${res.success ? " pop" : ""}"><span class="sb-ico">🔥</span><b class="sb-n">${ws}</b><span class="sb-lbl">Win Streak</span>${goldGain}</div>
-    <div class="streak-badge clean${cs >= 1 ? "" : " dim"}${cleanGrew ? " pop" : ""}"><span class="sb-ico">💚</span><b class="sb-n">${cs}</b><span class="sb-lbl">Allergy‑Free</span>${dustGain}</div>
-  </div>`;
-}
-function rewardBubblesMarkup(res) {
-  const tips = Math.max(0, res.tip);
-  const coin = ROUND && ROUND.currency === "pearls" ? PEARL : "🪙";
-  const dust = res.cleanDust > 0 ? ` <span class="dust">✨ <b id="rb-dust">0</b></span>` : "";
-  return `<div class="reward-bubbles" id="reward-bubbles">
-    <div class="rb-total">Collected <span class="gold">${coin} <b id="rb-count">0</b></span>${dust}</div>
-    <div class="rb-hint muted" id="rb-hint">${res.cleanDust > 0 ? "Pop for coins — and your allergy‑free Stardust! 🫧" : tips > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧"}</div>
+  const goldTag = res.streakBonus > 0 ? `<span class="res-tag gold">+${res.streakBonus}🪙</span>` : "";
+  const dustTag = res.cleanDust > 0 ? `<span class="res-tag dust">+${res.cleanDust}✨</span>` : "";
+  const badge = (cls, img, n, active, pop, tag) =>
+    `<div class="res-badge ${cls}${active ? "" : " dim"}${pop ? " pop" : ""}"><img src="art/ui/${img}.png" alt="" draggable="false"><span class="res-n">${n}</span>${tag}</div>`;
+  return `<div class="res-badges">
+    ${badge("streak", "res_streak", ws, ws >= 1, res.success && res.streakBonus > 0, goldTag)}
+    ${badge("clean", "res_clean", cs, cs >= 1, cleanGrew, dustTag)}
   </div>`;
 }
 function wireRewardBubbles(res) {
@@ -7442,8 +7427,39 @@ function resultBurst(x, y, flavor) {
   }
 }
 function roundRecap() {
-  const s = ROUND.stats; if (!s) return "";
-  return `<div class="card" style="width:100%;max-width:320px">
+  const s = ROUND.stats, res = ROUND.lastRes;
+  if (!s && !res) return "";
+  const coin = ROUND.currency === "pearls" ? PEARL : "🪙";
+  // The wish outcome breakdown (moved off the main results screen — the tidy
+  // screen shows only the total; the full math lives here behind the scroll).
+  let outcome = "";
+  if (res) {
+    const win = res.success, zone = res.allergy && res.allergy.zone;
+    const streakBonus = Math.max(0, res.streakBonus || 0);
+    const rows = [`<div class="stat-line"><span>Your Match</span><span><b>${res.weighted}%</b></span></div>`,
+      `<div class="stat-line"><span>Needed</span><span>${res.required}%</span></div>`];
+    if (win) {
+      rows.push(`<div class="stat-line"><span>Base pay</span><span class="gold">${coin} ${Math.max(0, res.gold - res.tip - streakBonus)}</span></div>`);
+      if (res.quickTip > 0) rows.push(`<div class="stat-line"><span>⚡ Quick‑service tip</span><span class="gold">${coin} +${res.quickTip}</span></div>`);
+      if (res.qualityTip > 0) rows.push(`<div class="stat-line"><span>✨ Perfect potion!</span><span class="gold">${coin} +${res.qualityTip}</span></div>`);
+      if (res.rushBonus > 0) rows.push(`<div class="stat-line"><span>⏱️ Beat the clock!</span><span class="gold">🪙 +${res.rushBonus}</span></div>`);
+      if (streakBonus > 0) rows.push(`<div class="stat-line"><span>🔥 Win‑streak bonus</span><span class="gold">🪙 +${streakBonus}</span></div>`);
+      if (res.cleanDust > 0) rows.push(`<div class="stat-line"><span>💚 Allergy‑free Stardust</span><span style="color:#c48bff">✨ +${res.cleanDust}</span></div>`);
+      if (zone === "yellow" || zone === "red") rows.push(`<div class="stat-line"><span>⚠️ Allergy (${zone})</span><span style="color:var(--bad)">${zone === "red" ? "−50%" : "−25%"} pay</span></div>`);
+      if (res.vipKept) rows.push(`<div class="stat-line"><span>⭐ VIP key bonus ×${BALANCE.VIP_GOLD_MULT}</span><span class="gold">🪙 +${res.vipKeyBonus} · ✨ +${res.vipStardust}</span></div>`);
+      rows.push(`<div class="stat-line"><span><b>Total earned</b></span><span class="gold"><b>${coin} ${res.gold}${ROUND.currency === "pearls" ? " pearls" : ""}</b></span></div>`);
+    } else {
+      rows.push(`<div class="stat-line"><span>Earned</span><span class="muted">no coins — just trash!</span></div>`);
+      rows.push(`<div class="stat-line"><span>🗑️ Trash thrown</span><span><b>${(res.trash || []).length}</b></span></div>`);
+      if (res.vipKeyLost) rows.push(`<div class="stat-line"><span>🗝️ Wagered ${BALANCE.VIP_KEY_COST} keys</span><span style="color:var(--bad)">lost!</span></div>`);
+      rows.push(`<div class="stat-line"><span>🔥 Win streak</span><span class="muted">broken</span></div>`);
+    }
+    if (res.satchelDrop && satchelItem(res.satchelDrop)) rows.push(`<div class="stat-line"><span>${satchelItem(res.satchelDrop).emoji} ${satchelItem(res.satchelDrop).name}</span><span style="color:var(--good)">→ your Satchel! 🎒</span></div>`);
+    outcome = `<div class="card" style="width:100%;max-width:320px"><div style="font-weight:800;text-align:center;margin-bottom:6px">🎯 This Wish</div>${rows.join("")}</div>`;
+  }
+  let stats = "";
+  if (s) {
+    stats = `<div class="card" style="width:100%;max-width:320px">
     <div style="font-weight:800;text-align:center;margin-bottom:6px">📋 Round Recap</div>
     <div class="stat-line"><span>🥄 Bubbles scooped</span><span><b>${s.scooped}</b></span></div>
     <div class="stat-line"><span>🫧 Bubbles popped <span class="muted" style="font-size:11px">(incl. bonus)</span></span><span><b>${s.popped}</b></span></div>
@@ -7452,6 +7468,8 @@ function roundRecap() {
     <div class="stat-line"><span>🪙 Gold · 🐸 Treats gained</span><span><b>${s.gold}</b> · <b>${s.treats}</b></span></div>
     <div class="stat-line"><span>🔺 Triples made</span><span><b>${s.triples}</b></span></div>
   </div>`;
+  }
+  return outcome + stats;
 }
 // Round Recap is tucked behind a button now — pop it up as an overlay on demand.
 function showRoundRecap() {
@@ -7562,7 +7580,8 @@ function preloadCommonArt() {
   ["scoop_spoon", "bubble", "bubble_bonus", "logo", "background"].forEach(k => keys.push(k));
   Array.from(new Set(keys)).forEach(k => ART.ensure(k, () => {}));   // warms as WebP
   // hardcoded UI (PNG) + backdrops (JPG) aren't loaded through ART — warm the common ones directly
-  ["banner_new", "banner_vip", "name_plate", "kit_02", "kit_13", "kit_16", "kit_17", "btn_scoop"].forEach(k => { try { new Image().src = "art/ui/" + k + ".png?v=" + BUILD; } catch (e) {} });
+  ["banner_new", "banner_vip", "name_plate", "kit_02", "kit_13", "kit_16", "kit_17", "btn_scoop",
+   "banner_granted", "banner_partial", "banner_failed", "res_streak", "res_clean", "res_results", "res_panel", "btn_next"].forEach(k => { try { new Image().src = "art/ui/" + k + ".png?v=" + BUILD; } catch (e) {} });
   const rbg = REALM_BG[GAME.realm];
   ["village_far", "village_mid", "village_door"].concat(rbg ? [rbg.replace(/^art\//, "").replace(/\.jpg$/, "")] : []).forEach(bg => { try { new Image().src = "art/" + bg + ".jpg?v=" + BUILD; } catch (e) {} });
 }
