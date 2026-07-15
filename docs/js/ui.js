@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v331"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v332"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -240,7 +240,6 @@ let servedTotal = +(localStorage.getItem("wishpop_served") || 0);
 let mixFxWasVisible = false;   // tracks the cauldron fx so it fades in only on the FIRST ingredient
 let mixPulseColor = null;      // set on ingredient add → one-shot aura pulse in that ingredient's color
 let mixPopStep = 0;            // rising pitch as you pop cauldron bubbles in a row
-let mixBubblePopped = false;   // a tap that popped a bubble shouldn't also count toward the serve double-tap
 
 /* --- helpers ------------------------------------------------------------ */
 const $ = sel => document.querySelector(sel);
@@ -7033,7 +7032,6 @@ function cauldronBubblesHtml(n, sizes) {
 function popCauldronBubble(bub) {
   if (bub.dataset.popped) return;
   bub.dataset.popped = "1";
-  mixBubblePopped = true; setTimeout(() => { mixBubblePopped = false; }, 280);
   const cs = getComputedStyle(bub), m = cs.transform, base = (m && m !== "none") ? m + " " : "";
   bub.style.animation = "none";                       // freeze the rise right where it is
   bub.style.transform = base.trim() || "none";
@@ -7141,8 +7139,10 @@ function wireDoubleTapServe() {
   // tap a drifting bubble to pop it (pointerdown = responsive on moving targets)
   el.addEventListener("pointerdown", e => { const bub = e.target.closest(".cbub"); if (bub) popCauldronBubble(bub); });
   let last = 0;
-  el.addEventListener("click", () => {
-    if (mixBubblePopped) return;   // that tap popped a bubble — don't also count it toward serving
+  el.addEventListener("click", e => {
+    // a tap that landed on a bubble (to pop it) must NEVER count toward the serve double-tap —
+    // check the actual target, not a timer, so it's reliable even for already-popped bubbles
+    if (e.target.closest(".cbub")) { last = 0; return; }
     const now = Date.now();
     if (now - last < 350) { last = 0; if (itemGateBlocks()) return; if (ROUND.slots.length === 0) { toast("Add some ingredients first!"); return; } serve(); }
     else { last = now; if (ROUND.slots.length) toast("Double-tap the cauldron to serve!"); }
