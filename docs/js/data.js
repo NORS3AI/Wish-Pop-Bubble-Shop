@@ -320,7 +320,7 @@ const COSMETICS = {
     // achievement-only: earned by recycling junk (not buyable / not in the Well)
     { id: "cauldron_trashcan", name: "Trash Can",        chip: "🗑️", achievement: { stat: "recycled", need: 500, desc: "Recycle 500 junk" } },
     // villain-only: won by beating a villain event (not buyable / not in the Well)
-    { id: "cauldron_queen",    name: "Queen's Mirror",   chip: "🪞", villain: true },
+    { id: "cauldron_queen",    name: "Queen's Mirror",   chip: "🪞", villain: true, art: true, faces: 6 },
     // ball-only: earned by dazzling Cinderella at the Royal Ball (not buyable / not in the Well)
     { id: "cauldron_glass",    name: "Glass Slipper",    chip: "👠", ball: true },
     // hunt-only: earned by finding all the Stepsister's beads in King's Courtyard

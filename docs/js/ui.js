@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v335"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v336"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -122,6 +122,17 @@ function equippedCauldronArt() {
   const id = GAME.equipped.cauldron || "cauldron_classic";
   const c = (D.COSMETICS.cauldron || []).find(x => x.id === id);
   return (c && c.art) ? id : "cauldron_classic";
+}
+// The Queen's Mirror pot shows a face behind its (transparent) mirror; the face fades to a new
+// one as you add ingredients. Each face art is on the SAME 1500x990 canvas as the pot, so it
+// always lands in the mirror on every device. Order = a little scheming-to-triumphant progression.
+const MIRROR_FACES = {
+  cauldron_queen: ["cauldron_queen_face2", "cauldron_queen_face1", "cauldron_queen_face3",
+                   "cauldron_queen_face4", "cauldron_queen_face5", "cauldron_queen_face6"],
+};
+function equippedMirrorFaces() {
+  const key = equippedCauldronArt();
+  return MIRROR_FACES[key] || null;
 }
 function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar); }
 
@@ -249,6 +260,7 @@ let servedTotal = +(localStorage.getItem("wishpop_served") || 0);
 let mixFxWasVisible = false;   // tracks the cauldron fx so it fades in only on the FIRST ingredient
 let mixPulseColor = null;      // set on ingredient add → one-shot aura pulse in that ingredient's color
 let mixPopStep = 0;            // rising pitch as you pop cauldron bubbles in a row
+let mixPrevFace = null;        // last mirror-face index shown, so it crossfades to the next one
 
 /* --- helpers ------------------------------------------------------------ */
 const $ = sel => document.querySelector(sel);
@@ -6888,6 +6900,7 @@ function renderMix() {
   ROUND.slots = []; ROUND.mixStart = Date.now();
   ROUND.potentNext = false; ROUND.allergyOffset = 0; ROUND.insight = false;
   mixFxWasVisible = false; mixPulseColor = null;   // empty pot: no glow until the first ingredient
+  mixPrevFace = null;                              // reset the mirror face so it doesn't crossfade on the first paint
   paintMix(); show("mix");
   if (ROUND._mixTimer) clearInterval(ROUND._mixTimer);
   ROUND._mixTimer = setInterval(paintMixTop, 500);
@@ -7084,6 +7097,19 @@ function paintMix() {
   const slotsLeft = ROUND.maxSlots - nIng;
   const exciteClass = (nIng > 0 && slotsLeft <= 2) ? (slotsLeft <= 1 ? "excited-max" : "excited") : "";
   const pulseColor = mixPulseColor; mixPulseColor = null;            // one-shot aura pulse on the last add
+  // Queen's Mirror: pick the face for this ingredient count and crossfade from the previous one
+  const faceSet = equippedMirrorFaces();
+  let mirrorHtml = "";
+  if (faceSet) {
+    faceSet.forEach(k => { try { new Image().src = ART.url(k); } catch (e) {} });   // warm all faces so crossfades never flash
+    const faceIdx = Math.min(nIng, faceSet.length - 1);
+    const prevIdx = mixPrevFace, faceChanged = prevIdx !== null && prevIdx !== faceIdx;
+    mixPrevFace = faceIdx;
+    mirrorHtml = `<div class="mirror-faces">
+      ${faceChanged ? `<img class="mirror-face" src="${ART.url(faceSet[prevIdx])}" alt="" draggable="false">` : ""}
+      <img class="mirror-face ${faceChanged ? "fading" : ""}" src="${ART.url(faceSet[faceIdx])}" alt="" draggable="false">
+    </div>`;
+  }
   const slotCells = [];
   for (let i = 0; i < ROUND.maxSlots; i++) {
     const inst = ROUND.slots[i];
@@ -7109,6 +7135,7 @@ function paintMix() {
       <div class="m2-stage">
         <div class="m2-cauldron ${exciteClass}" id="cauldron-tap" style="--mix-color:${mixColor}">
           <div class="caul-art ${equippedCauldronClass()} ${pulseColor ? "pulsing" : ""}" id="cauldron"${pulseColor ? ` style="--pulse-color:${pulseColor}"` : ""}>
+            ${mirrorHtml}
             ${fxVisible ? `<div class="caul-fx ${justAppeared ? "fx-in" : ""}">
               <div class="caul-rim"></div>
               <div class="caul-bubbles">${cauldronBubblesHtml(bubbleCount, bubSizes)}</div>
