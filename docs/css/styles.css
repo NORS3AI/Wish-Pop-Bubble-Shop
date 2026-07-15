@@ -1942,7 +1942,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: url('../art/mix_bg.jpg?v=338') center top / cover no-repeat, #160c26; }
+  background: url('../art/mix_bg.jpg?v=339') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
@@ -1969,7 +1969,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    dominant magic (green the instant the wish is met); bubble count grows with the
    number of ingredients in the pot. The fx sit BEHIND the pot so they read as coming
    from inside. --mix-color / --pulse-color are set inline per render. --- */
-.caul-art { position: relative; z-index: 1; width: min(72vw, 292px); aspect-ratio: 1500 / 990; overflow: visible; }
+.caul-art { position: relative; z-index: 1; width: min(80vw, 330px); aspect-ratio: 1500 / 990; overflow: visible; }
 /* the pot gets excited as it fills — a gentle bounce, then a bigger hop when the next drop is the last.
    Lives on the wrapper so it layers cleanly with the per-drop .splash on the image, and leaves the % text alone. */
 .m2-cauldron { transform-origin: 50% 88%; }
@@ -1994,12 +1994,6 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* dark, dormant mirror glass shown before the first ingredient (no face revealed yet) */
 .mirror-dormant { position: absolute; left: 39.5%; top: 34%; width: 21%; height: 42%; border-radius: 50%;
   background: radial-gradient(circle, rgba(38,16,60,.82), rgba(12,6,26,.94) 72%); }
-/* purple/pink magic glow that flashes in the mirror oval while a face transitions */
-.mirror-glow { position: absolute; left: 39.5%; top: 34%; width: 21%; height: 42%; border-radius: 50%;
-  z-index: 1; pointer-events: none; filter: blur(10px);
-  background: radial-gradient(circle, rgba(232,126,248,.9), rgba(176,92,240,.55) 46%, rgba(0,0,0,0) 72%);
-  animation: mirrorGlow .55s ease; }
-@keyframes mirrorGlow { 0% { opacity: 0; } 45% { opacity: .82; } 100% { opacity: 0; } }
 /* fx layer lives behind the pot image (z-index 1 < image z-index 2) */
 .caul-fx { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .caul-fx.fx-in { animation: fxFadeIn .4s ease; }
