@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v305"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v306"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6252,7 +6252,7 @@ function renderScoop() {
     const bubs = $("#scoop-bubbles"); const kids = bubs ? [...bubs.children] : [];
     // bubbles float up ONE AT A TIME, each with its own rising pip so you can hear the count
     kids.forEach((b, k) => setTimeout(() => {
-      b.style.setProperty("--fx", rnd(-24, 24) + "px"); b.classList.add("floatup");
+      b.style.setProperty("--fx", rnd(-38, 38) + "px"); b.classList.add("floatup");
       SFX.count(k); if (navigator.vibrate) navigator.vibrate(5);
     }, 130 + k * 175));
     setTimeout(advance, 130 + found * 175 + 700);
@@ -6264,8 +6264,8 @@ function renderScoop() {
     const bowl = $("#scoop-bowl"); state = "diving";
     if (bowl) { bowl.classList.remove("diving"); void bowl.offsetWidth; bowl.classList.add("diving"); }
     SFX.scoop();
-    setTimeout(loadScoop, 280);                                   // fill at the bottom of the dip
-    setTimeout(() => { if (bowl) bowl.classList.remove("diving"); }, 560);
+    setTimeout(loadScoop, 300);                                   // fill while the scoop lingers at the bottom
+    setTimeout(() => { if (bowl) bowl.classList.remove("diving"); }, 860);  // matches the slower, weighted rise
   }
   function advance() {
     if (state === "done") return;                // skipped straight to popping

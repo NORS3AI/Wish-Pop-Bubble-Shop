@@ -359,22 +359,26 @@ html, body {
   -webkit-mask-image: linear-gradient(to bottom, #000 84%, transparent 97%); mask-image: linear-gradient(to bottom, #000 84%, transparent 97%); }
 .scoop-stage:active { cursor: grabbing; }
 /* spoon rests mid-screen (bowl above the pile); it dips down into the glitter to scoop */
+/* the whole rig bobs gently in the air (bowl + glitter + bubbles move together) */
 .scoop-craft { position: absolute; left: 50%; transform: translateX(-50%); top: 10%; bottom: 35%; width: 96%; max-width: 440px;
-  display: flex; align-items: flex-end; justify-content: center; }
+  display: flex; align-items: flex-end; justify-content: center; animation: craftFloat 3.4s ease-in-out infinite; }
+@keyframes craftFloat { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-8px); } }
 .scoop-bowl { position: relative; font-size: 178px; line-height: 1; z-index: 2; will-change: transform; }
 .scoop-bowl img.art { display: block; width: 1.7em; height: auto; filter: drop-shadow(0 12px 20px rgba(0,0,0,.55)); }
 .scoop-bowl.jig { animation: sjig .2s ease; }
-.scoop-bowl.diving { animation: sdive .6s ease; }
+.scoop-bowl.diving { animation: sdive .82s ease-in-out; }
 @keyframes sjig { 0%,100% { transform: translateX(0) rotate(0); } 20% { transform: translateX(-11px) rotate(-5deg); } 55% { transform: translateX(10px) rotate(4deg); } 82% { transform: translateX(-4px) rotate(-2deg); } }
-@keyframes sdive { 0% { transform: translateY(0); } 46% { transform: translateY(210px) scale(.97); } 100% { transform: translateY(0); } }
+/* dip in fairly quickly, then rise back out slowly — as if the scoop came up heavy */
+@keyframes sdive { 0% { transform: translateY(0); } 30% { transform: translateY(222px) scale(.96); } 46% { transform: translateY(218px) scale(.96); } 100% { transform: translateY(0); } }
 /* bubbles rise from the CENTRE of the glitter in the sifter (the basket sits left of screen centre) */
-.scoop-bubbles { position: absolute; left: 43%; bottom: 13%; transform: translateX(-50%); width: 24%; height: 12%;
-  display: flex; flex-wrap: wrap; align-content: flex-end; justify-content: center; gap: 2px; z-index: 4; }
-.sbub { opacity: 0; } /* hidden under the glitter until shaken free */
+/* the bubbles all rise from the SAME point (the glitter in the sifter) and fan upward,
+   one at a time — so every bubble spawns from the correct spot no matter how many there are */
+.scoop-bubbles { position: absolute; left: 43%; bottom: 21%; transform: translateX(-50%); width: 0; height: 0; z-index: 4; }
+.sbub { position: absolute; left: 0; top: 0; transform: translate(-50%,-50%); opacity: 0; } /* stacked on the glitter, hidden */
 .sbub.floatup { animation: sfloat 1s ease-in forwards; }
-@keyframes sfloat { 0% { transform: translate(0,0); opacity: 0; } 14% { opacity: 1; transform: translateY(-8px); } 100% { transform: translate(var(--fx,0), -42vh); opacity: 0; } }
+@keyframes sfloat { 0% { transform: translate(-50%,-50%); opacity: 0; } 14% { opacity: 1; } 100% { transform: translate(calc(-50% + var(--fx,0)), calc(-50% - 42vh)); opacity: 0; } }
 /* a real glitter mound (textured from the pile art) heaped over the sifter opening; it jigs WITH the spoon */
-.glitter-cover { position: absolute; left: 43%; bottom: 11%; transform: translateX(-50%); width: 32%; height: 15%; z-index: 5; pointer-events: none; }
+.glitter-cover { position: absolute; left: 43%; bottom: 15%; transform: translateX(-50%); width: 36%; height: 18%; z-index: 5; pointer-events: none; }
 .glitter-cover.jig { animation: cjig .2s ease; }
 @keyframes cjig { 0%,100% { transform: translateX(-50%) rotate(0); } 20% { transform: translateX(calc(-50% - 11px)) rotate(-5deg); } 55% { transform: translateX(calc(-50% + 10px)) rotate(4deg); } 82% { transform: translateX(calc(-50% - 4px)) rotate(-2deg); } }
 .glitter-film { position: absolute; inset: -14% -6% -6%; background: var(--scoop-glitter) no-repeat center bottom; background-size: 100% 100%;
@@ -1174,7 +1178,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .bubble-field.has-bonus-art .pbubble.bonus .sheen,
 .bubble-field.has-bonus-art .pbubble.bonus .bglyph { display: none; }
 .scoop-bubbles.has-bubble-art .sbub {
-  display: inline-block; width: 50px; height: 50px; margin: -3px -5px; background-image: var(--bubble-img);
+  width: 56px; height: 56px; margin: 0; background-image: var(--bubble-img);
   background-size: contain; background-position: center; background-repeat: no-repeat;
   filter: drop-shadow(0 0 6px rgba(255,230,150,.7)); }
 .scoop-bubbles.has-bubble-art .sbub .bglyph { display: none; }
