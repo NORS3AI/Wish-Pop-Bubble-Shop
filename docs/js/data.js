@@ -202,6 +202,7 @@ const REALMS = [
   { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.", eventsNeeded: 8, reqBonus: 5,
     unlock: { gold: 3000, keys: 10, keyFrom: "willow" }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS, magics: COURT_MAGIC_TYPES, infused: COURT_INFUSED },
   { id: "oasis",     name: "Forgotten Oasis",     icon: "🏜️", comingSoon: true, tagline: "Lamps, genies, and desert wishes.", eventsNeeded: 5, reqBonus: 8 },
+  { id: "drury",     name: "Drury Lane",          icon: "🎭", comingSoon: true, tagline: "The Muffin Man, gingerbread, and treats down every lane.", eventsNeeded: 5, reqBonus: 9 },
   { id: "thieves",   name: "Thieves' Corner",     icon: "🗝️", comingSoon: true, tagline: "Rogues, locks, and light fingers.", eventsNeeded: 5, reqBonus: 10 },
   { id: "beanstalk", name: "Beanstalk Bank",      icon: "🌱", comingSoon: true, tagline: "Giants, gold, and golden geese.", eventsNeeded: 6, reqBonus: 12 },
 ];
@@ -317,6 +318,10 @@ const COSMETICS = {
     { id: "cauldron_amethyst", name: "Amethyst",         chip: "💜" },
     { id: "cauldron_gold",     name: "Golden",           chip: "💛" },
     { id: "cauldron_rainbow",  name: "Rainbow",          chip: "🌈" },
+    // Stardust-buyable AND a rare drop from the Wishing Well (a plain skin does both)
+    { id: "cauldron_oven",     name: "Oven",             chip: "🔥", art: true },
+    // locked until the future Drury Lane realm is added and its finale is beaten
+    { id: "cauldron_gingerbread", name: "Gingerbread",   chip: "🍪", art: true, finale: "drury" },
     // achievement-only: earned by recycling junk (not buyable / not in the Well)
     { id: "cauldron_trashcan", name: "Trash Can",        chip: "🗑️", art: true, achievement: { stat: "recycled", need: 500, desc: "Recycle 500 junk" } },
     // villain-only: won by beating a villain event (not buyable / not in the Well)
