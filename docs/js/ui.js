@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v347"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v348"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7113,6 +7113,9 @@ function paintMix() {
   const exciteClass = (nIng > 0 && slotsLeft <= 2) ? (slotsLeft <= 1 ? "excited-max" : "excited") : "";
   const pulseColor = mixPulseColor; mixPulseColor = null;            // one-shot aura pulse on the last add
   // Queen's Mirror: pick the face for this ingredient count and crossfade from the previous one
+  // Oven pot: a flickering firelight glow over its flame door (oven skin only)
+  const ovenHtml = (equippedCauldronArt() === "cauldron_oven")
+    ? `<div class="oven-glow"></div><div class="oven-fire"></div>` : "";
   const faceSet = equippedMirrorFaces();
   let mirrorHtml = "";
   if (faceSet) {
@@ -7159,6 +7162,7 @@ function paintMix() {
               <div class="caul-bubbles">${cauldronBubblesHtml(bubbleCount, bubSizes)}</div>
             </div>` : ""}
             <img class="caul-img" src="${ART.url(equippedCauldronArt())}" alt="" draggable="false">
+            ${ovenHtml}
           </div>
           <div class="serve-hint" id="serve-hint"></div>
         </div>
