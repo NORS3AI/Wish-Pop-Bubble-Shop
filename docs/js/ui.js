@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v329"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v330"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -239,6 +239,8 @@ let ROUND = null;
 let servedTotal = +(localStorage.getItem("wishpop_served") || 0);
 let mixFxWasVisible = false;   // tracks the cauldron fx so it fades in only on the FIRST ingredient
 let mixPulseColor = null;      // set on ingredient add → one-shot aura pulse in that ingredient's color
+let mixPopStep = 0;            // rising pitch as you pop cauldron bubbles in a row
+let mixBubblePopped = false;   // a tap that popped a bubble shouldn't also count toward the serve double-tap
 
 /* --- helpers ------------------------------------------------------------ */
 const $ = sel => document.querySelector(sel);
@@ -7025,6 +7027,24 @@ function cauldronBubblesHtml(n, sizes) {
   }
   return s;
 }
+// It's Wish POP, after all — the drifting cauldron bubbles pop on tap: a soft rising
+// bloop and a quick burst-and-fade in place. Purely for delight, no gameplay effect.
+function popCauldronBubble(bub) {
+  if (bub.dataset.popped) return;
+  bub.dataset.popped = "1";
+  mixBubblePopped = true; setTimeout(() => { mixBubblePopped = false; }, 280);
+  const cs = getComputedStyle(bub), m = cs.transform, base = (m && m !== "none") ? m + " " : "";
+  bub.style.animation = "none";                       // freeze the rise right where it is
+  bub.style.transform = base.trim() || "none";
+  bub.style.opacity = cs.opacity;                      // keep it visible (base opacity is 0)
+  void bub.offsetWidth;                                // reflow so the transition starts from here
+  bub.style.transition = "transform .24s ease-out, opacity .24s ease-out";
+  bub.style.transform = base + "scale(1.7)";           // burst outward…
+  bub.style.opacity = "0";                             // …and fade
+  SFX.unlock(); SFX.pop(mixPopStep++);
+  bub.addEventListener("transitionend", () => bub.remove(), { once: true });
+  setTimeout(() => bub.remove(), 320);                 // fallback cleanup
+}
 function paintMix() {
   const w = ROUND.wish;
   // remember how far the ingredient tray was scrolled so a tap doesn't snap it back to the start
@@ -7117,8 +7137,11 @@ function paintMix() {
 // Two quick taps on the cauldron serves — deliberate, so no accidental serves.
 function wireDoubleTapServe() {
   const el = $("#cauldron-tap"); if (!el) return;
+  // tap a drifting bubble to pop it (pointerdown = responsive on moving targets)
+  el.addEventListener("pointerdown", e => { const bub = e.target.closest(".cbub"); if (bub) popCauldronBubble(bub); });
   let last = 0;
   el.addEventListener("click", () => {
+    if (mixBubblePopped) return;   // that tap popped a bubble — don't also count it toward serving
     const now = Date.now();
     if (now - last < 350) { last = 0; if (itemGateBlocks()) return; if (ROUND.slots.length === 0) { toast("Add some ingredients first!"); return; } serve(); }
     else { last = now; if (ROUND.slots.length) toast("Double-tap the cauldron to serve!"); }
