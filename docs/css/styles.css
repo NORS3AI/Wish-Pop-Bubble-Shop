@@ -1942,7 +1942,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: url('../art/mix_bg.jpg?v=339') center top / cover no-repeat, #160c26; }
+  background: url('../art/mix_bg.jpg?v=340') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
@@ -1969,7 +1969,20 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    dominant magic (green the instant the wish is met); bubble count grows with the
    number of ingredients in the pot. The fx sit BEHIND the pot so they read as coming
    from inside. --mix-color / --pulse-color are set inline per render. --- */
-.caul-art { position: relative; z-index: 1; width: min(80vw, 330px); aspect-ratio: 1500 / 990; overflow: visible; }
+.caul-art { position: relative; z-index: 1; width: min(96vw, 396px); aspect-ratio: 1500 / 990; overflow: visible; }
+/* --- MIX LAYOUT: the % readout sits up top; the (bigger) cauldron drops low to nearly rest on
+   the ingredient-slot row. Self-contained + reversible — to move the % back under the pot,
+   change ONLY the .m2-readout order below from 20 to 45 (see note). Delete this whole block to
+   restore the original centered layout. --- */
+.mixv2 { justify-content: flex-start; }
+.m2-head    { order: 10; }
+.m2-readout { order: 20; margin-top: 4px !important; }   /* % position — change to order: 45 to put it back under the cauldron */
+.m2-timer   { order: 30; margin-top: auto !important; }  /* the single flexible spacer, so the pot sits low */
+.m2-stage   { order: 40; margin-top: 0 !important; padding-top: 0 !important; }
+.m2-slots   { order: 50; margin-top: 6px !important; }   /* the pot nearly rests on this row */
+.m2-bars    { order: 60; }
+.m2-charmbar { order: 70; }
+.m2-tray    { order: 80; }
 /* the pot gets excited as it fills — a gentle bounce, then a bigger hop when the next drop is the last.
    Lives on the wrapper so it layers cleanly with the per-drop .splash on the image, and leaves the % text alone. */
 .m2-cauldron { transform-origin: 50% 88%; }
