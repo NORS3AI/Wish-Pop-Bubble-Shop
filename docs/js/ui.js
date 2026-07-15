@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v316"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v317"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6086,6 +6086,7 @@ function renderScoop() {
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const SHAKE_UNITS = 24, BATCH = 4;              // shakes needed to empty the glitter out of the sifter
   let shaken = 0;                                  // progress toward emptying the current scoop
+  let floated = 0;                                 // how many of this scoop's bubbles have risen out so far
   let lastRainAt = 0, rainOrigin = null;          // rate-limit + cache the falling-glitter FX so a fast shake stays light
   let idx = 0, revealed = 0, state = "idle", shakeDist = 0, lastX = null, dragging = false, autoIv = null;
   let skipMode = false;                          // after "Shake for me", the button becomes "Skip"
@@ -6138,7 +6139,7 @@ function renderScoop() {
     // risen back to its resting spot (see diveThenLoad), so auto-shake can't start mid-scoop.
     const tip = $("#scoop-glitter-tip");
     if (tip) { tip.classList.toggle("rainbow", jackpot); tip.style.opacity = "1"; }
-    shaken = 0;                                     // shake-progress toward emptying the glitter
+    shaken = 0; floated = 0;                         // shake-progress + bubbles released this scoop
     const st = $("#scoop-step"); if (st) st.textContent = `Scoop ${idx + 1} of ${scoops}`;
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
       ? "🌈 A <b>rainbow scoop</b> — shake for the jackpot!"
@@ -6218,6 +6219,17 @@ function renderScoop() {
     }
   }
 
+  // float ONE bubble up out of the glitter (its spawn is triggered by shaking, not by a timer)
+  function floatBubble(b, k) {
+    if (!b || b.classList.contains("floatup")) return;
+    const ang = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random());   // random spot on the glitter ellipse
+    b.style.left = (50 + Math.cos(ang) * rr * 50).toFixed(1) + "%";
+    b.style.top = (50 + Math.sin(ang) * rr * 50).toFixed(1) + "%";
+    b.style.setProperty("--fx", rnd(-30, 30) + "px"); b.classList.add("floatup");
+    revealed++;
+    SFX.count(k); if (navigator.vibrate) navigator.vibrate(5);
+    const rs = $("#scoop-result"); if (rs) rs.textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
+  }
   function shakeTick(intensity) {
     if (state !== "shaking") return;
     if (shaken >= SHAKE_UNITS) { reveal(); return; }
@@ -6227,6 +6239,10 @@ function renderScoop() {
     shaken += BATCH;
     // fade the glittery scoop away toward the empty sifter as you shake it off
     const tip = $("#scoop-glitter-tip"); if (tip) tip.style.opacity = Math.max(0, 1 - shaken / SHAKE_UNITS).toFixed(2);
+    // release bubbles IN STEP with the glitter thinning out — the rest stay hidden in what's left
+    const kids = [...($("#scoop-bubbles") || { children: [] }).children];
+    const want = Math.min(kids.length, Math.round(kids.length * shaken / SHAKE_UNITS));
+    while (floated < want) { floatBubble(kids[floated], floated); floated++; }
     rainGlitter(Math.max(0.4, Math.min(1, intensity)));   // trails of glitter cascade down the screen
     if (shaken >= SHAKE_UNITS) setTimeout(reveal, 220);
   }
@@ -6263,11 +6279,15 @@ function renderScoop() {
     }
   }
 
+  // glitter's all shaken off — release any last bubbles still hidden in it and finish the scoop
   function reveal() {
     if (state !== "shaking") return; state = "revealing";
-    const found = split[idx], jackpot = isJackpot(idx); revealed += found;
+    const found = split[idx], jackpot = isJackpot(idx);
     tryHuntFind("scoop", $("#scoop-craft"));   // a hidden hunt item may be sitting in the glitter
     const tip = $("#scoop-glitter-tip"); if (tip) tip.style.opacity = "0";   // sifter is empty now
+    // let out any stragglers (rounding could leave the very last bubble)
+    const kids = [...($("#scoop-bubbles") || { children: [] }).children];
+    while (floated < kids.length) { floatBubble(kids[floated], floated); floated++; }
     let jackCharm = null;
     if (jackpot) {
       SFX.charm(); // fanfare
@@ -6280,18 +6300,7 @@ function renderScoop() {
       : jackpot
       ? `🌈 <b>Jackpot!</b> ${found} bubble${found === 1 ? "" : "s"}!`
       : `✨ <b>${found}</b> bubble${found === 1 ? "" : "s"}!`;
-    const rs = $("#scoop-result"); if (rs) rs.textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
-    const bubs = $("#scoop-bubbles"); const kids = bubs ? [...bubs.children] : [];
-    // bubbles float up ONE AT A TIME, each with its own rising pip so you can hear the count
-    kids.forEach((b, k) => setTimeout(() => {
-      // spawn point = a random spot within the flat glitter ellipse (uniform over its area)
-      const ang = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random());
-      b.style.left = (50 + Math.cos(ang) * rr * 50).toFixed(1) + "%";
-      b.style.top = (50 + Math.sin(ang) * rr * 50).toFixed(1) + "%";
-      b.style.setProperty("--fx", rnd(-30, 30) + "px"); b.classList.add("floatup");
-      SFX.count(k); if (navigator.vibrate) navigator.vibrate(5);
-    }, 130 + k * 175));
-    setTimeout(advance, 130 + found * 175 + 700);
+    setTimeout(advance, 1000);   // give the last bubbles time to finish rising
   }
 
   // Dip the (empty) sifter down into the glitter and come up full — used for the very
