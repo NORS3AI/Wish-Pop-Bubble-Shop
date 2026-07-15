@@ -1942,7 +1942,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: url('../art/mix_bg.jpg?v=348') center top / cover no-repeat, #160c26; }
+  background: url('../art/mix_bg.jpg?v=349') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
@@ -2003,17 +2003,17 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    a fast, irregular flicker (the dancing flames) + a slow warm halo (heat spilling out). */
 .oven-fire, .oven-glow { position: absolute; z-index: 3; pointer-events: none; border-radius: 50%;
   mix-blend-mode: screen; will-change: opacity; }
-.oven-fire { left: 38%; top: 50%; width: 24%; height: 25%; filter: blur(6px);
-  background: radial-gradient(ellipse 62% 72% at 50% 62%, rgba(255,244,170,.95), rgba(255,140,30,.72) 45%, rgba(200,40,0,0) 76%);
-  animation: ovenFlicker 1.5s ease-in-out infinite; }
-.oven-glow { left: 29%; top: 43%; width: 42%; height: 36%; filter: blur(15px);
-  background: radial-gradient(circle, rgba(255,120,25,.5), rgba(180,40,0,0) 70%);
-  animation: ovenGlow 2.4s ease-in-out infinite; }
+.oven-fire { left: 27%; top: 37%; width: 46%; height: 48%; filter: blur(9px);
+  background: radial-gradient(ellipse 60% 72% at 50% 60%, rgba(255,253,225,1), rgba(255,150,35,.95) 40%, rgba(225,55,0,0) 74%);
+  animation: ovenFlicker 1.2s ease-in-out infinite; }
+.oven-glow { left: 2%; top: 18%; width: 96%; height: 82%; filter: blur(34px);
+  background: radial-gradient(circle, rgba(255,120,25,.78), rgba(170,35,0,0) 64%);
+  animation: ovenGlow 2.1s ease-in-out infinite; }
 @keyframes ovenFlicker {
-  0% { opacity: .62; } 12% { opacity: .96; } 22% { opacity: .55; } 33% { opacity: .86; }
-  46% { opacity: 1; } 58% { opacity: .6; } 69% { opacity: .92; } 82% { opacity: .68; }
-  91% { opacity: .97; } 100% { opacity: .62; } }
-@keyframes ovenGlow { 0%,100% { opacity: .32; } 50% { opacity: .68; } }
+  0% { opacity: .66; } 12% { opacity: 1; } 22% { opacity: .58; } 33% { opacity: .92; }
+  46% { opacity: 1; } 58% { opacity: .64; } 69% { opacity: .98; } 82% { opacity: .72; }
+  91% { opacity: 1; } 100% { opacity: .66; } }
+@keyframes ovenGlow { 0%,100% { opacity: .42; } 50% { opacity: .88; } }
 /* Queen's Mirror: face layer sits BEHIND the pot image (z 0 < image z 2) and shows through the
    transparent mirror oval. Each face art shares the pot's canvas, so it always lands in the mirror.
    A new face fades in over the previous one when you add an ingredient. */
