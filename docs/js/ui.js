@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v322"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v323"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6997,6 +6997,21 @@ function mixAllergyChip(a) {
       <span class="allerg-meter"><i style="width:${pct}%;background:${col}"></i></span>
     </div>`;
 }
+// Rising bubbles for the art cauldron: color follows the mix, count grows with
+// how many ingredients are in the pot, and they come in several sizes.
+function cauldronBubblesHtml(n) {
+  const sizes = [7, 9, 12, 16, 21];
+  let s = "";
+  for (let i = 0; i < n; i++) {
+    const sz = sizes[Math.floor(Math.random() * sizes.length)];
+    const left = 6 + Math.random() * 88;                  // spread across the mouth
+    const dur = (2.3 + Math.random() * 2.0).toFixed(2);
+    const delay = (-Math.random() * dur).toFixed(2);      // negative → already mid-rise, no empty start
+    const drift = Math.round(Math.random() * 16 - 8);     // subtle horizontal offset
+    s += `<span class="cbub" style="left:${left.toFixed(1)}%;width:${sz}px;height:${sz}px;margin-left:${drift}px;animation-duration:${dur}s;animation-delay:${delay}s"></span>`;
+  }
+  return s;
+}
 function paintMix() {
   const w = ROUND.wish;
   // remember how far the ingredient tray was scrolled so a tap doesn't snap it back to the start
@@ -7005,6 +7020,11 @@ function paintMix() {
   let best = w.needs[0], bestPct = -1;
   w.needs.forEach((n, i) => { if (score.perNeed[i].pct >= bestPct) { bestPct = score.perNeed[i].pct; best = n; } });
   const liquid = D.MAGIC[best.type] || "#c48bff";
+  // rim glow + bubbles follow the dominant magic, or turn green the instant the wish is met
+  const meetsWish = score.weighted >= w.requiredMatch;
+  const mixColor = meetsWish ? "#7ee08a" : liquid;
+  const nIng = ROUND.slots.length;
+  const bubbleCount = nIng === 0 ? 2 : Math.min(22, 3 + nIng * 3);   // more ingredients → more bubbles
   const slotCells = [];
   for (let i = 0; i < ROUND.maxSlots; i++) {
     const inst = ROUND.slots[i];
@@ -7028,10 +7048,11 @@ function paintMix() {
       </div>
       <div class="m2-timer" id="m2-timer"></div>
       <div class="m2-stage">
-        <div class="m2-cauldron" id="cauldron-tap">
-          <div class="cauldron ${equippedCauldronClass()}" id="cauldron">
-            <div class="liquid" style="height:${Math.max(14, score.weighted)}%;background:linear-gradient(180deg, ${liquid}, ${shade(liquid)})"></div>
-            <div class="bub b1"></div><div class="bub b2"></div><div class="bub b3"></div><div class="bub b4"></div><div class="bub b5"></div>
+        <div class="m2-cauldron" id="cauldron-tap" style="--mix-color:${mixColor}">
+          <div class="caul-art ${equippedCauldronClass()}" id="cauldron">
+            <img class="caul-img" src="${ART.url("cauldron_classic")}" alt="" draggable="false">
+            <div class="caul-rim"></div>
+            <div class="caul-bubbles">${cauldronBubblesHtml(bubbleCount)}</div>
           </div>
           <div class="serve-hint" id="serve-hint"></div>
         </div>
@@ -7047,7 +7068,6 @@ function paintMix() {
     </div>
   `);
   paintMixTop();
-  applyCauldronArt();
   $("#screen-mix").querySelectorAll(".icard[data-idx]").forEach(t => t.addEventListener("click", () => addToSlot(+t.dataset.idx, t)));
   $("#screen-mix").querySelectorAll(".cslot[data-charm]").forEach(t => t.addEventListener("click", () => playCharm(+t.dataset.charm)));
   if (ROUND.villain) $("#screen-mix").querySelectorAll(".slot.removable").forEach(el => el.addEventListener("click", () => removeFromSlot(+el.dataset.slot)));
