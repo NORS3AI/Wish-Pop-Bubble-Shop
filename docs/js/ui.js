@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v327"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v328"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6305,7 +6305,9 @@ function renderScoop() {
     let jackCharm = null;
     if (jackpot) {
       SFX.charm(); // fanfare
-      jackCharm = ENGINE.pickCappedCharm(ROUND.charms, ROUND.villain ? ["peek"] : null);
+      // count charms still hidden in the haul (they'll be popped later) so the jackpot
+      // never duplicates a capped charm you're already guaranteed to collect
+      jackCharm = ENGINE.pickCappedCharm(ROUND.charms.concat(haulCharmIds()), ROUND.villain ? ["peek"] : null);
       if (gainCharm(jackCharm)) { if (ROUND.stats) ROUND.stats.charms++; } else { jackCharm = null; } // satchel full → bubbles only
       jackDone[idx] = true;
     }
@@ -6355,7 +6357,7 @@ function renderScoop() {
     for (let i = 0; i < scoops; i++) {
       if (isJackpot(i) && !jackDone[i]) {
         jackDone[i] = true;
-        const ch = ENGINE.pickCappedCharm(ROUND.charms, ROUND.villain ? ["peek"] : null);
+        const ch = ENGINE.pickCappedCharm(ROUND.charms.concat(haulCharmIds()), ROUND.villain ? ["peek"] : null);
         if (gainCharm(ch) && ROUND.stats) ROUND.stats.charms++;
       }
     }
@@ -6703,9 +6705,17 @@ function spawnBonusBubbles(cx, cy) {
 function roundCharmsFull() { return (ROUND.charmsGained || 0) >= (BALANCE.MAX_CHARMS_PER_ROUND || Infinity); }
 function gainCharm(id) {
   if (roundCharmsFull()) return false;
+  // Hard per-round cap backstop (cleanse 1, insight 1, peek 2; potent/wild uncapped):
+  // no matter which source grants the charm, never let it exceed its cap — swap the
+  // overflow for an uncapped Potent so the pop still rewards something.
+  const cap = BALANCE.CHARM_CAPS[id];
+  if (cap != null && ROUND.charms.filter(c => c === id).length >= cap) id = "potent";
   ROUND.charms.push(id); ROUND.charmsGained = (ROUND.charmsGained || 0) + 1;
   return true;
 }
+// Charm ids still waiting in this round's haul (to be popped). A jackpot scoop consults
+// these so it won't hand out a capped charm you're already guaranteed to collect later.
+function haulCharmIds() { return (ROUND.haul || []).filter(it => it.kind === "charm").map(it => it.id); }
 // Charm floats out of the popped bubble; tap it to gather it (with the fanfare).
 function spawnFloatingCharm(id, x, y) {
   const layer = $("#catch-layer"); if (!layer) { gainCharm(id); return; }
