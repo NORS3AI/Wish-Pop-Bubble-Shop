@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v336"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v337"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -133,6 +133,20 @@ const MIRROR_FACES = {
 function equippedMirrorFaces() {
   const key = equippedCauldronArt();
   return MIRROR_FACES[key] || null;
+}
+// Shuffle-bag face picker: draws every face once (random order) before any repeats, so a normal
+// fill never repeats a face; only removing ingredients and adding more (pet Undo) reshuffles and
+// can repeat. Reshuffles avoid showing the same face back-to-back.
+function refillMirrorBag(faces) {
+  const pool = faces.map((_, i) => i);
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+  if (pool[0] === ROUND.mirrorFace && pool.length > 1) { const t = pool[0]; pool[0] = pool[1]; pool[1] = t; }
+  ROUND.mirrorBag = pool;
+}
+function drawMirrorFace(faces) {
+  if (!ROUND.mirrorBag || !ROUND.mirrorBag.length) refillMirrorBag(faces);
+  ROUND.mirrorFace = ROUND.mirrorBag.shift();
+  return ROUND.mirrorFace;
 }
 function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar); }
 
@@ -7102,12 +7116,16 @@ function paintMix() {
   let mirrorHtml = "";
   if (faceSet) {
     faceSet.forEach(k => { try { new Image().src = ART.url(k); } catch (e) {} });   // warm all faces so crossfades never flash
-    const faceIdx = Math.min(nIng, faceSet.length - 1);
-    const prevIdx = mixPrevFace, faceChanged = prevIdx !== null && prevIdx !== faceIdx;
+    const faceIdx = (ROUND.mirrorFace == null) ? null : ROUND.mirrorFace;   // null = dormant dark mirror (empty pot)
+    const prevIdx = mixPrevFace, changed = prevIdx !== faceIdx;             // covers dormant <-> face and face -> face
     mixPrevFace = faceIdx;
+    const dormant = faceIdx == null;
     mirrorHtml = `<div class="mirror-faces">
-      ${faceChanged ? `<img class="mirror-face" src="${ART.url(faceSet[prevIdx])}" alt="" draggable="false">` : ""}
-      <img class="mirror-face ${faceChanged ? "fading" : ""}" src="${ART.url(faceSet[faceIdx])}" alt="" draggable="false">
+      ${(changed && prevIdx != null) ? `<img class="mirror-face" src="${ART.url(faceSet[prevIdx])}" alt="" draggable="false">` : ""}
+      ${dormant
+        ? `<div class="mirror-dormant"></div>`
+        : `<img class="mirror-face ${changed ? "fading" : ""}" src="${ART.url(faceSet[faceIdx])}" alt="" draggable="false">`}
+      ${(changed && !dormant) ? `<div class="mirror-glow"></div>` : ""}
     </div>`;
   }
   const slotCells = [];
@@ -7324,6 +7342,7 @@ function addToSlot(idx, fromEl) {
   ROUND.slots.push(inst);
   applyInfusedEffect(inst);   // built-in charm effect (Dragon Egg / Frost Gem) fires on drop-in
   mixPulseColor = D.MAGIC[instMainMagic(inst)] || "#c9a3ff";   // aura pulses in the added ingredient's color
+  { const mf = equippedMirrorFaces(); if (mf) drawMirrorFace(mf); }   // Queen's Mirror: reveal a new random face
   paintMix();
   const c2 = document.getElementById("cauldron"); if (c2) { c2.classList.remove("splash"); void c2.offsetWidth; c2.classList.add("splash"); }
 }
