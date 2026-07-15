@@ -1942,7 +1942,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: radial-gradient(ellipse at 50% 8%, #3a2358 0%, #241338 48%, #160c26 100%); }
+  background: url('../art/mix_bg.jpg?v=320') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
