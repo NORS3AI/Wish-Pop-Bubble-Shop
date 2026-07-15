@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v332"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v333"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -104,6 +104,8 @@ function markRealmFinaleWon() {
   const id = GAME.realm, need = realmEventsNeeded(id);
   if (need) GAME.realmEvents[id] = need;
   GAME.finaleWon[id] = true;
+  GAME.owned = GAME.owned || {};
+  allSkins().forEach(c => { if (c.finale === id) GAME.owned[c.id] = true; });   // finale trophy skins (e.g. the Picnic Basket)
   save();
 }
 // Apply the current realm's palette theme to the page (a body class).
@@ -114,6 +116,13 @@ function applyRealmTheme() {
 }
 // currently-equipped cosmetics
 function equippedCauldronClass() { return "skin-" + (GAME.equipped.cauldron || "cauldron_classic"); }
+// which cauldron IMAGE to draw: the equipped skin if it ships art, else the classic pot.
+// All art skins share the same normalized canvas, so the rim glow + bubbles line up on every one.
+function equippedCauldronArt() {
+  const id = GAME.equipped.cauldron || "cauldron_classic";
+  const c = (D.COSMETICS.cauldron || []).find(x => x.id === id);
+  return (c && c.art) ? id : "cauldron_classic";
+}
 function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar); }
 
 /* --- custom art helpers: use an uploaded image if present, else the emoji ---
@@ -1205,6 +1214,7 @@ function huntFindFx(h, st, anchorEl, foundId) {
 function huntComplete(h) {
   const st = huntState(h.realm); st.done = true;
   GAME.owned = GAME.owned || {}; GAME.owned[h.skin] = true;
+  allSkins().forEach(c => { if (c.hunt === h.realm) GAME.owned[c.id] = true; });   // any skins tied to this hunt (e.g. Bo Peep's pot)
   GAME.huntCelebrate = h.realm; save();
   SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
   // The full reveal (and reward) is delivered as a conversation on the home screen; here we
@@ -1822,7 +1832,7 @@ function openChest() {
 function ownedCount(kind) { return D.COSMETICS[kind].filter(c => GAME.owned[c.id]).length; }
 function allSkins() { return [].concat(D.COSMETICS.cauldron, D.COSMETICS.familiar); }
 // the Well only awards Stardust-buyable skins — achievement/villain/ball/hunt/pearl skins are earned or pearl-only, never rolled
-function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain && !c.ball && !c.hunt && !c.pearl); }
+function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain && !c.ball && !c.hunt && !c.pearl && !c.finale); }
 // Roll a prize from the weighted tiers. Always returns a prize object.
 function rollWellPrize() {
   const rndInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -2010,9 +2020,10 @@ function renderWardrobe() {
   const dustCost = BALANCE.STARDUST_SKIN_COST;
   const section = (kind, title) => {
     const tiles = D.COSMETICS[kind].map(c => {
-      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball, hunt = c.hunt, pearl = c.pearl;
+      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball, hunt = c.hunt, pearl = c.pearl, finale = c.finale;
       const hh = hunt ? huntFor(hunt) : null, hs = hunt ? huntState(hunt) : null;
-      const special = ach || vil || ball || hunt; // earned, never bought with currency
+      const finaleName = finale ? ((D.REALM_BY_ID[finale] || {}).name || "the realm") : "";
+      const special = ach || vil || ball || hunt || finale; // earned, never bought with currency
       const canBuy = !owned && !special && !pearl && GAME.stardust >= dustCost;
       const canBuyPearl = !owned && pearl && (GAME.pearls || 0) >= pearl;
       const btn = equipped
@@ -2027,18 +2038,20 @@ function renderWardrobe() {
                 ? `<span class="skin-tag muted">👠 Dazzle at the Ball</span>`
                 : hunt
                   ? `<span class="skin-tag muted">${hh ? hh.itemEmoji : "🔎"} ${hs ? hs.found : 0}/${hh ? hh.need : "?"}</span>`
+                  : finale
+                    ? `<span class="skin-tag muted">🏆 Finale</span>`
                   : pearl
                     ? `<button class="btn small ${canBuyPearl ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuyPearl ? "" : "disabled"}>${PEARL} ${pearl}</button>`
                     : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
       // achievement/villain/ball/hunt/pearl skins reveal their look; other unowned stay a mystery
       const revealed = owned || special || pearl;
       const chip = owned
-        ? (kind === "familiar" ? buddyArt(c.id, "skin-art") : ART.tag("cauldron_" + c.id, c.chip, "skin-art"))
+        ? (kind === "familiar" ? buddyArt(c.id, "skin-art") : (c.art ? ART.tag(c.id, c.chip, "skin-art") : c.chip))
         : revealed ? c.chip : "❔";
       const nameShown = revealed ? c.name : "???";
       const hint = ach && !owned ? ach.desc : vil && !owned ? "Win a villain event" : ball && !owned ? "Dazzle Cinderella at the Royal Ball"
         : hunt && !owned ? `Find all of ${hh ? hh.char + "'s " + hh.item + "s" : "them"} while you play`
-        : pearl && !owned ? "Rare — only Wishy’s pearls buy this" : "";
+        : finale && !owned ? `Complete the ${finaleName} finale` : pearl && !owned ? "Rare — only Wishy’s pearls buy this" : "";
       return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${(special || pearl) && !owned ? "ach" : ""}">
         <div class="skin-chip">${chip}</div>
         <div class="skin-name">${nameShown}${hint ? `<div class="muted" style="font-size:10px;font-weight:600">${hint}</div>` : ""}</div>
@@ -2074,6 +2087,7 @@ function buySkin(id) {
   if (cz && cz.villain) { toast("👑 Win it from a villain event!"); return; }
   if (cz && cz.ball) { toast("👠 Dazzle Cinderella at the Royal Ball to earn this!"); return; }
   if (cz && cz.hunt) { const hh = huntFor(cz.hunt); toast(`🔎 Find them all${hh ? ` — help ${hh.char}!` : ""}`); return; }
+  if (cz && cz.finale) { const rn = (D.REALM_BY_ID[cz.finale] || {}).name || "the realm"; toast(`🏆 Complete the ${rn} finale to earn this!`); return; }
   if (cz && cz.pearl) {
     if ((GAME.pearls || 0) < cz.pearl) { toast(`Need ${cz.pearl} pearls — Wishy the Fish pays in those!`); return; }
     GAME.pearls -= cz.pearl; GAME.owned[id] = true; save();
@@ -7099,7 +7113,7 @@ function paintMix() {
               <div class="caul-rim"></div>
               <div class="caul-bubbles">${cauldronBubblesHtml(bubbleCount, bubSizes)}</div>
             </div>` : ""}
-            <img class="caul-img" src="${ART.url("cauldron_classic")}" alt="" draggable="false">
+            <img class="caul-img" src="${ART.url(equippedCauldronArt())}" alt="" draggable="false">
           </div>
           <div class="serve-hint" id="serve-hint"></div>
         </div>

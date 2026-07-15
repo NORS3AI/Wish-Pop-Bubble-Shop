@@ -306,7 +306,11 @@ const RESULT_TYPES = {
  * simply swap the corner buddy's emoji. ------------------------------------ */
 const COSMETICS = {
   cauldron: [
-    { id: "cauldron_classic",  name: "Classic Cauldron", chip: "🫧", default: true },
+    { id: "cauldron_classic",  name: "Classic Cauldron", chip: "🫧", default: true, art: true },
+    // story rewards — hand-painted pots (art: true). Bo Peep's is her arc keepsake; the picnic
+    // basket is the trophy for completing the Willow-Wish Village finale.
+    { id: "cauldron_bopeep",   name: "Bo Peep's Pot",    chip: "🐑", art: true, hunt: "willow" },
+    { id: "cauldron_picnic",   name: "Picnic Basket",    chip: "🧺", art: true, finale: "willow" },
     { id: "cauldron_rose",     name: "Rose Gold",        chip: "🌸" },
     { id: "cauldron_emerald",  name: "Emerald",          chip: "💚" },
     { id: "cauldron_sapphire", name: "Sapphire",         chip: "💙" },
