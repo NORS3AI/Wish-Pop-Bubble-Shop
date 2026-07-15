@@ -393,24 +393,25 @@ html, body {
 /* shaken-off flecks pop off the mound */
 .gspeck.gone { animation: gfall .5s ease-in forwards; }
 @keyframes gfall { 30% { opacity: 1; } to { transform: translate(var(--fx,0), var(--fy,40px)) scale(.2); opacity: 0; } }
-/* trails of glitter + sparkle that rain all the way down the screen and fade as you shake */
+/* trails of glitter + sparkle that rain down the screen and fade as you shake.
+   Kept deliberately CHEAP (no clip-path / drop-shadow, tiny shadow) and capped in JS,
+   so a vigorous shake can't flood a phone's GPU. */
 .fall-glitter { position: absolute; z-index: 6; width: 4px; height: 15px; border-radius: 2px; pointer-events: none;
   background: linear-gradient(to bottom, rgba(255,240,180,0), var(--fc,#ffd76a) 55%, #fff);
-  box-shadow: 0 0 7px var(--fc,#ffd76a); animation: fallGlit var(--fd,1.15s) cubic-bezier(.4,0,.85,1) forwards; }
+  will-change: transform, opacity; animation: fallGlit var(--fd,1.15s) cubic-bezier(.4,0,.85,1) forwards; }
 @keyframes fallGlit {
   0% { opacity: 0; transform: translate(0,0) scaleY(.6); }
   12% { opacity: 1; }
   75% { opacity: .95; }
   100% { opacity: 0; transform: translate(var(--fx,0), var(--fy,420px)) scaleY(1.5); } }
-.fall-spark { position: absolute; z-index: 6; width: var(--sz,8px); height: var(--sz,8px); pointer-events: none;
+.fall-spark { position: absolute; z-index: 6; width: var(--sz,8px); height: var(--sz,8px); border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle at 50% 50%, #fff 0%, var(--fc,#ffe38a) 45%, rgba(255,200,90,0) 82%);
-  clip-path: polygon(50% 0%, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0% 50%, 42% 42%);
-  filter: drop-shadow(0 0 4px var(--fc,#ffd76a)); animation: fallSpark var(--fd,1.2s) cubic-bezier(.4,0,.85,1) forwards; }
+  will-change: transform, opacity; animation: fallSpark var(--fd,1.2s) cubic-bezier(.4,0,.85,1) forwards; }
 @keyframes fallSpark {
-  0% { opacity: 0; transform: translate(0,0) rotate(0) scale(.5); }
+  0% { opacity: 0; transform: translate(0,0) scale(.5); }
   14% { opacity: 1; }
   70% { opacity: 1; }
-  100% { opacity: 0; transform: translate(var(--fx,0), var(--fy,420px)) rotate(220deg) scale(.3); } }
+  100% { opacity: 0; transform: translate(var(--fx,0), var(--fy,420px)) scale(.3); } }
 
 /* --- rare secret treasure: a stray pearl peeking out from behind the glitter --- */
 /* the pearl art is full-bleed (z2) so it sits BEHIND the front glitter (z3) but in front of the spoon */

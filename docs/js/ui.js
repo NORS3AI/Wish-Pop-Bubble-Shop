@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v309"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v310"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6084,7 +6084,8 @@ function rollScoopSecret() {
 function renderScoop() {
   const scoops = ROUND.scoops, split = ROUND.scoopYields;
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
-  const GLITTER = 48, BATCH = 5;
+  const GLITTER = 34, BATCH = 6;
+  let lastRainAt = 0;                              // rate-limit the falling-glitter FX so a fast shake can't flood a phone
   let idx = 0, revealed = 0, state = "idle", shakeDist = 0, lastX = null, dragging = false, autoIv = null;
   let skipMode = false;                          // after "Shake for me", the button becomes "Skip"
   let secret = null;                              // the one secret treasure for this scoop phase (decided up front)
@@ -6240,13 +6241,18 @@ function renderScoop() {
     if (after <= 0) setTimeout(reveal, 200);
   }
 
-  // trails of glitter + sparkles rain off the spoon and fall the whole way down the screen, then fade
+  // trails of glitter + sparkles rain off the spoon and fall the whole way down the screen, then fade.
+  // Rate-limited + hard-capped so even a frantic shake stays light on a phone's GPU.
   function rainGlitter(intensity) {
+    const now = Date.now();
+    if (now - lastRainAt < 70) return;                     // cap the burst rate no matter how fast you shake
+    lastRainAt = now;
     const stage = $("#scoop-stage"), cover = $("#glitter-cover"); if (!stage || !cover) return;
+    if (stage.querySelectorAll(".fall-glitter,.fall-spark").length > 16) return;   // never let them pile up
     const sr = stage.getBoundingClientRect(), cr = cover.getBoundingClientRect();
     const ox = cr.left - sr.left + cr.width / 2, oy = cr.top - sr.top + cr.height * 0.5;   // spoon-glitter centre
     const COLS = ["#fff7d6", "#ffe38a", "#ffd76a", "#ffc94d", "#ffb43c"];
-    const n = 4 + Math.round(intensity * 5);
+    const n = 2 + Math.round(intensity * 2);               // 2–4 per burst
     for (let i = 0; i < n; i++) {
       const streak = Math.random() < 0.62;
       const el = document.createElement("i"); el.className = streak ? "fall-glitter" : "fall-spark";
