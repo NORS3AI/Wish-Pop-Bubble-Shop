@@ -391,6 +391,34 @@ html, body {
 .gspeck.gone { animation: gfall .6s ease-in forwards; }
 @keyframes gfall { 30% { opacity: 1; } to { transform: translate(var(--fx,0), var(--fy,70px)) scale(.2); opacity: 0; } }
 
+/* --- rare secret treasure: a stray pearl peeking out from behind the glitter --- */
+/* the pearl art is full-bleed (z2) so it sits BEHIND the front glitter (z3) but in front of the spoon */
+.scoop-secret { position: absolute; inset: 0; z-index: 2; background-size: cover; background-position: center;
+  background-repeat: no-repeat; pointer-events: none; opacity: 0; }
+.scoop-secret.show { opacity: 1; animation: secretIn .5s ease both; }
+.scoop-secret.popped { animation: secretPop .38s ease forwards; }
+@keyframes secretIn { 0% { opacity: 0; transform: scale(.92); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes secretPop { 0% { opacity: 1; transform: scale(1); } 55% { opacity: 1; transform: scale(1.16); } 100% { opacity: 0; transform: scale(1.32); } }
+/* invisible tap target sitting over the peeking pearl */
+.secret-hit { position: absolute; z-index: 6; border: 0; background: transparent; border-radius: 50%; padding: 0;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; animation: secretPulse 1.6s ease-in-out infinite; }
+@keyframes secretPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(210,235,255,0); } 50% { box-shadow: 0 0 22px 5px rgba(210,235,255,.45); } }
+/* the popped prize floats there waiting to be grabbed */
+.secret-prize { position: absolute; z-index: 6; border: 0; background: transparent; padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+  animation: secretBob 1.4s ease-in-out infinite; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+.secret-prize-ic { font-size: 30px; line-height: 1; }
+.secret-prize-ic img.art, .secret-prize-ic .pearl-ic { width: 34px; height: 34px; display: block; }
+.secret-prize::after { content: ""; position: absolute; inset: -32%; border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, rgba(255,240,180,.55), rgba(255,240,180,0) 68%); animation: secretGlow 1.4s ease-in-out infinite; }
+@keyframes secretBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes secretGlow { 0%,100% { opacity: .5; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.15); } }
+.secret-prize.grabbed { animation: secretGrab .42s ease forwards; }
+@keyframes secretGrab { 0% { transform: scale(1); opacity: 1; } 40% { transform: scale(1.3); } 100% { transform: translateY(-42px) scale(.4); opacity: 0; } }
+.secret-spark { position: absolute; width: 8px; height: 8px; border-radius: 50%; z-index: 6; pointer-events: none;
+  box-shadow: 0 0 6px rgba(255,240,200,.9); animation: secretSpark .6s ease-out forwards; }
+@keyframes secretSpark { 0% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.2); opacity: 0; } }
+
 /* --- +/- stepper buttons (treat quantity in the menu) --- */
 .shelf-arrow { font-size: 20px; padding: 8px 14px; background: var(--card2); border: 1px solid var(--line);
   border-radius: 12px; cursor: pointer; user-select: none; }

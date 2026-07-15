@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v304"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v305"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1539,6 +1539,7 @@ function renderAdmin() {
         <div style="font-weight:800;margin-bottom:6px">🎬 Jump to an event</div>
         <p class="muted" style="font-size:12px;margin-bottom:10px">Launch a special encounter right now — no need to play through normal rounds to find one.</p>
         <button class="btn good" id="ad-popx" style="margin-bottom:8px">🪵 Force treasure X (next Pop phase)</button>
+        <button class="btn good" id="ad-scoopsecret" style="margin-bottom:8px">🫧 Force secret pearl (next Scoop phase)</button>
         <button class="btn" id="ad-duel" style="margin-bottom:8px">⚔️ Mixing Duel</button>
         <button class="btn" id="ad-fairy" style="margin-bottom:8px">🧚 Fairy's Matching Boon</button>
         <button class="btn" id="ad-rumpel" style="margin-bottom:8px">🧵 Rumpelstiltskin</button>
@@ -1595,6 +1596,7 @@ function renderAdmin() {
     <button class="btn secondary" id="ad-back">←  Back</button>
   `);
   on("#ad-popx", "click", () => { GAME.forcePopX = true; save(); toast("🪵 Next Pop phase will hide the treasure X — start a round and pop through to it!"); });
+  on("#ad-scoopsecret", "click", () => { GAME.forceScoopSecret = true; save(); toast("🫧 A secret pearl will peek out on the next Scoop — watch the glitter and tap it!"); });
   on("#ad-duel", "click", renderDuelIntro);
   on("#ad-fairy", "click", renderFairyIntro);
   on("#ad-rumpel", "click", renderRumpelIntro);
@@ -6064,12 +6066,28 @@ function renderCustomer() {
 /* ======================================================================= */
 /* SCOOP — sift each scoop to reveal how many bubbles you'll pop            */
 /* ======================================================================= */
+// Rare secret treasures that peek out from behind the scoop glitter. Each is a
+// full-bleed image (matching the background) with the pearl pre-placed by hand,
+// so it drops in exactly where it belongs. cx/cy = the bubble's centre (fraction
+// of the 941×1672 art) for the tap hotspot; only ONE ever appears per scoop phase.
+const SCOOP_SECRET_ART = { w: 941, h: 1672 };
+const SCOOP_SECRETS = [
+  { key: "scoop_pearl_a", cx: 0.563, cy: 0.743 },
+  { key: "scoop_pearl_b", cx: 0.815, cy: 0.706 },
+];
+function rollScoopSecret() {
+  const r = Math.random();
+  if (r < 0.55) return { type: "gold", amt: R.int(40, 130), emoji: ART.tag("icon_gold", "🪙"), cls: "gold" };
+  if (r < 0.85) return { type: "dust", amt: R.int(4, 10), emoji: "✨", cls: "dust" };
+  return { type: "pearl", amt: R.int(1, 3), emoji: PEARL, cls: "pearl" };
+}
 function renderScoop() {
   const scoops = ROUND.scoops, split = ROUND.scoopYields;
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const GLITTER = 30, BATCH = 4;
   let idx = 0, revealed = 0, state = "idle", shakeDist = 0, lastX = null, dragging = false, autoIv = null;
   let skipMode = false;                          // after "Shake for me", the button becomes "Skip"
+  let secretDone = false;                         // at most one secret treasure per scoop phase
   const jackDone = new Array(scoops).fill(false); // which scoops have already handed out their jackpot charm
 
   html("scoop", `
@@ -6081,6 +6099,7 @@ function renderScoop() {
         <div class="glitter-cover" id="glitter-cover"></div>
       </div>
       <div class="scoop-front" id="scoop-front"></div>
+      <div class="scoop-secret" id="scoop-secret"></div>
     </div>
     ${hud("Scoop Phase")}
     <button class="mute-btn" id="mute-btn" title="Sound on/off">${SFX.isMuted() ? "🔇" : "🔊"}</button>
@@ -6124,6 +6143,75 @@ function renderScoop() {
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
       ? "🌈 A <b>rainbow scoop</b> — shake for the jackpot!"
       : "✋ Swipe side to side to shake off the glitter!";
+    maybeSpawnSecret();
+  }
+
+  // --- rare secret treasure peeking out of the glitter (~5% per scoop) ------
+  // Map a point on the 941×1672 art to screen px, accounting for background cover.
+  function coverPoint(cxFrac, cyFrac) {
+    const A = SCOOP_SECRET_ART, st = $("#scoop-stage"); if (!st) return null;
+    const vw = st.clientWidth, vh = st.clientHeight, scale = Math.max(vw / A.w, vh / A.h);
+    const ox = (vw - A.w * scale) / 2, oy = (vh - A.h * scale) / 2;
+    return { x: ox + cxFrac * A.w * scale, y: oy + cyFrac * A.h * scale, r: 0.108 * A.w * scale / 2 };
+  }
+  function maybeSpawnSecret() {
+    if (secretDone) return;                                   // never more than one at a time
+    const forced = GAME.forceScoopSecret;
+    if (!forced && Math.random() >= 0.05) return;             // ~5% per scoop
+    if (forced) { GAME.forceScoopSecret = false; save(); }
+    secretDone = true;
+    const v = SCOOP_SECRETS[Math.floor(Math.random() * SCOOP_SECRETS.length)];
+    const pt = coverPoint(v.cx, v.cy), layer = $("#scoop-secret"), stage = $("#scoop-stage");
+    if (!pt || !layer || !stage) return;
+    layer.style.backgroundImage = `url('art/${v.key}.webp?v=${BUILD}')`;
+    layer.classList.remove("popped"); layer.classList.add("show");
+    const tr = rollScoopSecret();
+    const hot = document.createElement("button");
+    hot.type = "button"; hot.className = "secret-hit"; hot.setAttribute("aria-label", "A secret treasure — tap it!");
+    const d = pt.r * 2.3;
+    hot.style.left = (pt.x - d / 2) + "px"; hot.style.top = (pt.y - d / 2) + "px";
+    hot.style.width = d + "px"; hot.style.height = d + "px";
+    hot.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); popSecret(hot, layer, pt, tr); });
+    stage.appendChild(hot);
+  }
+  function popSecret(hot, layer, pt, tr) {
+    SFX.unlock(); SFX.pop(1); if (navigator.vibrate) navigator.vibrate(12);
+    if (hot.parentNode) hot.remove();
+    layer.classList.remove("show"); layer.classList.add("popped");
+    setTimeout(() => { if (layer) { layer.classList.remove("popped"); layer.style.backgroundImage = ""; } }, 400);
+    secretBurst(pt);
+    const stage = $("#scoop-stage"); if (!stage) return;
+    const prize = document.createElement("button");
+    prize.type = "button"; prize.className = "secret-prize " + tr.cls; prize.setAttribute("aria-label", "Grab the treasure");
+    const sz = Math.max(48, pt.r * 2.1);
+    prize.style.left = (pt.x - sz / 2) + "px"; prize.style.top = (pt.y - sz / 2) + "px";
+    prize.style.width = sz + "px"; prize.style.height = sz + "px";
+    prize.innerHTML = `<span class="secret-prize-ic">${tr.emoji}</span>`;
+    prize.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); grabSecret(prize, tr); });
+    stage.appendChild(prize);
+  }
+  function grabSecret(prize, tr) {
+    if (prize.dataset.got) return; prize.dataset.got = "1";
+    if (tr.type === "gold") { GAME.gold += tr.amt; SFX.bigCoin && SFX.bigCoin(); }
+    else if (tr.type === "dust") { GAME.stardust = (GAME.stardust || 0) + tr.amt; SFX.charm && SFX.charm(); }
+    else { GAME.pearls = (GAME.pearls || 0) + tr.amt; SFX.fanfare && SFX.fanfare(); }
+    save(); syncHud("scoop");
+    const label = tr.type === "gold" ? `+${tr.amt} gold` : tr.type === "dust" ? `+${tr.amt} Stardust` : `+${tr.amt} ${tr.amt > 1 ? "pearls" : "pearl"}`;
+    toast(`✨ A secret treasure — ${label}!`);
+    if (navigator.vibrate) navigator.vibrate(8);
+    prize.classList.add("grabbed"); setTimeout(() => { if (prize.parentNode) prize.remove(); }, 440);
+  }
+  function secretBurst(pt) {
+    const stage = $("#scoop-stage"); if (!stage) return;
+    const cols = ["#fff7d6", "#ffd76a", "#ffb3e6", "#8fe0ff", "#c9f6ff"];
+    for (let i = 0; i < 12; i++) {
+      const p = document.createElement("i"); p.className = "secret-spark";
+      const ang = (i / 12) * Math.PI * 2 + Math.random(), dist = 26 + Math.random() * 42;
+      p.style.left = pt.x + "px"; p.style.top = pt.y + "px"; p.style.background = cols[i % cols.length];
+      p.style.setProperty("--dx", (Math.cos(ang) * dist).toFixed(1) + "px");
+      p.style.setProperty("--dy", (Math.sin(ang) * dist).toFixed(1) + "px");
+      stage.appendChild(p); p.addEventListener("animationend", () => p.remove());
+    }
   }
 
   function shakeTick(intensity) {
@@ -7586,7 +7674,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

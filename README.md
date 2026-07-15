@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🫧 **Secret treasures in the glitter!** Once in a while (about 1 in 20 scoops) a stray
+  shimmering pearl peeks out from the glitter pile. Spot it and tap it before you move on —
+  it pops like a bubble and leaves a reward floating there (gold, pearls, or Stardust) for
+  you to grab. Blink and you'll miss it!
+
 - 🥄 **A gorgeous new scooping phase.** The scoop happens right inside the shop now:
   a golden sifter dips into a glittering pile, and when you swipe to shake, the glitter
   sheds off in falling sparkles and your **bubbles rise up out of the sifter**. Each realm
