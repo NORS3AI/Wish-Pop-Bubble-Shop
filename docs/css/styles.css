@@ -387,22 +387,12 @@ html, body {
   background: radial-gradient(circle at 50% 45%, #fff, #ffe38a 40%, rgba(255,190,70,.45) 64%, rgba(255,190,70,0) 78%); opacity: 0; }
 .sbub.floatup::before { animation: sglow 1.15s ease-in forwards; }
 @keyframes sglow { 0% { opacity: .95; } 42% { opacity: 0; } 100% { opacity: 0; } }
-/* glitter heaped over the FLAT glitter layer inside the sifter. It's a CHILD of the spoon,
-   so it automatically dips, rises, floats and shakes together with it. */
-.glitter-cover { position: absolute; left: 39%; top: 63%; transform: translate(-50%,-50%); width: 48%; height: 40%; z-index: 5; pointer-events: none; }
-.glitter-film { position: absolute; inset: -6%; background: var(--scoop-glitter) no-repeat center bottom; background-size: 100% 100%;
-  transition: opacity .25s ease; }
-/* gold glints on the glitter layer. CRITICAL for phones: these are STATIC (no per-element
-   animation). They live inside the spoon, which gently floats — and any animating child would
-   force the browser to redraw the whole spoon image every frame. Static glints redraw once. */
-.gspeck { position: absolute; width: var(--sz,11px); height: var(--sz,11px); border-radius: 50%; opacity: .92;
-  background: radial-gradient(circle at 50% 50%, #fff 0%, var(--gc,#ffe38a) 38%, rgba(255,200,90,.35) 62%, rgba(255,200,90,0) 78%); }
-/* Jackpot: rainbow glitter */
-.glitter-cover.rainbow .glitter-film { filter: saturate(1.3) hue-rotate(15deg); }
-@keyframes gtwinkle { 0%,100% { opacity: .5; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.25); } }
-/* shaken-off flecks pop off the mound */
-.gspeck.gone { animation: gfall .5s ease-in forwards; }
-@keyframes gfall { 30% { opacity: 1; } to { transform: translate(var(--fx,0), var(--fy,40px)) scale(.2); opacity: 0; } }
+/* the glittery scoop is a SEPARATE image layered exactly over the empty sifter (same canvas,
+   so it registers pixel-perfect). Fading its opacity fills it on the dip and empties it as you
+   shake. Opacity is a cheap, composited property — it does NOT redraw the spoon each frame. */
+.scoop-glitter-tip { position: absolute; left: 0; top: 0; width: 1.7em; height: auto; z-index: 1;
+  opacity: 0; transition: opacity .3s ease; pointer-events: none; }
+.scoop-glitter-tip.rainbow { filter: saturate(1.3) hue-rotate(18deg); }
 /* trails of glitter + sparkle that rain down the screen and fade as you shake.
    Kept deliberately CHEAP (no clip-path / drop-shadow, tiny shadow) and capped in JS,
    so a vigorous shake can't flood a phone's GPU. */
@@ -1796,7 +1786,7 @@ body.villain .pbubble {
   border-color: rgba(190,255,150,.45);
   box-shadow: 0 6px 16px rgba(0,0,0,.42), inset 0 -6px 10px rgba(28,86,28,.42);
 }
-body.villain .scoop-bubbles, body.villain .glitter-cover, body.villain .glitter-pile { filter: hue-rotate(85deg) saturate(1.3); }
+body.villain .scoop-bubbles, body.villain .scoop-glitter-tip, body.villain .glitter-pile { filter: hue-rotate(85deg) saturate(1.3); }
 body.villain .scoop-bowl { filter: hue-rotate(70deg) brightness(.95); }
 body.villain .cauldron .liquid { filter: saturate(1.25) hue-rotate(8deg); }
 body.villain .scoop-instr, body.villain .pop-sub { color: #c9f5b0; }

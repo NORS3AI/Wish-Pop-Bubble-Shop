@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v312"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v313"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6084,7 +6084,8 @@ function rollScoopSecret() {
 function renderScoop() {
   const scoops = ROUND.scoops, split = ROUND.scoopYields;
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
-  const GLITTER = 20, BATCH = 4;
+  const SHAKE_UNITS = 24, BATCH = 4;              // shakes needed to empty the glitter out of the sifter
+  let shaken = 0;                                  // progress toward emptying the current scoop
   let lastRainAt = 0, rainOrigin = null;          // rate-limit + cache the falling-glitter FX so a fast shake stays light
   let idx = 0, revealed = 0, state = "idle", shakeDist = 0, lastX = null, dragging = false, autoIv = null;
   let skipMode = false;                          // after "Shake for me", the button becomes "Skip"
@@ -6095,7 +6096,7 @@ function renderScoop() {
     <div class="scoop-bg mg-fullbleed" id="scoop-bg"></div>
     <div class="scoop-stage" id="scoop-stage">
       <div class="scoop-craft" id="scoop-craft">
-        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(178 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}<div class="glitter-cover" id="glitter-cover"></div></div>
+        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(178 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}<img class="scoop-glitter-tip" id="scoop-glitter-tip" src="${ART.url("scoop_glitter_tip")}" alt="" draggable="false"></div>
         <div class="scoop-bubbles" id="scoop-bubbles"></div>
       </div>
       <div class="scoop-front" id="scoop-front"></div>
@@ -6118,8 +6119,7 @@ function renderScoop() {
     ${familiarToken("scoop")}
   `);
   { const bgEl = $("#scoop-bg"); if (bgEl) bgEl.style.backgroundImage = `url('art/scoop_bg.webp?v=${BUILD}')`;
-    const frEl = $("#scoop-front"); if (frEl) frEl.style.backgroundImage = `url('art/scoop_front.webp?v=${BUILD}')`;
-    const stEl = $("#scoop-stage"); if (stEl) stEl.style.setProperty("--scoop-glitter", `url('art/scoop_glitter.webp?v=${BUILD}')`); }
+    const frEl = $("#scoop-front"); if (frEl) frEl.style.backgroundImage = `url('art/scoop_front.webp?v=${BUILD}')`; }
   // warm the pearl images on EVERY scoop entry, so on the rare phase one appears it's already cached
   // (never a late pop-in against the already-loaded background)
   SCOOP_SECRETS.forEach(v => { const im = new Image(); im.src = `art/${v.key}.webp?v=${BUILD}`; });
@@ -6133,17 +6133,10 @@ function renderScoop() {
     const bubs = $("#scoop-bubbles"); if (bubs) { bubs.innerHTML = "";
       for (let i = 0; i < found; i++) { const s = document.createElement("span"); s.className = "sbub"; s.innerHTML = `<span class="bglyph">🫧</span>`; bubs.appendChild(s); }
       applyBubbleArt(bubs); }
-    const cover = $("#glitter-cover"); if (cover) {
-      cover.className = "glitter-cover" + (jackpot ? " rainbow" : "");
-      // a real glitter mound (textured) heaped over the sifter, dotted with multicolour sparkles
-      cover.innerHTML = '<div class="glitter-film" id="glitter-film"></div>';
-      const GCOLS = ["#fff7d6", "#ffe9a8", "#ffd76a", "#ffc94d", "#ffb43c", "#ffe38a"];
-      for (let i = 0; i < GLITTER; i++) { const g = document.createElement("i"); g.className = "gspeck";
-        g.style.left = rnd(4, 92) + "%"; g.style.top = rnd(6, 88) + "%";
-        g.style.setProperty("--sz", (6 + rnd(0, 7)) + "px");
-        g.style.setProperty("--gc", jackpot ? "#fff" : GCOLS[Math.floor(Math.random() * GCOLS.length)]);
-        g.style.setProperty("--tw", (0.6 + Math.random() * 1.2).toFixed(2) + "s");
-        g.style.animationDelay = (-Math.random() * 1.2).toFixed(2) + "s"; cover.appendChild(g); } }
+    // the scoop just came up FULL: the glitter-tip layer fades in over the empty sifter
+    const tip = $("#scoop-glitter-tip");
+    if (tip) { tip.classList.toggle("rainbow", jackpot); tip.style.opacity = "1"; }
+    shaken = 0;                                     // shake-progress toward emptying the glitter
     state = "shaking"; shakeDist = 0;
     const st = $("#scoop-step"); if (st) st.textContent = `Scoop ${idx + 1} of ${scoops}`;
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
@@ -6226,19 +6219,15 @@ function renderScoop() {
 
   function shakeTick(intensity) {
     if (state !== "shaking") return;
-    const cover = $("#glitter-cover"); if (!cover) return;
-    const left = [...cover.querySelectorAll(".gspeck:not(.gone)")];
-    if (!left.length) { reveal(); return; }
+    if (shaken >= SHAKE_UNITS) { reveal(); return; }
     SFX.sift(0.16, Math.max(0.3, Math.min(1, intensity)));
     if (navigator.vibrate) navigator.vibrate(6);
-    const bowl = $("#scoop-bowl"); if (bowl) { bowl.classList.remove("jig"); void bowl.offsetWidth; bowl.classList.add("jig"); } // cover is a child, so it shakes too
-    left.slice(0, BATCH).forEach(g => { g.classList.add("gone");
-      g.style.setProperty("--fx", rnd(-30, 30) + "px"); g.style.setProperty("--fy", (30 + rnd(0, 40)) + "px");
-      setTimeout(() => g.remove(), 460); });
+    const bowl = $("#scoop-bowl"); if (bowl) { bowl.classList.remove("jig"); void bowl.offsetWidth; bowl.classList.add("jig"); } // glitter tip is a child, so it shakes too
+    shaken += BATCH;
+    // fade the glittery scoop away toward the empty sifter as you shake it off
+    const tip = $("#scoop-glitter-tip"); if (tip) tip.style.opacity = Math.max(0, 1 - shaken / SHAKE_UNITS).toFixed(2);
     rainGlitter(Math.max(0.4, Math.min(1, intensity)));   // trails of glitter cascade down the screen
-    const after = Math.max(0, left.length - BATCH);
-    const film = $("#glitter-film"); if (film) film.style.opacity = (after / GLITTER).toFixed(2); // thin out the cover
-    if (after <= 0) setTimeout(reveal, 200);
+    if (shaken >= SHAKE_UNITS) setTimeout(reveal, 220);
   }
 
   // trails of glitter + sparkles rain off the spoon and fall the whole way down the screen, then fade.
@@ -6249,11 +6238,12 @@ function renderScoop() {
     lastRainAt = now;
     const stage = $("#scoop-stage"); if (!stage) return;
     if (stage.querySelectorAll(".fall-glitter,.fall-spark").length > 10) return;   // never let them pile up
-    // measure the spoon-glitter position ONCE (reused each burst) — avoids a layout reflow per shake tick
+    // measure the spoon-glitter position ONCE (reused each burst) — avoids a layout reflow per shake tick.
+    // The glitter fill sits ~40% across / ~62% down the spoon image.
     if (!rainOrigin) {
-      const cover = $("#glitter-cover"); if (!cover) return;
-      const sr = stage.getBoundingClientRect(), cr = cover.getBoundingClientRect();
-      rainOrigin = { ox: cr.left - sr.left + cr.width / 2, oy: cr.top - sr.top + cr.height * 0.5, w: cr.width, h: sr.height };
+      const tip = $("#scoop-glitter-tip"); if (!tip) return;
+      const sr = stage.getBoundingClientRect(), tr = tip.getBoundingClientRect();
+      rainOrigin = { ox: tr.left - sr.left + tr.width * 0.40, oy: tr.top - sr.top + tr.height * 0.62, w: tr.width * 0.44, h: sr.height };
     }
     const o = rainOrigin, COLS = ["#fff7d6", "#ffe38a", "#ffd76a", "#ffc94d", "#ffb43c"];
     const n = 2 + Math.round(intensity * 2);               // 2–4 per burst
@@ -6276,7 +6266,7 @@ function renderScoop() {
     if (state !== "shaking") return; state = "revealing";
     const found = split[idx], jackpot = isJackpot(idx); revealed += found;
     tryHuntFind("scoop", $("#scoop-craft"));   // a hidden hunt item may be sitting in the glitter
-    const film = $("#glitter-film"); if (film) film.style.opacity = "0";
+    const tip = $("#scoop-glitter-tip"); if (tip) tip.style.opacity = "0";   // sifter is empty now
     let jackCharm = null;
     if (jackpot) {
       SFX.charm(); // fanfare
