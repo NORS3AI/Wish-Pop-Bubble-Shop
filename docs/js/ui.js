@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v317"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v318"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2339,24 +2339,36 @@ function startRushClock() {
   el.style.display = "flex"; paint();
   ROUND._rushTimer = setInterval(paint, 200);
 }
+// Out of time on a timed customer. This is just the normal customer RESULTS page with the
+// "You're Too Late" banner — the impatient customer, no earnings, streak broken.
 function rushExpire() {
   stopRoundTimers();
   GAME.streak = 0; save();                       // lost customer breaks the streak
-  const c = ROUND.customer;
+  const c = ROUND.customer, realm = currentRealm();
+  const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
   html("result", `
-    ${hud("Result")}
-    <div class="grow center" style="gap:14px">
-      <div class="ph big">😾</div>
-      <div class="result-title lose">Too Slow!</div>
-      <div class="card" style="width:100%;max-width:320px">
-        <div class="stat-line"><span>${c.name} got impatient</span><span class="muted">left!</span></div>
-        <div class="stat-line"><span>Earned</span><span class="muted">nothing</span></div>
+    ${custBgEl}
+    <div class="cust-top res-top">
+      <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
+      <div class="cust-wallet">
+        ${GAME.pearls > 0 ? `<div class="cust-coin pearls">${PEARL} <b>${GAME.pearls.toLocaleString()}</b></div>` : ""}
+        <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold || 0).toLocaleString()}</b></div>
       </div>
-      <p class="muted" style="max-width:300px">${c.name} couldn't wait and hurried off empty‑handed. No harm done — a fresh customer is on the way!</p>
     </div>
-    <button class="btn" id="next-btn">Next Customer  →</button>
+    <div class="grow res-body">
+      <div class="cust-banner res-banner"><img src="art/ui/banner_toolate.png" alt="You're Too Late!" draggable="false"></div>
+      <div class="cust-portrait res-portrait">
+        <div class="cust-char" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%">${custMoodArt(c, "angry", "😾", "cust-char-art")}</div>
+      </div>
+      <div class="res-panel">
+        <div class="res-earned lose">Earned <b>nothing</b></div>
+        <div class="res-react">${c.name} couldn't wait and hurried off empty‑handed. No harm done — a fresh customer is on the way!</div>
+      </div>
+    </div>
+    <button class="res-next" id="next-btn" aria-label="Next customer"><img src="art/ui/btn_next.png" alt="Next Customer" draggable="false"></button>
   `);
   on("#next-btn", "click", startRound);
+  if (custBgEl) applyRealmBackground(document.querySelector("#screen-result #cust-bg"));
   show("result");
 }
 
@@ -7361,7 +7373,7 @@ function renderResult(res) {
   const mood = !win ? "angry" : allergic ? "allergic" : "happy";
   // Outcome banner (baked-text image): granted / worked-but / failed.
   const bannerImg = !win ? "banner_failed" : allergic ? "banner_partial" : "banner_granted";
-  const bannerAlt = !win ? "Wish Failed!" : allergic ? "Wish Worked, But…!" : "Wish Granted!";
+  const bannerAlt = !win ? "Wish Failed!" : allergic ? "It Sort of Worked." : "You Did It!";
   const blurb = !win
     ? c.name + " storms off in a huff — and pelts you with trash on the way out!"
     : isPerfect ? c.name + " got a flawless potion — 100% perfect! ✨"
@@ -7749,7 +7761,7 @@ function preloadCommonArt() {
   Array.from(new Set(keys)).forEach(k => ART.ensure(k, () => {}));   // warms as WebP
   // hardcoded UI (PNG) + backdrops (JPG) aren't loaded through ART — warm the common ones directly
   ["banner_new", "banner_vip", "name_plate", "name_plaque", "kit_13", "kit_16", "kit_17", "btn_scoop",
-   "banner_granted", "banner_partial", "banner_failed", "res_streak", "res_clean", "res_results", "res_panel", "btn_next"].forEach(k => { try { new Image().src = "art/ui/" + k + ".png?v=" + BUILD; } catch (e) {} });
+   "banner_granted", "banner_partial", "banner_failed", "banner_toolate", "res_streak", "res_clean", "res_results", "res_panel", "btn_next"].forEach(k => { try { new Image().src = "art/ui/" + k + ".png?v=" + BUILD; } catch (e) {} });
   const rbg = REALM_BG[GAME.realm];
   ["village_far", "village_mid", "village_door"].concat(rbg ? [rbg.replace(/^art\//, "").replace(/\.jpg$/, "")] : []).forEach(bg => { try { new Image().src = "art/" + bg + ".jpg?v=" + BUILD; } catch (e) {} });
 }
