@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v337"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v338"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -119,6 +119,7 @@ function equippedCauldronClass() { return "skin-" + (GAME.equipped.cauldron || "
 // which cauldron IMAGE to draw: the equipped skin if it ships art, else the classic pot.
 // All art skins share the same normalized canvas, so the rim glow + bubbles line up on every one.
 function equippedCauldronArt() {
+  if (ROUND && ROUND.villain) return "cauldron_queen";   // the Evil Queen's challenge always brews in her mirror pot, even before you win it
   const id = GAME.equipped.cauldron || "cauldron_classic";
   const c = (D.COSMETICS.cauldron || []).find(x => x.id === id);
   return (c && c.art) ? id : "cauldron_classic";
