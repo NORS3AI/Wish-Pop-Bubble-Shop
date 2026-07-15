@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v315"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v316"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6133,11 +6133,12 @@ function renderScoop() {
     const bubs = $("#scoop-bubbles"); if (bubs) { bubs.innerHTML = "";
       for (let i = 0; i < found; i++) { const s = document.createElement("span"); s.className = "sbub"; s.innerHTML = `<span class="bglyph">🫧</span>`; bubs.appendChild(s); }
       applyBubbleArt(bubs); }
-    // the scoop just came up FULL: the glitter-tip layer fades in over the empty sifter
+    // the scoop just came up FULL: the glitter-tip layer fades in over the empty sifter.
+    // NOTE: we do NOT enter the "shaking" state here — that happens only once the spoon has
+    // risen back to its resting spot (see diveThenLoad), so auto-shake can't start mid-scoop.
     const tip = $("#scoop-glitter-tip");
     if (tip) { tip.classList.toggle("rainbow", jackpot); tip.style.opacity = "1"; }
     shaken = 0;                                     // shake-progress toward emptying the glitter
-    state = "shaking"; shakeDist = 0;
     const st = $("#scoop-step"); if (st) st.textContent = `Scoop ${idx + 1} of ${scoops}`;
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
       ? "🌈 A <b>rainbow scoop</b> — shake for the jackpot!"
@@ -6300,7 +6301,8 @@ function renderScoop() {
     if (bowl) { bowl.classList.remove("diving"); void bowl.offsetWidth; bowl.classList.add("diving"); }
     SFX.scoop();
     setTimeout(loadScoop, 330);                                   // fill while the scoop lingers at the bottom
-    setTimeout(() => { if (bowl) bowl.classList.remove("diving"); }, 1180);  // matches the longer linger + slow rise
+    // only NOW — spoon has risen back to its mid-screen resting spot — allow shaking to begin
+    setTimeout(() => { if (bowl) bowl.classList.remove("diving"); if (state === "diving") { state = "shaking"; shakeDist = 0; } }, 1150);
   }
   function advance() {
     if (state === "done") return;                // skipped straight to popping
