@@ -17,7 +17,7 @@ const MAGIC = {
   Protection: "#5c8fd6",
   Light:      "#ffe98a",
   Growth:     "#7bc86b",
-  Mischief:   "#9b6bd6",
+  Mischief:   "#9d43d6",
 };
 const MAGIC_TYPES = Object.keys(MAGIC);
 /* Villain magics — a DARK, never-before-seen set used ONLY by villain events

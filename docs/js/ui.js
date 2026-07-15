@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v323"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v324"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -237,6 +237,8 @@ function applyBubbleArt(container) {
 
 let ROUND = null;
 let servedTotal = +(localStorage.getItem("wishpop_served") || 0);
+let mixFxWasVisible = false;   // tracks the cauldron fx so it fades in only on the FIRST ingredient
+let mixPulseColor = null;      // set on ingredient add → one-shot aura pulse in that ingredient's color
 
 /* --- helpers ------------------------------------------------------------ */
 const $ = sel => document.querySelector(sel);
@@ -6860,6 +6862,7 @@ function renderMix() {
   if (ROUND.stats) ROUND.stats.triples = merged.merged.length;
   ROUND.slots = []; ROUND.mixStart = Date.now();
   ROUND.potentNext = false; ROUND.allergyOffset = 0; ROUND.insight = false;
+  mixFxWasVisible = false; mixPulseColor = null;   // empty pot: no glow until the first ingredient
   paintMix(); show("mix");
   if (ROUND._mixTimer) clearInterval(ROUND._mixTimer);
   ROUND._mixTimer = setInterval(paintMixTop, 500);
@@ -6999,13 +7002,13 @@ function mixAllergyChip(a) {
 }
 // Rising bubbles for the art cauldron: color follows the mix, count grows with
 // how many ingredients are in the pot, and they come in several sizes.
-function cauldronBubblesHtml(n) {
-  const sizes = [7, 9, 12, 16, 21];
+function cauldronBubblesHtml(n, sizes) {
+  sizes = sizes || [7, 9, 12, 16, 21];
   let s = "";
   for (let i = 0; i < n; i++) {
     const sz = sizes[Math.floor(Math.random() * sizes.length)];
     const left = 6 + Math.random() * 88;                  // spread across the mouth
-    const dur = (2.3 + Math.random() * 2.0).toFixed(2);
+    const dur = (5.5 + Math.random() * 3.5).toFixed(2);   // slow rise — drifts all the way up and off screen
     const delay = (-Math.random() * dur).toFixed(2);      // negative → already mid-rise, no empty start
     const drift = Math.round(Math.random() * 16 - 8);     // subtle horizontal offset
     s += `<span class="cbub" style="left:${left.toFixed(1)}%;width:${sz}px;height:${sz}px;margin-left:${drift}px;animation-duration:${dur}s;animation-delay:${delay}s"></span>`;
@@ -7024,7 +7027,14 @@ function paintMix() {
   const meetsWish = score.weighted >= w.requiredMatch;
   const mixColor = meetsWish ? "#7ee08a" : liquid;
   const nIng = ROUND.slots.length;
-  const bubbleCount = nIng === 0 ? 2 : Math.min(22, 3 + nIng * 3);   // more ingredients → more bubbles
+  const fxVisible = nIng > 0;                                        // nothing glows at 0% / empty pot
+  const justAppeared = fxVisible && !mixFxWasVisible;                // 0 → first ingredient: swift fade-in
+  mixFxWasVisible = fxVisible;
+  const bubbleCount = Math.min(24, nIng * 3);                        // more ingredients → more bubbles
+  // near the end (last ~3 ingredients) the bubbles swell much bigger
+  const bigBoost = Math.max(0, nIng - (ROUND.maxSlots - 3));         // 0 until the last 3, then 1,2,3…
+  const bubSizes = [7, 9, 12, 16, 21].map(s => Math.round(s + bigBoost * 9));
+  const pulseColor = mixPulseColor; mixPulseColor = null;            // one-shot aura pulse on the last add
   const slotCells = [];
   for (let i = 0; i < ROUND.maxSlots; i++) {
     const inst = ROUND.slots[i];
@@ -7049,10 +7059,12 @@ function paintMix() {
       <div class="m2-timer" id="m2-timer"></div>
       <div class="m2-stage">
         <div class="m2-cauldron" id="cauldron-tap" style="--mix-color:${mixColor}">
-          <div class="caul-art ${equippedCauldronClass()}" id="cauldron">
+          <div class="caul-art ${equippedCauldronClass()} ${pulseColor ? "pulsing" : ""}" id="cauldron"${pulseColor ? ` style="--pulse-color:${pulseColor}"` : ""}>
+            ${fxVisible ? `<div class="caul-fx ${justAppeared ? "fx-in" : ""}">
+              <div class="caul-rim"></div>
+              <div class="caul-bubbles">${cauldronBubblesHtml(bubbleCount, bubSizes)}</div>
+            </div>` : ""}
             <img class="caul-img" src="${ART.url("cauldron_classic")}" alt="" draggable="false">
-            <div class="caul-rim"></div>
-            <div class="caul-bubbles">${cauldronBubblesHtml(bubbleCount)}</div>
           </div>
           <div class="serve-hint" id="serve-hint"></div>
         </div>
@@ -7230,6 +7242,7 @@ function addToSlot(idx, fromEl) {
   if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), flyChar);
   ROUND.slots.push(inst);
   applyInfusedEffect(inst);   // built-in charm effect (Dragon Egg / Frost Gem) fires on drop-in
+  mixPulseColor = D.MAGIC[instMainMagic(inst)] || "#c9a3ff";   // aura pulses in the added ingredient's color
   paintMix();
   const c2 = document.getElementById("cauldron"); if (c2) { c2.classList.remove("splash"); void c2.offsetWidth; c2.classList.add("splash"); }
 }

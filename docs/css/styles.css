@@ -1942,7 +1942,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: url('../art/mix_bg.jpg?v=323') center top / cover no-repeat, #160c26; }
+  background: url('../art/mix_bg.jpg?v=324') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
@@ -1967,26 +1967,38 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .m2-cauldron.ready .serve-hint { animation: hgpulse 1s infinite; }
 /* --- art cauldron: a glow line at the rim + rising bubbles, both coloured by the
    dominant magic (green the instant the wish is met); bubble count grows with the
-   number of ingredients in the pot. --mix-color is set inline per render. --- */
-.caul-art { position: relative; width: min(64vw, 250px); aspect-ratio: 1409 / 965; overflow: visible; }
+   number of ingredients in the pot. The fx sit BEHIND the pot so they read as coming
+   from inside. --mix-color / --pulse-color are set inline per render. --- */
+.caul-art { position: relative; z-index: 1; width: min(64vw, 250px); aspect-ratio: 1409 / 965; overflow: visible; }
 .caul-art .caul-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)); z-index: 2; pointer-events: none; }
 .caul-art.splash { animation: splash .4s ease; }
-.caul-rim { position: absolute; left: 18%; right: 18%; top: 2%; height: 5%; border-radius: 50%;
-  background: var(--mix-color, #c48bff); filter: blur(5px); z-index: 3; pointer-events: none;
+/* fx layer lives behind the pot image (z-index 1 < image z-index 2) */
+.caul-fx { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.caul-fx.fx-in { animation: fxFadeIn .4s ease; }
+@keyframes fxFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.caul-rim { position: absolute; left: 18%; right: 18%; top: 4%; height: 5%; border-radius: 50%;
+  background: var(--mix-color, #c48bff); filter: blur(5px); pointer-events: none;
   box-shadow: 0 0 18px 6px var(--mix-color, #c48bff), 0 -7px 26px 9px var(--mix-color, #c48bff);
   animation: caulRim 1.9s ease-in-out infinite; }
 @keyframes caulRim { 0%,100% { opacity: .66; } 50% { opacity: 1; } }
-.caul-bubbles { position: absolute; left: 14%; right: 14%; top: 5%; height: 0; z-index: 4; pointer-events: none; }
+.caul-bubbles { position: absolute; left: 14%; right: 14%; top: 7%; height: 0; pointer-events: none; }
 .cbub { position: absolute; top: 0; border-radius: 50%; opacity: 0; will-change: transform, opacity;
   background: radial-gradient(circle at 34% 30%, rgba(255,255,255,.95), rgba(255,255,255,.2) 40%, transparent 62%), var(--mix-color, #c48bff);
   box-shadow: 0 0 7px 1px var(--mix-color, #c48bff);
-  animation-name: cbubRise; animation-timing-function: ease-in; animation-iteration-count: infinite; }
+  animation-name: cbubRise; animation-timing-function: linear; animation-iteration-count: infinite; }
 @keyframes cbubRise {
-  0% { transform: translateY(0) scale(.55); opacity: 0; }
-  14% { opacity: .95; }
-  72% { opacity: .7; }
-  100% { transform: translateY(-92px) scale(1.05); opacity: 0; } }
+  0% { transform: translateY(0) scale(.5); opacity: 0; }
+  8% { opacity: .95; }
+  88% { opacity: .8; }
+  100% { transform: translateY(-100vh) scale(1.12); opacity: 0; } }
+/* a glow that traces the cauldron's exact silhouette — invisible at rest, pulses once
+   in the added ingredient's colour on each drop-in (via a coloured drop-shadow) */
+.caul-art.pulsing .caul-img { animation: caulPulse .6s ease-out; }
+@keyframes caulPulse {
+  0%   { filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)) drop-shadow(0 0 0 var(--pulse-color, #c9a3ff)); }
+  28%  { filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)) drop-shadow(0 0 16px var(--pulse-color, #c9a3ff)) drop-shadow(0 0 9px var(--pulse-color, #c9a3ff)); }
+  100% { filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)) drop-shadow(0 0 0 var(--pulse-color, #c9a3ff)); } }
 /* have / need readout — this IS the serve button now */
 .m2-readout { flex: 0 0 auto; text-align: center; font-weight: 900; color: #fff; letter-spacing: .5px; line-height: 1; }
 .m2-readout b { font-size: clamp(26px, 8vw, 38px); }
