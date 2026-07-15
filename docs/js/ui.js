@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v314"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v315"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6096,7 +6096,7 @@ function renderScoop() {
     <div class="scoop-bg mg-fullbleed" id="scoop-bg"></div>
     <div class="scoop-stage" id="scoop-stage">
       <div class="scoop-craft" id="scoop-craft">
-        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(178 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}<img class="scoop-glitter-tip" id="scoop-glitter-tip" src="${ART.url("scoop_glitter_tip")}" alt="" draggable="false"></div>
+        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(178 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}<img class="art scoop-glitter-tip" id="scoop-glitter-tip" src="${ART.url("scoop_glitter_tip")}" alt="" draggable="false"></div>
         <div class="scoop-bubbles" id="scoop-bubbles"></div>
       </div>
       <div class="scoop-front" id="scoop-front"></div>
