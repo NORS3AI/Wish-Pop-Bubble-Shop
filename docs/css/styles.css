@@ -1942,7 +1942,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: url('../art/mix_bg.jpg?v=324') center top / cover no-repeat, #160c26; }
+  background: url('../art/mix_bg.jpg?v=325') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
@@ -1978,14 +1978,15 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .caul-fx.fx-in { animation: fxFadeIn .4s ease; }
 @keyframes fxFadeIn { from { opacity: 0; } to { opacity: 1; } }
 .caul-rim { position: absolute; left: 18%; right: 18%; top: 4%; height: 5%; border-radius: 50%;
-  background: var(--mix-color, #c48bff); filter: blur(5px); pointer-events: none;
-  box-shadow: 0 0 18px 6px var(--mix-color, #c48bff), 0 -7px 26px 9px var(--mix-color, #c48bff);
+  background: var(--mix-color, #c48bff); filter: blur(4px) saturate(1.6) brightness(1.25); pointer-events: none;
+  box-shadow: 0 0 9px 3px rgba(255,255,255,.85), 0 0 20px 7px var(--mix-color, #c48bff), 0 -9px 32px 13px var(--mix-color, #c48bff);
   animation: caulRim 1.9s ease-in-out infinite; }
-@keyframes caulRim { 0%,100% { opacity: .66; } 50% { opacity: 1; } }
+@keyframes caulRim { 0%,100% { opacity: .72; } 50% { opacity: 1; } }
 .caul-bubbles { position: absolute; left: 14%; right: 14%; top: 7%; height: 0; pointer-events: none; }
 .cbub { position: absolute; top: 0; border-radius: 50%; opacity: 0; will-change: transform, opacity;
-  background: radial-gradient(circle at 34% 30%, rgba(255,255,255,.95), rgba(255,255,255,.2) 40%, transparent 62%), var(--mix-color, #c48bff);
-  box-shadow: 0 0 7px 1px var(--mix-color, #c48bff);
+  background: radial-gradient(circle at 36% 32%, #fff, rgba(255,255,255,.55) 28%, var(--mix-color, #c48bff) 58%, var(--mix-color, #c48bff) 100%);
+  box-shadow: 0 0 8px 2px var(--mix-color, #c48bff), 0 0 17px 5px var(--mix-color, #c48bff);
+  filter: saturate(1.5) brightness(1.12);
   animation-name: cbubRise; animation-timing-function: linear; animation-iteration-count: infinite; }
 @keyframes cbubRise {
   0% { transform: translateY(0) scale(.5); opacity: 0; }
@@ -1997,7 +1998,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .caul-art.pulsing .caul-img { animation: caulPulse .6s ease-out; }
 @keyframes caulPulse {
   0%   { filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)) drop-shadow(0 0 0 var(--pulse-color, #c9a3ff)); }
-  28%  { filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)) drop-shadow(0 0 16px var(--pulse-color, #c9a3ff)) drop-shadow(0 0 9px var(--pulse-color, #c9a3ff)); }
+  28%  { filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)) drop-shadow(0 0 22px var(--pulse-color, #c9a3ff)) drop-shadow(0 0 12px var(--pulse-color, #c9a3ff)) drop-shadow(0 0 5px var(--pulse-color, #c9a3ff)); }
   100% { filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)) drop-shadow(0 0 0 var(--pulse-color, #c9a3ff)); } }
 /* have / need readout — this IS the serve button now */
 .m2-readout { flex: 0 0 auto; text-align: center; font-weight: 900; color: #fff; letter-spacing: .5px; line-height: 1; }
