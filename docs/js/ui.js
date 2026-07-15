@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v303"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v304"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6076,7 +6076,7 @@ function renderScoop() {
     <div class="scoop-bg mg-fullbleed" id="scoop-bg"></div>
     <div class="scoop-stage" id="scoop-stage">
       <div class="scoop-craft" id="scoop-craft">
-        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(188 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}</div>
+        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(178 * ART.getScale("scoop_spoon"))}px">${ART.tag("scoop_spoon", "🥄")}</div>
         <div class="scoop-bubbles" id="scoop-bubbles"></div>
         <div class="glitter-cover" id="glitter-cover"></div>
       </div>
@@ -6112,7 +6112,7 @@ function renderScoop() {
       cover.className = "glitter-cover" + (jackpot ? " rainbow" : "");
       // a real glitter mound (textured) heaped over the sifter, dotted with multicolour sparkles
       cover.innerHTML = '<div class="glitter-film" id="glitter-film"></div>';
-      const GCOLS = ["#fff7d6", "#ffd76a", "#ffb3e6", "#8fe0ff", "#7ee0b0", "#e0b3ff"];
+      const GCOLS = ["#fff7d6", "#ffe9a8", "#ffd76a", "#ffc94d", "#ffb43c", "#ffe38a"];
       for (let i = 0; i < GLITTER; i++) { const g = document.createElement("i"); g.className = "gspeck";
         g.style.left = rnd(6, 88) + "%"; g.style.top = rnd(10, 78) + "%";
         g.style.setProperty("--sz", (5 + rnd(0, 6)) + "px");
@@ -6255,7 +6255,7 @@ function renderScoop() {
   const resizeSpoon = delta => {
     const s = Math.max(0.4, Math.min(2.2, +(ART.getScale("scoop_spoon") + delta).toFixed(2)));
     ART.setScale("scoop_spoon", s);
-    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.fontSize = Math.round(188 * s) + "px";
+    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.fontSize = Math.round(178 * s) + "px";
   };
   on("#spoon-smaller", "click", () => resizeSpoon(-0.1));
   on("#spoon-bigger", "click", () => resizeSpoon(0.1));
