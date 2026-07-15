@@ -1942,7 +1942,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: url('../art/mix_bg.jpg?v=328') center top / cover no-repeat, #160c26; }
+  background: url('../art/mix_bg.jpg?v=329') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
@@ -1973,16 +1973,14 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* the pot gets excited as it fills — a gentle bounce, then a bigger hop when the next drop is the last.
    Lives on the wrapper so it layers cleanly with the per-drop .splash on the image, and leaves the % text alone. */
 .m2-cauldron { transform-origin: 50% 88%; }
-.m2-cauldron.excited { animation: caulExcited .66s ease-in-out infinite; }
-.m2-cauldron.excited-max { animation: caulExcitedBig .5s ease-in-out infinite; }
+.m2-cauldron.excited { animation: caulExcited 1.15s ease-in-out infinite; }
+.m2-cauldron.excited-max { animation: caulExcitedBig .85s ease-in-out infinite; }
 @keyframes caulExcited {
   0%,100% { transform: translateY(0) scaleX(1) scaleY(1); }
-  50%     { transform: translateY(-3px) scaleX(1.015) scaleY(.99); } }
+  50%     { transform: translateY(-1.5px) scaleX(1.006) scaleY(.996); } }
 @keyframes caulExcitedBig {
   0%,100% { transform: translateY(0) scaleX(1) scaleY(1); }
-  26%     { transform: translateY(-8px) scaleX(1.04) scaleY(.96); }
-  52%     { transform: translateY(1px) scaleX(.98) scaleY(1.025); }
-  74%     { transform: translateY(-3px) scaleX(1.012) scaleY(.994); } }
+  50%     { transform: translateY(-3.5px) scaleX(1.014) scaleY(.99); } }
 .caul-art .caul-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)); z-index: 2; pointer-events: none; }
 .caul-art.splash { animation: splash .4s ease; }
