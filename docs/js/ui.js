@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v310"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v311"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6084,8 +6084,8 @@ function rollScoopSecret() {
 function renderScoop() {
   const scoops = ROUND.scoops, split = ROUND.scoopYields;
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
-  const GLITTER = 34, BATCH = 6;
-  let lastRainAt = 0;                              // rate-limit the falling-glitter FX so a fast shake can't flood a phone
+  const GLITTER = 20, BATCH = 4;
+  let lastRainAt = 0, rainOrigin = null;          // rate-limit + cache the falling-glitter FX so a fast shake stays light
   let idx = 0, revealed = 0, state = "idle", shakeDist = 0, lastX = null, dragging = false, autoIv = null;
   let skipMode = false;                          // after "Shake for me", the button becomes "Skip"
   let secret = null;                              // the one secret treasure for this scoop phase (decided up front)
@@ -6245,22 +6245,26 @@ function renderScoop() {
   // Rate-limited + hard-capped so even a frantic shake stays light on a phone's GPU.
   function rainGlitter(intensity) {
     const now = Date.now();
-    if (now - lastRainAt < 70) return;                     // cap the burst rate no matter how fast you shake
+    if (now - lastRainAt < 75) return;                     // cap the burst rate no matter how fast you shake
     lastRainAt = now;
-    const stage = $("#scoop-stage"), cover = $("#glitter-cover"); if (!stage || !cover) return;
-    if (stage.querySelectorAll(".fall-glitter,.fall-spark").length > 16) return;   // never let them pile up
-    const sr = stage.getBoundingClientRect(), cr = cover.getBoundingClientRect();
-    const ox = cr.left - sr.left + cr.width / 2, oy = cr.top - sr.top + cr.height * 0.5;   // spoon-glitter centre
-    const COLS = ["#fff7d6", "#ffe38a", "#ffd76a", "#ffc94d", "#ffb43c"];
+    const stage = $("#scoop-stage"); if (!stage) return;
+    if (stage.querySelectorAll(".fall-glitter,.fall-spark").length > 10) return;   // never let them pile up
+    // measure the spoon-glitter position ONCE (reused each burst) — avoids a layout reflow per shake tick
+    if (!rainOrigin) {
+      const cover = $("#glitter-cover"); if (!cover) return;
+      const sr = stage.getBoundingClientRect(), cr = cover.getBoundingClientRect();
+      rainOrigin = { ox: cr.left - sr.left + cr.width / 2, oy: cr.top - sr.top + cr.height * 0.5, w: cr.width, h: sr.height };
+    }
+    const o = rainOrigin, COLS = ["#fff7d6", "#ffe38a", "#ffd76a", "#ffc94d", "#ffb43c"];
     const n = 2 + Math.round(intensity * 2);               // 2–4 per burst
     for (let i = 0; i < n; i++) {
       const streak = Math.random() < 0.62;
       const el = document.createElement("i"); el.className = streak ? "fall-glitter" : "fall-spark";
-      el.style.left = (ox + rnd(-cr.width * 0.48, cr.width * 0.48)) + "px";
-      el.style.top = (oy + rnd(-6, 12)) + "px";
+      el.style.left = (o.ox + rnd(-o.w * 0.48, o.w * 0.48)) + "px";
+      el.style.top = (o.oy + rnd(-6, 12)) + "px";
       el.style.setProperty("--fc", COLS[Math.floor(Math.random() * COLS.length)]);
       el.style.setProperty("--fx", rnd(-26, 26) + "px");
-      el.style.setProperty("--fy", (sr.height - oy + rnd(10, 90)) + "px");   // all the way to the bottom
+      el.style.setProperty("--fy", (o.h - o.oy + rnd(10, 90)) + "px");   // all the way to the bottom
       el.style.setProperty("--fd", (0.9 + Math.random() * 0.7).toFixed(2) + "s");
       if (!streak) el.style.setProperty("--sz", (7 + rnd(0, 6)) + "px");
       stage.appendChild(el);
