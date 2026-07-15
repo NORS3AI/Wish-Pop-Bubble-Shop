@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v306"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v307"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6120,6 +6120,8 @@ function renderScoop() {
   { const bgEl = $("#scoop-bg"); if (bgEl) bgEl.style.backgroundImage = `url('art/scoop_bg.webp?v=${BUILD}')`;
     const frEl = $("#scoop-front"); if (frEl) frEl.style.backgroundImage = `url('art/scoop_front.webp?v=${BUILD}')`;
     const stEl = $("#scoop-stage"); if (stEl) stEl.style.setProperty("--scoop-glitter", `url('art/scoop_glitter.webp?v=${BUILD}')`); }
+  // warm the secret-pearl images now so, if one appears, it's already loaded (no slow pop-in that gives it away)
+  SCOOP_SECRETS.forEach(v => { const im = new Image(); im.src = `art/${v.key}.webp?v=${BUILD}`; });
 
   const isJackpot = i => !!(ROUND.scoopJackpots && ROUND.scoopJackpots[i]);
   function loadScoop() {

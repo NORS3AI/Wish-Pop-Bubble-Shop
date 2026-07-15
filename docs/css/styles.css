@@ -399,14 +399,14 @@ html, body {
 /* the pearl art is full-bleed (z2) so it sits BEHIND the front glitter (z3) but in front of the spoon */
 .scoop-secret { position: absolute; inset: 0; z-index: 2; background-size: cover; background-position: center;
   background-repeat: no-repeat; pointer-events: none; opacity: 0; }
-.scoop-secret.show { opacity: 1; animation: secretIn .5s ease both; }
+/* fade in ONLY — no scale/movement, so it blends into the glitter and stays a real secret */
+.scoop-secret.show { opacity: 1; animation: secretIn .45s ease-in both; }
 .scoop-secret.popped { animation: secretPop .38s ease forwards; }
-@keyframes secretIn { 0% { opacity: 0; transform: scale(.92); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes secretIn { 0% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes secretPop { 0% { opacity: 1; transform: scale(1); } 55% { opacity: 1; transform: scale(1.16); } 100% { opacity: 0; transform: scale(1.32); } }
-/* invisible tap target sitting over the peeking pearl */
+/* invisible tap target sitting over the peeking pearl — no glow, so it doesn't announce itself */
 .secret-hit { position: absolute; z-index: 6; border: 0; background: transparent; border-radius: 50%; padding: 0;
-  cursor: pointer; -webkit-tap-highlight-color: transparent; animation: secretPulse 1.6s ease-in-out infinite; }
-@keyframes secretPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(210,235,255,0); } 50% { box-shadow: 0 0 22px 5px rgba(210,235,255,.45); } }
+  cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* the popped prize floats there waiting to be grabbed */
 .secret-prize { position: absolute; z-index: 6; border: 0; background: transparent; padding: 0; cursor: pointer;
   display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
