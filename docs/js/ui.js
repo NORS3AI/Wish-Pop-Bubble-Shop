@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v308"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v309"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6087,7 +6087,7 @@ function renderScoop() {
   const GLITTER = 48, BATCH = 5;
   let idx = 0, revealed = 0, state = "idle", shakeDist = 0, lastX = null, dragging = false, autoIv = null;
   let skipMode = false;                          // after "Shake for me", the button becomes "Skip"
-  let secretDone = false;                         // at most one secret treasure per scoop phase
+  let secret = null;                              // the one secret treasure for this scoop phase (decided up front)
   const jackDone = new Array(scoops).fill(false); // which scoops have already handed out their jackpot charm
 
   html("scoop", `
@@ -6119,8 +6119,12 @@ function renderScoop() {
   { const bgEl = $("#scoop-bg"); if (bgEl) bgEl.style.backgroundImage = `url('art/scoop_bg.webp?v=${BUILD}')`;
     const frEl = $("#scoop-front"); if (frEl) frEl.style.backgroundImage = `url('art/scoop_front.webp?v=${BUILD}')`;
     const stEl = $("#scoop-stage"); if (stEl) stEl.style.setProperty("--scoop-glitter", `url('art/scoop_glitter.webp?v=${BUILD}')`); }
-  // warm the secret-pearl images now so, if one appears, it's already loaded (no slow pop-in that gives it away)
+  // warm the pearl images on EVERY scoop entry, so on the rare phase one appears it's already cached
+  // (never a late pop-in against the already-loaded background)
   SCOOP_SECRETS.forEach(v => { const im = new Image(); im.src = `art/${v.key}.webp?v=${BUILD}`; });
+  // roll the rare secret and paint its pearl RIGHT NOW, in the same breath as the background,
+  // so it loads in together and is simply "already there" when the screen appears — never seen arriving
+  decideSecret();
 
   const isJackpot = i => !!(ROUND.scoopJackpots && ROUND.scoopJackpots[i]);
   function loadScoop() {
@@ -6144,7 +6148,6 @@ function renderScoop() {
     const tx = $("#scoop-text"); if (tx) tx.innerHTML = jackpot
       ? "🌈 A <b>rainbow scoop</b> — shake for the jackpot!"
       : "✋ Swipe side to side to shake off the glitter!";
-    maybeSpawnSecret();
   }
 
   // --- rare secret treasure peeking out of the glitter (~5% per scoop) ------
@@ -6155,30 +6158,35 @@ function renderScoop() {
     const ox = (vw - A.w * scale) / 2, oy = (vh - A.h * scale) / 2;
     return { x: ox + cxFrac * A.w * scale, y: oy + cyFrac * A.h * scale, r: 0.108 * A.w * scale / 2 };
   }
-  function maybeSpawnSecret() {
-    if (secretDone) return;                                   // never more than one at a time
+  // Decide the rare secret up front and paint the pearl WITH the background (below), so it's
+  // there from the very first frame — no fade, nothing that reveals it "arrived".
+  function decideSecret() {
     const forced = GAME.forceScoopSecret;
-    if (!forced && Math.random() >= 0.05) return;             // ~5% per scoop
+    if (!forced && Math.random() >= 0.05) return;             // ~5% per scoop phase
     if (forced) { GAME.forceScoopSecret = false; save(); }
-    secretDone = true;
-    const v = SCOOP_SECRETS[Math.floor(Math.random() * SCOOP_SECRETS.length)];
-    const pt = coverPoint(v.cx, v.cy), layer = $("#scoop-secret"), stage = $("#scoop-stage");
+    secret = { v: SCOOP_SECRETS[Math.floor(Math.random() * SCOOP_SECRETS.length)], tr: rollScoopSecret() };
+    const layer = $("#scoop-secret");
+    if (layer) { layer.style.backgroundImage = `url('art/${secret.v.key}.webp?v=${BUILD}')`; layer.classList.add("shown"); }
+  }
+  // The tap target needs real stage dimensions, so it's attached AFTER show(). The pearl is
+  // already visible by then (painted with the bg); the invisible hotspot arriving a frame later
+  // changes nothing on screen.
+  function placeSecretHotspot() {
+    if (!secret) return;
+    const pt = coverPoint(secret.v.cx, secret.v.cy), layer = $("#scoop-secret"), stage = $("#scoop-stage");
     if (!pt || !layer || !stage) return;
-    layer.style.backgroundImage = `url('art/${v.key}.webp?v=${BUILD}')`;
-    layer.classList.remove("popped"); layer.classList.add("show");
-    const tr = rollScoopSecret();
     const hot = document.createElement("button");
     hot.type = "button"; hot.className = "secret-hit"; hot.setAttribute("aria-label", "A secret treasure — tap it!");
     const d = pt.r * 2.3;
     hot.style.left = (pt.x - d / 2) + "px"; hot.style.top = (pt.y - d / 2) + "px";
     hot.style.width = d + "px"; hot.style.height = d + "px";
-    hot.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); popSecret(hot, layer, pt, tr); });
+    hot.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); popSecret(hot, layer, pt, secret.tr); });
     stage.appendChild(hot);
   }
   function popSecret(hot, layer, pt, tr) {
     SFX.unlock(); SFX.pop(1); if (navigator.vibrate) navigator.vibrate(12);
     if (hot.parentNode) hot.remove();
-    layer.classList.remove("show"); layer.classList.add("popped");
+    layer.classList.remove("shown"); layer.classList.add("popped");
     setTimeout(() => { if (layer) { layer.classList.remove("popped"); layer.style.backgroundImage = ""; } }, 400);
     secretBurst(pt);
     const stage = $("#scoop-stage"); if (!stage) return;
@@ -6375,6 +6383,7 @@ function renderScoop() {
   setTimeout(diveThenLoad, 620);
   wireFamiliar("scoop");
   show("scoop");
+  placeSecretHotspot();  // pearl is already painted; now the stage has real dimensions for its tap target
   startRushClock();      // In-a-Rush patience clock ticks from here through serve
 }
 
