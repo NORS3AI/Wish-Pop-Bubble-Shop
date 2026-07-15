@@ -1942,13 +1942,13 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: url('../art/mix_bg.jpg?v=326') center top / cover no-repeat, #160c26; }
+  background: url('../art/mix_bg.jpg?v=327') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
 /* stage: cauldron centered, timer floats above */
-.m2-stage { position: relative; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 0; padding-top: 6px; }
+.m2-stage { position: relative; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 0; padding-top: 6px; margin-top: 22px; }
 .m2-timer { flex: 0 0 auto; margin-top: auto; display: flex; justify-content: center; min-height: 0; margin-bottom: 1px; z-index: 6; }
 .m2-timer-badge { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 74px; height: 74px;
   border-radius: 50%; background: radial-gradient(circle at 50% 34%, #ff5a5a, #c62828); border: 4px solid var(--gold);
@@ -1969,7 +1969,20 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    dominant magic (green the instant the wish is met); bubble count grows with the
    number of ingredients in the pot. The fx sit BEHIND the pot so they read as coming
    from inside. --mix-color / --pulse-color are set inline per render. --- */
-.caul-art { position: relative; z-index: 1; width: min(64vw, 250px); aspect-ratio: 1409 / 965; overflow: visible; }
+.caul-art { position: relative; z-index: 1; width: min(72vw, 288px); aspect-ratio: 1409 / 965; overflow: visible; }
+/* the pot gets excited as it fills — a gentle bounce, then a bigger hop when the next drop is the last.
+   Lives on the wrapper so it layers cleanly with the per-drop .splash on the image, and leaves the % text alone. */
+.m2-cauldron { transform-origin: 50% 88%; }
+.m2-cauldron.excited { animation: caulExcited .66s ease-in-out infinite; }
+.m2-cauldron.excited-max { animation: caulExcitedBig .5s ease-in-out infinite; }
+@keyframes caulExcited {
+  0%,100% { transform: translateY(0) scaleX(1) scaleY(1); }
+  50%     { transform: translateY(-3px) scaleX(1.015) scaleY(.99); } }
+@keyframes caulExcitedBig {
+  0%,100% { transform: translateY(0) scaleX(1) scaleY(1); }
+  26%     { transform: translateY(-8px) scaleX(1.04) scaleY(.96); }
+  52%     { transform: translateY(1px) scaleX(.98) scaleY(1.025); }
+  74%     { transform: translateY(-3px) scaleX(1.012) scaleY(.994); } }
 .caul-art .caul-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   filter: drop-shadow(0 10px 16px rgba(0,0,0,.5)); z-index: 2; pointer-events: none; }
 .caul-art.splash { animation: splash .4s ease; }

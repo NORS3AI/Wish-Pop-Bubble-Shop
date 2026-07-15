@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v326"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v327"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7037,6 +7037,9 @@ function paintMix() {
   // near the end (last ~3 ingredients) the bubbles swell much bigger
   const bigBoost = Math.max(0, nIng - (ROUND.maxSlots - 3));         // 0 until the last 3, then 1,2,3…
   const bubSizes = [7, 9, 12, 16, 21].map(s => Math.round(s + bigBoost * 9));
+  // the pot gets visibly excited as it fills: a gentle bounce ~2 from full, a bigger one when the next drop is the last
+  const slotsLeft = ROUND.maxSlots - nIng;
+  const exciteClass = (nIng > 0 && slotsLeft <= 2) ? (slotsLeft <= 1 ? "excited-max" : "excited") : "";
   const pulseColor = mixPulseColor; mixPulseColor = null;            // one-shot aura pulse on the last add
   const slotCells = [];
   for (let i = 0; i < ROUND.maxSlots; i++) {
@@ -7061,7 +7064,7 @@ function paintMix() {
       </div>
       <div class="m2-timer" id="m2-timer"></div>
       <div class="m2-stage">
-        <div class="m2-cauldron" id="cauldron-tap" style="--mix-color:${mixColor}">
+        <div class="m2-cauldron ${exciteClass}" id="cauldron-tap" style="--mix-color:${mixColor}">
           <div class="caul-art ${equippedCauldronClass()} ${pulseColor ? "pulsing" : ""}" id="cauldron"${pulseColor ? ` style="--pulse-color:${pulseColor}"` : ""}>
             ${fxVisible ? `<div class="caul-fx ${justAppeared ? "fx-in" : ""}">
               <div class="caul-rim"></div>
