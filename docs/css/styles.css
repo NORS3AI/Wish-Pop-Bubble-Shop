@@ -1942,7 +1942,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: url('../art/mix_bg.jpg?v=342') center top / cover no-repeat, #160c26; }
+  background: url('../art/mix_bg.jpg?v=343') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
@@ -1976,11 +1976,11 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    restore the original centered layout. --- */
 .mixv2 { justify-content: flex-start; }
 .m2-head    { order: 10; }
-.m2-readout { order: 20; margin-top: -16px !important; }   /* % position — change to order: 45 to put it back under the cauldron */
+.m2-readout { order: 20; margin-top: -42px !important; }   /* % position — change to order: 45 to put it back under the cauldron */
 .m2-readout b { font-size: clamp(34px, 12vw, 52px) !important; }   /* bigger % number */
 .m2-timer   { order: 30; margin-top: auto !important; }  /* the single flexible spacer, so the pot sits low */
 .m2-stage   { order: 40; margin-top: 0 !important; padding-top: 0 !important; z-index: 5 !important; }  /* pot layered in front of the slots */
-.m2-slots   { order: 50; margin-top: -10px !important; } /* pot drops down to rest ON this row */
+.m2-slots   { order: 50; margin-top: -18px !important; } /* pot drops down to rest ON this row */
 .m2-bars    { order: 60; }
 .m2-charmbar { order: 70; }
 .m2-tray    { order: 80; }
