@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v325"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v326"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7022,10 +7022,13 @@ function paintMix() {
   const score = scoreMix(ROUND.slots, w, ROUND.allergyOffset);
   let best = w.needs[0], bestPct = -1;
   w.needs.forEach((n, i) => { if (score.perNeed[i].pct >= bestPct) { bestPct = score.perNeed[i].pct; best = n; } });
-  const liquid = D.MAGIC[best.type] || "#c48bff";
-  // rim glow + bubbles follow the dominant magic, or turn green the instant the wish is met
+  const liquid = D.MAGIC[best.type] || "#c48bff";   // dominant-need colour (fallback)
+  // rim glow + bubbles take the colour of the LAST ingredient dropped in (so the colour
+  // visibly changes as you mix), or turn green the instant the wish is actually met.
+  const lastInst = ROUND.slots[ROUND.slots.length - 1];
+  const lastColor = lastInst ? (D.MAGIC[instMainMagic(lastInst)] || liquid) : liquid;
   const meetsWish = score.weighted >= w.requiredMatch;
-  const mixColor = meetsWish ? "#7ee08a" : liquid;
+  const mixColor = meetsWish ? "#7ee08a" : lastColor;
   const nIng = ROUND.slots.length;
   const fxVisible = nIng > 0;                                        // nothing glows at 0% / empty pot
   const justAppeared = fxVisible && !mixFxWasVisible;                // 0 → first ingredient: swift fade-in
