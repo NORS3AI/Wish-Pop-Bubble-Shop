@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v330"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v331"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7023,7 +7023,8 @@ function cauldronBubblesHtml(n, sizes) {
     const dur = (5.5 + Math.random() * 3.5).toFixed(2);   // slow rise — drifts all the way up and off screen
     const delay = (-Math.random() * dur).toFixed(2);      // negative → already mid-rise, no empty start
     const drift = Math.round(Math.random() * 16 - 8);     // subtle horizontal offset
-    s += `<span class="cbub" style="left:${left.toFixed(1)}%;width:${sz}px;height:${sz}px;margin-left:${drift}px;animation-duration:${dur}s;animation-delay:${delay}s"></span>`;
+    const HIT = 26;                                        // transparent tap padding so tiny bubbles are easy to catch
+    s += `<span class="cbub" style="--sz:${sz}px;left:${left.toFixed(1)}%;width:${sz + HIT}px;height:${sz + HIT}px;margin-left:${drift}px;animation-duration:${dur}s;animation-delay:${delay}s"></span>`;
   }
   return s;
 }

@@ -1942,7 +1942,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
  * ===================================================================== */
 .mixv2 { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px;
   margin: -8px -14px -12px; padding: 6px 10px 8px;
-  background: url('../art/mix_bg.jpg?v=330') center top / cover no-repeat, #160c26; }
+  background: url('../art/mix_bg.jpg?v=331') center top / cover no-repeat, #160c26; }
 .m2-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .m2-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .m2-cust img.art { width: 40px !important; height: 40px !important; max-width: none; max-height: none; object-fit: contain;
@@ -1994,12 +1994,16 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   animation: caulRim 1.9s ease-in-out infinite; }
 @keyframes caulRim { 0%,100% { opacity: .72; } 50% { opacity: 1; } }
 .caul-bubbles { position: absolute; left: 14%; right: 14%; top: 7%; height: 0; pointer-events: none; }
-.cbub { position: absolute; top: 0; border-radius: 50%; opacity: 0; will-change: transform, opacity;
+/* the .cbub box is a larger transparent TAP target; the visible bubble is drawn by ::before
+   at the real (small) size, centred inside — so small bubbles are easy to catch by tap */
+.cbub { position: absolute; top: 0; opacity: 0; will-change: transform, opacity;
   pointer-events: auto; cursor: pointer;   /* tap to pop — it's Wish POP, after all */
+  animation-name: cbubRise; animation-timing-function: linear; animation-iteration-count: infinite; }
+.cbub::before { content: ""; position: absolute; left: 50%; top: 50%; width: var(--sz, 12px); height: var(--sz, 12px);
+  transform: translate(-50%, -50%); border-radius: 50%;
   background: radial-gradient(circle at 36% 32%, #fff, rgba(255,255,255,.55) 28%, var(--mix-color, #c48bff) 58%, var(--mix-color, #c48bff) 100%);
   box-shadow: 0 0 8px 2px var(--mix-color, #c48bff), 0 0 17px 5px var(--mix-color, #c48bff);
-  filter: saturate(1.5) brightness(1.12);
-  animation-name: cbubRise; animation-timing-function: linear; animation-iteration-count: infinite; }
+  filter: saturate(1.5) brightness(1.12); }
 @keyframes cbubRise {
   0% { transform: translateY(0) scale(.5); opacity: 0; }
   8% { opacity: .95; }
