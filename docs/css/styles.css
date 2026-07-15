@@ -593,10 +593,12 @@ html, body {
 .res-results::after { content: ""; position: absolute; right: 4px; top: 2px; width: 14px; height: 14px; border-radius: 50%;
   background: #ff5a5a; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.45); animation: badgePing 1.6s ease-in-out infinite; }
 .res-results:active { transform: scale(.93); }
-/* parchment panel (res_panel.png stretched behind the content) */
-.res-panel { position: relative; width: 97%; max-width: 400px; margin: 0 auto 0; padding: 26px 34px 24px;
-  z-index: 3; background: url('../art/ui/res_panel.png') no-repeat center; background-size: 100% 100%;
-  display: flex; flex-direction: column; align-items: center; gap: 7px; }
+/* parchment panel — 9-slice border-image so the ornate corners never squish;
+   only the flat parchment middle stretches, whatever the content height */
+.res-panel { position: relative; width: 97%; max-width: 400px; margin: 0 auto 0; box-sizing: border-box;
+  border: 40px solid transparent; border-image: url('../art/ui/res_panel.png') 130 fill / 40px / 0 stretch;
+  padding: 4px 6px 6px; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; }
 .res-earned { font-family: var(--ff-body); font-weight: 800; font-size: 19px; color: #3a2408; display: flex; align-items: center; gap: 5px; }
 .res-earned .res-coin { height: 25px; width: auto; }
 .res-earned .res-cur .pearl-ic { width: 23px; height: 23px; }
