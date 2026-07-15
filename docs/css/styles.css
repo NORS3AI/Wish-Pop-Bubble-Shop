@@ -366,17 +366,27 @@ html, body {
 .scoop-bowl { position: relative; font-size: 178px; line-height: 1; z-index: 2; will-change: transform; }
 .scoop-bowl img.art { display: block; width: 1.7em; height: auto; filter: drop-shadow(0 12px 20px rgba(0,0,0,.55)); }
 .scoop-bowl.jig { animation: sjig .2s ease; }
-.scoop-bowl.diving { animation: sdive .82s ease-in-out; }
+.scoop-bowl.diving { animation: sdive 1.15s ease-in-out; }
 @keyframes sjig { 0%,100% { transform: translateX(0) rotate(0); } 20% { transform: translateX(-11px) rotate(-5deg); } 55% { transform: translateX(10px) rotate(4deg); } 82% { transform: translateX(-4px) rotate(-2deg); } }
-/* dip in fairly quickly, then rise back out slowly — as if the scoop came up heavy */
-@keyframes sdive { 0% { transform: translateY(0); } 32% { transform: translateY(32vh) scale(.95); } 48% { transform: translateY(31vh) scale(.95); } 100% { transform: translateY(0); } }
+/* dip in fairly quickly, LINGER in the glitter, then rise back out slowly (heavy scoop).
+   Depth kept so the bowl stays hidden IN the glitter and never pokes below the pile. */
+@keyframes sdive { 0% { transform: translateY(0); } 24% { transform: translateY(25vh) scale(.95); } 54% { transform: translateY(24vh) scale(.95); } 100% { transform: translateY(0); } }
 /* bubbles rise from the CENTRE of the glitter in the sifter (the basket sits left of screen centre) */
-/* the bubbles all rise from the SAME point (the glitter in the sifter) and fan upward,
-   one at a time — so every bubble spawns from the correct spot no matter how many there are */
-.scoop-bubbles { position: absolute; left: 43%; bottom: 21%; transform: translateX(-50%); width: 0; height: 0; z-index: 4; }
-.sbub { position: absolute; left: 0; top: 0; transform: translate(-50%,-50%); opacity: 0; } /* stacked on the glitter, hidden */
-.sbub.floatup { animation: sfloat 1s ease-in forwards; }
-@keyframes sfloat { 0% { transform: translate(-50%,-50%); opacity: 0; } 14% { opacity: 1; } 100% { transform: translate(calc(-50% + var(--fx,0)), calc(-50% - 42vh)); opacity: 0; } }
+/* bubbles spawn from random points across the FLAT glitter surface (this box maps to that
+   red ellipse) — each begins as a gold glow, then grows into the bubble as it floats up */
+.scoop-bubbles { position: absolute; left: 43%; bottom: 21%; transform: translateX(-50%); width: 34%; height: 8%; z-index: 4; }
+.sbub { position: absolute; opacity: 0; } /* positioned per-bubble within the ellipse in JS */
+.sbub.floatup { animation: sfloat 1.15s ease-in forwards; }
+@keyframes sfloat {
+  0%   { transform: translate(-50%,-50%) scale(.26); opacity: 0; }
+  14%  { opacity: 1; }
+  40%  { transform: translate(-50%, calc(-50% - 7vh)) scale(1); }
+  100% { transform: translate(calc(-50% + var(--fx,0)), calc(-50% - 44vh)) scale(1); opacity: 0; } }
+/* the gold glow that "becomes" the bubble (fades off as the bubble grows in) */
+.sbub::before { content: ""; position: absolute; inset: -16%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, #fff, #ffe38a 40%, rgba(255,190,70,.45) 64%, rgba(255,190,70,0) 78%); opacity: 0; }
+.sbub.floatup::before { animation: sglow 1.15s ease-in forwards; }
+@keyframes sglow { 0% { opacity: .95; } 42% { opacity: 0; } 100% { opacity: 0; } }
 /* glitter heaped over the FLAT glitter layer inside the sifter. It's a CHILD of the spoon,
    so it automatically dips, rises, floats and shakes together with it. */
 .glitter-cover { position: absolute; left: 39%; top: 63%; transform: translate(-50%,-50%); width: 48%; height: 40%; z-index: 5; pointer-events: none; }
@@ -1195,7 +1205,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .bubble-field.has-bonus-art .pbubble.bonus .sheen,
 .bubble-field.has-bonus-art .pbubble.bonus .bglyph { display: none; }
 .scoop-bubbles.has-bubble-art .sbub {
-  width: 56px; height: 56px; margin: 0; background-image: var(--bubble-img);
+  width: 64px; height: 64px; margin: 0; background-image: var(--bubble-img);
   background-size: contain; background-position: center; background-repeat: no-repeat;
   filter: drop-shadow(0 0 6px rgba(255,230,150,.7)); }
 .scoop-bubbles.has-bubble-art .sbub .bglyph { display: none; }

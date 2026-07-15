@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v311"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v312"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6293,7 +6293,11 @@ function renderScoop() {
     const bubs = $("#scoop-bubbles"); const kids = bubs ? [...bubs.children] : [];
     // bubbles float up ONE AT A TIME, each with its own rising pip so you can hear the count
     kids.forEach((b, k) => setTimeout(() => {
-      b.style.setProperty("--fx", rnd(-38, 38) + "px"); b.classList.add("floatup");
+      // spawn point = a random spot within the flat glitter ellipse (uniform over its area)
+      const ang = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random());
+      b.style.left = (50 + Math.cos(ang) * rr * 50).toFixed(1) + "%";
+      b.style.top = (50 + Math.sin(ang) * rr * 50).toFixed(1) + "%";
+      b.style.setProperty("--fx", rnd(-30, 30) + "px"); b.classList.add("floatup");
       SFX.count(k); if (navigator.vibrate) navigator.vibrate(5);
     }, 130 + k * 175));
     setTimeout(advance, 130 + found * 175 + 700);
@@ -6305,8 +6309,8 @@ function renderScoop() {
     const bowl = $("#scoop-bowl"); state = "diving";
     if (bowl) { bowl.classList.remove("diving"); void bowl.offsetWidth; bowl.classList.add("diving"); }
     SFX.scoop();
-    setTimeout(loadScoop, 300);                                   // fill while the scoop lingers at the bottom
-    setTimeout(() => { if (bowl) bowl.classList.remove("diving"); }, 860);  // matches the slower, weighted rise
+    setTimeout(loadScoop, 330);                                   // fill while the scoop lingers at the bottom
+    setTimeout(() => { if (bowl) bowl.classList.remove("diving"); }, 1180);  // matches the longer linger + slow rise
   }
   function advance() {
     if (state === "done") return;                // skipped straight to popping
