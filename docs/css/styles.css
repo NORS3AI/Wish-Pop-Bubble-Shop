@@ -2208,11 +2208,11 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* bottom tray */
 .m2-tray { flex: 0 0 auto; height: clamp(178px, 25vh, 212px); display: flex; gap: 7px; padding: 7px; border-radius: 14px;
   background: rgba(14,8,24,.62); border: 1px solid rgba(255,214,110,.25); }
-/* charm column pinned to the LEFT of the tray — two little columns of charms that stay put while
-   the ingredients scroll sideways beside them. Only appears when you actually hold charms. */
-.m2-charmcol { flex: 0 0 auto; align-self: stretch; display: grid; grid-template-columns: repeat(2, 38px);
-  grid-auto-rows: 38px; gap: 5px; align-content: start; overflow-y: auto;
-  padding-right: 7px; margin-right: 1px; border-right: 1px solid rgba(255,214,110,.28); }
+/* charm column pinned to the LEFT of the tray — a single little column of charms that stays put
+   while the ingredients scroll sideways beside it. Only appears when you actually hold charms. */
+.m2-charmcol { flex: 0 0 auto; align-self: stretch; margin: -7px 1px -7px 0; display: grid; grid-template-columns: 38px;
+  grid-auto-rows: 38px; gap: 4px; align-content: start; justify-content: center; overflow-y: auto;
+  padding: 3px 7px 3px 0; border-right: 1px solid rgba(255,214,110,.28); }
 .cslot { width: 38px; height: 38px; border-radius: 10px; position: relative; cursor: pointer; flex: 0 0 auto;
   background: rgba(60,30,86,.7); border: 1.5px solid rgba(255,214,110,.55); display: flex; align-items: center; justify-content: center; }
 .cslot.empty { background: rgba(0,0,0,.25); border-style: dashed; border-color: rgba(255,255,255,.12); cursor: default; }
@@ -2223,8 +2223,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .cslot.cleanse-glow { border-color: #7ee08a; animation: cleansePulse 1s ease-in-out infinite; }
 @keyframes cleansePulse { 0%,100% { box-shadow: 0 0 6px rgba(126,224,138,.7); } 50% { box-shadow: 0 0 15px 3px rgba(126,224,138,.95); } }
 .cslot:active { transform: scale(.92); }
-/* ingredient cards — 2 rows, scroll sideways, ~3 visible across */
-.m2-ing { flex: 1; min-width: 0; display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, 1fr); grid-auto-columns: 31.5%;
+/* ingredient cards — 2 rows, scroll sideways. Card width is a fixed viewport measure (matching the
+   original ~31.5%-of-full-tray size) so the charm column never squeezes the cards smaller — it just
+   means slightly fewer are visible at once, with the rest a scroll away. */
+.m2-ing { flex: 1; min-width: 0; display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, 1fr); grid-auto-columns: clamp(104px, 29vw, 124px);
   gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 1px 2px 4px; scroll-snap-type: x proximity; }
 .m2-ing::-webkit-scrollbar { height: 5px; } .m2-ing::-webkit-scrollbar-thumb { background: rgba(255,214,110,.4); border-radius: 3px; }
 .icard { scroll-snap-align: start; position: relative; display: flex; align-items: center; gap: 4px; min-width: 0; text-align: left;

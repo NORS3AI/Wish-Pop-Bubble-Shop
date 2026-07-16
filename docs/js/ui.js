@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v389"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v390"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7577,7 +7577,9 @@ function mixCharmBarHtml() {
   // spend one of a stack (otherwise double-tapping a 2-use charm hits the wrong slot).
   const order = D.SPECIAL_CHARM_IDS;
   charmStacks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
-  const shown = charmStacks.slice(0, 8);   // two columns × up to four rows
+  // One column sized to show about five at once; on the rare round you hold more distinct types
+  // (you can gain up to MAX_CHARMS_PER_ROUND), the column scrolls rather than hiding any.
+  const shown = charmStacks.slice(0, 8);
   return `<div class="m2-charmcol">${shown.map(charmSlot).join("")}</div>`;
 }
 // Bottom tray: ingredient cards, 3 across, scrolling sideways.
