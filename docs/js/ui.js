@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v391"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v392"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7629,7 +7629,8 @@ function ingCard(st) {
   const allergens = ROUND.villain ? [] : [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
   const mkPill = q => {
     const warn = allergens.includes(q);
-    return `<span class="mp${warn ? " allergen" : ""}" style="--mc:${D.MAGIC[q] || "#888"}">${warn ? `<span class="mp-warn">⚠️</span>` : ""}<span class="mp-txt">${q}</span></span>`;
+    const long = q.length >= 9;   // e.g. "Protection" — nudge the font down so it never clips
+    return `<span class="mp${warn ? " allergen" : ""}${long ? " long" : ""}" style="--mc:${D.MAGIC[q] || "#888"}"><span class="mp-txt">${q}</span>${warn ? `<span class="mp-warn">⚠️</span>` : ""}</span>`;
   };
   let pills = "";
   if (infusedFx) {
