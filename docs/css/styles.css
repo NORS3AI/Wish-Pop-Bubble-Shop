@@ -1807,8 +1807,8 @@ body.villain .pbubble {
   border-color: rgba(190,255,150,.45);
   box-shadow: 0 6px 16px rgba(0,0,0,.42), inset 0 -6px 10px rgba(28,86,28,.42);
 }
-body.villain .scoop-bubbles, body.villain .scoop-glitter-tip, body.villain .glitter-pile { filter: hue-rotate(85deg) saturate(1.3); }
-body.villain .scoop-bowl { filter: hue-rotate(70deg) brightness(.95); }
+/* NOTE: the Evil Queen's scoop now has its own hand-painted art (purple chamber + amethyst
+   sifter), so we do NOT hue-rotate it green any more — it shows its true colours. */
 body.villain .cauldron .liquid { filter: saturate(1.25) hue-rotate(8deg); }
 body.villain .scoop-instr, body.villain .pop-sub { color: #c9f5b0; }
 .slot.removable { cursor: pointer; box-shadow: 0 0 0 1.5px rgba(255,140,140,.5) inset; }
