@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v365"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v366"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5562,6 +5562,7 @@ function cakeFinish(correct, n, pct) {
 /* skin. First of a planned villain series.                                  */
 /* ======================================================================= */
 let QUEEN = null;
+let QUEEN_RESULT = null;   // carries the outcome from the reaction beat to the results beat
 const QUEEN_REQUIRED = 72, QUEEN_SKIN = "cauldron_queen", QUEEN_POISON_CHANCE = 0.30; // each piece: ~1 in 3 hides poison
 // Per-piece poison: every ingredient you collect in a villain round independently rolls
 // for a hidden ☠️ taint, so even two of the SAME ingredient can differ. Rolled here at
@@ -5599,38 +5600,51 @@ function queenWish() {
 function queenCustomer() {
   return { id: "queen", name: "The Evil Queen", emoji: "👑", location: "The Dark Tower", line: R.pick(QUEEN_LINES) };
 }
-// The Evil Queen's story-mode card — she stands in her scene (chamber for the demand, throne
-// room for the reckoning) with a name plate + speech and her controls below, matching the look
-// of Little Red's and Rumpelstiltskin's story beats.
-function queenStoryCard(bg, pose, belowHtml) {
+// The Evil Queen's story-mode card — she stands LARGE in her scene (chamber for the demand,
+// throne room for the reckoning). `showName` toggles her name plate; a beat with her figure keeps
+// text minimal so she's never buried, and the info-heavy beats drop the name plate (and, for the
+// offer, the figure) so nothing crowds her.
+function queenStoryCard(bg, pose, belowHtml, showName) {
   const v = "?v=" + BUILD;
+  const fig = pose ? `<div class="story-figure queen"><img class="story-face" src="art/queen_pose_${pose}.webp${v}" alt="The Evil Queen" draggable="false"></div>` : "";
   return `
-    <div class="story-card mg-fullbleed queen-card">
+    <div class="story-card mg-fullbleed queen-card${pose ? "" : " nofig"}">
       <div class="story-bg" style="background-image:url('art/${bg}.jpg${v}')"></div>
       <div class="story-scrim"></div>
-      <div class="story-figure queen"><img class="story-face" src="art/queen_pose_${pose}.webp${v}" alt="The Evil Queen" draggable="false"></div>
+      ${fig}
       <div class="story-below">
-        <div class="story-name">The Evil Queen</div>
+        ${showName ? `<div class="story-name">The Evil Queen</div>` : ""}
         ${belowHtml}
       </div>
     </div>`;
 }
+// BEAT 1 — she appears in her chamber and makes her demand: just her, name + speech, then Continue.
 function renderQueenIntro() {
   SFX.unlock(); SFX.fanfare();
   QUEEN = { wish: queenWish() };
-  const w = QUEEN.wish, line = R.pick(QUEEN_LINES);
+  const line = R.pick(QUEEN_LINES);
+  const below = `
+    <div class="story-speech">“${line}”</div>
+    <div class="queen-btns"><button class="btn story-next" id="queen-next">Continue  ▸</button></div>`;
+  html("event", queenStoryCard("queen_chamber", 1, below, true));
+  on("#queen-next", "click", renderQueenOffer);
+  show("event");
+}
+// BEAT 2 — she's gone; the bargain's rules + how much to spend (no figure, no name plate).
+function renderQueenOffer() {
+  const w = QUEEN.wish;
   const recipe = w.needs.map(n => `${magicDot(n.type)} ${n.type}`).join(" · ");
   const skin = D.COSMETIC_BY_ID[QUEEN_SKIN];
   const afford = g => GAME.gold >= g;
   const below = `
-    <div class="story-speech">“${line}”</div>
-    <div class="queen-terms">🧪 ${recipe} · ☠️ hidden Poison · brew <b>${w.requiredMatch}%+</b> clean → 🐾 + ${skin.chip} ${skin.name}</div>
-    <div class="queen-note">Buy scoops of her cursed pantry, then scoop &amp; pop for ingredients. About <b>1 in 3</b> pieces hides ☠️ Poison — keep the meter <b>green</b> (Insight reveals them; tap a piece to pull it out). 🐾 Your Pet's captive, so <b>no helper abilities</b> here.</div>
+    <div class="queen-offer-title">🧪 The Ransom Bargain</div>
+    <div class="queen-terms">${recipe} · ☠️ hidden Poison · brew <b>${w.requiredMatch}%+</b> clean → 🐾 + ${skin.chip} ${skin.name}</div>
+    <div class="queen-note">Buy scoops of her cursed pantry, then <b>scoop &amp; pop</b> for ingredients. About <b>1 in 3</b> pieces hides ☠️ Poison — keep the meter <b>green</b> (Insight reveals them; tap a piece in the cauldron to pull it back out). 🐾 Your Pet's her captive, so <b>no helper abilities</b> here.</div>
     <div class="queen-btns">
       ${QUEEN_PACKAGES.map((pk, i) => `<button class="btn ${afford(pk.gold) ? "" : "secondary"} queen-buy" data-i="${i}" ${afford(pk.gold) ? "" : "disabled"}>🪙 ${pk.gold} → ${pk.scoops} scoops</button>`).join("")}
       <button class="btn secondary" id="queen-skip">Not now</button>
     </div>`;
-  html("event", queenStoryCard("queen_chamber", 4, below));
+  html("event", queenStoryCard("queen_chamber", 0, below, false));
   $("#screen-event").querySelectorAll(".queen-buy").forEach(b => b.addEventListener("click", () => queenBuy(+b.dataset.i)));
   on("#queen-skip", "click", startRound);
   show("event");
@@ -5661,6 +5675,8 @@ function queenServe() {
   stopRoundTimers();
   renderQueenResult(win, sc, poisoned, w.requiredMatch);
 }
+// BEAT 1 — she reacts from her throne room: just her, name + speech, then Continue. The prize is
+// granted here; the numbers are shown on the next beat so they don't crowd her.
 function renderQueenResult(win, sc, poisoned, required) {
   const skin = D.COSMETIC_BY_ID[QUEEN_SKIN];
   let prize = "", note, title, emoji, cls;
@@ -5679,25 +5695,34 @@ function renderQueenResult(win, sc, poisoned, required) {
       ? "The brew turned to poison! The Queen scoffs… but your Pet wriggles free and scampers home regardless. No skin this time — she'll be back."
       : `Not quite a match (${sc.weighted}% / ${required}%). The Queen tuts… but your Pet slips away and comes home anyway. No skin — try her again another day.`;
   }
-  const statLines = win
-    ? `<div class="stat-line"><span>Recipe match</span><span><b>${sc.weighted}%</b></span></div>
-       <div class="stat-line"><span>Prize</span><span class="gold">${prize}</span></div>`
-    : `<div class="stat-line"><span>Recipe match</span><span><b>${sc.weighted}%</b> / ${required}%</span></div>
-       <div class="stat-line"><span>Your Pet</span><span class="gold">🐾 safe &amp; home</span></div>`;
   // win = you beat her → she's FURIOUS (pose 6); lose = your brew failed → she GLOATS (pose 5)
-  const pose = win ? 6 : 5;
   const queenLine = win
     ? "“Bah! Take the wretched creature… this is NOT over, sweetling.”"
     : (poisoned ? "“Poisoned already? Ahaha! Do run along, dearie.”" : "“Not good enough. Better luck next time… if you dare.”");
+  QUEEN_RESULT = { win, weighted: sc.weighted, required, prize, note, title, emoji, cls };
   QUEEN = null; ROUND = null;
   const below = `
     <div class="story-speech">${queenLine}</div>
-    <div class="result-title ${cls}" style="color:#fff6e6">${emoji} ${title}</div>
+    <div class="queen-btns"><button class="btn story-next" id="queen-next">Continue  ▸</button></div>`;
+  html("event", queenStoryCard("queen_throne", win ? 6 : 5, below, true));
+  on("#queen-next", "click", renderQueenResultDetail);
+  show("event");
+}
+// BEAT 2 — she's still there in a NEW pose (name plate gone); just the results.
+function renderQueenResultDetail() {
+  const r = QUEEN_RESULT || { win: false, weighted: 0, required: 0, note: "", title: "", emoji: "🐾", cls: "lose", prize: "" };
+  const statLines = r.win
+    ? `<div class="stat-line"><span>Recipe match</span><span><b>${r.weighted}%</b></span></div>
+       <div class="stat-line"><span>Prize</span><span class="gold">${r.prize}</span></div>`
+    : `<div class="stat-line"><span>Recipe match</span><span><b>${r.weighted}%</b> / ${r.required}%</span></div>
+       <div class="stat-line"><span>Your Pet</span><span class="gold">🐾 safe &amp; home</span></div>`;
+  const below = `
+    <div class="result-title ${r.cls}" style="color:#fff6e6">${r.emoji} ${r.title}</div>
     <div class="queen-stats card">${statLines}</div>
-    <div class="queen-note">${note}</div>
-    <div class="queen-btns"><button class="btn" id="queen-next">Next Customer  →</button></div>`;
-  html("event", queenStoryCard("queen_throne", pose, below));
-  on("#queen-next", "click", startRound);
+    <div class="queen-note">${r.note}</div>
+    <div class="queen-btns"><button class="btn" id="queen-next2">Next Customer  →</button></div>`;
+  html("event", queenStoryCard("queen_throne", r.win ? 3 : 2, below, false));
+  on("#queen-next2", "click", () => { QUEEN_RESULT = null; startRound(); });
   show("event");
 }
 
