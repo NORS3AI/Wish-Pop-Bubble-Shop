@@ -2060,15 +2060,15 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
     0 -10px 44px 19px var(--mix-color, #c48bff);
   animation: caulRim 1.7s ease-in-out infinite; }
 @keyframes caulRim { 0%,100% { opacity: .84; } 50% { opacity: 1; } }
-.caul-bubbles { position: absolute; left: var(--bub-l, 14%); right: var(--bub-r, 14%); top: var(--bub-t, 7%); height: 0; pointer-events: none; }
+.caul-bubbles { position: absolute; left: var(--bub-l, 14%); right: var(--bub-r, 14%); top: var(--bub-t, 7%); height: 0; z-index: 1; pointer-events: none; }
+.caul-bubbles.front { z-index: 3; }               /* bath: bubbles float in front of the tub art */
+.caul-bubbles.fx-in { animation: fxFadeIn .4s ease; }
 /* Per-skin rim anchoring. Most cauldrons have a flat rim at the top of the frame, so the shared
    defaults above sit on it. These two royal pots (King's Courtyard) have their real rim lower on
    the art, so they declare where the glow line + bubbles belong. The bubble bath also floats its
    glow ABOVE the pot art (fx-front) so the light reads as glowing bath water, not a hidden inner glow. */
-.caul-art.skin-cauldron_royalbath { --rim-t: 13%; --rim-l: 15%; --rim-r: 15%; --bub-t: 15%; --bub-l: 17%; --bub-r: 17%; }
-.caul-art.skin-cauldron_royalbath .caul-fx { z-index: 3; }
-.caul-art.skin-cauldron_crown { --rim-t: 9%; --rim-l: 22%; --rim-r: 22%; --bub-t: 11%; --bub-l: 24%; --bub-r: 24%; }
-.caul-art.skin-cauldron_crown .caul-fx { z-index: 3; }
+.caul-art.skin-cauldron_royalbath { --rim-t: 12%; --rim-l: 15%; --rim-r: 15%; --bub-t: 15%; --bub-l: 17%; --bub-r: 17%; }
+.caul-art.skin-cauldron_crown { --rim-t: 10%; --rim-l: 22%; --rim-r: 22%; --bub-t: 12%; --bub-l: 24%; --bub-r: 24%; }
 /* the .cbub box is a larger transparent TAP target; the visible bubble is drawn by ::before
    at the real (small) size, centred inside — so small bubbles are easy to catch by tap */
 .cbub { position: absolute; top: 0; opacity: 0; will-change: transform, opacity;
@@ -2079,9 +2079,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   background: radial-gradient(circle at 36% 32%, #fff, rgba(255,255,255,.55) 28%, var(--mix-color, #c48bff) 58%, var(--mix-color, #c48bff) 100%);
   box-shadow: 0 0 8px 2px var(--mix-color, #c48bff), 0 0 17px 5px var(--mix-color, #c48bff);
   filter: saturate(1.5) brightness(1.12); }
-/* Royal Bubble Bath: its own iridescent soap/pearl bubbles — a rainbow sheen instead of the mix
-   colour, matching the pearly bubbles painted on the tub. Still poppable (styling only). */
-.caul-art.skin-cauldron_royalbath .cbub::before {
+/* Royal Bubble Bath: its extra always-on "ambient" layer are iridescent soap/pearl bubbles — a
+   rainbow sheen matching the pearls painted on the tub. The normal ingredient-coloured bubbles
+   are unchanged. Still poppable (styling only). */
+.caul-bubbles.ambient .cbub::before {
   background:
     radial-gradient(circle at 30% 24%, rgba(255,255,255,.98), rgba(255,255,255,.32) 26%, rgba(255,255,255,0) 52%),
     conic-gradient(from 200deg, #ffd6f0, #d6ecff, #d6fff0, #fff7d6, #ffe0d6, #ecd6ff, #d6f0ff, #ffd6f0);

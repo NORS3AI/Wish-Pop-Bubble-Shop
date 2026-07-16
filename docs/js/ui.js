@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v357"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v358"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7177,6 +7177,11 @@ function paintMix() {
   // Oven pot: a flickering firelight glow over its flame door (oven skin only)
   const ovenHtml = (equippedCauldronArt() === "cauldron_oven")
     ? `<div class="oven-glow"></div><div class="oven-fire"></div><div class="oven-embers"></div>` : "";
+  // Royal Bubble Bath: it's always sudsy. On top of the normal ingredient-coloured bubbles, it
+  // gets its own layer of iridescent rainbow soap bubbles that drift up even with an empty pot.
+  const isBath = equippedCauldronArt() === "cauldron_royalbath";
+  const bubFront = isBath ? " front" : "";                                   // bath bubbles float in front of the tub
+  const ambientHtml = isBath ? `<div class="caul-bubbles ambient front">${cauldronBubblesHtml(8, [8, 11, 14, 18, 23])}</div>` : "";
   const faceSet = equippedMirrorFaces();
   let mirrorHtml = "";
   if (faceSet) {
@@ -7218,12 +7223,11 @@ function paintMix() {
         <div class="m2-cauldron ${exciteClass}" id="cauldron-tap" style="--mix-color:${mixColor}">
           <div class="caul-art ${equippedCauldronClass()} ${pulseColor ? "pulsing" : ""}" id="cauldron"${pulseColor ? ` style="--pulse-color:${pulseColor}"` : ""}>
             ${mirrorHtml}
-            ${fxVisible ? `<div class="caul-fx ${justAppeared ? "fx-in" : ""}">
-              <div class="caul-rim"></div>
-              <div class="caul-bubbles">${cauldronBubblesHtml(bubbleCount, bubSizes)}</div>
-            </div>` : ""}
+            ${fxVisible ? `<div class="caul-fx ${justAppeared ? "fx-in" : ""}"><div class="caul-rim"></div></div>` : ""}
             <img class="caul-img" src="${ART.url(equippedCauldronArt())}" alt="" draggable="false">
             ${ovenHtml}
+            ${ambientHtml}
+            ${fxVisible ? `<div class="caul-bubbles main${bubFront} ${justAppeared ? "fx-in" : ""}">${cauldronBubblesHtml(bubbleCount, bubSizes)}</div>` : ""}
           </div>
           <div class="serve-hint" id="serve-hint"></div>
         </div>
