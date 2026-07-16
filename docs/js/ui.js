@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v398"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v399"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -269,7 +269,7 @@ function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoj
 // canvas more than others, so a few get scaled down to sit comfortably.
 const CHAR_SCALE = { owl: 0.76, tortoise: 0.82, hare: 0.9, fish: 0.66, pigs_moving: 0.78, gingerbread: 0.85 };
 // per-character vertical nudge in the portrait frame (% of the frame width; positive = lower)
-const CHAR_OFFY = { fish: 9, bo_peep: 2 };
+const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5 };
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -6458,7 +6458,7 @@ function renderScoop() {
     <div class="scoop-bg mg-fullbleed" id="scoop-bg"></div>
     <div class="scoop-stage" id="scoop-stage">
       <div class="scoop-craft" id="scoop-craft">
-        <div class="scoop-bowl" id="scoop-bowl" style="font-size:392px">${ART.tag(ROUND.villain ? "queen_scoop_spoon" : "scoop_spoon", "🥄")}<img class="art scoop-glitter-tip" id="scoop-glitter-tip" src="${ART.url(ROUND.villain ? "queen_scoop_glitter_tip" : "scoop_glitter_tip")}" alt="" draggable="false"></div>
+        <div class="scoop-bowl" id="scoop-bowl" style="font-size:min(74vw,350px)">${ART.tag(ROUND.villain ? "queen_scoop_spoon" : "scoop_spoon", "🥄")}<img class="art scoop-glitter-tip" id="scoop-glitter-tip" src="${ART.url(ROUND.villain ? "queen_scoop_glitter_tip" : "scoop_glitter_tip")}" alt="" draggable="false"></div>
         <div class="scoop-bubbles" id="scoop-bubbles"></div>
       </div>
       <div class="scoop-front" id="scoop-front"></div>
