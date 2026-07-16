@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v367"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v368"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5579,10 +5579,14 @@ const QUEEN_PACKAGES = [
   { gold: 70,  scoops: 5 },
   { gold: 120, scoops: 7 },
 ];
+// Two-part intro monologues: she delivers [0] on her first slide, then [1] on the second.
 const QUEEN_LINES = [
-  "Your darling little Pet is MINE now. Scoop from my cursed pantry and brew my ransom potion… or never see it again!",
-  "Such a sweet Pet you have — had. Pop my bubbles, brew my recipe, and perhaps I'll return it.",
-  "A potion for a Pet, that's the bargain. My pantry is poisoned in places — mix carefully, dearie."
+  ["Your darling little Pet is MINE now — locked in my tower, trembling behind the glass, squeaking for a rescue that will not come.",
+   "But I am nothing if not generous, sweetling. Brew me ONE perfect ransom potion from my cursed pantry… and perhaps you'll cradle the wretched thing again."],
+  ["Such a sweet, sweet Pet you had. It wriggled so prettily when I plucked it from your little shop and spirited it away.",
+   "So here is my bargain: pop my bubbles, match my recipe to the letter, and keep my hidden poisons OUT of the brew. Do that, and it is yours once more."],
+  ["A potion for a Pet — that is the whole of the bargain, and oh, how I do adore a bargain struck in the dark.",
+   "But mind yourself, dearie: my pantry is laced with poison in places. One careless drop and the deal is OFF… and your Pet stays with me forever."]
 ];
 function queenWish() {
   const any = {}, primary = {};
@@ -5598,7 +5602,7 @@ function queenWish() {
     allergy: "Poison", allergy2: null, boss: false, bandTight: 1, bandShrink: BALANCE.BAND_SHRINK_PER_ADD };
 }
 function queenCustomer() {
-  return { id: "queen", name: "The Evil Queen", emoji: "👑", location: "The Dark Tower", line: R.pick(QUEEN_LINES) };
+  return { id: "queen", name: "The Evil Queen", emoji: "👑", location: "The Dark Tower", line: R.pick(QUEEN_LINES)[0] };
 }
 // The Evil Queen's story-mode card — she stands LARGE in her scene (chamber for the demand,
 // throne room for the reckoning). `showName` toggles her name plate; a beat with her figure keeps
@@ -5618,15 +5622,24 @@ function queenStoryCard(bg, pose, belowHtml, showName) {
       </div>
     </div>`;
 }
-// BEAT 1 — she appears in her chamber and makes her demand: just her, name + speech, then Continue.
+// BEAT 1 — she looms in her chamber and gloats over your captured Pet (pose 1).
 function renderQueenIntro() {
   SFX.unlock(); SFX.fanfare();
-  QUEEN = { wish: queenWish() };
-  const line = R.pick(QUEEN_LINES);
+  QUEEN = { wish: queenWish(), lines: R.pick(QUEEN_LINES) };
   const below = `
-    <div class="story-speech">“${line}”</div>
+    <div class="story-speech">“${QUEEN.lines[0]}”</div>
     <div class="queen-btns"><button class="btn story-next" id="queen-next">Continue  ▸</button></div>`;
   html("event", queenStoryCard("queen_chamber", 1, below, true));
+  on("#queen-next", "click", renderQueenIntro2);
+  show("event");
+}
+// BEAT 2 — she lays out the bargain with a grand flourish (pose 4, the arms-open gloat).
+function renderQueenIntro2() {
+  if (!QUEEN || !QUEEN.lines) return renderQueenIntro();
+  const below = `
+    <div class="story-speech">“${QUEEN.lines[1]}”</div>
+    <div class="queen-btns"><button class="btn story-next" id="queen-next">Continue  ▸</button></div>`;
+  html("event", queenStoryCard("queen_chamber", 4, below, true));
   on("#queen-next", "click", renderQueenOffer);
   show("event");
 }
