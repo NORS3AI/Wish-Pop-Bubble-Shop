@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v361"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v362"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7130,6 +7130,31 @@ function cauldronBubblesHtml(n, sizes) {
   }
   return s;
 }
+// The Bubble Bath's ever-present rainbow bubbles. Unlike the mix bubbles (which change with the
+// ingredients), these are generated ONCE per round and stored, then re-rendered each paint at
+// their CURRENT animation phase — so tapping an ingredient or charm doesn't respawn/snap them.
+function bathAmbientBubblesHtml() {
+  if (!ROUND.bathBubbles) {
+    const sizes = [18, 26, 36, 48, 62];
+    ROUND.bathBubbles = [];
+    for (let i = 0; i < 8; i++) {
+      const dur = +(5.5 + Math.random() * 3.5).toFixed(2);
+      ROUND.bathBubbles.push({
+        sz: sizes[Math.floor(Math.random() * sizes.length)],
+        dur,
+        left: +(6 + Math.random() * 88).toFixed(1),
+        drift: Math.round(Math.random() * 16 - 8),
+        phase: Math.random() * dur,                          // its starting spot in the rise cycle
+      });
+    }
+    ROUND.bathBubblesStart = Date.now();
+  }
+  const HIT = 26, t = (Date.now() - ROUND.bathBubblesStart) / 1000;
+  return ROUND.bathBubbles.map(b => {
+    const delay = (-((t + b.phase) % b.dur)).toFixed(2);     // resume right where it is now → no snap
+    return `<span class="cbub" style="--sz:${b.sz}px;left:${b.left}%;width:${b.sz + HIT}px;height:${b.sz + HIT}px;margin-left:${b.drift}px;animation-duration:${b.dur}s;animation-delay:${delay}s"></span>`;
+  }).join("");
+}
 // It's Wish POP, after all — the drifting cauldron bubbles pop on tap: a soft rising
 // bloop and a quick burst-and-fade in place. Purely for delight, no gameplay effect.
 function popCauldronBubble(bub) {
@@ -7181,7 +7206,7 @@ function paintMix() {
   // gets its own layer of iridescent rainbow soap bubbles that drift up even with an empty pot.
   const isBath = equippedCauldronArt() === "cauldron_royalbath";
   const bubFront = "";                                                       // bath bubbles rise from BEHIND the tub (like every cauldron)
-  const ambientHtml = isBath ? `<div class="caul-bubbles ambient">${cauldronBubblesHtml(8, [18, 26, 36, 48, 62])}</div>` : "";
+  const ambientHtml = isBath ? `<div class="caul-bubbles ambient">${bathAmbientBubblesHtml()}</div>` : "";
   const faceSet = equippedMirrorFaces();
   let mirrorHtml = "";
   if (faceSet) {
