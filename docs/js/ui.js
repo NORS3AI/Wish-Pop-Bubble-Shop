@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v356"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v357"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1667,6 +1667,10 @@ function renderAdmin() {
           <button class="btn good small" id="ad-treats">+10 🐸</button>
           <button class="btn good small" id="ad-keys">+10 🗝️</button>
         </div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px">
+          <button class="btn small" id="ad-unlock-skins">🎨 Unlock all skins (preview)</button>
+        </div>
+        <p class="muted" style="font-size:11px;text-align:center;margin:6px 0 0">Owns every cauldron &amp; familiar so you can try them in 🎨 My Skins right now — including locked story ones.</p>
       </div>
       <div class="card" style="margin-bottom:10px">
         <div style="font-weight:800;margin-bottom:8px">🐺 The Wolf <span class="muted" style="font-weight:600;font-size:12px">· visit ${Math.min((GAME.wolfArcStep||0)+1, WOLF_VISITS.length)}/${WOLF_VISITS.length}${(GAME.wolfArcStep||0)>=WOLF_VISITS.length?" (done)":""}</span></div>
@@ -1765,6 +1769,7 @@ function renderAdmin() {
   on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
   on("#ad-treats", "click", () => { GAME.treats += 10; save(); toast("+10 treats 🐸"); renderAdmin(); });
   on("#ad-keys", "click", () => { GAME.keys = (GAME.keys || 0) + 10; save(); toast("+10 keys 🗝️"); renderAdmin(); });
+  on("#ad-unlock-skins", "click", () => { GAME.owned = GAME.owned || {}; allSkins().forEach(c => { GAME.owned[c.id] = true; }); save(); toast("🎨 All skins unlocked — try them in My Skins!"); renderAdmin(); });
   on("#ad-back", "click", renderStart);
   show("admin");
 }
