@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v387"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v388"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2335,14 +2335,14 @@ function buySkin(id) {
   if (cz && cz.well) { toast("🌟 Toss a coin at Wishy's Wishing Well — this rare skin only turns up there!"); return; }
   if (cz && cz.pearl) {
     if ((GAME.pearls || 0) < cz.pearl) { toast(`Need ${cz.pearl} pearls — Wishy the Fish pays in those!`); return; }
-    GAME.pearls -= cz.pearl; GAME.owned[id] = true; save();
-    SFX.bigCoin && SFX.bigCoin();
-    toast(`${PEARL} Bought ${cz.name}!`); renderWardrobe(); return;
+    GAME.pearls -= cz.pearl; save();
+    grantSkin(id, { kicker: "Purchased!" });   // unified new-skin overlay (equip now / add to collection)
+    renderWardrobe(); return;
   }
   const cost = BALANCE.STARDUST_SKIN_COST;
   if (GAME.stardust < cost) { toast("Not enough Stardust."); return; }
-  GAME.stardust -= cost; GAME.owned[id] = true; save();
-  const c = D.COSMETIC_BY_ID[id]; toast(`✨ Bought ${c.name}!`);
+  GAME.stardust -= cost; save();
+  grantSkin(id, { kicker: "Purchased!" });     // unified new-skin overlay (equip now / add to collection)
   renderWardrobe();
 }
 
