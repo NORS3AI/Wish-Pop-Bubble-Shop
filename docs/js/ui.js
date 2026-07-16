@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v351"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v352"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -151,6 +151,44 @@ function startOvenFlicker() {
     }
   }, 115);
 }
+// Occasional ember burst: a few glowing sparks drift up from the flame door, plus a faint
+// smoke wisp. Fires every 5-10s (random gap), self-cleans when you leave the oven's mix screen.
+function stopOvenEmbers() { if (ovenEmberTimer) { clearTimeout(ovenEmberTimer); ovenEmberTimer = null; } }
+function spawnOvenEmbers() {
+  const layer = document.querySelector("#screen-mix .oven-embers");
+  if (!layer) { stopOvenEmbers(); return; }                          // left the oven's mix screen
+  const n = 3 + Math.floor(Math.random() * 3);                       // 3-5 sparks
+  for (let i = 0; i < n; i++) {
+    const e = document.createElement("span");
+    e.className = "ember";
+    const x = 30 + Math.random() * 40;                               // start across the flame door
+    const drift = (Math.random() * 2 - 1) * 26;                      // sideways wander as it rises
+    const rise = 90 + Math.random() * 60;                            // how far up it floats
+    const dur = 1400 + Math.random() * 1200;                         // 1.4-2.6s life
+    const sz = 3 + Math.random() * 4;
+    e.style.left = x + "%";
+    e.style.setProperty("--dx", drift + "px");
+    e.style.setProperty("--rise", -rise + "px");
+    e.style.setProperty("--dur", dur + "ms");
+    e.style.width = e.style.height = sz.toFixed(1) + "px";
+    e.style.animationDelay = (Math.random() * 400).toFixed(0) + "ms";
+    layer.appendChild(e);
+    setTimeout(() => e.remove(), dur + 500);
+  }
+  // faint smoke wisp roughly half the time so it stays subtle
+  if (Math.random() < 0.6) {
+    const s = document.createElement("span");
+    s.className = "ember-smoke";
+    s.style.left = (38 + Math.random() * 24) + "%";
+    const sdur = 2600 + Math.random() * 1400;
+    s.style.setProperty("--dur", sdur + "ms");
+    s.style.setProperty("--dx", ((Math.random() * 2 - 1) * 18) + "px");
+    layer.appendChild(s);
+    setTimeout(() => s.remove(), sdur + 300);
+  }
+  ovenEmberTimer = setTimeout(spawnOvenEmbers, 5000 + Math.random() * 5000);   // next burst in 5-10s
+}
+function startOvenEmbers() { stopOvenEmbers(); ovenEmberTimer = setTimeout(spawnOvenEmbers, 2000 + Math.random() * 3000); }
 // Shuffle-bag face picker: draws every face once (random order) before any repeats, so a normal
 // fill never repeats a face; only removing ingredients and adding more (pet Undo) reshuffles and
 // can repeat. Reshuffles avoid showing the same face back-to-back.
@@ -293,6 +331,7 @@ let mixPulseColor = null;      // set on ingredient add → one-shot aura pulse 
 let mixPopStep = 0;            // rising pitch as you pop cauldron bubbles in a row
 let mixPrevFace = null;        // last mirror-face index shown, so it crossfades to the next one
 let ovenFlickerTimer = null;   // drives the oven pot's firelight with genuinely random brightness (no loop)
+let ovenEmberTimer = null;     // schedules the occasional ember burst + smoke wisp (every 5-10s)
 
 /* --- helpers ------------------------------------------------------------ */
 const $ = sel => document.querySelector(sel);
@@ -7132,7 +7171,7 @@ function paintMix() {
   // Queen's Mirror: pick the face for this ingredient count and crossfade from the previous one
   // Oven pot: a flickering firelight glow over its flame door (oven skin only)
   const ovenHtml = (equippedCauldronArt() === "cauldron_oven")
-    ? `<div class="oven-glow"></div><div class="oven-fire"></div>` : "";
+    ? `<div class="oven-glow"></div><div class="oven-fire"></div><div class="oven-embers"></div>` : "";
   const faceSet = equippedMirrorFaces();
   let mirrorHtml = "";
   if (faceSet) {
@@ -7210,7 +7249,8 @@ function paintMix() {
   }
   wireDoubleTapServe();
   wireFamiliar("mix");
-  if (ovenHtml) { if (!ovenFlickerTimer) startOvenFlicker(); } else stopOvenFlicker();   // oven firelight (random, no loop)
+  if (ovenHtml) { if (!ovenFlickerTimer) startOvenFlicker(); if (!ovenEmberTimer) startOvenEmbers(); }   // oven firelight + embers (random, no loop)
+  else { stopOvenFlicker(); stopOvenEmbers(); }
   ROUND.inventory.forEach(inst => { if (inst && inst._glow) delete inst._glow; });
   const rc = document.getElementById("rush-clock"); if (rc) rc.style.display = "none";
 }

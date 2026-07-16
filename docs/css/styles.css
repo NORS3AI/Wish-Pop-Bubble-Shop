@@ -2011,6 +2011,29 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .oven-glow { left: 2%; top: 10%; width: 96%; height: 82%; filter: blur(34px); opacity: .62;
   background: radial-gradient(circle, rgba(255,120,25,.78), rgba(170,35,0,0) 64%);
   transition: opacity .34s ease-out; }
+/* Occasional embers + smoke: sparks and a wisp are spawned from JS (spawnOvenEmbers) every 5-10s.
+   Each element carries its own --dx / --rise / --dur so no two drift alike. */
+.oven-embers { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 4;
+  pointer-events: none; overflow: visible; }
+.oven-embers .ember { position: absolute; top: 46%; border-radius: 50%;
+  background: radial-gradient(circle, #fff7dc 0%, #ffbf47 45%, rgba(255,120,20,0) 72%);
+  box-shadow: 0 0 5px 1px rgba(255,170,60,.9); mix-blend-mode: screen; opacity: 0;
+  will-change: transform, opacity; animation: emberRise var(--dur, 1800ms) ease-out forwards; }
+.oven-embers .ember-smoke { position: absolute; top: 42%; width: 20px; height: 20px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(30,26,22,.42), rgba(30,26,22,0) 70%);
+  filter: blur(4px); opacity: 0; will-change: transform, opacity;
+  animation: emberSmoke var(--dur, 3000ms) ease-out forwards; }
+@keyframes emberRise {
+  0%   { transform: translate(0, 0) scale(.7); opacity: 0; }
+  14%  { opacity: 1; }
+  70%  { opacity: .9; }
+  100% { transform: translate(var(--dx, 0), var(--rise, -110px)) scale(.4); opacity: 0; }
+}
+@keyframes emberSmoke {
+  0%   { transform: translate(0, 0) scale(.5); opacity: 0; }
+  22%  { opacity: .5; }
+  100% { transform: translate(var(--dx, 0), -120px) scale(2.6); opacity: 0; }
+}
 /* Queen's Mirror: face layer sits BEHIND the pot image (z 0 < image z 2) and shows through the
    transparent mirror oval. Each face art shares the pot's canvas, so it always lands in the mirror.
    A new face fades in over the previous one when you add an ingredient. */
