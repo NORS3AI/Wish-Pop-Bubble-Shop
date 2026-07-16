@@ -2079,6 +2079,14 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   background: radial-gradient(circle at 36% 32%, #fff, rgba(255,255,255,.55) 28%, var(--mix-color, #c48bff) 58%, var(--mix-color, #c48bff) 100%);
   box-shadow: 0 0 8px 2px var(--mix-color, #c48bff), 0 0 17px 5px var(--mix-color, #c48bff);
   filter: saturate(1.5) brightness(1.12); }
+/* Royal Bubble Bath: its own iridescent soap/pearl bubbles — a rainbow sheen instead of the mix
+   colour, matching the pearly bubbles painted on the tub. Still poppable (styling only). */
+.caul-art.skin-cauldron_royalbath .cbub::before {
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255,255,255,.98), rgba(255,255,255,.32) 26%, rgba(255,255,255,0) 52%),
+    conic-gradient(from 200deg, #ffd6f0, #d6ecff, #d6fff0, #fff7d6, #ffe0d6, #ecd6ff, #d6f0ff, #ffd6f0);
+  box-shadow: 0 0 8px 2px rgba(255,255,255,.55), 0 0 16px 5px rgba(196,210,255,.5);
+  filter: saturate(1.4) brightness(1.08); }
 @keyframes cbubRise {
   0% { transform: translateY(0) scale(.5); opacity: 0; }
   8% { opacity: .95; }
