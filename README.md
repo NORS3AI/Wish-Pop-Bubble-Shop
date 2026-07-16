@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐠 **Wishy's Fish Bowl — a brand-new rare cauldron.** Toss a coin at Wishy's Wishing Well and,
+  if you're lucky, you'll win his very own fish-bowl cauldron. A friendly fish swims inside the
+  glass, gently bobbing up and down, and a *different* fish glides into view with every ingredient
+  you add. It's a scarce find — the Well is the only place it ever turns up.
+
 - 🖤 **The Evil Queen gets the full story-scene treatment.** Her ransom event now plays out like
   a story chapter: she makes her demand from her moonlit chamber, then reacts from her throne
   room — furious when you beat her, cackling when your brew fails. Her brewing takes place in a
