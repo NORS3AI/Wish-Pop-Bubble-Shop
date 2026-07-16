@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v394"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v396"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -6458,7 +6458,7 @@ function renderScoop() {
     <div class="scoop-bg mg-fullbleed" id="scoop-bg"></div>
     <div class="scoop-stage" id="scoop-stage">
       <div class="scoop-craft" id="scoop-craft">
-        <div class="scoop-bowl" id="scoop-bowl" style="font-size:${Math.round(178 * ART.getScale("scoop_spoon"))}px">${ART.tag(ROUND.villain ? "queen_scoop_spoon" : "scoop_spoon", "🥄")}<img class="art scoop-glitter-tip" id="scoop-glitter-tip" src="${ART.url(ROUND.villain ? "queen_scoop_glitter_tip" : "scoop_glitter_tip")}" alt="" draggable="false"></div>
+        <div class="scoop-bowl" id="scoop-bowl" style="font-size:178px">${ART.tag(ROUND.villain ? "queen_scoop_spoon" : "scoop_spoon", "🥄")}<img class="art scoop-glitter-tip" id="scoop-glitter-tip" src="${ART.url(ROUND.villain ? "queen_scoop_glitter_tip" : "scoop_glitter_tip")}" alt="" draggable="false"></div>
         <div class="scoop-bubbles" id="scoop-bubbles"></div>
       </div>
       <div class="scoop-front" id="scoop-front"></div>
@@ -6466,13 +6466,16 @@ function renderScoop() {
     </div>
     ${hud("Scoop Phase")}
     <button class="mute-btn" id="mute-btn" title="Sound on/off">${SFX.isMuted() ? "🔇" : "🔊"}</button>
+    <div class="scoop-count" id="scoop-count" aria-label="bubbles scooped">
+      <img class="scoop-count-bub" src="${ART.url("bubble")}" alt="" draggable="false">
+      <span class="scoop-count-n" id="scoop-count-n">0</span>
+    </div>
     <div class="scoop-head">
       <div class="scoop-sub" id="scoop-step">Scoop 1 of ${scoops}</div>
       <div class="scoop-instr" id="scoop-text">✋ Swipe side to side to shake off the glitter!</div>
     </div>
     <div class="scoop-controls">
       <div class="scoop-result" id="scoop-result"></div>
-      <div class="spoon-size" id="spoon-size"><button class="sz-btn" id="spoon-smaller">−</button><span class="muted">spoon size</span><button class="sz-btn" id="spoon-bigger">+</button></div>
       <div class="row">
         <button class="btn secondary" id="auto-sift">✨ Shake for me</button>
         <button class="btn" id="scoop-continue" disabled>Continue</button>
@@ -6589,7 +6592,7 @@ function renderScoop() {
     b.style.setProperty("--fx", rnd(-30, 30) + "px"); b.classList.add("floatup");
     revealed++;
     SFX.count(k); if (navigator.vibrate) navigator.vibrate(5);
-    const rs = $("#scoop-result"); if (rs) rs.textContent = `${revealed} bubble${revealed === 1 ? "" : "s"} so far`;
+    const cn = $("#scoop-count-n"); if (cn) { cn.textContent = revealed; cn.parentNode.classList.remove("bumped"); void cn.parentNode.offsetWidth; cn.parentNode.classList.add("bumped"); }
   }
   function shakeTick(intensity) {
     if (state !== "shaking") return;
@@ -6747,13 +6750,6 @@ function renderScoop() {
   });
   on("#scoop-continue", "click", () => { if (itemGateBlocks()) return; if (autoIv) clearInterval(autoIv); renderPop(); });
   on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
-  const resizeSpoon = delta => {
-    const s = Math.max(0.4, Math.min(2.2, +(ART.getScale("scoop_spoon") + delta).toFixed(2)));
-    ART.setScale("scoop_spoon", s);
-    const bowl = $("#scoop-bowl"); if (bowl) bowl.style.fontSize = Math.round(178 * s) + "px";
-  };
-  on("#spoon-smaller", "click", () => resizeSpoon(-0.1));
-  on("#spoon-bigger", "click", () => resizeSpoon(0.1));
 
   // Start with an EMPTY sifter, then dip it into the glitter for the very first scoop.
   state = "idle";

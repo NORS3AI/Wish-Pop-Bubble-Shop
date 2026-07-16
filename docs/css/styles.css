@@ -345,7 +345,15 @@ html, body {
 .scoop-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; }
 .scoop-front { position: absolute; inset: 0; z-index: 3; background-size: cover; background-position: center; pointer-events: none; }
 /* floating chrome over the scene */
-.scoop-head { position: absolute; top: calc(var(--safe-t) + 46px); left: 0; right: 0; z-index: 12; text-align: center; pointer-events: none; }
+/* running bubble tally — one of our bubbles, pinned at the top, with the live count inside it */
+.scoop-count { position: absolute; top: calc(var(--safe-t) + 44px); left: 50%; transform: translateX(-50%); z-index: 13;
+  width: 56px; height: 56px; display: grid; place-items: center; pointer-events: none; }
+.scoop-count-bub { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
+.scoop-count-n { position: relative; z-index: 2; font-family: var(--ff-display); font-size: 24px; font-weight: 900; color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 7px rgba(120,180,255,.75); }
+.scoop-count.bumped { animation: scoopCountBump .28s ease; }
+@keyframes scoopCountBump { 0% { transform: translateX(-50%) scale(1); } 40% { transform: translateX(-50%) scale(1.18); } 100% { transform: translateX(-50%) scale(1); } }
+.scoop-head { position: absolute; top: calc(var(--safe-t) + 104px); left: 0; right: 0; z-index: 12; text-align: center; pointer-events: none; }
 .scoop-sub { font-size: 13px; color: #ffe6a8; text-shadow: 0 2px 5px rgba(0,0,0,.85); }
 .scoop-instr { font-size: 17px; font-weight: 800; min-height: 24px; margin: 2px 16px 0; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.95); }
 .scoop-controls { position: absolute; left: 0; right: 0; bottom: calc(var(--safe-b) + 8px); z-index: 12;
@@ -1190,12 +1198,6 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   font-family: var(--ff-display); font-size: 21px; color: #fff8e0; text-shadow: 0 2px 4px rgba(20,40,10,.85); }
 .vip-yes:active { transform: scale(.98); }
 .vip-no { background: none; border: none; color: #ffe6a8; font-family: var(--ff-display); font-size: 16px; text-decoration: underline; cursor: pointer; padding: 5px 8px; }
-
-/* --- spoon resize control (scoop phase) --- */
-.spoon-size { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 2px 0 0; font-size: 12px; }
-.sz-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--card);
-  color: var(--ink); font-size: 18px; font-weight: 800; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.sz-btn:active { transform: scale(.9); }
 
 /* --- custom BUBBLE images (pop phase + scoop). Class sits on the container so
    current and future bubbles are covered without rewiring. --- */
