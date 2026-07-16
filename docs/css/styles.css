@@ -1774,8 +1774,12 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* The Evil Queen — ransom brewing */
 /* The Evil Queen's story-mode scene: she stands tall and HIGH so her face is never buried;
    figure beats keep their text minimal, and the info-heavy offer beat drops her entirely. */
-.story-figure.queen { height: 92vh; bottom: 0; }
+/* She's a big image with a drop-shadow, so the default slide-up entrance repaints her every frame
+   and lags. Give her a plain opacity fade on a promoted GPU layer instead — smooth, no jank. */
+.story-figure.queen { height: 92vh; bottom: 0; will-change: opacity; transform: translateX(-50%) translateZ(0);
+  animation: queenFigIn .28s ease-out; }
 .story-figure.queen img.story-face { height: 100%; max-width: 100vw; }
+@keyframes queenFigIn { from { opacity: 0; } to { opacity: 1; } }
 .queen-card .story-below { gap: 9px; }
 .queen-card.nofig { justify-content: center; }   /* offer beat has no figure — center the bargain */
 .queen-offer-title { font-weight: 900; font-size: 19px; color: #fff6e6; letter-spacing: .3px;

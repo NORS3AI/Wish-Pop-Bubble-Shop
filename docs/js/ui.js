@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v376"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v377"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5659,6 +5659,7 @@ function queenStoryCard(bg, pose, belowHtml, showName) {
 // BEAT 1 — she looms in her chamber and gloats over your captured Pet (pose 1).
 function renderQueenIntro() {
   SFX.unlock(); SFX.fanfare();
+  for (let i = 1; i <= 6; i++) { try { const im = new Image(); im.src = `art/queen_pose_${i}.webp?v=${BUILD}`; } catch (e) {} }  // warm all her poses so later slides don't decode-jank
   QUEEN = { wish: queenWish(), lines: R.pick(QUEEN_LINES) };
   const below = `
     <div class="story-speech">“${QUEEN.lines[0]}”</div>
