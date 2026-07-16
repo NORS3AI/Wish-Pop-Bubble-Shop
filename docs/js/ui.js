@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v375"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v376"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -205,7 +205,13 @@ function mixLightningStrike() {
     setTimeout(() => set("0.12", 90), t);                                     // dip between flickers
     t += 60 + Math.random() * 90;
   }
-  setTimeout(() => set("0", (420 + Math.random() * 480) | 0), t);             // final decay
+  if (Math.random() < 0.33) {                                                 // ~1 in 3: the glow lingers
+    setTimeout(() => set((0.62 + Math.random() * 0.18).toFixed(2), 180), t);  // room settles into a soft lit glow
+    t += 280 + Math.random() * 260;                                           // hold it a beat so you can relish it
+    setTimeout(() => set("0", (2100 + Math.random() * 1500) | 0), t);         // long, slow fade — like distant lightning dying away
+  } else {
+    setTimeout(() => set("0", (420 + Math.random() * 480) | 0), t);           // normal quick decay
+  }
 }
 function scheduleMixLightning() {
   const gap = 1800 + Math.random() * 4200;                    // 1.8-6s between strikes (irregular, but frequent enough to see)
