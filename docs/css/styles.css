@@ -1772,6 +1772,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cake-study-bar { width: 100%; max-width: 340px; height: 10px; border-radius: 6px; background: rgba(255,255,255,.15); overflow: hidden; }
 .cake-study-bar > i { display: block; height: 100%; width: 100%; border-radius: 6px; background: linear-gradient(90deg,#ffd76a,#ff9de0); }
 /* The Evil Queen — ransom brewing */
+.queen-portrait { height: min(38vh, 300px); width: auto; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(90,0,90,.55)); }
 .queen-buys { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px; }
 .queen-foe { display: flex; align-items: center; gap: 10px; padding: 4px 2px; font-size: 13px; }
 .queen-face { font-size: 38px; line-height: 1; }

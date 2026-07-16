@@ -19,6 +19,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🖤 **The Evil Queen has arrived in person.** Her ransom event now shows her full hand-painted
+  portrait instead of a plain crown icon (with six expressions ready for future moments).
+
 - 👑 **Two royal cauldrons for King's Courtyard.** Beat the King's Courtyard finale and you'll
   unlock a jewel-crusted **King's Crown** pot and a **Royal Bubble Bath** (complete with two
   crowned rubber duckies). The magical glow and rising bubbles line up perfectly on each one's

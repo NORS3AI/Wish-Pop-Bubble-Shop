@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v362"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v363"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -5608,8 +5608,8 @@ function renderQueenIntro() {
   const afford = g => GAME.gold >= g;
   html("event", `
     ${hud("The Evil Queen")}
-    <div class="grow center" style="gap:12px;overflow-y:auto">
-      <div class="ph big">👑</div>
+    <div class="grow" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;overflow-y:auto;padding-top:6px">
+      <img class="queen-portrait" src="art/queen_pose_4.webp?v=${BUILD}" alt="The Evil Queen" draggable="false">
       <div style="font-weight:800;font-size:20px">The Evil Queen</div>
       <div class="speech">“${line}”</div>
       <div class="card" style="width:100%;max-width:330px">
