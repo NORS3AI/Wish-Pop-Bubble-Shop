@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v372"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v373"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -193,24 +193,30 @@ function startOvenEmbers() { stopOvenEmbers(); ovenEmberTimer = setTimeout(spawn
 // blue-lit room layer bright (sometimes a quick double/triple flicker) then fades it out — timed
 // irregularly so it never feels like a loop. Self-cleans when you leave the villain mix screen.
 function stopMixLightning() { if (mixLightningTimer) { clearTimeout(mixLightningTimer); mixLightningTimer = null; } }
-function mixLightningStrike(el) {
-  const flashes = 1 + Math.floor(Math.random() * 3);          // 1-3 flickers per strike
+function mixLightningStrike() {
+  const el = document.querySelector("#screen-mix .mix-lightning");
+  const glare = document.querySelector("#screen-mix .mix-glare");
+  if (!el) { stopMixLightning(); return; }                    // left the villain mix screen
+  const set = (o, dur) => {                                   // brighten the room + pop the glare together
+    el.style.transition = "opacity " + dur + "ms ease-out"; el.style.opacity = o.img;
+    if (glare) { glare.style.transition = "opacity " + dur + "ms ease-out"; glare.style.opacity = o.glare; }
+  };
+  const flashes = 2 + Math.floor(Math.random() * 2);          // 2-3 flickers per strike
   let t = 0;
   for (let i = 0; i < flashes; i++) {
-    const peak = (0.62 + Math.random() * 0.38).toFixed(2);    // varying brightness
-    setTimeout(() => { el.style.transition = "opacity 45ms ease-out"; el.style.opacity = peak; }, t);
-    t += 40 + Math.random() * 70;
-    setTimeout(() => { el.style.transition = "opacity 110ms ease-out"; el.style.opacity = "0.10"; }, t);
-    t += 55 + Math.random() * 110;
+    const peak = 0.9 + Math.random() * 0.1;
+    setTimeout(() => set({ img: peak.toFixed(2), glare: (0.55 + Math.random() * 0.4).toFixed(2) }, 30), t);   // snap bright
+    t += 55 + Math.random() * 55;
+    setTimeout(() => set({ img: "0.14", glare: "0" }, 90), t);                                                // dip between flickers
+    t += 60 + Math.random() * 90;
   }
-  setTimeout(() => { el.style.transition = "opacity " + (350 + Math.random() * 550).toFixed(0) + "ms ease-out"; el.style.opacity = "0"; }, t);
+  setTimeout(() => set({ img: "0", glare: "0" }, (420 + Math.random() * 480) | 0), t);                        // final decay
 }
 function scheduleMixLightning() {
-  const gap = 2600 + Math.random() * 9000;                    // 2.6-11.6s between strikes (irregular)
+  const gap = 1800 + Math.random() * 4200;                    // 1.8-6s between strikes (irregular, but frequent enough to see)
   mixLightningTimer = setTimeout(() => {
-    const el = document.querySelector("#screen-mix .mix-lightning");
-    if (!el) { stopMixLightning(); return; }                  // left the villain mix screen
-    mixLightningStrike(el);
+    if (!document.querySelector("#screen-mix .mix-lightning")) { stopMixLightning(); return; }
+    mixLightningStrike();
     scheduleMixLightning();
   }, gap);
 }
@@ -7308,7 +7314,7 @@ function paintMix() {
   const banner = (!ROUND.villain && GAME.unlocked.undo) ? `${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}` : `🐸${GAME.treats}`;
   html("mix", `
     <div class="mixv2 ${ROUND.villain ? "villain" : ""}">
-      ${ROUND.villain ? `<div class="mix-lightning"></div>` : ""}
+      ${ROUND.villain ? `<div class="mix-lightning"></div><div class="mix-glare"></div>` : ""}
       <div class="m2-head">
         <div class="petbadge ${showPet ? "" : "nopet"}" id="familiar">
           <div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>
