@@ -19,6 +19,14 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 👑 **Two royal cauldrons for King's Courtyard.** Beat the King's Courtyard finale and you'll
+  unlock a jewel-crusted **King's Crown** pot and a **Royal Bubble Bath** (complete with two
+  crowned rubber duckies). The magical glow and rising bubbles line up perfectly on each one's
+  rim, on any phone.
+
+- 🔥 **The Oven cauldron breathes fire.** Its flame door flickers with a genuinely random glow
+  and now puffs the occasional shower of embers and a wisp of smoke.
+
 - 🫧 **Secret treasures in the glitter!** Once in a while (about 1 in 20 scoops) a stray
   shimmering pearl peeks out from the glitter pile. Spot it and tap it before you move on —
   it pops like a bubble and leaves a reward floating there (gold, pearls, or Stardust) for

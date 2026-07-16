@@ -312,6 +312,9 @@ const COSMETICS = {
     // basket is the trophy for completing the Willow-Wish Village finale.
     { id: "cauldron_bopeep",   name: "Bo Peep's Pot",    chip: "🐑", art: true, hunt: "willow" },
     { id: "cauldron_picnic",   name: "Picnic Basket",    chip: "🧺", art: true, finale: "willow" },
+    // King's Courtyard trophies — won for beating the realm's finale (the Cursed King)
+    { id: "cauldron_royalbath", name: "Royal Bubble Bath", chip: "🛁", art: true, finale: "courtyard" },
+    { id: "cauldron_crown",    name: "King's Crown",      chip: "👑", art: true, finale: "courtyard" },
     { id: "cauldron_rose",     name: "Rose Gold",        chip: "🌸" },
     { id: "cauldron_emerald",  name: "Emerald",          chip: "💚" },
     { id: "cauldron_sapphire", name: "Sapphire",         chip: "💙" },
