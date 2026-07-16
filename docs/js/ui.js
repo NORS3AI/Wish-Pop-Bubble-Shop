@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v358"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v360"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7181,7 +7181,7 @@ function paintMix() {
   // gets its own layer of iridescent rainbow soap bubbles that drift up even with an empty pot.
   const isBath = equippedCauldronArt() === "cauldron_royalbath";
   const bubFront = isBath ? " front" : "";                                   // bath bubbles float in front of the tub
-  const ambientHtml = isBath ? `<div class="caul-bubbles ambient front">${cauldronBubblesHtml(8, [8, 11, 14, 18, 23])}</div>` : "";
+  const ambientHtml = isBath ? `<div class="caul-bubbles ambient front">${cauldronBubblesHtml(8, [18, 26, 36, 48, 62])}</div>` : "";
   const faceSet = equippedMirrorFaces();
   let mirrorHtml = "";
   if (faceSet) {
