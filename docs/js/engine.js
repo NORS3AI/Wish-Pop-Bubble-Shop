@@ -172,12 +172,21 @@ function drawCharm(items, exclude) {
   return pool.length ? R.pick(pool) : null;
 }
 // Pick a charm id from a list of already-held charm ids, respecting caps (for the
-// jackpot reward, which is awarded straight into the tray).
+// jackpot reward, which is awarded straight into the tray). Returns null if nothing
+// is available — the caller then gives bubbles instead (no silent "potent" fallback).
 function pickCappedCharm(heldIds, exclude) {
   const held = {}; (heldIds || []).forEach(id => held[id] = (held[id] || 0) + 1);
   const pool = DATA.SPECIAL_CHARM_IDS.filter(id => (held[id] || 0) < (BALANCE.CHARM_CAPS[id] || Infinity) && !(exclude && exclude.includes(id)));
-  return pool.length ? R.pick(pool) : "potent"; // potent/wild are uncapped, so always a fallback
+  return pool.length ? R.pick(pool) : null;
 }
+// Each customer offers only FIVE of the charm types (randomised per round), so you can never
+// accumulate more distinct charms than the tray shows. `exclude` drops types that never apply
+// this round (villains skip "peek" — their needs are already visible).
+function pickAllowedCharms(exclude) {
+  const pool = DATA.SPECIAL_CHARM_IDS.filter(id => !(exclude && exclude.includes(id)));
+  return R.shuffle(pool.slice()).slice(0, 5);
+}
+function charmsExcludedBy(allowed) { return DATA.SPECIAL_CHARM_IDS.filter(id => !allowed.includes(id)); }
 function generateHaul(wish, count, charmFinder, ingredientSet, excludeCharms) {
   const SET = ingredientSet || DATA.INGREDIENTS;
   const needs = wish.needs.map(n => n.type);
@@ -274,7 +283,8 @@ function newRound(state) {
   // charm chance below — the scoop reveals these too, so counts stay consistent.
   if (state.charmFinder) { scoopYields[scoopYields.length - 1] += BALANCE.KEEN_NOSE_BUBBLES; bubbles += BALANCE.KEEN_NOSE_BUBBLES; }
   const SET = state.ingredientSet || DATA.INGREDIENTS;   // the realm's own pantry (defaults to Willow-Wish)
-  const haul = generateHaul(wish, bubbles, !!state.charmFinder, SET);
+  const allowedCharms = pickAllowedCharms(null);         // this customer's five charm types
+  const haul = generateHaul(wish, bubbles, !!state.charmFinder, SET, charmsExcludedBy(allowedCharms));
   // Rare "bonus frenzy" round: seed a couple of bonus bubbles so the runaway chain
   // reliably kicks off (otherwise it depends on the haul happening to have one).
   const bonusFrenzy = R.chance(BALANCE.BONUS_FRENZY_CHANCE);
@@ -288,6 +298,8 @@ function newRound(state) {
     customer, wish, payment, bubblesTotal: bubbles, scoops, scoopYields, scoopJackpots, haul,
     inventory: [],           // ingredient instances drafted from popping
     charms: [],              // special charms held, ready to play in the cauldron
+    allowedCharms,           // the (five) charm types this customer can grant
+    charmsGained: 0,         // total charms gained this round (capped by MAX_CHARMS_PER_ROUND)
     slots: [],               // ingredients (and played Wild charms) in the cauldron
     maxSlots: isBoss ? BALANCE.BOSS_SLOTS : BALANCE.MIX_SLOTS,
     ingredientSet: SET,      // this round's pantry (realm-specific)
@@ -316,12 +328,14 @@ function newVillainRound(opts) {
   scoopJackpots.forEach((j, i) => { if (j) scoopYields[i] += 2; });
   bubbles = scoopYields.reduce((a, b) => a + b, 0);
   if (opts.charmFinder) { scoopYields[scoopYields.length - 1] += BALANCE.KEEN_NOSE_BUBBLES; bubbles += BALANCE.KEEN_NOSE_BUBBLES; }
-  // villains don't gift "peek" — their needs are already shown, so it'd be a dud charm
-  const haul = generateHaul(wish, bubbles, !!opts.charmFinder, SET, ["peek"]);
+  // villains don't gift "peek" — their needs are already shown, so it'd be a dud charm.
+  // Five charm types as usual, chosen from the rest.
+  const allowedCharms = pickAllowedCharms(["peek"]);
+  const haul = generateHaul(wish, bubbles, !!opts.charmFinder, SET, charmsExcludedBy(allowedCharms));
   return {
     customer: opts.customer || { id: "villain", name: "Villain", emoji: "👑", location: "Villain", line: "" },
     wish, payment: 0, bubblesTotal: bubbles, scoops, scoopYields, scoopJackpots, haul,
-    inventory: [], charms: [], slots: [], maxSlots: BALANCE.MIX_SLOTS,
+    inventory: [], charms: [], allowedCharms, charmsGained: 0, slots: [], maxSlots: BALANCE.MIX_SLOTS,
     ingredientSet: SET,
     bonusSpawned: 0, bonusFrenzy: false,
     stats: { scooped: bubbles, popped: 0, ingredients: 0, charms: 0, gold: 0, treats: 0, triples: 0 },
