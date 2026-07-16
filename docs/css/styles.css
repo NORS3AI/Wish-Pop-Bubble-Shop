@@ -1772,7 +1772,19 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cake-study-bar { width: 100%; max-width: 340px; height: 10px; border-radius: 6px; background: rgba(255,255,255,.15); overflow: hidden; }
 .cake-study-bar > i { display: block; height: 100%; width: 100%; border-radius: 6px; background: linear-gradient(90deg,#ffd76a,#ff9de0); }
 /* The Evil Queen — ransom brewing */
-.queen-portrait { height: min(38vh, 300px); width: auto; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(90,0,90,.55)); }
+/* The Evil Queen's story-mode scene: she stands full-height, her controls/terms sit below */
+.story-figure.queen { height: 80vh; bottom: 0; }
+.story-figure.queen img.story-face { height: 100%; max-width: 100vw; }
+.queen-card .story-below { gap: 8px; }
+.queen-terms { font-size: 12.5px; font-weight: 800; color: #ffe6f4; text-align: center; max-width: 400px;
+  background: rgba(38,10,42,.62); padding: 6px 12px; border-radius: 11px; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.queen-terms b { color: #ffd34d; }
+.queen-note { font-size: 12px; line-height: 1.42; color: #ece0ef; text-align: center; max-width: 344px;
+  text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.queen-note b { color: #ffcf6a; }
+.queen-btns { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 8px; }
+.queen-btns .btn { width: 100%; }
+.queen-stats { width: 100%; max-width: 330px; }
 .queen-buys { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px; }
 .queen-foe { display: flex; align-items: center; gap: 10px; padding: 4px 2px; font-size: 13px; }
 .queen-face { font-size: 38px; line-height: 1; }
