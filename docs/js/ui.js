@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v350"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v351"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -134,6 +134,22 @@ const MIRROR_FACES = {
 function equippedMirrorFaces() {
   const key = equippedCauldronArt();
   return MIRROR_FACES[key] || null;
+}
+// Oven firelight: pick a fresh random brightness every ~115ms (the CSS transition smooths between
+// them), so the flicker never repeats a pattern. The halo drifts on its own slower random beat.
+function stopOvenFlicker() { if (ovenFlickerTimer) { clearInterval(ovenFlickerTimer); ovenFlickerTimer = null; } }
+function startOvenFlicker() {
+  stopOvenFlicker();
+  let tick = 0;
+  ovenFlickerTimer = setInterval(() => {
+    const fire = document.querySelector("#screen-mix .oven-fire");
+    if (!fire) { stopOvenFlicker(); return; }                        // left the oven's mix screen
+    fire.style.opacity = (0.56 + Math.random() * 0.44).toFixed(3);   // random flame brightness
+    if (tick++ % 3 === 0) {                                          // halo updates ~1/3 as often → slower, unrelated drift
+      const glow = document.querySelector("#screen-mix .oven-glow");
+      if (glow) glow.style.opacity = (0.40 + Math.random() * 0.48).toFixed(3);
+    }
+  }, 115);
 }
 // Shuffle-bag face picker: draws every face once (random order) before any repeats, so a normal
 // fill never repeats a face; only removing ingredients and adding more (pet Undo) reshuffles and
@@ -276,6 +292,7 @@ let mixFxWasVisible = false;   // tracks the cauldron fx so it fades in only on 
 let mixPulseColor = null;      // set on ingredient add → one-shot aura pulse in that ingredient's color
 let mixPopStep = 0;            // rising pitch as you pop cauldron bubbles in a row
 let mixPrevFace = null;        // last mirror-face index shown, so it crossfades to the next one
+let ovenFlickerTimer = null;   // drives the oven pot's firelight with genuinely random brightness (no loop)
 
 /* --- helpers ------------------------------------------------------------ */
 const $ = sel => document.querySelector(sel);
@@ -7193,6 +7210,7 @@ function paintMix() {
   }
   wireDoubleTapServe();
   wireFamiliar("mix");
+  if (ovenHtml) { if (!ovenFlickerTimer) startOvenFlicker(); } else stopOvenFlicker();   // oven firelight (random, no loop)
   ROUND.inventory.forEach(inst => { if (inst && inst._glow) delete inst._glow; });
   const rc = document.getElementById("rush-clock"); if (rc) rc.style.display = "none";
 }
