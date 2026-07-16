@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎃 **Pumpkin Carriage cauldron — beat the Wicked Stepmother to win it.** A storybook pumpkin coach
+  with golden lanterns and jewelled wheels. One of Cinderella's little mice leans out the carriage
+  door while you brew, and a *different* mouse pops up with every ingredient you add.
+
 - 🐠 **Wishy's Fish Bowl — a brand-new rare cauldron.** Toss a coin at Wishy's Wishing Well and,
   if you're lucky, you'll win his very own fish-bowl cauldron. A friendly fish swims inside the
   glass, gently bobbing up and down, and a *different* fish glides into view with every ingredient

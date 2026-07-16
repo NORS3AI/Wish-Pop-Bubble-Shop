@@ -2122,6 +2122,13 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .caul-art.skin-cauldron_wishy .mirror-faces { animation: fishFloat 4.2s ease-in-out infinite; will-change: transform; }
 @keyframes fishFloat { 0%, 100% { transform: translateY(-1.4%); } 50% { transform: translateY(1.4%); } }
 .caul-art.skin-cauldron_wishy { --rim-t: 22%; --rim-l: 22%; --rim-r: 22%; --bub-t: 24%; --bub-l: 24%; --bub-r: 24%; }
+/* Pumpkin Carriage: the carriage is the pot art (caul-img, z2). A mouse leans OUT the door, so its
+   layer is lifted in FRONT of the carriage (z3, above the art) — the inverse of the fish bowl. No
+   floating; the mice just crossfade. A soft drop-shadow lifts each mouse off the door so it pops.
+   Glow + bubbles rise from the gold rim opening at the very top of the pumpkin. */
+.caul-art.skin-cauldron_carriage .mirror-faces { z-index: 3; }
+.caul-art.skin-cauldron_carriage .mirror-face { filter: drop-shadow(0 5px 7px rgba(0,0,0,.5)); }
+.caul-art.skin-cauldron_carriage { --rim-t: 3%; --rim-l: 26%; --rim-r: 26%; --bub-t: 5%; --bub-l: 28%; --bub-r: 28%; }
 /* the .cbub box is a larger transparent TAP target; the visible bubble is drawn by ::before
    at the real (small) size, centred inside — so small bubbles are easy to catch by tap */
 .cbub { position: absolute; top: 0; opacity: 0; will-change: transform, opacity;

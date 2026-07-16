@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v383"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v384"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -134,6 +134,10 @@ const MIRROR_FACES = {
   // in) with each ingredient, random order with no repeats until every fish has been shown. Each
   // fish art shares the cauldron's 1500x990 canvas, so it always lands inside the bowl.
   cauldron_wishy: ["wishy_fish_1", "wishy_fish_2", "wishy_fish_3", "wishy_fish_4", "wishy_fish_5", "wishy_fish_6"],
+  // Pumpkin Carriage: same cycling mechanism, but the mouse leans OUT the door (rendered in FRONT
+  // of the carriage, not behind), a different one per ingredient. Each mouse shares the carriage's
+  // canvas so it lands right in the doorway. No floating — they just crossfade.
+  cauldron_carriage: ["carriage_mouse_1", "carriage_mouse_2", "carriage_mouse_3", "carriage_mouse_4", "carriage_mouse_5", "carriage_mouse_6"],
 };
 function equippedMirrorFaces() {
   const key = equippedCauldronArt();
@@ -5673,13 +5677,13 @@ const VILLAIN_DEFS = {
   stepmother: {
     name: "The Wicked Stepmother", emoji: "🖤", location: "the Tremaine Manor",
     art: "stepmother_pose", posesN: 10, lines: STEPMOTHER_LINES, ingredients: "STEPMOTHER_INGREDIENTS",
-    skin: null, ownWord: null,
+    skin: "cauldron_carriage", ownWord: "her Carriage",
     bgIntro: "queen_chamber", bgOutro: "queen_throne", offerTitle: "🧪 The Stepmother's Bargain",
     pose: { intro1: 1, intro2: 9, winReact: 3, winDetail: 7, loseReact: 10, loseDetail: 2, allergic: 5 },
     winLine: "“Oh, take the little beast. But do NOT think this makes us friends, child.”",
     poisonLine: "“AH—! Poison?! You clumsy, insolent— *cough*— get OUT of my sight!”",
     loseLine: "“Sloppy work — just as I suspected. Off you go, then.”",
-    winNote: "The Stepmother sniffs and waves you off — but your Pet slips out of the manor and scurries home to you.",
+    winNote: "The Stepmother sniffs and waves you off — but your Pet slips out of the manor and scurries home to you, and her fine pumpkin carriage is yours!",
     poisonNote: "The brew went foul and she got a faceful of it — serves her right! Your Pet takes the chance to bolt home. No prize this time, but no harm done.",
     loseNote: (w, r) => `Not quite a match (${w}% / ${r}%). The Stepmother sneers… but your Pet wriggles free and comes home anyway. Try her again another day.`,
   },
@@ -7360,21 +7364,24 @@ function paintMix() {
   // inside the glass. The back layer renders first (behind the fish); the fish uses the mirror mechanism.
   const isFishbowl = equippedCauldronArt() === "cauldron_wishy";
   const backHtml = isFishbowl ? `<img class="caul-back" src="${ART.url("cauldron_wishy_back")}" alt="" draggable="false">` : "";
+  // Pumpkin Carriage: the carriage IS the pot image; a mouse leans out its door, rendered in FRONT
+  // (the mirror-faces layer is lifted above the pot art via CSS) — the inverse of the fish bowl.
+  const isCarriage = equippedCauldronArt() === "cauldron_carriage";
   const faceSet = equippedMirrorFaces();
   let mirrorHtml = "";
   if (faceSet) {
     faceSet.forEach(k => { try { new Image().src = ART.url(k); } catch (e) {} });   // warm all faces so crossfades never flash
-    const faceIdx = (ROUND.mirrorFace == null) ? null : ROUND.mirrorFace;   // null = dormant (empty pot): dark mirror / empty bowl
+    const faceIdx = (ROUND.mirrorFace == null) ? null : ROUND.mirrorFace;   // null = dormant (empty pot): dark mirror / empty bowl / empty doorway
     const prevIdx = mixPrevFace, changed = prevIdx !== faceIdx;             // covers dormant <-> face and face -> face
     mixPrevFace = faceIdx;
     const dormant = faceIdx == null;
-    // the fish bowl's empty state is just still water (no fish yet) — the Queen's is a dark mirror oval
-    const dormantHtml = isFishbowl ? "" : `<div class="mirror-dormant"></div>`;
+    // fish bowl & carriage empty states show nothing yet (still water / empty doorway); the Queen's is a dark mirror oval
+    const dormantHtml = (isFishbowl || isCarriage) ? "" : `<div class="mirror-dormant"></div>`;
     // The Queen's faces all sit in the SAME mirror oval, so a new face simply covers the old one
-    // (outgoing face stays static underneath). The fish, by contrast, swim at DIFFERENT spots on
-    // the canvas, so the outgoing fish would linger un-covered — it must actively fade OUT as the
-    // new one fades in (a true crossfade), or you'd see two fish at once.
-    const outClass = isFishbowl ? "fading-out" : "";
+    // (outgoing face stays static underneath). The fish and the carriage mice sit at DIFFERENT spots
+    // on the canvas, so the outgoing one would linger un-covered — it must actively fade OUT as the
+    // new one fades in (a true crossfade), or you'd see two at once.
+    const outClass = (isFishbowl || isCarriage) ? "fading-out" : "";
     mirrorHtml = `<div class="mirror-faces">
       ${(changed && prevIdx != null) ? `<img class="mirror-face ${outClass}" src="${ART.url(faceSet[prevIdx])}" alt="" draggable="false">` : ""}
       ${dormant

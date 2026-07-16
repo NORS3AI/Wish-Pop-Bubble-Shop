@@ -350,6 +350,9 @@ const COSMETICS = {
     { id: "cauldron_trashcan", name: "Trash Can",        chip: "🗑️", art: true, achievement: { stat: "recycled", need: 500, desc: "Recycle 500 junk" } },
     // villain-only: won by beating a villain event (not buyable / not in the Well)
     { id: "cauldron_queen",    name: "Queen's Mirror",   chip: "🪞", villain: true, art: true, faces: 6 },
+    // villain-only: won by beating the Wicked Stepmother in King's Courtyard — a pumpkin carriage
+    // with one of Cinderella's mice leaning out the door (a new mouse per ingredient)
+    { id: "cauldron_carriage", name: "Pumpkin Carriage", chip: "🎃", villain: true, art: true, faces: 6 },
     // ball-only: earned by dazzling Cinderella at the Royal Ball (not buyable / not in the Well)
     { id: "cauldron_glass",    name: "Glass Slipper",    chip: "👠", ball: true },
     // hunt-only: earned by finding all the Stepsister's beads in King's Courtyard
