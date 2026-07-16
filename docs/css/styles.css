@@ -1995,7 +1995,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   box-shadow: inset 0 -16px 34px rgba(0,0,0,.55), inset 0 4px 12px rgba(255,214,110,.14), 0 10px 26px rgba(0,0,0,.45); }
 .m2-cauldron.ready .cauldron { animation: cauldronReady 1.1s ease-in-out infinite; border-color: var(--good); }
 @keyframes cauldronReady { 0%,100% { box-shadow: inset 0 -16px 34px rgba(0,0,0,.55), 0 0 10px rgba(126,224,138,.5); } 50% { box-shadow: inset 0 -16px 34px rgba(0,0,0,.55), 0 0 26px 6px rgba(126,224,138,.8); } }
-.serve-hint { height: 15px; margin-top: 3px; font-size: 12px; font-weight: 800; color: var(--good); text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+/* Sit the hint UP between the cauldron's legs (over the pot art), so it's clearly above the
+   used-ingredient row instead of dropping onto it. */
+.serve-hint { position: absolute; left: 0; right: 0; bottom: 5.5%; text-align: center; z-index: 6; pointer-events: none;
+  font-size: 12px; font-weight: 800; color: var(--good); text-shadow: 0 1px 3px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.65); }
 .m2-cauldron.ready .serve-hint { animation: hgpulse 1s infinite; }
 /* --- art cauldron: a glow line at the rim + rising bubbles, both coloured by the
    dominant magic (green the instant the wish is met); bubble count grows with the
