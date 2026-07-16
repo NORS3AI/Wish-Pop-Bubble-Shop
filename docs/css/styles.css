@@ -2087,11 +2087,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    glow ABOVE the pot art (fx-front) so the light reads as glowing bath water, not a hidden inner glow. */
 .caul-art.skin-cauldron_royalbath { --rim-t: 17%; --rim-l: 15%; --rim-r: 15%; --bub-t: 16%; --bub-l: 17%; --bub-r: 17%; }
 .caul-art.skin-cauldron_crown { --rim-t: 10%; --rim-l: 22%; --rim-r: 22%; --bub-t: 12%; --bub-l: 24%; --bub-r: 24%; }
-/* Queen's Mirror has a tall bright gold rim band that hides a behind-the-art glow (it floated,
-   detached, above the pot). Sit the glow ON the rim (in front) so it lights the band like the
-   classic pot's glow hugs its rim. */
-.caul-art.skin-cauldron_queen { --rim-t: 3%; }
-.caul-art.skin-cauldron_queen .caul-fx { z-index: 3; }
+/* Queen's Mirror: glow sits BEHIND the pot (rising over the rim like the classic). Her gold rim
+   is very wide, so the default-width glow spread into a broad, weak, detached haze — narrowing it
+   (bigger insets) concentrates it into a focused rise that hugs the rim. */
+.caul-art.skin-cauldron_queen { --rim-t: 4%; --rim-l: 32%; --rim-r: 32%; }
 /* the .cbub box is a larger transparent TAP target; the visible bubble is drawn by ::before
    at the real (small) size, centred inside — so small bubbles are easy to catch by tap */
 .cbub { position: absolute; top: 0; opacity: 0; will-change: transform, opacity;
