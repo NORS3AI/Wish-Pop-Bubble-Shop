@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v369"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v370"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -189,6 +189,32 @@ function spawnOvenEmbers() {
   ovenEmberTimer = setTimeout(spawnOvenEmbers, 5000 + Math.random() * 5000);   // next burst in 5-10s
 }
 function startOvenEmbers() { stopOvenEmbers(); ovenEmberTimer = setTimeout(spawnOvenEmbers, 2000 + Math.random() * 3000); }
+// Evil Queen's mix chamber: lightning strikes at random intervals. A "strike" flashes the
+// blue-lit room layer bright (sometimes a quick double/triple flicker) then fades it out — timed
+// irregularly so it never feels like a loop. Self-cleans when you leave the villain mix screen.
+function stopMixLightning() { if (mixLightningTimer) { clearTimeout(mixLightningTimer); mixLightningTimer = null; } }
+function mixLightningStrike(el) {
+  const flashes = 1 + Math.floor(Math.random() * 3);          // 1-3 flickers per strike
+  let t = 0;
+  for (let i = 0; i < flashes; i++) {
+    const peak = (0.62 + Math.random() * 0.38).toFixed(2);    // varying brightness
+    setTimeout(() => { el.style.transition = "opacity 45ms ease-out"; el.style.opacity = peak; }, t);
+    t += 40 + Math.random() * 70;
+    setTimeout(() => { el.style.transition = "opacity 110ms ease-out"; el.style.opacity = "0.10"; }, t);
+    t += 55 + Math.random() * 110;
+  }
+  setTimeout(() => { el.style.transition = "opacity " + (350 + Math.random() * 550).toFixed(0) + "ms ease-out"; el.style.opacity = "0"; }, t);
+}
+function scheduleMixLightning() {
+  const gap = 2600 + Math.random() * 9000;                    // 2.6-11.6s between strikes (irregular)
+  mixLightningTimer = setTimeout(() => {
+    const el = document.querySelector("#screen-mix .mix-lightning");
+    if (!el) { stopMixLightning(); return; }                  // left the villain mix screen
+    mixLightningStrike(el);
+    scheduleMixLightning();
+  }, gap);
+}
+function startMixLightning() { stopMixLightning(); scheduleMixLightning(); }
 // Shuffle-bag face picker: draws every face once (random order) before any repeats, so a normal
 // fill never repeats a face; only removing ingredients and adding more (pet Undo) reshuffles and
 // can repeat. Reshuffles avoid showing the same face back-to-back.
@@ -332,6 +358,7 @@ let mixPopStep = 0;            // rising pitch as you pop cauldron bubbles in a 
 let mixPrevFace = null;        // last mirror-face index shown, so it crossfades to the next one
 let ovenFlickerTimer = null;   // drives the oven pot's firelight with genuinely random brightness (no loop)
 let ovenEmberTimer = null;     // schedules the occasional ember burst + smoke wisp (every 5-10s)
+let mixLightningTimer = null;  // schedules the Evil Queen chamber's random lightning strikes
 
 /* --- helpers ------------------------------------------------------------ */
 const $ = sel => document.querySelector(sel);
@@ -7281,6 +7308,7 @@ function paintMix() {
   const banner = (!ROUND.villain && GAME.unlocked.undo) ? `${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}` : `🐸${GAME.treats}`;
   html("mix", `
     <div class="mixv2 ${ROUND.villain ? "villain" : ""}">
+      ${ROUND.villain ? `<div class="mix-lightning"></div>` : ""}
       <div class="m2-head">
         <div class="petbadge ${showPet ? "" : "nopet"}" id="familiar">
           <div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>
@@ -7331,6 +7359,7 @@ function paintMix() {
   wireFamiliar("mix");
   if (ovenHtml) { if (!ovenFlickerTimer) startOvenFlicker(); if (!ovenEmberTimer) startOvenEmbers(); }   // oven firelight + embers (random, no loop)
   else { stopOvenFlicker(); stopOvenEmbers(); }
+  if (ROUND.villain) { if (!mixLightningTimer) startMixLightning(); } else stopMixLightning();   // Queen's chamber lightning
   ROUND.inventory.forEach(inst => { if (inst && inst._glow) delete inst._glow; });
   const rc = document.getElementById("rush-clock"); if (rc) rc.style.display = "none";
 }

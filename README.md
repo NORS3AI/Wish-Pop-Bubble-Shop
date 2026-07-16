@@ -21,7 +21,9 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 - 🖤 **The Evil Queen gets the full story-scene treatment.** Her ransom event now plays out like
   a story chapter: she makes her demand from her moonlit chamber, then reacts from her throne
-  room — furious when you beat her, cackling when your brew fails.
+  room — furious when you beat her, cackling when your brew fails. Her brewing takes place in a
+  storm-lit potion chamber where **lightning strikes at random**, and her pantry is now poisoned
+  apples, purple gems, and cursed trinkets.
 
 - 👑 **Two royal cauldrons for King's Courtyard.** Beat the King's Courtyard finale and you'll
   unlock a jewel-crusted **King's Crown** pot and a **Royal Bubble Bath** (complete with two

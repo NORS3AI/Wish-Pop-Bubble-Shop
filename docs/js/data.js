@@ -94,19 +94,20 @@ INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
 // Base magics are all "need" magics (never Poison). Poison is added at random as a
 // HIDDEN quality to a subset of these each event (see assignQueenPoison in ui.js),
 // so which ingredients are poisonous changes every time — never a primary quality.
-// The Evil Queen's pantry — poisoned apples and purple gems (fits her poison-apple legend).
-// Qualities are unchanged from the old dark set so the recipe balance stays identical.
+// The Evil Queen's pantry — poisoned apples, purple gems and cursed trinkets (fits her legend).
+// Every icon is unique. Magic qualities are unchanged from the old dark set, so the recipe still
+// reads Dread/Frost/Malice/etc. and the balance is identical.
 const QUEEN_INGREDIENTS = [
-  { id: "q_rubyapple",   name: "Ruby Apple",    qualities: ["Shadow", "Dread"],   emoji: "🍎" },
-  { id: "q_sourapple",   name: "Sour Apple",    qualities: ["Malice", "Dread"],   emoji: "🍏" },
-  { id: "q_bloodapple",  name: "Blood Apple",   qualities: ["Dread", "Shadow"],   emoji: "🍎" },
-  { id: "q_wormapple",   name: "Wormy Apple",   qualities: ["Rot", "Malice"],     emoji: "🍏" },
-  { id: "q_candyapple",  name: "Candy Apple",   qualities: ["Rot", "Curse"],      emoji: "🍎" },
-  { id: "q_amethyst",    name: "Amethyst",      qualities: ["Curse", "Malice"],   emoji: "💜" },
-  { id: "q_darkcrystal", name: "Dark Crystal",  qualities: ["Frost", "Dread"],    emoji: "🔮" },
-  { id: "q_violetjewel", name: "Violet Jewel",  qualities: ["Malice", "Frost"],   emoji: "🟣" },
-  { id: "q_hexgem",      name: "Hex Gem",       qualities: ["Shadow", "Curse"],   emoji: "💎" },
-  { id: "q_nightstone",  name: "Nightstone",    qualities: ["Frost", "Rot"],      emoji: "🟪" },
+  { id: "q_rubyapple",   name: "Ruby Apple",     qualities: ["Shadow", "Dread"],   emoji: "🍎" },
+  { id: "q_sourapple",   name: "Sour Apple",     qualities: ["Malice", "Dread"],   emoji: "🍏" },
+  { id: "q_amethyst",    name: "Amethyst",       qualities: ["Dread", "Shadow"],   emoji: "💜" },
+  { id: "q_darkcrystal", name: "Dark Crystal",   qualities: ["Rot", "Malice"],     emoji: "🔮" },
+  { id: "q_violetorb",   name: "Violet Orb",     qualities: ["Rot", "Curse"],      emoji: "🟣" },
+  { id: "q_hexgem",      name: "Hex Gem",        qualities: ["Curse", "Malice"],   emoji: "💎" },
+  { id: "q_cursedring",  name: "Cursed Ring",    qualities: ["Frost", "Dread"],    emoji: "💍" },
+  { id: "q_onyxbeads",   name: "Onyx Beads",     qualities: ["Malice", "Frost"],   emoji: "📿" },
+  { id: "q_nightvial",   name: "Nightshade Vial",qualities: ["Shadow", "Curse"],   emoji: "🧪" },
+  { id: "q_venomflask",  name: "Venom Draught",  qualities: ["Frost", "Rot"],      emoji: "⚗️" },
 ];
 QUEEN_INGREDIENTS.forEach(i => { i.baseQualities = i.qualities.slice(); INGREDIENT_BY_ID[i.id] = i; });
 /* --- Infused ingredients — a normal ingredient with a built-in charm-like effect
