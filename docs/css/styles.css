@@ -2016,11 +2016,12 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .oven-embers { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 4;
   pointer-events: none; overflow: visible; }
 .oven-embers .ember { position: absolute; top: 46%; border-radius: 50%;
-  background: radial-gradient(circle, #fff7dc 0%, #ffbf47 45%, rgba(255,120,20,0) 72%);
-  box-shadow: 0 0 8px 2px rgba(255,170,60,.95); mix-blend-mode: screen; opacity: 0;
+  background: radial-gradient(circle, #ffd27a 0%, #ff8a1e 42%, rgba(255,90,0,0) 74%);
+  box-shadow: 0 0 12px 3px rgba(255,120,20,1), 0 0 22px 6px rgba(255,80,0,.7);
+  mix-blend-mode: screen; opacity: 0;
   will-change: transform, opacity; animation: emberRise var(--dur, 1800ms) ease-out forwards; }
-.oven-embers .ember-smoke { position: absolute; top: 42%; width: 34px; height: 34px;
-  border-radius: 50%; background: radial-gradient(circle, rgba(18,15,12,.72), rgba(18,15,12,0) 70%);
+.oven-embers .ember-smoke { position: absolute; top: 42%; width: 44px; height: 44px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(90,84,78,.9), rgba(90,84,78,0) 68%);
   filter: blur(5px); opacity: 0; will-change: transform, opacity;
   animation: emberSmoke var(--dur, 3000ms) ease-out forwards; }
 @keyframes emberRise {
@@ -2031,8 +2032,9 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 }
 @keyframes emberSmoke {
   0%   { transform: translate(0, 0) scale(.5); opacity: 0; }
-  22%  { opacity: .5; }
-  100% { transform: translate(var(--dx, 0), -120px) scale(2.6); opacity: 0; }
+  25%  { opacity: .85; }
+  60%  { opacity: .6; }
+  100% { transform: translate(var(--dx, 0), -140px) scale(3); opacity: 0; }
 }
 /* Queen's Mirror: face layer sits BEHIND the pot image (z 0 < image z 2) and shows through the
    transparent mirror oval. Each face art shares the pot's canvas, so it always lands in the mirror.

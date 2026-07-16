@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v353"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v354"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -165,7 +165,7 @@ function spawnOvenEmbers() {
     const drift = (Math.random() * 2 - 1) * 26;                      // sideways wander as it rises
     const rise = 90 + Math.random() * 60;                            // how far up it floats
     const dur = 1400 + Math.random() * 1200;                         // 1.4-2.6s life
-    const sz = 5 + Math.random() * 6;
+    const sz = 8 + Math.random() * 8;
     e.style.left = x + "%";
     e.style.setProperty("--dx", drift + "px");
     e.style.setProperty("--rise", -rise + "px");
@@ -175,8 +175,8 @@ function spawnOvenEmbers() {
     layer.appendChild(e);
     setTimeout(() => e.remove(), dur + 500);
   }
-  // faint smoke wisp roughly half the time so it stays subtle
-  if (Math.random() < 0.6) {
+  // smoke wisp most of the time so it actually reads
+  if (Math.random() < 0.85) {
     const s = document.createElement("span");
     s.className = "ember-smoke";
     s.style.left = (38 + Math.random() * 24) + "%";
