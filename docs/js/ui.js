@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v385"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v386"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -114,12 +114,24 @@ function applyRealmTheme() {
   const t = currentRealm().theme; if (t) cls.push("realm-" + t);
   document.body.className = cls.join(" ");
 }
-// currently-equipped cosmetics
-function equippedCauldronClass() { return "skin-" + (GAME.equipped.cauldron || "cauldron_classic"); }
+// During a villain event you brew in the very cauldron you can WIN from that villain — the Evil
+// Queen's Mirror, the Wicked Stepmother's Pumpkin Carriage — even before you've won it. The active
+// villain is remembered on ROUND.villainKey (set when you buy her scoops); falls back to the Mirror.
+function activeVillainSkin() {
+  const vk = ROUND && ROUND.villainKey;
+  const vdef = (vk && VILLAIN_DEFS[vk]) || (typeof VILLAIN !== "undefined" ? VILLAIN : null);
+  return (vdef && vdef.skin) || "cauldron_queen";
+}
+// currently-equipped cosmetics (villain fights force the villain's own prize pot, so the rim glow,
+// bubbles and mirror/mouse layer all key off the right skin class)
+function equippedCauldronClass() {
+  if (ROUND && ROUND.villain) return "skin-" + activeVillainSkin();
+  return "skin-" + (GAME.equipped.cauldron || "cauldron_classic");
+}
 // which cauldron IMAGE to draw: the equipped skin if it ships art, else the classic pot.
 // All art skins share the same normalized canvas, so the rim glow + bubbles line up on every one.
 function equippedCauldronArt() {
-  if (ROUND && ROUND.villain) return "cauldron_queen";   // the Evil Queen's challenge always brews in her mirror pot, even before you win it
+  if (ROUND && ROUND.villain) return activeVillainSkin();
   const id = GAME.equipped.cauldron || "cauldron_classic";
   const c = (D.COSMETICS.cauldron || []).find(x => x.id === id);
   return (c && c.art) ? id : "cauldron_classic";
