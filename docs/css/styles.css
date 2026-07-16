@@ -2067,7 +2067,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    defaults above sit on it. These two royal pots (King's Courtyard) have their real rim lower on
    the art, so they declare where the glow line + bubbles belong. The bubble bath also floats its
    glow ABOVE the pot art (fx-front) so the light reads as glowing bath water, not a hidden inner glow. */
-.caul-art.skin-cauldron_royalbath { --rim-t: 12%; --rim-l: 15%; --rim-r: 15%; --bub-t: 15%; --bub-l: 17%; --bub-r: 17%; }
+.caul-art.skin-cauldron_royalbath { --rim-t: 17%; --rim-l: 15%; --rim-r: 15%; --bub-t: 16%; --bub-l: 17%; --bub-r: 17%; }
 .caul-art.skin-cauldron_crown { --rim-t: 10%; --rim-l: 22%; --rim-r: 22%; --bub-t: 12%; --bub-l: 24%; --bub-r: 24%; }
 /* the .cbub box is a larger transparent TAP target; the visible bubble is drawn by ::before
    at the real (small) size, centred inside — so small bubbles are easy to catch by tap */
