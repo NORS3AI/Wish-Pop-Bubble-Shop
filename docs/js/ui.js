@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v384"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v385"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2168,6 +2168,9 @@ function renderWardrobe() {
       const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball, hunt = c.hunt, pearl = c.pearl, finale = c.finale, well = c.well;
       const hh = hunt ? huntFor(hunt) : null, hs = hunt ? huntState(hunt) : null;
       const finaleName = finale ? ((D.REALM_BY_ID[finale] || {}).name || "the realm") : "";
+      // villain skins name their villain: full name for the hint, a short name for the little tag
+      const vName = vil ? villainNameForSkin(c.id) : null;
+      const vShort = vName ? vName.replace(/^The\s+(Evil|Wicked|Wretched|Cursed)\s+/i, "").replace(/^The\s+/i, "") : null;
       const special = ach || vil || ball || hunt || finale || well; // earned/found, never bought with currency
       const canBuy = !owned && !special && !pearl && GAME.stardust >= dustCost;
       const canBuyPearl = !owned && pearl && (GAME.pearls || 0) >= pearl;
@@ -2178,7 +2181,7 @@ function renderWardrobe() {
           : ach
             ? `<span class="skin-tag muted">🏆 ${Math.min(GAME.recycled, ach.need)}/${ach.need}</span>`
             : vil
-              ? `<span class="skin-tag muted">👑 Beat a villain</span>`
+              ? `<span class="skin-tag muted">👑 Beat the ${vShort || "villain"}</span>`
               : ball
                 ? `<span class="skin-tag muted">👠 Dazzle at the Ball</span>`
                 : hunt
@@ -2196,7 +2199,7 @@ function renderWardrobe() {
         ? (kind === "familiar" ? buddyArt(c.id, "skin-art") : (c.art ? ART.tag(c.id, c.chip, "skin-art") : c.chip))
         : revealed ? c.chip : "❔";
       const nameShown = revealed ? c.name : "???";
-      const hint = ach && !owned ? ach.desc : vil && !owned ? "Win a villain event" : ball && !owned ? "Dazzle Cinderella at the Royal Ball"
+      const hint = ach && !owned ? ach.desc : vil && !owned ? `Beat ${vName ? vName.replace(/^The /, "the ") : "a villain"}` : ball && !owned ? "Dazzle Cinderella at the Royal Ball"
         : hunt && !owned ? `Find all of ${hh ? hh.char + "'s " + hh.item + "s" : "them"} while you play`
         : finale && !owned ? `Complete the ${finaleName} finale` : well && !owned ? "Rare — only from Wishy’s Wishing Well" : pearl && !owned ? "Rare — only Wishy’s pearls buy this" : "";
       return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${(special || pearl) && !owned ? "ach" : ""}">
@@ -5689,6 +5692,11 @@ const VILLAIN_DEFS = {
   },
 };
 let VILLAIN = VILLAIN_DEFS.queen;   // the active villain config
+// Which villain hands out a given skin (for wardrobe hints like "Beat the Wicked Stepmother").
+function villainNameForSkin(skinId) {
+  for (const k in VILLAIN_DEFS) { if (VILLAIN_DEFS[k].skin === skinId) return VILLAIN_DEFS[k].name; }
+  return null;
+}
 function villainIngredients() { return D[VILLAIN.ingredients]; }
 function queenWish() {
   const any = {}, primary = {};
