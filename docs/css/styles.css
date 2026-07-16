@@ -2078,6 +2078,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .mirror-face { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .mirror-face.fading { animation: faceFade .5s ease; }
 @keyframes faceFade { from { opacity: 0; } to { opacity: 1; } }
+/* outgoing face fades out and STAYS gone (forwards) — used for the fish bowl, whose fish sit at
+   different spots so the old one must actually disappear rather than be covered by the new one */
+.mirror-face.fading-out { animation: faceFadeOut .5s ease forwards; }
+@keyframes faceFadeOut { from { opacity: 1; } to { opacity: 0; } }
 /* dark, dormant mirror glass shown before the first ingredient (no face revealed yet) */
 .mirror-dormant { position: absolute; left: 39.5%; top: 34%; width: 21%; height: 42%; border-radius: 50%;
   background: radial-gradient(circle, rgba(38,16,60,.82), rgba(12,6,26,.94) 72%); }

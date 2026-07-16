@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v382"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v383"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7370,8 +7370,13 @@ function paintMix() {
     const dormant = faceIdx == null;
     // the fish bowl's empty state is just still water (no fish yet) — the Queen's is a dark mirror oval
     const dormantHtml = isFishbowl ? "" : `<div class="mirror-dormant"></div>`;
+    // The Queen's faces all sit in the SAME mirror oval, so a new face simply covers the old one
+    // (outgoing face stays static underneath). The fish, by contrast, swim at DIFFERENT spots on
+    // the canvas, so the outgoing fish would linger un-covered — it must actively fade OUT as the
+    // new one fades in (a true crossfade), or you'd see two fish at once.
+    const outClass = isFishbowl ? "fading-out" : "";
     mirrorHtml = `<div class="mirror-faces">
-      ${(changed && prevIdx != null) ? `<img class="mirror-face" src="${ART.url(faceSet[prevIdx])}" alt="" draggable="false">` : ""}
+      ${(changed && prevIdx != null) ? `<img class="mirror-face ${outClass}" src="${ART.url(faceSet[prevIdx])}" alt="" draggable="false">` : ""}
       ${dormant
         ? dormantHtml
         : `<img class="mirror-face ${changed ? "fading" : ""}" src="${ART.url(faceSet[faceIdx])}" alt="" draggable="false">`}
