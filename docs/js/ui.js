@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v403"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v404"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -8013,9 +8013,8 @@ function wireTrashBubbles(res) {
       SFX.unlock(); SFX.pop(1);
       const r = btn.getBoundingClientRect();
       resultBurst(r.left + r.width / 2, r.top + r.height / 2, "coin");
-      let stored = false;
-      if (GAME.trash.length < cap) { GAME.trash.push(id); save(); stored = true; } else anyOverflow = true;
-      if (stored) caught++;
+      caught++;   // count the catch itself, so the tally always moves as you tap
+      if (GAME.trash.length < cap) { GAME.trash.push(id); save(); } else anyOverflow = true;   // stored only if the bin has room
       if (countEl) { countEl.textContent = caught; countEl.classList.remove("bumped"); void countEl.offsetWidth; countEl.classList.add("bumped"); }
       if (anyOverflow && hintEl) hintEl.textContent = "🗑️ Bin full — recycle some to make room!";
       const w = btn.parentElement; setTimeout(() => { if (w) w.remove(); }, 240);
