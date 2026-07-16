@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ☠️ **Villain fights got trickier — and cursed.** A single **disguised cursed ingredient** now hides
+  in every villain round. It looks completely normal… until you scoop it into the cauldron, when it
+  **bursts and splatters poison** on the ingredients next to it in your tray. Those neighbours turn
+  visibly poisonous (a green ☠️ Poison quality), so add them and you'll taint the brew. Tap a piece
+  already in the cauldron to **banish it in a puff** if you need to pull a bad one back out.
+
 - 🎁 **A proper "New Skin!" celebration.** However you earn a cauldron or pet skin — the Wishing
   Well, a treasure chest, beating a villain, finishing a realm, an achievement, a scavenger hunt,
   or the Royal Ball — you now get one lovely full-screen reveal with a big picture, confetti, and

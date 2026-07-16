@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v401"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v402"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7222,6 +7222,13 @@ function renderMix() {
   if (ROUND.stats) ROUND.stats.triples = merged.merged.length;
   ROUND.slots = []; ROUND.mixStart = Date.now();
   ROUND.potentNext = false; ROUND.allergyOffset = 0; ROUND.insight = false;
+  // Villain rounds: secretly curse ONE ingredient (disguised as normal). Tapping it makes it
+  // explode and splatter Poison onto its tray neighbours (see addToSlot -> triggerCurse).
+  if (ROUND.villain && !ROUND._cursedSet) {
+    const cand = ROUND.inventory.filter(x => x && x.id && !x.essence && !x.wild && !x.poison);
+    if (cand.length) R.pick(cand).cursed = true;
+    ROUND._cursedSet = true;
+  }
   mixFxWasVisible = false; mixPulseColor = null;   // empty pot: no glow until the first ingredient
   mixPrevFace = null;                              // reset the mirror face so it doesn't crossfade on the first paint
   paintMix(); show("mix");
@@ -7616,6 +7623,8 @@ function ingCard(st) {
     mainMagic = list[0]; cls = (inst.potent ? "potent " : "") + (inst.shrunk ? "shrunk " : "") + (ing.infused ? "infused" : "");
     art = ingArt(inst.id);
   }
+  // splattered by a cursed ingredient (villain rounds): a visible, extra Poison quality
+  if (ROUND.villain && inst.splashed && !list.includes("Poison")) list = list.concat("Poison");
   const singleKnown = inst.essence || inst.wild || !!inst.magic;   // these items only ever have one magic
   // infused ingredients carry a built-in charm effect — spell it out under the magic label
   const ingDef = (!inst.wild && !inst.essence) ? D.INGREDIENT_BY_ID[inst.id] : null;
@@ -7624,29 +7633,25 @@ function ingCard(st) {
   // but NOT on the villain's ransom round, where spotting the hidden poison is the whole challenge
   const allergens = ROUND.villain ? [] : [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
   const mkPill = q => {
+    const isPoison = q === "Poison";   // the splatter's toxic quality — always shown, ☠️ styled
     const warn = allergens.includes(q);
     const long = q.length >= 9;   // e.g. "Protection" — nudge the font down so it never clips
-    return `<span class="mp${warn ? " allergen" : ""}${long ? " long" : ""}" style="--mc:${D.MAGIC[q] || "#888"}"><span class="mp-txt">${q}</span>${warn ? `<span class="mp-warn">⚠️</span>` : ""}</span>`;
+    const mc = isPoison ? "#7fbf3a" : (D.MAGIC[q] || "#888");
+    const mark = isPoison ? `<span class="mp-warn">☠️</span>` : (warn ? `<span class="mp-warn">⚠️</span>` : "");
+    return `<span class="mp${warn ? " allergen" : ""}${isPoison ? " poison" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${q}</span>${mark}</span>`;
   };
+  const revealPill = (q, r) => (q === "Poison" || r === 0 || insight || singleKnown) ? mkPill(q) : `<span class="mp hidden">?</span>`;
   let pills = "";
   if (infusedFx) {
     // infused shows its real magic pill(s) then a plain-language effect line (no blank reserves)
-    for (let r = 0; r < list.length; r++) {
-      const reveal = r === 0 || insight || singleKnown;
-      pills += reveal ? mkPill(list[r]) : `<span class="mp hidden">?</span>`;
-    }
+    for (let r = 0; r < list.length; r++) pills += revealPill(list[r], r);
     pills += `<span class="icard-fx">${infusedFx}</span>`;
   } else {
-    for (let r = 0; r < 3; r++) {
-      if (r < list.length) {
-        const reveal = r === 0 || insight || singleKnown;
-        pills += reveal ? mkPill(list[r]) : `<span class="mp hidden">?</span>`;
-      } else pills += `<span class="mp blank"></span>`;
-    }
+    for (let r = 0; r < 3; r++) pills += (r < list.length) ? revealPill(list[r], r) : `<span class="mp blank"></span>`;
   }
-  const poisoned = ROUND.insight && inst.poison;
+  const poisoned = (ROUND.insight && inst.poison) || inst.splashed;
   const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
-  return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}" title="${name}" data-idx="${idx}">
+  return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}${inst.splashed ? " splashed" : ""}" title="${name}" data-idx="${idx}">
     <div class="icard-l"><div class="icard-art">${art}${badges}<span class="icard-gem" style="background:${D.MAGIC[mainMagic] || "#888"}"></span></div><div class="icard-nm">${name}</div></div>
     <div class="icard-r">${pills}</div>
     ${inst.potent ? `<span class="icard-star">✨</span>` : (infusedFx ? `<span class="icard-inf">💠</span>` : "")}${n > 1 ? `<span class="icard-count">×${n}</span>` : ""}</button>`;
@@ -7693,6 +7698,7 @@ function applyInfusedEffect(inst) {
   }
 }
 function addToSlot(idx, fromEl) {
+  { const peek = ROUND.inventory[idx]; if (peek && peek.cursed) { triggerCurse(idx, fromEl); return; } }  // disguised cursed piece → it bursts, not brews
   if (ROUND.toolMode === "cut") { cutIngredient(idx, fromEl); return; }
   if (ROUND.toolMode === "transmute") { transmuteIngredient(idx, fromEl); return; }
   if (ROUND.toolMode === "pinch") { pinchIngredient(idx, fromEl); return; }
@@ -7708,6 +7714,38 @@ function addToSlot(idx, fromEl) {
   { const mf = equippedMirrorFaces(); if (mf) drawMirrorFace(mf); }   // Queen's Mirror: reveal a new random face
   paintMix();
   const c2 = document.getElementById("cauldron"); if (c2) { c2.classList.remove("splash"); void c2.offsetWidth; c2.classList.add("splash"); }
+}
+// A disguised cursed ingredient (villain rounds): tapping it makes it BURST instead of brewing —
+// it's destroyed and splatters Poison onto its immediate tray neighbours (they gain a visible,
+// real Poison quality, so adding them now taints the brew). One lurks in every villain round.
+function triggerCurse(idx, fromEl) {
+  const hit = [];
+  for (const j of [idx - 1, idx + 1]) {                     // the two tray-adjacent ingredients
+    const nb = ROUND.inventory[j];
+    if (nb && nb.id && !nb.essence && !nb.wild) { nb.poison = true; nb.splashed = true; hit.push(nb); }
+  }
+  ROUND.inventory.splice(idx, 1);                           // the cursed piece is consumed in the blast
+  const rect = (fromEl && fromEl.getBoundingClientRect) ? fromEl.getBoundingClientRect() : null;
+  if (rect) poisonSplatter(rect);
+  SFX.sneeze && SFX.sneeze(); if (navigator.vibrate) navigator.vibrate([18, 40, 18]);
+  toast(hit.length ? "☠️ Cursed! It burst and splattered poison on nearby ingredients!" : "☠️ A cursed ingredient — it burst into poison!");
+  paintMix();
+  if (hit.length) requestAnimationFrame(() => document.querySelectorAll("#screen-mix .icard.splashed").forEach(el => { el.classList.remove("splash-hit"); void el.offsetWidth; el.classList.add("splash-hit"); }));
+}
+// A green toxic burst where a cursed ingredient popped.
+function poisonSplatter(rect) {
+  const host = document.getElementById("app"); if (!host || !rect) return;
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  const fx = document.createElement("div"); fx.className = "poison-splat";
+  fx.style.left = cx + "px"; fx.style.top = cy + "px";
+  let bits = `<span class="ps-cloud"></span><span class="ps-skull">☠️</span>`;
+  for (let i = 0; i < 10; i++) {
+    const ang = (i / 10) * Math.PI * 2 + Math.random() * 0.6, d = 22 + Math.random() * 30;
+    bits += `<i class="ps-bit" style="--dx:${(Math.cos(ang) * d).toFixed(1)}px;--dy:${(Math.sin(ang) * d).toFixed(1)}px"></i>`;
+  }
+  fx.innerHTML = bits;
+  host.appendChild(fx);
+  setTimeout(() => fx.remove(), 800);
 }
 // Knife: cut an ingredient into one pure-magic essence per quality.
 function cutIngredient(idx, fromEl) {
