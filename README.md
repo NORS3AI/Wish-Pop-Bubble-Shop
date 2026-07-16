@@ -19,6 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🎁 **A proper "New Skin!" celebration.** However you earn a cauldron or pet skin — the Wishing
+  Well, a treasure chest, beating a villain, finishing a realm, an achievement, a scavenger hunt,
+  or the Royal Ball — you now get one lovely full-screen reveal with a big picture, confetti, and
+  a choice to **Equip now** or just **Add to collection**.
+
 - 🎃 **Pumpkin Carriage cauldron — beat the Wicked Stepmother to win it.** A storybook pumpkin coach
   with golden lanterns and jewelled wheels. One of Cinderella's little mice leans out the carriage
   door while you brew, and a *different* mouse pops up with every ingredient you add.

@@ -1006,6 +1006,17 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .ir-add { position: relative; z-index: 2; margin-top: 20px; padding: 12px 30px; border-radius: 26px; border: 2px solid #7a4e1a; cursor: pointer;
   background: linear-gradient(180deg, #f7d488, #d49a3a); color: #4a2c08; font-family: var(--ff-display); font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
 .ir-add:active { transform: scale(.96); }
+/* Unified new-skin reward overlay — reuses the item-reveal burst/sparkles/card. A big picture of
+   the earned skin, a kicker banner, and two choices (equip now / add to collection). */
+.sr-kicker { position: relative; z-index: 2; font-family: var(--ff-display); font-size: 21px; letter-spacing: .5px;
+  color: var(--gold, #ffd76a); text-shadow: 0 2px 6px rgba(0,0,0,.7); margin-bottom: 2px; }
+.sr-img-wrap { position: relative; z-index: 2; height: 262px; display: flex; align-items: center; justify-content: center;
+  animation: irFloat 2.4s ease-in-out infinite; }
+.sr-img-wrap .sr-img.art { height: 262px; width: auto; max-width: 88vw; filter: drop-shadow(0 10px 22px rgba(0,0,0,.55)); }
+.sr-img-wrap .sr-img.art-emoji { font-size: 150px; line-height: 1; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
+.sr-name { margin-top: 4px; }
+.sr-btns { position: relative; z-index: 2; margin-top: 22px; display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 264px; }
+.sr-btns .btn { width: 100%; margin: 0; }
 @keyframes irPop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
 @keyframes irGlow { 0%,100% { transform: scale(.92); opacity: .82; } 50% { transform: scale(1.08); opacity: 1; } }
 @keyframes irFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
