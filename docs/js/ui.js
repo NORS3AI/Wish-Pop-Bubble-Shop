@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v379"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v380"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1684,7 +1684,8 @@ function renderAdmin() {
         <button class="btn" id="ad-boutique" style="margin-bottom:8px">🐭 Mouse Boutique (practice)</button>
         <button class="btn" id="ad-carpet" style="margin-bottom:8px">🧞 Magic Carpet Dash (practice)</button>
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
-        <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen</button>
+        <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen (villain)</button>
+        <button class="btn" id="ad-stepmother" style="margin-bottom:8px">🖤 The Wicked Stepmother (villain)</button>
         <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Ball: Knight</button>
         <button class="btn" id="ad-dance2" style="margin-bottom:8px">🤴 Ball: Prince</button>
         <button class="btn" id="ad-dance3" style="margin-bottom:8px">👸 Ball: Cinderella</button>
@@ -1755,7 +1756,11 @@ function renderAdmin() {
   on("#ad-courtyard", "click", () => { GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true; GAME.unlockedRealms.courtyard = true; save(); travelRealm("courtyard"); });
   on("#ad-queen", "click", () => {
     if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); } // need gold to pay her ransom
-    renderQueenIntro();
+    renderVillainIntro("queen");
+  });
+  on("#ad-stepmother", "click", () => {
+    if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); }
+    renderVillainIntro("stepmother");
   });
   on("#ad-dance", "click", () => renderDanceIntro("knight"));
   on("#ad-dance2", "click", () => renderDanceIntro("prince"));
@@ -2532,7 +2537,7 @@ let fairyRung = 1;
 //   "duel"/"fairy"/"cake" → that specific house event, if you want an exact seat
 const REALM_EVENT_PLAN = {
   willow:    ["house", "house", "queen", "house"],                              // 4 story + 🐺 finale = 5
-  courtyard: ["ball", "house", "queen", "ball", "wine", "ball", "boutique"],      // 3 balls (K/P/C) + Queen + Spilled Wine + house + Mouse Boutique + 🍗 finale = 8
+  courtyard: ["ball", "house", "stepmother", "ball", "wine", "ball", "boutique"], // 3 balls (K/P/C) + Stepmother villain + Spilled Wine + house + Mouse Boutique + 🍗 finale = 8
 };
 let lastHouseEvent = null;
 function houseEvent() {
@@ -2547,7 +2552,8 @@ function resolveEventToken(token, plan, idx) {
     const partner = ["knight", "prince", "cinderella"][ballNo - 1] || "cinderella";
     return () => renderDanceIntro(partner);
   }
-  if (token === "queen") return GAME.gold >= QUEEN_PACKAGES[0].gold ? renderQueenIntro : houseEvent();
+  if (token === "queen") return GAME.gold >= QUEEN_PACKAGES[0].gold ? (() => renderVillainIntro("queen")) : houseEvent();
+  if (token === "stepmother") return GAME.gold >= QUEEN_PACKAGES[0].gold ? (() => renderVillainIntro("stepmother")) : houseEvent();
   if (token === "wine") return renderWineIntro;
   if (token === "boutique") return renderBoutiqueIntro;
   if (token === "duel") return renderDuelIntro;
@@ -2560,7 +2566,7 @@ function eventPlanPreview(realmId) {
   const plan = REALM_EVENT_PLAN[realmId] || [];
   const seq = plan.map((token, idx) => {
     if (token === "ball") { const n = plan.slice(0, idx + 1).filter(t => t === "ball").length; return "ball:" + (["knight", "prince", "cinderella"][n - 1] || "cinderella"); }
-    if (token === "queen") return GAME.gold >= QUEEN_PACKAGES[0].gold ? "queen" : "house(queen→fallback)";
+    if (token === "queen" || token === "stepmother") return GAME.gold >= QUEEN_PACKAGES[0].gold ? token : "house(" + token + "→fallback)";
     return token;
   });
   seq.push("FINALE");
@@ -5613,7 +5619,7 @@ const QUEEN_PACKAGES = [
   { gold: 70,  scoops: 5 },
   { gold: 120, scoops: 7 },
 ];
-// Two-part intro monologues: she delivers [0] on her first slide, then [1] on the second.
+// Two-part intro monologues: the villain delivers [0] on slide 1, then [1] on slide 2.
 const QUEEN_LINES = [
   ["Your darling little Pet is MINE now — locked in my tower, trembling behind the glass, squeaking for a rescue that will not come.",
    "But I am nothing if not generous, sweetling. Brew me ONE perfect ransom potion from my cursed pantry… and perhaps you'll cradle the wretched thing again."],
@@ -5622,9 +5628,50 @@ const QUEEN_LINES = [
   ["A potion for a Pet — that is the whole of the bargain, and oh, how I do adore a bargain struck in the dark.",
    "But mind yourself, dearie: my pantry is laced with poison in places. One careless drop and the deal is OFF… and your Pet stays with me forever."]
 ];
+const STEPMOTHER_LINES = [
+  ["So. The little shop keeper. I've taken your grubby little Pet — it's locked in the attic now, where it belongs, with the rest of the vermin.",
+   "But I am a reasonable woman. Brew me one flawless potion from my pantry, and I may — MAY — let the wretched thing go. Fail, and it stays. Are we clear?"],
+  ["Discipline, that's what your household lacks. And that Pet of yours — filthy, undisciplined. I've put it away where it can learn some manners.",
+   "Here are my terms: pop my bubbles, follow my recipe EXACTLY, and don't you dare let a drop of poison in. Do that, and you may have it back."],
+  ["I don't do favors, child. I do bargains — cold, clean bargains. And I hold your little Pet as the stake.",
+   "My pantry hides poison in places. One careless slip and the deal is off, the Pet is mine, and you may see yourself out. Now — shall we?"]
+];
+// --- Villain registry. Every villain reuses the SAME villain screens (chamber intro, storm-lit
+// mix, damask pop wall, jewelled scoop, throne reckoning) — only the character art, dialogue,
+// pantry and reward change. `pose.allergic` (if set) is shown when a poisoned brew ruins the mix. ---
+const VILLAIN_DEFS = {
+  queen: {
+    name: "The Evil Queen", emoji: "👑", location: "The Dark Tower",
+    art: "queen_pose", posesN: 6, lines: QUEEN_LINES, ingredients: "QUEEN_INGREDIENTS",
+    skin: "cauldron_queen", ownWord: "her Mirror",
+    bgIntro: "queen_chamber", bgOutro: "queen_throne", offerTitle: "🧪 The Ransom Bargain",
+    pose: { intro1: 1, intro2: 4, winReact: 6, winDetail: 3, loseReact: 5, loseDetail: 2, allergic: null },
+    winLine: "“Bah! Take the wretched creature… this is NOT over, sweetling.”",
+    poisonLine: "“Poisoned already? Ahaha! Do run along, dearie.”",
+    loseLine: "“Not good enough. Better luck next time… if you dare.”",
+    winNote: "The Queen keeps her word (this once). Your Pet scampers home — and you snatched her prize!",
+    poisonNote: "The brew turned to poison! The Queen scoffs… but your Pet wriggles free and scampers home regardless. No skin this time — she'll be back.",
+    loseNote: (w, r) => `Not quite a match (${w}% / ${r}%). The Queen tuts… but your Pet slips away and comes home anyway. No skin — try her again another day.`,
+  },
+  stepmother: {
+    name: "The Wicked Stepmother", emoji: "🖤", location: "the Tremaine Manor",
+    art: "stepmother_pose", posesN: 10, lines: STEPMOTHER_LINES, ingredients: "STEPMOTHER_INGREDIENTS",
+    skin: null, ownWord: null,
+    bgIntro: "queen_chamber", bgOutro: "queen_throne", offerTitle: "🧪 The Stepmother's Bargain",
+    pose: { intro1: 1, intro2: 9, winReact: 3, winDetail: 7, loseReact: 10, loseDetail: 2, allergic: 5 },
+    winLine: "“Oh, take the little beast. But do NOT think this makes us friends, child.”",
+    poisonLine: "“AH—! Poison?! You clumsy, insolent— *cough*— get OUT of my sight!”",
+    loseLine: "“Sloppy work — just as I suspected. Off you go, then.”",
+    winNote: "The Stepmother sniffs and waves you off — but your Pet slips out of the manor and scurries home to you.",
+    poisonNote: "The brew went foul and she got a faceful of it — serves her right! Your Pet takes the chance to bolt home. No prize this time, but no harm done.",
+    loseNote: (w, r) => `Not quite a match (${w}% / ${r}%). The Stepmother sneers… but your Pet wriggles free and comes home anyway. Try her again another day.`,
+  },
+};
+let VILLAIN = VILLAIN_DEFS.queen;   // the active villain config
+function villainIngredients() { return D[VILLAIN.ingredients]; }
 function queenWish() {
   const any = {}, primary = {};
-  D.QUEEN_INGREDIENTS.forEach(i => { i.qualities.forEach(q => any[q] = (any[q] || 0) + 1); primary[i.qualities[0]] = (primary[i.qualities[0]] || 0) + 1; });
+  villainIngredients().forEach(i => { i.qualities.forEach(q => any[q] = (any[q] || 0) + 1); primary[i.qualities[0]] = (primary[i.qualities[0]] || 0) + 1; });
   // buildable needs: at least one PRIMARY source (so the haul biases correctly) AND >=2 sources
   // total — but NEVER Poison, which is the hazard you must keep out of the brew entirely.
   const strong = Object.keys(any).filter(q => q !== "Poison" && any[q] >= 2 && primary[q] >= 1);
@@ -5636,63 +5683,66 @@ function queenWish() {
     allergy: "Poison", allergy2: null, boss: false, bandTight: 1, bandShrink: BALANCE.BAND_SHRINK_PER_ADD };
 }
 function queenCustomer() {
-  return { id: "queen", name: "The Evil Queen", emoji: "👑", location: "The Dark Tower", line: R.pick(QUEEN_LINES)[0] };
+  return { id: "villain", name: VILLAIN.name, emoji: VILLAIN.emoji, location: VILLAIN.location, line: R.pick(VILLAIN.lines)[0] };
 }
-// The Evil Queen's story-mode card — she stands LARGE in her scene (chamber for the demand,
-// throne room for the reckoning). `showName` toggles her name plate; a beat with her figure keeps
-// text minimal so she's never buried, and the info-heavy beats drop the name plate (and, for the
-// offer, the figure) so nothing crowds her.
+// The villain's story-mode card — she stands LARGE in her scene (chamber for the demand, throne
+// room for the reckoning). `showName` toggles her name plate; a beat with her figure keeps text
+// minimal so she's never buried, and the info-heavy beats drop the name plate (and, for the offer,
+// the figure) so nothing crowds her. Art/name/backgrounds come from the active VILLAIN.
 function queenStoryCard(bg, pose, belowHtml, showName) {
   const v = "?v=" + BUILD;
-  const fig = pose ? `<div class="story-figure queen"><img class="story-face" src="art/queen_pose_${pose}.webp${v}" alt="The Evil Queen" draggable="false"></div>` : "";
+  const fig = pose ? `<div class="story-figure queen"><img class="story-face" src="art/${VILLAIN.art}_${pose}.webp${v}" alt="${VILLAIN.name}" draggable="false"></div>` : "";
   return `
     <div class="story-card mg-fullbleed queen-card${pose ? "" : " nofig"}">
       <div class="story-bg" style="background-image:url('art/${bg}.jpg${v}')"></div>
       <div class="story-scrim"></div>
       ${fig}
       <div class="story-below">
-        ${showName ? `<div class="story-name">The Evil Queen</div>` : ""}
+        ${showName ? `<div class="story-name">${VILLAIN.name}</div>` : ""}
         ${belowHtml}
       </div>
     </div>`;
 }
-// BEAT 1 — she looms in her chamber and gloats over your captured Pet (pose 1).
+// Entry point — set the active villain, then play beat 1.
+function renderVillainIntro(key) { VILLAIN = VILLAIN_DEFS[key] || VILLAIN_DEFS.queen; renderQueenIntro(); }
+// BEAT 1 — she looms in her chamber and gloats over your captured Pet.
 function renderQueenIntro() {
   SFX.unlock(); SFX.fanfare();
-  for (let i = 1; i <= 6; i++) { try { const im = new Image(); im.src = `art/queen_pose_${i}.webp?v=${BUILD}`; } catch (e) {} }  // warm all her poses so later slides don't decode-jank
-  QUEEN = { wish: queenWish(), lines: R.pick(QUEEN_LINES) };
+  for (let i = 1; i <= VILLAIN.posesN; i++) { try { const im = new Image(); im.src = `art/${VILLAIN.art}_${i}.webp?v=${BUILD}`; } catch (e) {} }  // warm her poses so later slides don't decode-jank
+  QUEEN = { wish: queenWish(), lines: R.pick(VILLAIN.lines) };
   const below = `
     <div class="story-speech">“${QUEEN.lines[0]}”</div>
     <div class="queen-btns"><button class="btn story-next" id="queen-next">Continue  ▸</button></div>`;
-  html("event", queenStoryCard("queen_chamber", 1, below, true));
+  html("event", queenStoryCard(VILLAIN.bgIntro, VILLAIN.pose.intro1, below, true));
   on("#queen-next", "click", renderQueenIntro2);
   show("event");
 }
-// BEAT 2 — she lays out the bargain with a grand flourish (pose 4, the arms-open gloat).
+// BEAT 2 — she lays out the bargain with a grand flourish.
 function renderQueenIntro2() {
   if (!QUEEN || !QUEEN.lines) return renderQueenIntro();
   const below = `
     <div class="story-speech">“${QUEEN.lines[1]}”</div>
     <div class="queen-btns"><button class="btn story-next" id="queen-next">Continue  ▸</button></div>`;
-  html("event", queenStoryCard("queen_chamber", 4, below, true));
+  html("event", queenStoryCard(VILLAIN.bgIntro, VILLAIN.pose.intro2, below, true));
   on("#queen-next", "click", renderQueenOffer);
   show("event");
 }
-// BEAT 2 — she's gone; the bargain's rules + how much to spend (no figure, no name plate).
+// BEAT 3 — she's gone; the bargain's rules + how much to spend (no figure, no name plate).
 function renderQueenOffer() {
   const w = QUEEN.wish;
   const recipe = w.needs.map(n => `${magicDot(n.type)} ${n.type}`).join(" · ");
-  const skin = D.COSMETIC_BY_ID[QUEEN_SKIN];
+  const skin = VILLAIN.skin ? D.COSMETIC_BY_ID[VILLAIN.skin] : null;
+  const rewardTxt = skin ? `${skin.chip} ${skin.name}` : "a reward";
   const afford = g => GAME.gold >= g;
   const below = `
-    <div class="queen-offer-title">🧪 The Ransom Bargain</div>
-    <div class="queen-terms">${recipe} · ☠️ hidden Poison · brew <b>${w.requiredMatch}%+</b> clean → 🐾 + ${skin.chip} ${skin.name}</div>
+    <div class="queen-offer-title">${VILLAIN.offerTitle}</div>
+    <div class="queen-terms">${recipe} · ☠️ hidden Poison · brew <b>${w.requiredMatch}%+</b> clean → 🐾 + ${rewardTxt}</div>
     <div class="queen-note">Buy scoops of her cursed pantry, then <b>scoop &amp; pop</b> for ingredients. About <b>1 in 3</b> pieces hides ☠️ Poison — keep the meter <b>green</b> (Insight reveals them; tap a piece in the cauldron to pull it back out). 🐾 Your Pet's her captive, so <b>no helper abilities</b> here.</div>
     <div class="queen-btns">
       ${QUEEN_PACKAGES.map((pk, i) => `<button class="btn ${afford(pk.gold) ? "" : "secondary"} queen-buy" data-i="${i}" ${afford(pk.gold) ? "" : "disabled"}>🪙 ${pk.gold} → ${pk.scoops} scoops</button>`).join("")}
       <button class="btn secondary" id="queen-skip">Not now</button>
     </div>`;
-  html("event", queenStoryCard("queen_chamber", 0, below, false));
+  html("event", queenStoryCard(VILLAIN.bgIntro, 0, below, false));
   $("#screen-event").querySelectorAll(".queen-buy").forEach(b => b.addEventListener("click", () => queenBuy(+b.dataset.i)));
   on("#queen-skip", "click", startRound);
   show("event");
@@ -5705,9 +5755,10 @@ function queenBuy(i) {
   // The Queen has your Pet, so NONE of its abilities help here (no Keen Nose,
   // no Better Scoop, no Undo — see familiarToken/wireFamiliar villain guards).
   ROUND = ENGINE.newVillainRound({
-    wish: QUEEN.wish, scoops: pk.scoops, ingredientSet: D.QUEEN_INGREDIENTS,
+    wish: QUEEN.wish, scoops: pk.scoops, ingredientSet: villainIngredients(),
     customer: queenCustomer(), betterScoop: false, charmFinder: false,
   });
+  ROUND.villainKey = (VILLAIN === VILLAIN_DEFS.stepmother) ? "stepmother" : "queen";  // remember who across scoop/pop/mix
   QUEEN = null;                                  // state now lives on ROUND
   document.body.classList.add("villain");        // villain colors for scoop/pop/mix
   SFX.scoop();
@@ -5719,6 +5770,7 @@ function queenServe() {
   // stricter than a normal allergy: ANY poison (yellow OR red) taints the brew
   const poisoned = !!(sc.allergy && sc.allergy.zone !== "green");
   const win = sc.weighted >= w.requiredMatch && !poisoned;
+  if (ROUND.villainKey && VILLAIN_DEFS[ROUND.villainKey]) VILLAIN = VILLAIN_DEFS[ROUND.villainKey];  // restore the active villain for the reckoning
   document.body.classList.remove("villain");
   stopRoundTimers();
   renderQueenResult(win, sc, poisoned, w.requiredMatch);
@@ -5726,39 +5778,37 @@ function queenServe() {
 // BEAT 1 — she reacts from her throne room: just her, name + speech, then Continue. The prize is
 // granted here; the numbers are shown on the next beat so they don't crowd her.
 function renderQueenResult(win, sc, poisoned, required) {
-  const skin = D.COSMETIC_BY_ID[QUEEN_SKIN];
+  const V = VILLAIN;
+  const skin = V.skin ? D.COSMETIC_BY_ID[V.skin] : null;
   let prize = "", note, title, emoji, cls;
   if (win) {
-    if (!GAME.owned[skin.id]) { GAME.owned[skin.id] = true; prize = `New villain skin: ${skin.chip} ${skin.name}!`; }
-    else { grantReward({ gold: 120, stardust: 10 }); prize = "You already own her Mirror — 🪙120 · ✨10 instead."; }
+    if (skin && !GAME.owned[skin.id]) { GAME.owned[skin.id] = true; prize = `New villain skin: ${skin.chip} ${skin.name}!`; }
+    else { grantReward({ gold: 120, stardust: 10 }); prize = skin ? `You already own ${V.ownWord} — 🪙120 · ✨10 instead.` : "🪙120 · ✨10 reward!"; }
     save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
     emoji = "🐾"; cls = "win"; title = "Your Pet is free!";
-    note = "The Queen keeps her word (this once). Your Pet scampers home — and you snatched her prize!";
+    note = V.winNote;
   } else {
     save();
     SFX.sneeze();
     emoji = "🐾"; cls = "lose"; title = "Pet comes home anyway";
-    note = poisoned
-      ? "The brew turned to poison! The Queen scoffs… but your Pet wriggles free and scampers home regardless. No skin this time — she'll be back."
-      : `Not quite a match (${sc.weighted}% / ${required}%). The Queen tuts… but your Pet slips away and comes home anyway. No skin — try her again another day.`;
+    note = poisoned ? V.poisonNote : V.loseNote(sc.weighted, required);
   }
-  // win = you beat her → she's FURIOUS (pose 6); lose = your brew failed → she GLOATS (pose 5)
-  const queenLine = win
-    ? "“Bah! Take the wretched creature… this is NOT over, sweetling.”"
-    : (poisoned ? "“Poisoned already? Ahaha! Do run along, dearie.”" : "“Not good enough. Better luck next time… if you dare.”");
-  QUEEN_RESULT = { win, weighted: sc.weighted, required, prize, note, title, emoji, cls };
+  // win → she's furious; lose+poison → allergic/shocked (if she has that face); lose+clean → she gloats
+  const reactLine = win ? V.winLine : (poisoned ? V.poisonLine : V.loseLine);
+  const reactPose = win ? V.pose.winReact : (poisoned && V.pose.allergic ? V.pose.allergic : V.pose.loseReact);
+  QUEEN_RESULT = { win, weighted: sc.weighted, required, prize, note, title, emoji, cls, detailPose: win ? V.pose.winDetail : V.pose.loseDetail };
   QUEEN = null; ROUND = null;
   const below = `
-    <div class="story-speech">${queenLine}</div>
+    <div class="story-speech">${reactLine}</div>
     <div class="queen-btns"><button class="btn story-next" id="queen-next">Continue  ▸</button></div>`;
-  html("event", queenStoryCard("queen_throne", win ? 6 : 5, below, true));
+  html("event", queenStoryCard(V.bgOutro, reactPose, below, true));
   on("#queen-next", "click", renderQueenResultDetail);
   show("event");
 }
 // BEAT 2 — she's still there in a NEW pose (name plate gone); just the results.
 function renderQueenResultDetail() {
-  const r = QUEEN_RESULT || { win: false, weighted: 0, required: 0, note: "", title: "", emoji: "🐾", cls: "lose", prize: "" };
+  const r = QUEEN_RESULT || { win: false, weighted: 0, required: 0, note: "", title: "", emoji: "🐾", cls: "lose", prize: "", detailPose: VILLAIN.pose.loseDetail };
   const statLines = r.win
     ? `<div class="stat-line"><span>Recipe match</span><span><b>${r.weighted}%</b></span></div>
        <div class="stat-line"><span>Prize</span><span class="gold">${r.prize}</span></div>`
@@ -5769,7 +5819,7 @@ function renderQueenResultDetail() {
     <div class="queen-stats card">${statLines}</div>
     <div class="queen-note">${r.note}</div>
     <div class="queen-btns"><button class="btn" id="queen-next2">Next Customer  →</button></div>`;
-  html("event", queenStoryCard("queen_throne", r.win ? 3 : 2, below, false));
+  html("event", queenStoryCard(VILLAIN.bgOutro, r.detailPose, below, false));
   on("#queen-next2", "click", () => { QUEEN_RESULT = null; startRound(); });
   show("event");
 }
@@ -8043,7 +8093,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });

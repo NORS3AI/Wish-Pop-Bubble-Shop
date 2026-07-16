@@ -110,6 +110,21 @@ const QUEEN_INGREDIENTS = [
   { id: "q_venomflask",  name: "Venom Draught",  qualities: ["Frost", "Slumber"],   emoji: "⚗️" },
 ];
 QUEEN_INGREDIENTS.forEach(i => { i.baseQualities = i.qualities.slice(); INGREDIENT_BY_ID[i.id] = i; });
+// The Wicked Stepmother's pantry — Cinderella trinkets. Same magic qualities as the Queen's set
+// (so the villain balance is identical), just re-skinned to her story.
+const STEPMOTHER_INGREDIENTS = [
+  { id: "sm_slipper",  name: "Glass Slipper",  qualities: ["Sorcery", "Vanity"],  emoji: "👠" },
+  { id: "sm_pumpkin",  name: "Pumpkin",        qualities: ["Envy", "Vanity"],     emoji: "🎃" },
+  { id: "sm_mouse",    name: "House Mouse",    qualities: ["Vanity", "Sorcery"],  emoji: "🐭" },
+  { id: "sm_broom",    name: "Cinder Broom",   qualities: ["Slumber", "Envy"],    emoji: "🧹" },
+  { id: "sm_thread",   name: "Torn Thread",    qualities: ["Slumber", "Glamour"], emoji: "🧵" },
+  { id: "sm_clock",    name: "Midnight Clock", qualities: ["Glamour", "Envy"],    emoji: "⏰" },
+  { id: "sm_key",      name: "Attic Key",      qualities: ["Frost", "Vanity"],    emoji: "🗝️" },
+  { id: "sm_teapot",   name: "Cold Teapot",    qualities: ["Envy", "Frost"],      emoji: "🫖" },
+  { id: "sm_feather",  name: "Grey Feather",   qualities: ["Sorcery", "Glamour"], emoji: "🪶" },
+  { id: "sm_ribbon",   name: "Torn Ribbon",    qualities: ["Frost", "Slumber"],   emoji: "🎀" },
+];
+STEPMOTHER_INGREDIENTS.forEach(i => { i.baseQualities = i.qualities.slice(); INGREDIENT_BY_ID[i.id] = i; });
 /* --- Infused ingredients — a normal ingredient with a built-in charm-like effect
  * that fires when you drop it in the cauldron (no charm slot needed). The MECHANIC
  * stays constant across realms; only the name/art get reskinned per realm.
@@ -408,7 +423,7 @@ QUESTS.daily.concat(QUESTS.weekly).forEach(q => QUEST_BY_ID[q.id] = q);
 
 /* Expose as a single namespace */
 const DATA = {
-  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, COURT_MAGIC, COURT_MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, INFUSED_INGREDIENTS, COURT_INFUSED, COURTYARD_INGREDIENTS,
+  MAGIC: MAGIC_ALL, MAGIC_TYPES, VILLAIN_MAGIC, COURT_MAGIC, COURT_MAGIC_TYPES, INGREDIENTS, INGREDIENT_BY_ID, QUEEN_INGREDIENTS, STEPMOTHER_INGREDIENTS, INFUSED_INGREDIENTS, COURT_INFUSED, COURTYARD_INGREDIENTS,
   SPECIAL_CHARMS, SPECIAL_CHARM_IDS, WISH_TYPES, CUSTOMERS, ALLERGY_IDEAS, REALMS, REALM_BY_ID,
   FAMILIAR, RESULT_TYPES, COSMETICS, COSMETIC_BY_ID, TRASH, TRASH_BY_ID,
   QUESTS, QUEST_BY_ID,
