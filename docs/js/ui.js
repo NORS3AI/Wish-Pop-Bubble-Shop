@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v392"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v393"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7568,7 +7568,7 @@ function wireDoubleTapServe() {
     if (e.target.closest(".cbub")) { last = 0; return; }
     const now = Date.now();
     if (now - last < 350) { last = 0; if (itemGateBlocks()) return; if (ROUND.slots.length === 0) { toast("Add some ingredients first!"); return; } serve(); }
-    else { last = now; if (ROUND.slots.length) toast("Double-tap the cauldron to serve!"); }
+    else { last = now; }   // single tap: just arm the double-tap (no pop-up hint — the on-cauldron hint covers it)
   });
 }
 // Charm column: two little columns pinned to the LEFT of the ingredient tray, always visible even
