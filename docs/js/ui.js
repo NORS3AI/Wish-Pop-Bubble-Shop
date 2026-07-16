@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v352"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v353"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -165,7 +165,7 @@ function spawnOvenEmbers() {
     const drift = (Math.random() * 2 - 1) * 26;                      // sideways wander as it rises
     const rise = 90 + Math.random() * 60;                            // how far up it floats
     const dur = 1400 + Math.random() * 1200;                         // 1.4-2.6s life
-    const sz = 3 + Math.random() * 4;
+    const sz = 5 + Math.random() * 6;
     e.style.left = x + "%";
     e.style.setProperty("--dx", drift + "px");
     e.style.setProperty("--rise", -rise + "px");
