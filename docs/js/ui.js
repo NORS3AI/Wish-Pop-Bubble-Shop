@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v400"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v401"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -8201,14 +8201,29 @@ function wireFamiliar(phase) {
 }
 // Villain rounds: tap a filled cauldron slot to return that ingredient to the bag
 // (there's no Pet Undo here — this lets you pull out a poison you didn't mean to add).
+// A little purple poof at a screen rect — used when a villain-round ingredient is banished.
+function poofAt(rect) {
+  const host = document.getElementById("app"); if (!host || !rect) return;
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  const fx = document.createElement("div"); fx.className = "poof-fx";
+  fx.style.left = cx + "px"; fx.style.top = cy + "px";
+  let bits = "";
+  for (let i = 0; i < 7; i++) {
+    const ang = (i / 7) * Math.PI * 2 + Math.random(), d = 16 + Math.random() * 16;
+    bits += `<i class="poof-bit" style="--dx:${(Math.cos(ang) * d).toFixed(1)}px;--dy:${(Math.sin(ang) * d).toFixed(1)}px"></i>`;
+  }
+  fx.innerHTML = `<span class="poof-cloud"></span>${bits}`;
+  host.appendChild(fx);
+  setTimeout(() => fx.remove(), 620);
+}
+// Villain rounds only: tap a slot to BANISH the ingredient — it poofs away for good (it is NOT
+// returned to the tray/bag). Handy for yanking out a poison you didn't mean to add.
 function removeFromSlot(i) {
   const inst = ROUND.slots[i]; if (!inst) return;
+  const slotEl = document.querySelector(`#screen-mix .slot[data-slot="${i}"]`);
+  if (slotEl) poofAt(slotEl.getBoundingClientRect());
   ROUND.slots.splice(i, 1);
-  // a played Wild charm goes back to the tray (it's not a bag ingredient); everything
-  // else (ingredients, essences) returns to the bag.
-  if (inst.wild) { ROUND.charms.push("wild"); toast("🌈 Wild charm back in your tray."); }
-  else ROUND.inventory.push(inst);
-  SFX.pop(1);
+  SFX.pop(1); if (navigator.vibrate) navigator.vibrate(10);
   paintMix();
 }
 function familiarUndo() {
