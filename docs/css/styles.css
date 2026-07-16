@@ -2028,8 +2028,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .m2-stage   { order: 40; margin-top: auto !important; padding-top: 0 !important; z-index: 5 !important; }  /* flexible spacer pushes the pot low; layered in front of the slots */
 .m2-slots   { order: 50; margin-top: -18px !important; } /* pot drops down to rest ON this row */
 .m2-bars    { order: 60; }
-.m2-charmbar { order: 70; }
-.m2-tray    { order: 80; }
+.m2-tray    { order: 80; }   /* charms now live INSIDE the tray, pinned to its left */
 /* the pot gets excited as it fills — a gentle bounce, then a bigger hop when the next drop is the last.
    Lives on the wrapper so it layers cleanly with the per-drop .splash on the image, and leaves the % text alone. */
 .m2-cauldron { transform-origin: 50% 88%; }
@@ -2209,9 +2208,11 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* bottom tray */
 .m2-tray { flex: 0 0 auto; height: clamp(178px, 25vh, 212px); display: flex; gap: 7px; padding: 7px; border-radius: 14px;
   background: rgba(14,8,24,.62); border: 1px solid rgba(255,214,110,.25); }
-/* charm row above the tray — only appears when you hold charms */
-.m2-charmbar { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 2px 4px; overflow-x: auto; }
-.m2-charmbar-lbl { flex: 0 0 auto; font-size: 11px; font-weight: 800; color: #f0d8a0; text-transform: uppercase; letter-spacing: .5px; margin-right: 2px; }
+/* charm column pinned to the LEFT of the tray — two little columns of charms that stay put while
+   the ingredients scroll sideways beside them. Only appears when you actually hold charms. */
+.m2-charmcol { flex: 0 0 auto; align-self: stretch; display: grid; grid-template-columns: repeat(2, 38px);
+  grid-auto-rows: 38px; gap: 5px; align-content: start; overflow-y: auto;
+  padding-right: 7px; margin-right: 1px; border-right: 1px solid rgba(255,214,110,.28); }
 .cslot { width: 38px; height: 38px; border-radius: 10px; position: relative; cursor: pointer; flex: 0 0 auto;
   background: rgba(60,30,86,.7); border: 1.5px solid rgba(255,214,110,.55); display: flex; align-items: center; justify-content: center; }
 .cslot.empty { background: rgba(0,0,0,.25); border-style: dashed; border-color: rgba(255,255,255,.12); cursor: default; }
@@ -2262,7 +2263,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* Thin black outline so light-colored magic labels stay readable on light pills
    (e.g. white "Light" on a pale-yellow chip). Skips small descriptions like .icard-fx. */
 .mp, .mbar-lbl, .allerg-nm, .icard-nm, .m2-readout b, .m2-readout span,
-.m2-charmbar-lbl, .cslot-n, .icard-count, .m2-timer-badge b, .m2-timer-badge span {
+.cslot-n, .icard-count, .m2-timer-badge b, .m2-timer-badge span {
   -webkit-text-stroke: .8px rgba(0,0,0,.92); paint-order: stroke fill;
   text-shadow: 0 1px 1px rgba(0,0,0,.5);
 }

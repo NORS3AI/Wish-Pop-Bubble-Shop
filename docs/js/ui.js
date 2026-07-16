@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v388"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v389"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7524,8 +7524,7 @@ function paintMix() {
         <div class="m2-needs" id="mix-top"></div>
         <div class="m2-allergs" id="m2-allergs"></div>
       </div>
-      ${mixCharmBarHtml()}
-      <div class="m2-tray ${ROUND.toolMode ? "cutting" : ""}">${mixTrayHtml()}</div>
+      <div class="m2-tray ${ROUND.toolMode ? "cutting" : ""}">${mixCharmBarHtml()}${mixTrayHtml()}</div>
     </div>
   `);
   paintMixTop();
@@ -7565,8 +7564,8 @@ function wireDoubleTapServe() {
     else { last = now; if (ROUND.slots.length) toast("Double-tap the cauldron to serve!"); }
   });
 }
-// Charm row: sits just above the ingredient tray (only shown when you actually hold charms),
-// keeping the full tray width free for 3 ingredient cards across.
+// Charm column: two little columns pinned to the LEFT of the ingredient tray, always visible even
+// while the ingredients scroll sideways (only shown when you actually hold charms). Same icon size.
 function mixCharmBarHtml() {
   const charmStacks = [], cmap = {};
   ROUND.charms.forEach((id, i) => {
@@ -7578,8 +7577,8 @@ function mixCharmBarHtml() {
   // spend one of a stack (otherwise double-tapping a 2-use charm hits the wrong slot).
   const order = D.SPECIAL_CHARM_IDS;
   charmStacks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
-  const shown = charmStacks.slice(0, 6);
-  return `<div class="m2-charmbar"><span class="m2-charmbar-lbl">Charms</span>${shown.map(charmSlot).join("")}</div>`;
+  const shown = charmStacks.slice(0, 8);   // two columns × up to four rows
+  return `<div class="m2-charmcol">${shown.map(charmSlot).join("")}</div>`;
 }
 // Bottom tray: ingredient cards, 3 across, scrolling sideways.
 function mixTrayHtml() {
