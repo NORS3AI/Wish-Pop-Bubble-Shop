@@ -357,6 +357,9 @@ const COSMETICS = {
     // pearl-only: bought with the rare pearls Wishy the Fish pays (never with gold/Stardust)
     { id: "cauldron_pearlshell", name: "Pearl Shell",    chip: "🐚", pearl: 6 },
     { id: "cauldron_tide",     name: "Deep Tide",        chip: "🌊", pearl: 12 },
+    // well-only rare: Wishy's own fish-bowl cauldron. Only ever found by tossing a coin
+    // at the Wishing Well (never buyable with Stardust or pearls); a scarce, prized drop.
+    { id: "cauldron_wishy",    name: "Wishy's Fish Bowl", chip: "🐠", art: true, well: true },
   ],
   familiar: [
     { id: "toad_classic", name: "Toad",    chip: "🐸", default: true },

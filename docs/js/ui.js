@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v381"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v382"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -130,6 +130,10 @@ function equippedCauldronArt() {
 const MIRROR_FACES = {
   cauldron_queen: ["cauldron_queen_face2", "cauldron_queen_face1", "cauldron_queen_face3",
                    "cauldron_queen_face4", "cauldron_queen_face5", "cauldron_queen_face6"],
+  // Wishy's Fish Bowl reuses the exact same face mechanism: a fish "swims into view" (crossfades
+  // in) with each ingredient, random order with no repeats until every fish has been shown. Each
+  // fish art shares the cauldron's 1500x990 canvas, so it always lands inside the bowl.
+  cauldron_wishy: ["wishy_fish_1", "wishy_fish_2", "wishy_fish_3", "wishy_fish_4", "wishy_fish_5", "wishy_fish_6"],
 };
 function equippedMirrorFaces() {
   const key = equippedCauldronArt();
@@ -1958,11 +1962,21 @@ function openChest() {
 /* ======================================================================= */
 function ownedCount(kind) { return D.COSMETICS[kind].filter(c => GAME.owned[c.id]).length; }
 function allSkins() { return [].concat(D.COSMETICS.cauldron, D.COSMETICS.familiar); }
-// the Well only awards Stardust-buyable skins — achievement/villain/ball/hunt/pearl skins are earned or pearl-only, never rolled
-function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain && !c.ball && !c.hunt && !c.pearl && !c.finale); }
+// the Well only awards Stardust-buyable skins — achievement/villain/ball/hunt/pearl/well skins are
+// earned, pearl-only, or (well) rolled separately below, never in the normal skin pool
+function unownedSkins() { return allSkins().filter(c => !GAME.owned[c.id] && !c.achievement && !c.villain && !c.ball && !c.hunt && !c.pearl && !c.finale && !c.well); }
+// well-only rares (e.g. Wishy's Fish Bowl): found ONLY at the Well, and scarce — a small chance
+// on any toss, checked before the normal tiers so it can surprise you at any prize level
+function unownedWellSkins() { return allSkins().filter(c => c.well && !GAME.owned[c.id]); }
+const WELL_RARE_CHANCE = 0.05;   // ~1 in 20 tosses reveals a rare well skin (while any remain unowned)
 // Roll a prize from the weighted tiers. Always returns a prize object.
 function rollWellPrize() {
   const rndInt = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
+  // scarce well-only skins first: a rare surprise that can land on any toss
+  const rares = unownedWellSkins();
+  if (rares.length && Math.random() < WELL_RARE_CHANCE) {
+    return { kind: "skin", cosmetic: rares[Math.floor(Math.random() * rares.length)] };
+  }
   const tiers = BALANCE.WELL_TIERS, total = tiers.reduce((s, t) => s + t.weight, 0);
   let r = Math.random() * total, tier = tiers[tiers.length - 1];
   for (const t of tiers) { if (r < t.weight) { tier = t; break; } r -= t.weight; }
@@ -2147,10 +2161,10 @@ function renderWardrobe() {
   const dustCost = BALANCE.STARDUST_SKIN_COST;
   const section = (kind, title) => {
     const tiles = D.COSMETICS[kind].map(c => {
-      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball, hunt = c.hunt, pearl = c.pearl, finale = c.finale;
+      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball, hunt = c.hunt, pearl = c.pearl, finale = c.finale, well = c.well;
       const hh = hunt ? huntFor(hunt) : null, hs = hunt ? huntState(hunt) : null;
       const finaleName = finale ? ((D.REALM_BY_ID[finale] || {}).name || "the realm") : "";
-      const special = ach || vil || ball || hunt || finale; // earned, never bought with currency
+      const special = ach || vil || ball || hunt || finale || well; // earned/found, never bought with currency
       const canBuy = !owned && !special && !pearl && GAME.stardust >= dustCost;
       const canBuyPearl = !owned && pearl && (GAME.pearls || 0) >= pearl;
       const btn = equipped
@@ -2167,6 +2181,8 @@ function renderWardrobe() {
                   ? `<span class="skin-tag muted">${hh ? hh.itemEmoji : "🔎"} ${hs ? hs.found : 0}/${hh ? hh.need : "?"}</span>`
                   : finale
                     ? `<span class="skin-tag muted">🏆 Finale</span>`
+                  : well
+                    ? `<span class="skin-tag muted">🌟 Wishing Well</span>`
                   : pearl
                     ? `<button class="btn small ${canBuyPearl ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuyPearl ? "" : "disabled"}>${PEARL} ${pearl}</button>`
                     : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
@@ -2178,7 +2194,7 @@ function renderWardrobe() {
       const nameShown = revealed ? c.name : "???";
       const hint = ach && !owned ? ach.desc : vil && !owned ? "Win a villain event" : ball && !owned ? "Dazzle Cinderella at the Royal Ball"
         : hunt && !owned ? `Find all of ${hh ? hh.char + "'s " + hh.item + "s" : "them"} while you play`
-        : finale && !owned ? `Complete the ${finaleName} finale` : pearl && !owned ? "Rare — only Wishy’s pearls buy this" : "";
+        : finale && !owned ? `Complete the ${finaleName} finale` : well && !owned ? "Rare — only from Wishy’s Wishing Well" : pearl && !owned ? "Rare — only Wishy’s pearls buy this" : "";
       return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${(special || pearl) && !owned ? "ach" : ""}">
         <div class="skin-chip">${chip}</div>
         <div class="skin-name">${nameShown}${hint ? `<div class="muted" style="font-size:10px;font-weight:600">${hint}</div>` : ""}</div>
@@ -2215,6 +2231,7 @@ function buySkin(id) {
   if (cz && cz.ball) { toast("👠 Dazzle Cinderella at the Royal Ball to earn this!"); return; }
   if (cz && cz.hunt) { const hh = huntFor(cz.hunt); toast(`🔎 Find them all${hh ? ` — help ${hh.char}!` : ""}`); return; }
   if (cz && cz.finale) { const rn = (D.REALM_BY_ID[cz.finale] || {}).name || "the realm"; toast(`🏆 Complete the ${rn} finale to earn this!`); return; }
+  if (cz && cz.well) { toast("🌟 Toss a coin at Wishy's Wishing Well — this rare skin only turns up there!"); return; }
   if (cz && cz.pearl) {
     if ((GAME.pearls || 0) < cz.pearl) { toast(`Need ${cz.pearl} pearls — Wishy the Fish pays in those!`); return; }
     GAME.pearls -= cz.pearl; GAME.owned[id] = true; save();
@@ -7338,18 +7355,25 @@ function paintMix() {
   const isBath = equippedCauldronArt() === "cauldron_royalbath";
   const bubFront = "";                                                       // bath bubbles rise from BEHIND the tub (like every cauldron)
   const ambientHtml = isBath ? `<div class="caul-bubbles ambient">${bathAmbientBubblesHtml()}</div>` : "";
+  // Wishy's Fish Bowl: a back bowl (water) sits behind, the fish (mirror layer) swims in the middle,
+  // and the front bowl with its transparent porthole overlays on top — so the fish reads as living
+  // inside the glass. The back layer renders first (behind the fish); the fish uses the mirror mechanism.
+  const isFishbowl = equippedCauldronArt() === "cauldron_wishy";
+  const backHtml = isFishbowl ? `<img class="caul-back" src="${ART.url("cauldron_wishy_back")}" alt="" draggable="false">` : "";
   const faceSet = equippedMirrorFaces();
   let mirrorHtml = "";
   if (faceSet) {
     faceSet.forEach(k => { try { new Image().src = ART.url(k); } catch (e) {} });   // warm all faces so crossfades never flash
-    const faceIdx = (ROUND.mirrorFace == null) ? null : ROUND.mirrorFace;   // null = dormant dark mirror (empty pot)
+    const faceIdx = (ROUND.mirrorFace == null) ? null : ROUND.mirrorFace;   // null = dormant (empty pot): dark mirror / empty bowl
     const prevIdx = mixPrevFace, changed = prevIdx !== faceIdx;             // covers dormant <-> face and face -> face
     mixPrevFace = faceIdx;
     const dormant = faceIdx == null;
+    // the fish bowl's empty state is just still water (no fish yet) — the Queen's is a dark mirror oval
+    const dormantHtml = isFishbowl ? "" : `<div class="mirror-dormant"></div>`;
     mirrorHtml = `<div class="mirror-faces">
       ${(changed && prevIdx != null) ? `<img class="mirror-face" src="${ART.url(faceSet[prevIdx])}" alt="" draggable="false">` : ""}
       ${dormant
-        ? `<div class="mirror-dormant"></div>`
+        ? dormantHtml
         : `<img class="mirror-face ${changed ? "fading" : ""}" src="${ART.url(faceSet[faceIdx])}" alt="" draggable="false">`}
     </div>`;
   }
@@ -7379,6 +7403,7 @@ function paintMix() {
       <div class="m2-stage">
         <div class="m2-cauldron ${exciteClass}" id="cauldron-tap" style="--mix-color:${mixColor}">
           <div class="caul-art ${equippedCauldronClass()} ${pulseColor ? "pulsing" : ""}" id="cauldron"${pulseColor ? ` style="--pulse-color:${pulseColor}"` : ""}>
+            ${backHtml}
             ${mirrorHtml}
             ${fxVisible ? `<div class="caul-fx ${justAppeared ? "fx-in" : ""}"><div class="caul-rim"></div></div>` : ""}
             <img class="caul-img" src="${ART.url(equippedCauldronArt())}" alt="" draggable="false">

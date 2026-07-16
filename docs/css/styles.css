@@ -2108,6 +2108,16 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    is very wide, so the default-width glow spread into a broad, weak, detached haze — narrowing it
    (bigger insets) concentrates it into a focused rise that hugs the rim. */
 .caul-art.skin-cauldron_queen { --rim-t: 4%; --rim-l: 32%; --rim-r: 32%; }
+/* Wishy's Fish Bowl: three stacked layers on one shared canvas — the back bowl (water) behind,
+   the fish (mirror layer, z0) swimming in the middle, and the front bowl with its transparent
+   porthole (caul-img, z2) on top. The back renders first in the DOM so it sits under the fish.
+   The whole fish layer bobs up and down gently, so whichever fish is shown drifts in the water.
+   Glow + bubbles are anchored to the water line, narrowed to sit inside the round bowl. */
+.caul-art.skin-cauldron_wishy .caul-back { position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; z-index: 0; pointer-events: none; }
+.caul-art.skin-cauldron_wishy .mirror-faces { animation: fishFloat 4.2s ease-in-out infinite; will-change: transform; }
+@keyframes fishFloat { 0%, 100% { transform: translateY(-1.4%); } 50% { transform: translateY(1.4%); } }
+.caul-art.skin-cauldron_wishy { --rim-t: 22%; --rim-l: 22%; --rim-r: 22%; --bub-t: 24%; --bub-l: 24%; --bub-r: 24%; }
 /* the .cbub box is a larger transparent TAP target; the visible bubble is drawn by ::before
    at the real (small) size, centred inside — so small bubbles are easy to catch by tap */
 .cbub { position: absolute; top: 0; opacity: 0; will-change: transform, opacity;
