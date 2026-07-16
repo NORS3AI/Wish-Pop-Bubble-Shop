@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v402"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v403"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -420,6 +420,38 @@ function hud(title, opts) {
   const home = !(opts && opts.noHome);
   return `<div class="hud"><span class="hud-left">${home ? `<button class="hud-menu" id="hud-menu" aria-label="Menu">☰</button>` : ""}🐸 <span class="treatcount">${GAME.treats}</span></span>
     <span class="title">${title}</span><span class="gold">🪙 ${GAME.gold}</span></div>`;
+}
+// Standard top bar for the three round screens (scoop / pop / mix): the pet badge (left), an
+// optional phase counter (centre — bubbles scooped / ingredients popped), and the ☰ menu (right).
+// Deliberately no gold, treat total, or phase name — those are gone from these screens.
+function roundTop(opts) {
+  opts = opts || {};
+  const showPet = !(ROUND && ROUND.villain);
+  const cnt = (showPet && GAME.unlocked.undo) ? `<div class="petbadge-count">${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}</div>` : "";
+  const counter = opts.count ? `<div class="phase-count" id="phase-count"><img class="phase-count-bub" src="${ART.url("bubble")}" alt="" draggable="false"><span class="phase-count-n" id="phase-count-n">0</span></div>` : "";
+  return `<div class="round-top">
+    <div class="petbadge ${showPet ? "" : "nopet"}" id="familiar"><div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>${cnt}</div>
+    ${counter}
+    <button class="round-menu" id="hud-menu" aria-label="Menu">☰</button>
+  </div>`;
+}
+// The ☰ on round screens opens this little popup (Main Menu / Sound). Sound just toggles mute for now.
+function openHudMenu() {
+  if (document.getElementById("hudmenu-ov")) return;
+  const soundLbl = () => SFX.isMuted() ? "🔇 Sound: Off" : "🔊 Sound: On";
+  const ov = document.createElement("div"); ov.id = "hudmenu-ov"; ov.className = "hudmenu-ov";
+  ov.innerHTML = `<div class="hudmenu-card">
+    <div class="hudmenu-title">Menu</div>
+    <button class="hudmenu-item" id="hm-sound">${soundLbl()}</button>
+    <button class="hudmenu-item" id="hm-home">🏠 Main Menu</button>
+    <button class="hudmenu-item hm-close" id="hm-close">Close</button>
+  </div>`;
+  document.getElementById("app").appendChild(ov);
+  const close = () => { if (ov.parentNode) ov.remove(); };
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  on("#hm-sound", "click", () => { SFX.unlock(); SFX.toggle(); const b = document.getElementById("hm-sound"); if (b) b.textContent = soundLbl(); });
+  on("#hm-home", "click", () => { close(); goHome(); });
+  on("#hm-close", "click", close);
 }
 // Escape hatch present on every screen's HUD: back to the home screen. If a round
 // is in progress (scoop/pop/cauldron) we confirm first, since it won't be saved.
@@ -6464,12 +6496,7 @@ function renderScoop() {
       <div class="scoop-front" id="scoop-front"></div>
       <div class="scoop-secret" id="scoop-secret"></div>
     </div>
-    ${hud("Scoop Phase")}
-    <button class="mute-btn" id="mute-btn" title="Sound on/off">${SFX.isMuted() ? "🔇" : "🔊"}</button>
-    <div class="scoop-count" id="scoop-count" aria-label="bubbles scooped">
-      <img class="scoop-count-bub" src="${ART.url("bubble")}" alt="" draggable="false">
-      <span class="scoop-count-n" id="scoop-count-n">0</span>
-    </div>
+    ${roundTop({ count: true })}
     <div class="scoop-head">
       <div class="scoop-sub" id="scoop-step">Scoop 1 of ${scoops}</div>
       <div class="scoop-instr" id="scoop-text">✋ Swipe side to side to shake off the glitter!</div>
@@ -6481,7 +6508,6 @@ function renderScoop() {
         <button class="btn" id="scoop-continue" disabled>Continue</button>
       </div>
     </div>
-    ${familiarToken("scoop")}
   `);
   { const bgEl = $("#scoop-bg"); if (bgEl) bgEl.style.backgroundImage = `url('art/${ROUND.villain ? "queen_scoop_bg" : "scoop_bg"}.webp?v=${BUILD}')`;
     const frEl = $("#scoop-front"); if (frEl) frEl.style.backgroundImage = `url('art/scoop_front.webp?v=${BUILD}')`; }
@@ -6592,7 +6618,7 @@ function renderScoop() {
     b.style.setProperty("--fx", rnd(-30, 30) + "px"); b.classList.add("floatup");
     revealed++;
     SFX.count(k); if (navigator.vibrate) navigator.vibrate(5);
-    const cn = $("#scoop-count-n"); if (cn) { cn.textContent = revealed; cn.parentNode.classList.remove("bumped"); void cn.parentNode.offsetWidth; cn.parentNode.classList.add("bumped"); }
+    const cn = document.querySelector("#screen-scoop #phase-count-n"); if (cn) { cn.textContent = revealed; cn.parentNode.classList.remove("bumped"); void cn.parentNode.offsetWidth; cn.parentNode.classList.add("bumped"); }
   }
   function shakeTick(intensity) {
     if (state !== "shaking") return;
@@ -6749,7 +6775,6 @@ function renderScoop() {
     ROUND._scoopIv = autoIv; // let round-ending paths (rush expire / home) clear it
   });
   on("#scoop-continue", "click", () => { if (itemGateBlocks()) return; if (autoIv) clearInterval(autoIv); renderPop(); });
-  on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
 
   // Start with an EMPTY sifter, then dip it into the glitter for the very first scoop.
   state = "idle";
@@ -6822,8 +6847,7 @@ function renderPop() {
   const bubbles = ROUND.haul.map((_, i) => bubbleHTML(i)).join("");
   html("pop", `
     <div class="pop-bg" id="pop-bg"></div>
-    ${hud("Pop Phase")}
-    <button class="mute-btn" id="mute-btn" title="Sound on/off">${SFX.isMuted() ? "🔇" : "🔊"}</button>
+    ${roundTop({ count: true })}
     <div class="pop-sub muted" id="pop-hint">Tap each bubble to pop it — everything inside goes in your bag!</div>
     <div class="bubble-field" id="bubble-field">${bubbles}</div>
     <div id="hand-line" class="muted" style="font-size:13px;text-align:center;min-height:20px"></div>
@@ -6834,14 +6858,12 @@ function renderPop() {
     <div class="pop-hole-layer" id="pop-hole-layer"></div>
     <div class="burst-layer" id="burst-layer"></div>
     <div class="catch-layer" id="catch-layer"></div>
-    ${familiarToken("pop")}
   `);
   refreshPop();
   applyBubbleArt($("#bubble-field"));
   document.querySelectorAll("#bubble-field .pbubble").forEach(wireBubble);
   on("#pop-all", "click", popCascade);
   on("#pop-continue", "click", () => { if (itemGateBlocks()) return; collectAndContinue(); });
-  on("#mute-btn", "click", () => { const m = SFX.toggle(); const b = $("#mute-btn"); if (b) b.textContent = m ? "🔇" : "🔊"; });
   wireFamiliar("pop");
   show("pop");
   setupPopWood();
@@ -7201,11 +7223,13 @@ function charmCelebrate(emoji) {
 
 function refreshPop() {
   const total = ROUND.haul.length, left = total - ROUND.popIndex;
-  syncHud("pop");
+  // running ingredient tally in the top bubble (like the scoop phase's bubble count)
+  const cn = document.querySelector("#screen-pop #phase-count-n");
+  if (cn && +cn.textContent !== ROUND.inventory.length) { cn.textContent = ROUND.inventory.length; cn.parentNode.classList.remove("bumped"); void cn.parentNode.offsetWidth; cn.parentNode.classList.add("bumped"); }
   const hl = $("#hand-line");
   if (hl) hl.innerHTML = left > 0
-    ? `🎒 ${ROUND.inventory.length} ingredient${ROUND.inventory.length === 1 ? "" : "s"}` + (ROUND.charms.length ? ` · ${ROUND.charms.map(c => CHARM(c).emoji).join(" ")}` : "") + ` &nbsp;·&nbsp; <b>${left}</b> bubble${left === 1 ? "" : "s"} left`
-    : `All popped! 🎒 ${ROUND.inventory.length} ingredient${ROUND.inventory.length === 1 ? "" : "s"}` + (ROUND.charms.length ? ` · ${ROUND.charms.map(c => CHARM(c).emoji).join(" ")}` : "");
+    ? (ROUND.charms.length ? `${ROUND.charms.map(c => CHARM(c).emoji).join(" ")} &nbsp;·&nbsp; ` : "") + `<b>${left}</b> bubble${left === 1 ? "" : "s"} left`
+    : "All popped!" + (ROUND.charms.length ? ` &nbsp;·&nbsp; ${ROUND.charms.map(c => CHARM(c).emoji).join(" ")}` : "");
   const hint = $("#pop-hint"); if (hint && left <= 0) hint.textContent = "Nice — off to the cauldron!";
   const cont = $("#pop-continue"); if (cont) cont.disabled = left > 0;
   const pa = $("#pop-all"); if (pa) pa.disabled = left <= 0 || cascadeOn;
@@ -7330,14 +7354,7 @@ function paintMixTop() {
   // a held Cleanse charm lights up green the moment an allergy climbs into the yellow/red zone
   const allergyHot = al.some(a => a.zone === "yellow" || a.zone === "red");
   document.querySelectorAll('.cslot[data-charmid="cleanse"]').forEach(el => el.classList.toggle("cleanse-glow", allergyHot));
-  // timer badge above the cauldron (only for In-a-Rush)
-  const tm = $("#m2-timer");
-  if (tm) {
-    if (ROUND.rush && ROUND.rushStart) {
-      const left = Math.max(0, ROUND.rushMs - (Date.now() - ROUND.rushStart)), sec = Math.ceil(left / 1000);
-      tm.innerHTML = `<div class="m2-timer-badge ${sec <= 10 ? "urgent" : ""}"><b>${sec}</b><span>seconds</span></div>`;
-    } else tm.innerHTML = "";
-  }
+  // (the In-a-Rush countdown is the shared top rush-clock now — same on scoop/pop/mix)
 }
 // One horizontal need bar: colored label pill + track with fill + green target band.
 function mixBar(n, s, MAX) {
@@ -7501,19 +7518,18 @@ function paintMix() {
     slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""} ${poisonedSlot ? "poisoned" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${poisonedSlot ? `<span class="poison-badge">☠️</span>` : ""}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
   }
   const showPet = !ROUND.villain;
-  const banner = (!ROUND.villain && GAME.unlocked.undo) ? `${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}` : `🐸${GAME.treats}`;
+  const banner = (showPet && GAME.unlocked.undo) ? `${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}` : "";
   html("mix", `
     <div class="mixv2 ${ROUND.villain ? "villain" : ""}">
       ${ROUND.villain ? `<div class="mix-lightning"></div>` : ""}
       <div class="m2-head">
         <div class="petbadge ${showPet ? "" : "nopet"}" id="familiar">
           <div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>
-          <div class="petbadge-count">${banner}</div>
+          ${banner ? `<div class="petbadge-count">${banner}</div>` : ""}
         </div>
         <div class="m2-cust"></div>
-        <button class="mixv-menu" id="hud-menu" aria-label="Menu">☰</button>
+        <button class="round-menu mixv-menu" id="hud-menu" aria-label="Menu">☰</button>
       </div>
-      <div class="m2-timer" id="m2-timer"></div>
       <div class="m2-stage">
         <div class="m2-cauldron ${exciteClass}" id="cauldron-tap" style="--mix-color:${mixColor}">
           <div class="caul-art ${equippedCauldronClass()} ${pulseColor ? "pulsing" : ""}" id="cauldron"${pulseColor ? ` style="--pulse-color:${pulseColor}"` : ""}>
@@ -7557,7 +7573,7 @@ function paintMix() {
   else { stopOvenFlicker(); stopOvenEmbers(); }
   if (ROUND.villain) { if (!mixLightningTimer) startMixLightning(); } else stopMixLightning();   // Queen's chamber lightning
   ROUND.inventory.forEach(inst => { if (inst && inst._glow) delete inst._glow; });
-  const rc = document.getElementById("rush-clock"); if (rc) rc.style.display = "none";
+  startRushClock();   // the shared In-a-Rush countdown shows on the mix screen too (same as scoop/pop)
 }
 // Two quick taps on the cauldron serves — deliberate, so no accidental serves.
 function wireDoubleTapServe() {
@@ -8283,7 +8299,11 @@ if (localStorage.getItem("wishpop_test") === "1") {
   window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
-document.addEventListener("click", e => { if (e.target.closest && e.target.closest(".hud-menu")) goHome(); });
+document.addEventListener("click", e => {
+  if (!e.target.closest) return;
+  if (e.target.closest(".round-menu")) { openHudMenu(); return; }   // scoop/pop/mix ☰ → popup menu
+  if (e.target.closest(".hud-menu")) goHome();                      // other screens ☰ → straight home
+});
 // Tap-and-hold a stat cell (payment / target / allergy) to see its label. Desktop shows it on
 // hover via CSS; this adds the press-and-hold reveal for touch.
 let statTipTimer = null, statTipCell = null;

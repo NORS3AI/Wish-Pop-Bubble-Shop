@@ -168,7 +168,7 @@ html, body {
 .big-bubble:active { transform: scale(0.94); }
 
 /* --- ASMR pop phase: a cluster of squishy bubbles you burst --- */
-.pop-sub { text-align: center; font-size: 13px; margin: 4px 10px 0; }
+.pop-sub { text-align: center; font-size: 13px; margin: calc(var(--safe-t) + 150px) 10px 0; }
 .bubble-field { flex: 1; min-height: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center;
   gap: 10px 12px; padding: 10px 8px; overflow: hidden; }
 .pbubble { position: relative; width: 62px; height: 62px; border: none; padding: 0; cursor: pointer; font-size: 26px;
@@ -345,15 +345,32 @@ html, body {
 .scoop-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; }
 .scoop-front { position: absolute; inset: 0; z-index: 3; background-size: cover; background-position: center; pointer-events: none; }
 /* floating chrome over the scene */
-/* running bubble tally — one of our bubbles, pinned at the top, with the live count inside it */
-.scoop-count { position: absolute; top: calc(var(--safe-t) + 44px); left: 50%; transform: translateX(-50%); z-index: 13;
-  width: 56px; height: 56px; display: grid; place-items: center; pointer-events: none; }
-.scoop-count-bub { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
-.scoop-count-n { position: relative; z-index: 2; font-family: var(--ff-display); font-size: 24px; font-weight: 900; color: #fff;
+/* Shared round-screen top bar (scoop / pop / mix): pet badge (left), phase counter (centre),
+   ☰ menu (right). Fixed so it lands identically on every screen regardless of its own layout. */
+.round-top .petbadge { position: fixed; top: calc(var(--safe-t) + 4px); left: 8px; z-index: 41; }
+.round-top .round-menu { position: fixed; top: calc(var(--safe-t) + 14px); right: 12px; z-index: 41;
+  width: 40px; height: 40px; border-radius: 11px; font-size: 20px; color: #ffe6b0;
+  background: rgba(50,24,72,.7); border: 1.5px solid rgba(255,214,110,.55); cursor: pointer; }
+.round-top .round-menu:active { transform: scale(.92); }
+/* running tally — one of our bubbles pinned top-centre with the live count inside it */
+.phase-count { position: fixed; top: calc(var(--safe-t) + 8px); left: 50%; transform: translateX(-50%); z-index: 41;
+  width: 54px; height: 54px; display: grid; place-items: center; pointer-events: none; }
+.phase-count-bub { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
+.phase-count-n { position: relative; z-index: 2; font-family: var(--ff-display); font-size: 23px; font-weight: 900; color: #fff;
   text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 7px rgba(120,180,255,.75); }
-.scoop-count.bumped { animation: scoopCountBump .28s ease; }
-@keyframes scoopCountBump { 0% { transform: translateX(-50%) scale(1); } 40% { transform: translateX(-50%) scale(1.18); } 100% { transform: translateX(-50%) scale(1); } }
-.scoop-head { position: absolute; top: calc(var(--safe-t) + 104px); left: 0; right: 0; z-index: 12; text-align: center; pointer-events: none; }
+.phase-count.bumped { animation: phaseCountBump .28s ease; }
+@keyframes phaseCountBump { 0% { transform: translateX(-50%) scale(1); } 40% { transform: translateX(-50%) scale(1.18); } 100% { transform: translateX(-50%) scale(1); } }
+.scoop-head { position: absolute; top: calc(var(--safe-t) + 150px); left: 0; right: 0; z-index: 12; text-align: center; pointer-events: none; }
+/* ☰ popup menu (round screens) */
+.hudmenu-ov { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: rgba(10,6,20,.72); animation: fade .18s ease; }
+.hudmenu-card { width: 84%; max-width: 300px; display: flex; flex-direction: column; gap: 10px; padding: 20px 18px;
+  border-radius: 18px; background: linear-gradient(160deg, #2a1740, #170c26); border: 1.5px solid rgba(255,214,110,.4); box-shadow: 0 12px 34px rgba(0,0,0,.6); }
+.hudmenu-title { text-align: center; font-family: var(--ff-display); font-size: 22px; color: #ffe6b0; margin-bottom: 2px; }
+.hudmenu-item { padding: 13px 16px; border-radius: 13px; border: 1.5px solid rgba(255,214,110,.4); cursor: pointer;
+  background: rgba(60,30,86,.7); color: #fff; font-family: var(--ff-display); font-size: 18px; }
+.hudmenu-item:active { transform: scale(.97); }
+.hudmenu-item.hm-close { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); font-size: 16px; }
 .scoop-sub { font-size: 13px; color: #ffe6a8; text-shadow: 0 2px 5px rgba(0,0,0,.85); }
 .scoop-instr { font-size: 17px; font-weight: 800; min-height: 24px; margin: 2px 16px 0; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.95); }
 .scoop-controls { position: absolute; left: 0; right: 0; bottom: calc(var(--safe-b) + 8px); z-index: 12;
@@ -1272,9 +1289,10 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .slot.shrunk > :first-child { transform: scale(.74); }
 .slot .pinch-badge { bottom: 0; right: 0; font-size: 12px; }
 
-/* --- In-a-Rush patience clock (fixed, persists across phases) --- */
-#rush-clock { position: fixed; top: calc(var(--safe-t) + 4px); left: 50%; transform: translateX(-50%);
-  z-index: 45; display: none; flex-direction: column; align-items: center; gap: 3px; width: min(88%, 460px);
+/* --- In-a-Rush patience clock (fixed, persists across phases). Sits just below the pet-badge row
+   so it reads the same on scoop, pop and mix. --- */
+#rush-clock { position: fixed; top: calc(var(--safe-t) + 112px); left: 50%; transform: translateX(-50%);
+  z-index: 45; display: none; flex-direction: column; align-items: center; gap: 3px; width: min(80%, 380px);
   background: rgba(30,15,20,.9); border: 1px solid rgba(255,140,120,.5); border-radius: 12px; padding: 6px 12px;
   box-shadow: 0 6px 16px rgba(0,0,0,.4); }
 #rush-clock .rc-lbl { font-size: 13px; font-weight: 800; color: #ffd0b0; }
