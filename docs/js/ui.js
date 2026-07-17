@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v411"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v412"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -76,6 +76,9 @@ function normalizeGame(g) {
     if (!g.equipped[kind] || !D.COSMETIC_BY_ID[g.equipped[kind]]) g.equipped[kind] = def.id;
   });
   if (typeof g.petFace !== "number") g.petFace = 0; // which expression the equipped pet is showing (0 = default front-facing)
+  if (!g.favs || typeof g.favs !== "object") g.favs = {};              // skinId -> true (favorite skins, starred in the shop)
+  if (!g.cycleFav || typeof g.cycleFav !== "object") g.cycleFav = {};  // kind -> true (rotate through favorites each customer)
+  if (!g.favIdx || typeof g.favIdx !== "object") g.favIdx = { cauldron: 0, familiar: 0 }; // rotation position per kind
   // one-time: hand every player the five painted pets to try, and start them on the friendly Frog
   if (!g.petsSeeded) {
     ["pet_frog", "pet_sheep", "pet_cat", "pet_squirrel", "pet_crow"].forEach(id => { g.owned[id] = true; });
@@ -132,18 +135,43 @@ function activeVillainSkin() {
 }
 // currently-equipped cosmetics (villain fights force the villain's own prize pot, so the rim glow,
 // bubbles and mirror/mouse layer all key off the right skin class)
+// which cauldron id is active this round: the round's rotating favorite (if "cycle favorites" is on)
+// otherwise the equipped one. Villain fights force the villain's own prize pot.
+function activeCauldronId() {
+  if (ROUND && ROUND.favCauldron && GAME.owned[ROUND.favCauldron]) return ROUND.favCauldron;
+  return GAME.equipped.cauldron || "cauldron_classic";
+}
 function equippedCauldronClass() {
   if (ROUND && ROUND.villain) return "skin-" + activeVillainSkin();
-  return "skin-" + (GAME.equipped.cauldron || "cauldron_classic");
+  return "skin-" + activeCauldronId();
 }
-// which cauldron IMAGE to draw: the equipped skin if it ships art, else the classic pot.
+// which cauldron IMAGE to draw: the active skin if it ships art, else the classic pot.
 // All art skins share the same normalized canvas, so the rim glow + bubbles line up on every one.
 function equippedCauldronArt() {
   if (ROUND && ROUND.villain) return activeVillainSkin();
-  const id = GAME.equipped.cauldron || "cauldron_classic";
+  const id = activeCauldronId();
   const c = (D.COSMETICS.cauldron || []).find(x => x.id === id);
   return (c && c.art) ? id : "cauldron_classic";
 }
+// the pet id active this round (rotating favorite if cycling, else equipped) — home always uses equipped
+function activePetId(inRound) {
+  if (inRound && ROUND && ROUND.favPet && GAME.owned[ROUND.favPet]) return ROUND.favPet;
+  return GAME.equipped.familiar;
+}
+// owned + favorited skins of a kind, in catalog order (the rotation list for "cycle favorites")
+function favList(kind) { return D.COSMETICS[kind].filter(c => GAME.owned[c.id] && GAME.favs[c.id]).map(c => c.id); }
+// at each new customer: advance the favorites rotation for any kind with cycling on
+function advanceFavCycle() {
+  if (!ROUND) return;
+  [["cauldron", "favCauldron"], ["familiar", "favPet"]].forEach(([kind, slot]) => {
+    if (!GAME.cycleFav[kind]) { ROUND[slot] = null; return; }
+    const favs = favList(kind);
+    if (!favs.length) { ROUND[slot] = null; return; }
+    GAME.favIdx[kind] = ((GAME.favIdx[kind] | 0) + 1) % favs.length;
+    ROUND[slot] = favs[GAME.favIdx[kind]];
+  });
+}
+function toggleFav(id) { GAME.favs[id] = !GAME.favs[id]; if (!GAME.favs[id]) delete GAME.favs[id]; save(); }
 // The Queen's Mirror pot shows a face behind its (transparent) mirror; the face fades to a new
 // one as you add ingredients. Each face art is on the SAME 1500x990 canvas as the pot, so it
 // always lands in the mirror on every device. Order = a little scheming-to-triumphant progression.
@@ -2333,69 +2361,159 @@ function wellConfetti() {
 /* ======================================================================= */
 /* WARDROBE — equip owned skins, or buy a specific one with Stardust        */
 /* ======================================================================= */
+// is this skin earned/found rather than bought (so it shows a "how to get it" note, never a price)?
+function skinIsEarned(c) { return !!(c.achievement || c.villain || c.ball || c.hunt || c.finale || c.well); }
+// the skin's picture for a tile / the detail card
+function skinArtTag(c, cls) {
+  return skinKindOf(c.id) === "familiar" ? buddyArt(c.id, cls)
+    : (c.art ? ART.tag(skinArtKey(c.id), c.chip, cls) : `<span class="${cls} skin-emoji-chip">${c.chip}</span>`);
+}
+// a short "how to unlock" label for an un-owned skin's tile corner
+function acquisitionShort(c) {
+  if (c.achievement) return `🏆 ${Math.min(GAME.recycled, c.achievement.need)}/${c.achievement.need}`;
+  if (c.villain) return "👑 Villain";
+  if (c.ball) return "👠 Ball";
+  if (c.hunt) { const h = huntFor(c.hunt), s = huntState(c.hunt); return `${h ? h.itemEmoji : "🔎"} ${s ? s.found : 0}/${h ? h.need : "?"}`; }
+  if (c.finale) return "🏆 Finale";
+  if (c.well) return "🌟 Well";
+  if (c.pearl) return `${PEARL} ${c.pearl}`;
+  return `✨ ${BALANCE.STARDUST_SKIN_COST}`;
+}
+// a full sentence describing a skin (for the detail overlay)
+function skinDesc(c) {
+  if (c.desc) return c.desc;
+  const noun = skinKindOf(c.id) === "familiar" ? "companion" : "cauldron";
+  if (c.villain) { const v = villainNameForSkin(c.id); return `A trophy ${noun} won by defeating ${v ? v.replace(/^The /, "the ") : "a villain"}.`; }
+  if (c.finale) { const rn = (D.REALM_BY_ID[c.finale] || {}).name || "a realm"; return `Earned for completing the ${rn} finale.`; }
+  if (c.hunt) { const h = huntFor(c.hunt); return h ? `Found by collecting all of ${h.char}'s ${h.item}s as you play.` : "Found while you play."; }
+  if (c.ball) return "Earned by dazzling Cinderella at the Royal Ball.";
+  if (c.well) return "A rare treasure that only turns up at Wishy's Wishing Well.";
+  if (c.achievement) return `Earned by an achievement: ${c.achievement.desc}.`;
+  if (c.pearl) return `A rare ${noun} skin, bought only with Wishy the Fish's pearls.`;
+  return `A lovely ${c.name} look for your ${noun}.`;
+}
 function renderWardrobe() {
-  const dustCost = BALANCE.STARDUST_SKIN_COST;
+  const wardTile = (kind, c) => {
+    const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, fav = !!GAME.favs[c.id];
+    const star = owned ? `<button class="ward-star ${fav ? "on" : ""}" data-id="${c.id}" aria-label="Favorite">${fav ? "★" : "☆"}</button>` : "";
+    const check = owned ? `<button class="ward-check ${equipped ? "on" : ""}" data-kind="${kind}" data-id="${c.id}" aria-label="Equip">${equipped ? "✓" : ""}</button>` : "";
+    const tag = owned ? "" : `<span class="ward-tag">${acquisitionShort(c)}</span>`;
+    return `<div class="ward-tile ${owned ? "" : "locked"} ${equipped ? "on" : ""}" role="button" tabindex="0" data-kind="${kind}" data-id="${c.id}">
+      ${star}${check}
+      <span class="ward-art-wrap">${skinArtTag(c, "ward-art")}</span>
+      <span class="ward-tile-name">${c.name}</span>
+      ${tag}
+    </div>`;
+  };
   const section = (kind, title) => {
-    const tiles = D.COSMETICS[kind].map(c => {
-      const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, ach = c.achievement, vil = c.villain, ball = c.ball, hunt = c.hunt, pearl = c.pearl, finale = c.finale, well = c.well;
-      const hh = hunt ? huntFor(hunt) : null, hs = hunt ? huntState(hunt) : null;
-      const finaleName = finale ? ((D.REALM_BY_ID[finale] || {}).name || "the realm") : "";
-      // villain skins name their villain: full name for the hint, a short name for the little tag
-      const vName = vil ? villainNameForSkin(c.id) : null;
-      const vShort = vName ? vName.replace(/^The\s+(Evil|Wicked|Wretched|Cursed)\s+/i, "").replace(/^The\s+/i, "") : null;
-      const special = ach || vil || ball || hunt || finale || well; // earned/found, never bought with currency
-      const canBuy = !owned && !special && !pearl && GAME.stardust >= dustCost;
-      const canBuyPearl = !owned && pearl && (GAME.pearls || 0) >= pearl;
-      const btn = equipped
-        ? `<span class="skin-tag equipped">✓ On</span>`
-        : owned
-          ? `<button class="btn small good skin-equip" data-kind="${kind}" data-id="${c.id}">Wear</button>`
-          : ach
-            ? `<span class="skin-tag muted">🏆 ${Math.min(GAME.recycled, ach.need)}/${ach.need}</span>`
-            : vil
-              ? `<span class="skin-tag muted">👑 Beat the ${vShort || "villain"}</span>`
-              : ball
-                ? `<span class="skin-tag muted">👠 Dazzle at the Ball</span>`
-                : hunt
-                  ? `<span class="skin-tag muted">${hh ? hh.itemEmoji : "🔎"} ${hs ? hs.found : 0}/${hh ? hh.need : "?"}</span>`
-                  : finale
-                    ? `<span class="skin-tag muted">🏆 Finale</span>`
-                  : well
-                    ? `<span class="skin-tag muted">🌟 Wishing Well</span>`
-                  : pearl
-                    ? `<button class="btn small ${canBuyPearl ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuyPearl ? "" : "disabled"}>${PEARL} ${pearl}</button>`
-                    : `<button class="btn small ${canBuy ? "" : "secondary"} skin-buy" data-id="${c.id}" ${canBuy ? "" : "disabled"}>✨${dustCost}</button>`;
-      // achievement/villain/ball/hunt/pearl skins reveal their look; other unowned stay a mystery
-      const revealed = owned || special || pearl;
-      const chip = owned
-        ? (kind === "familiar" ? buddyArt(c.id, "skin-art") : (c.art ? ART.tag(skinArtKey(c.id), c.chip, "skin-art") : c.chip))
-        : revealed ? c.chip : "❔";
-      const nameShown = revealed ? c.name : "???";
-      const hint = ach && !owned ? ach.desc : vil && !owned ? `Beat ${vName ? vName.replace(/^The /, "the ") : "a villain"}` : ball && !owned ? "Dazzle Cinderella at the Royal Ball"
-        : hunt && !owned ? `Find all of ${hh ? hh.char + "'s " + hh.item + "s" : "them"} while you play`
-        : finale && !owned ? `Complete the ${finaleName} finale` : well && !owned ? "Rare — only from Wishy’s Wishing Well" : pearl && !owned ? "Rare — only Wishy’s pearls buy this" : "";
-      return `<div class="skin-tile ${equipped ? "on" : ""} ${owned ? "" : "locked"} ${(special || pearl) && !owned ? "ach" : ""}">
-        <div class="skin-chip">${chip}</div>
-        <div class="skin-name">${nameShown}${hint ? `<div class="muted" style="font-size:10px;font-weight:600">${hint}</div>` : ""}</div>
-        ${btn}</div>`;
-    }).join("");
-    return `<div class="card" style="margin-bottom:10px">
-      <div style="font-weight:800;margin-bottom:8px">${title}</div>
-      <div class="skin-grid">${tiles}</div></div>`;
+    const tiles = D.COSMETICS[kind].map(c => wardTile(kind, c)).join("");
+    const cycleOn = !!GAME.cycleFav[kind], n = favList(kind).length;
+    return `<div class="ward-group">
+      <div class="ward-group-head">
+        <span class="ward-group-name">${title}</span>
+        <button class="ward-cycle ${cycleOn ? "on" : ""}" data-kind="${kind}" aria-label="Cycle through favorites">
+          <span class="ward-cycle-box">${cycleOn ? "✓" : ""}</span>Cycle favorites${n ? ` <span class="ward-cycle-n">${n}</span>` : ""}
+        </button>
+      </div>
+      <div class="ward-grid">${tiles}</div>
+    </div>`;
   };
   html("wardrobe", `
-    ${hud("My Skins")}
-    <div class="rb-total" style="text-align:center;margin:2px 0 8px">✨ <b>${GAME.stardust}</b> Stardust${(GAME.pearls || 0) > 0 ? ` &nbsp;·&nbsp; ${PEARL} <b>${GAME.pearls}</b> Pearls` : ""} <span class="muted" style="font-size:12px">· Stardust buys most skins; ${PEARL} pearls buy the rare ones</span></div>
-    <div class="grow" style="overflow-y:auto">
+    ${hud("Skin Shop")}
+    <div class="ward-purse">✨ <b>${GAME.stardust}</b> Stardust${(GAME.pearls || 0) > 0 ? ` &nbsp;·&nbsp; ${PEARL} <b>${GAME.pearls}</b> Pearls` : ""}</div>
+    <div class="grow ward-scroll" style="overflow-y:auto; padding: 4px 8px 10px">
       ${section("cauldron", "🫕 Cauldron Skins")}
       ${section("familiar", "🐾 Pet Skins")}
     </div>
     <button class="btn secondary" id="ward-back">←  Back</button>
   `);
-  $("#screen-wardrobe").querySelectorAll(".skin-equip").forEach(b => b.addEventListener("click", () => equipSkin(b.dataset.kind, b.dataset.id)));
-  $("#screen-wardrobe").querySelectorAll(".skin-buy").forEach(b => b.addEventListener("click", () => buySkin(b.dataset.id)));
+  const scr = $("#screen-wardrobe .ward-scroll");
+  if (scr && typeof WARD_SCROLL === "number") scr.scrollTop = WARD_SCROLL;
+  if (scr) scr.addEventListener("scroll", () => { WARD_SCROLL = scr.scrollTop; });
+  $("#screen-wardrobe").querySelectorAll(".ward-tile").forEach(t => t.addEventListener("click", () => openSkinDetail(t.dataset.kind, t.dataset.id)));
+  $("#screen-wardrobe").querySelectorAll(".ward-star").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); wardFavClick(b); }));
+  $("#screen-wardrobe").querySelectorAll(".ward-check").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); wardEquipClick(b); }));
+  $("#screen-wardrobe").querySelectorAll(".ward-cycle").forEach(b => b.addEventListener("click", () => toggleCycleFav(b.dataset.kind)));
   on("#ward-back", "click", renderMenu);
   show("wardrobe");
+}
+let WARD_SCROLL = 0;
+// tap the corner star: toggle favorite in place (no full re-render, so the scroll stays put)
+function wardFavClick(btn) {
+  const id = btn.dataset.id; toggleFav(id);
+  const on = !!GAME.favs[id];
+  btn.classList.toggle("on", on); btn.textContent = on ? "★" : "☆";
+  SFX.pop && SFX.pop(1);
+  // keep each section's "cycle favorites (N)" count in sync
+  const kind = skinKindOf(id);
+  const badge = document.querySelector(`#screen-wardrobe .ward-cycle[data-kind="${kind}"] .ward-cycle-n`);
+  const cyc = document.querySelector(`#screen-wardrobe .ward-cycle[data-kind="${kind}"]`);
+  const n = favList(kind).length;
+  if (cyc && !badge && n) cyc.insertAdjacentHTML("beforeend", ` <span class="ward-cycle-n">${n}</span>`);
+  else if (badge && n) badge.textContent = n;
+  else if (badge && !n) badge.remove();
+}
+// tap the corner checkbox: equip in place, clearing the other tiles of this kind
+function wardEquipClick(btn) {
+  const { kind, id } = btn.dataset;
+  if (!GAME.owned[id]) return;
+  GAME.equipped[kind] = id;
+  if (kind === "familiar") GAME.petFace = 0;
+  save(); SFX.pop && SFX.pop(1);
+  document.querySelectorAll(`#screen-wardrobe .ward-tile[data-kind="${kind}"]`).forEach(t => {
+    const on = t.dataset.id === id;
+    t.classList.toggle("on", on);
+    const chk = t.querySelector(".ward-check"); if (chk) { chk.classList.toggle("on", on); chk.textContent = on ? "✓" : ""; }
+  });
+  const c = D.COSMETIC_BY_ID[id]; toast(`${c.chip} ${c.name} equipped!`);
+}
+function toggleCycleFav(kind) {
+  GAME.cycleFav[kind] = !GAME.cycleFav[kind]; save();
+  const noun = kind === "familiar" ? "pet" : "cauldron";
+  if (GAME.cycleFav[kind]) toast(favList(kind).length ? `🔄 Your ${noun} will cycle through your favorites!` : `⭐ Star some ${noun}s to cycle through them!`);
+  renderWardrobe();
+}
+// tap a tile: a big look at the skin, its description, and Buy / Wear / favorite
+function openSkinDetail(kind, id) {
+  const c = D.COSMETIC_BY_ID[id]; if (!c) return;
+  SFX.unlock && SFX.unlock(); SFX.pop && SFX.pop(1);
+  const owned = !!GAME.owned[id], equipped = GAME.equipped[kind] === id, fav = !!GAME.favs[id];
+  const dustCost = BALANCE.STARDUST_SKIN_COST;
+  let action;
+  if (owned) action = equipped
+    ? `<div class="skd-equipped">✓ Equipped</div>`
+    : `<button class="btn good skd-equip">Wear it</button>`;
+  else if (c.pearl) action = (GAME.pearls || 0) >= c.pearl
+    ? `<button class="btn good skd-buy">Buy now · ${PEARL} ${c.pearl}</button>`
+    : `<div class="skd-need">${PEARL} ${c.pearl} pearls needed</div>`;
+  else if (skinIsEarned(c)) action = `<div class="skd-need">${skinDesc(c)}</div>`;
+  else action = GAME.stardust >= dustCost
+    ? `<button class="btn good skd-buy">Buy now · ✨${dustCost}</button>`
+    : `<div class="skd-need">✨${dustCost} Stardust needed</div>`;
+  const favBtn = owned ? `<button class="skd-fav ${fav ? "on" : ""}">${fav ? "★ Favorite" : "☆ Add to favorites"}</button>` : "";
+  const ov = document.createElement("div"); ov.className = "skd-overlay"; ov.id = "skd-overlay";
+  ov.innerHTML = `
+    <div class="skd-card">
+      <span class="skd-big">${skinArtTag(c, "skd-art")}</span>
+      <div class="skd-name">${c.name}</div>
+      <div class="skd-desc">${skinDesc(c)}</div>
+      ${favBtn}
+      ${action}
+      <button class="skd-close" id="skd-close">Close</button>
+    </div>`;
+  itemHost().appendChild(ov);
+  ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
+  on("#skd-close", "click", () => ov.remove());
+  const q = sel => ov.querySelector(sel);
+  const eq = q(".skd-equip"); if (eq) eq.addEventListener("click", () => { ov.remove(); equipSkin(kind, id); });
+  const by = q(".skd-buy"); if (by) by.addEventListener("click", () => { ov.remove(); buySkin(id); });
+  const fv = q(".skd-fav"); if (fv) fv.addEventListener("click", () => {
+    toggleFav(id); const on = !!GAME.favs[id];
+    fv.classList.toggle("on", on); fv.textContent = on ? "★ Favorite" : "☆ Add to favorites";
+    // reflect on the underlying tile's star too
+    const star = document.querySelector(`#screen-wardrobe .ward-tile[data-id="${id}"] .ward-star`);
+    if (star) { star.classList.toggle("on", on); star.textContent = on ? "★" : "☆"; }
+  });
 }
 function equipSkin(kind, id) {
   if (!GAME.owned[id]) return;
@@ -2709,8 +2827,9 @@ function syncRoundHud(phase) {
   const goldChip = home
     ? `<button class="hud-gold" id="hud-gold" aria-label="Currencies"><span class="hud-gold-ic">🪙</span><b>${(GAME.gold || 0).toLocaleString()}</b></button>`
     : "";
+  const petChip = buddyArt(activePetId(!home), "", GAME.petFace);   // round screens may show a rotating favorite pet
   hud.innerHTML =
-    `<div class="petbadge ${showPet ? "" : "nopet"}" id="familiar"><div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>${count != null ? `<div class="petbadge-count">${count}</div>` : ""}</div>` +
+    `<div class="petbadge ${showPet ? "" : "nopet"}" id="familiar"><div class="petbadge-pet">${showPet ? petChip : "🔒"}</div>${count != null ? `<div class="petbadge-count">${count}</div>` : ""}</div>` +
     (timer ? rushBadgeHtml("rt-rush") : "") +
     (tally ? `<div class="phase-count ${tallyClass}" id="phase-count"><img class="phase-count-bub" src="${ART.url("bubble")}" alt="" draggable="false"><span class="phase-count-n" id="phase-count-n">${tallyN}</span></div>` : "") +
     goldChip +
@@ -6442,6 +6561,7 @@ function custBadges() {
   return out;
 }
 function renderCustomer() {
+  if (!ROUND._favCycled) { ROUND._favCycled = true; advanceFavCycle(); save(); }  // rotate favorite skins per customer
   const c = ROUND.customer, w = ROUND.wish, realm = currentRealm();
   ROUND.currency = (c && c.pays) || "gold";   // which currency this customer pays in (gold, pearls, …)
   const payGlyph = ROUND.currency === "pearls" ? PEARL : null;   // non-gold currencies show an emoji instead of the coin icon

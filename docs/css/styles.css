@@ -934,6 +934,57 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .skin-chip img.art.skin-art { height: 34px; width: 34px; max-width: 34px; }
 .well-emoji img.art { height: 1em; width: auto; max-width: none; filter: drop-shadow(0 0 14px rgba(255,216,107,.6)); }
 
+/* ---- Skin Shop (wardrobe): satchel-style sections + tap-for-detail tiles ---- */
+.ward-purse { text-align: center; font-weight: 800; color: #ffe6a8; margin: 0 8px 8px; font-size: 14px; }
+.ward-group { margin-bottom: 16px; }
+.ward-group-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 8px; }
+.ward-group-name { font-family: var(--ff-display); font-size: 18px; color: #ffe7ac; }
+.ward-cycle { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; color: #d8c9f5; cursor: pointer;
+  background: rgba(16,10,30,.6); border: 1.5px solid rgba(240,200,110,.4); border-radius: 12px; padding: 5px 10px; }
+.ward-cycle.on { color: #fff; border-color: var(--good); background: rgba(126,224,138,.18); }
+.ward-cycle-box { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid rgba(240,200,110,.6); display: inline-flex;
+  align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #0a2a12; }
+.ward-cycle.on .ward-cycle-box { background: var(--good); border-color: var(--good); }
+.ward-cycle-n { background: rgba(0,0,0,.32); border-radius: 8px; padding: 1px 7px; font-size: 11px; color: #ffd873; }
+.ward-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ward-tile { position: relative; min-width: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer;
+  border-radius: 14px; border: 1px solid rgba(255,255,255,.12); padding: 8px 6px 7px;
+  background: radial-gradient(circle at 50% 34%, rgba(120,90,180,.18), rgba(40,26,66,.5)); }
+.ward-tile:active { transform: scale(.96); }
+.ward-tile.on { border-color: var(--good); box-shadow: 0 0 10px rgba(126,224,138,.4); }
+.ward-tile.locked .ward-art-wrap { filter: grayscale(.35) brightness(.82); }
+.ward-art-wrap { width: 100%; min-width: 0; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+.ward-art-wrap img.ward-art { width: 100%; height: 100%; max-width: 100%; object-fit: contain; filter: drop-shadow(0 3px 8px rgba(0,0,0,.45)); }
+.ward-art-wrap .art-emoji.ward-art { font-size: 44px; line-height: 1; }
+.ward-tile-name { font-size: 11px; font-weight: 700; color: #efe6ff; text-align: center; line-height: 1.12; min-height: 22px;
+  display: flex; align-items: center; padding: 0 4px; }
+.ward-tag { display: inline-block; margin-top: 1px; font-size: 10px; font-weight: 800; color: #ffd873;
+  background: rgba(0,0,0,.5); border-radius: 8px; padding: 2px 8px; }
+.ward-star { position: absolute; top: 4px; left: 5px; z-index: 2; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; padding: 0;
+  font-size: 16px; line-height: 1; color: #ffd45c; background: rgba(10,6,20,.55); border: 1px solid rgba(255,214,110,.4); }
+.ward-star.on { color: #ffce3a; text-shadow: 0 0 8px rgba(255,206,58,.95); }
+.ward-check { position: absolute; bottom: 5px; left: 5px; z-index: 2; width: 24px; height: 24px; border-radius: 7px; cursor: pointer; padding: 0;
+  font-size: 15px; font-weight: 900; line-height: 1; color: #123; background: rgba(10,6,20,.5); border: 1.5px solid rgba(255,255,255,.5); }
+.ward-check.on { background: var(--good); border-color: var(--good); color: #0a2a12; }
+/* skin detail overlay */
+.skd-overlay { position: fixed; inset: 0; z-index: 96; display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: rgba(10,6,20,.74); animation: fade .18s ease; }
+.skd-card { width: 100%; max-width: 340px; background: linear-gradient(180deg, rgba(48,30,74,.98), rgba(26,15,46,.98));
+  border: 2px solid rgba(240,200,110,.6); border-radius: 20px; box-shadow: 0 12px 30px rgba(0,0,0,.6); padding: 18px 18px 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.skd-big { width: 184px; height: 184px; display: flex; align-items: center; justify-content: center; }
+.skd-big img.skd-art { width: 100%; height: 100%; max-width: none; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
+.skd-big .art-emoji.skd-art { font-size: 110px; line-height: 1; }
+.skd-name { font-family: var(--ff-display); font-size: 22px; color: #ffe7ac; text-align: center; }
+.skd-desc { font-size: 13px; color: #d9ccf2; text-align: center; line-height: 1.35; }
+.skd-fav { font-weight: 800; font-size: 13px; color: #ffd45c; cursor: pointer; background: rgba(16,10,30,.6);
+  border: 1.5px solid rgba(255,214,110,.45); border-radius: 12px; padding: 7px 16px; }
+.skd-fav.on { color: #123; background: #ffce3a; border-color: #ffce3a; }
+.skd-card .btn { width: 100%; max-width: 240px; }
+.skd-need { font-size: 13px; font-weight: 700; color: #ffc234; text-align: center; padding: 2px 6px; }
+.skd-equipped { font-weight: 800; color: var(--good); font-size: 15px; }
+.skd-close { margin-top: 2px; background: none; border: none; color: #b8a6d8; font-weight: 700; font-size: 14px; cursor: pointer; padding: 6px; }
+
 /* custom cauldron-pot image (optional) — replaces the color skin frame */
 .cauldron.has-art { border: none !important; background-color: transparent !important;
   background-repeat: no-repeat; background-position: center; background-size: contain; box-shadow: none !important; }
