@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v405"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v406"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -428,7 +428,7 @@ function roundTop(opts) {
   opts = opts || {};
   const showPet = !(ROUND && ROUND.villain);
   const cnt = (showPet && GAME.unlocked.undo) ? `<div class="petbadge-count">${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}</div>` : "";
-  const counter = opts.count ? `<div class="phase-count" id="phase-count"><img class="phase-count-bub" src="${ART.url("bubble")}" alt="" draggable="false"><span class="phase-count-n" id="phase-count-n">0</span></div>` : "";
+  const counter = opts.count ? `<div class="phase-count ${opts.countClass || ""}" id="phase-count"><img class="phase-count-bub" src="${ART.url("bubble")}" alt="" draggable="false"><span class="phase-count-n" id="phase-count-n">0</span></div>` : "";
   return `<div class="round-top">
     <div class="petbadge ${showPet ? "" : "nopet"}" id="familiar"><div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>${cnt}</div>
     ${counter}
@@ -6847,8 +6847,8 @@ function renderPop() {
   const bubbles = ROUND.haul.map((_, i) => bubbleHTML(i)).join("");
   html("pop", `
     <div class="pop-bg" id="pop-bg"></div>
-    ${roundTop({ count: true })}
-    <div class="pop-sub muted" id="pop-hint">Tap each bubble to pop it — everything inside goes in your bag!</div>
+    ${roundTop({ count: true, countClass: ROUND.rush ? "under-timer" : "under-pet" })}
+    <div class="pop-sub muted${ROUND.rush ? " timed" : ""}" id="pop-hint">Tap each bubble to pop it — everything inside goes in your bag!</div>
     <div class="bubble-field" id="bubble-field">${bubbles}</div>
     <div id="hand-line" class="muted" style="font-size:13px;text-align:center;min-height:20px"></div>
     <div class="row">
