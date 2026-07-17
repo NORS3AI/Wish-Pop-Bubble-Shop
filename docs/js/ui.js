@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v407"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v408"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -455,6 +455,7 @@ function roundTop(opts) {
   const counter = opts.count ? `<div class="phase-count ${opts.countClass || ""}" id="phase-count"><img class="phase-count-bub" src="${ART.url("bubble")}" alt="" draggable="false"><span class="phase-count-n" id="phase-count-n">0</span></div>` : "";
   return `<div class="round-top">
     <div class="petbadge ${showPet ? "" : "nopet"}" id="familiar"><div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>${cnt}</div>
+    ${rushBadgeHtml("rt-rush")}
     ${counter}
     <button class="round-menu" id="hud-menu" aria-label="Menu">☰</button>
   </div>`;
@@ -2628,20 +2629,36 @@ function stopRoundTimers() {
   if (ROUND._rushTimer) { clearInterval(ROUND._rushTimer); ROUND._rushTimer = null; }
   const el = document.getElementById("rush-clock"); if (el) el.style.display = "none";
 }
+// seconds left on a timed (In-a-Rush) customer, or null if not timed
+function rushSecondsLeft() {
+  if (!ROUND || !ROUND.rush) return null;
+  const left = ROUND.rushMs - (Date.now() - (ROUND.rushStart || Date.now()));
+  return Math.max(0, Math.ceil(left / 1000));
+}
+// the round countdown badge that docks UNDER the pet — the same look on scoop, pop and mix.
+// Empty string when the customer isn't timed. `extraCls` lets each screen position it.
+function rushBadgeHtml(extraCls) {
+  if (!ROUND || !ROUND.rush) return "";
+  const s = rushSecondsLeft();
+  return `<div class="rush-badge ${s <= 10 ? "urgent" : ""} ${extraCls || ""}"><b>${s}</b><span>SEC</span></div>`;
+}
+// The In-a-Rush countdown runs off ROUND.rushStart (wall-clock), so a single interval simply
+// repaints whichever rush badge(s) are on screen — the badge is re-rendered per phase, same spot
+// under the pet on all three screens.
 function startRushClock() {
   if (!ROUND || !ROUND.rush) return;
   if (ROUND._rushTimer) return;                 // already running (persists across phases)
   if (!ROUND.rushStart) ROUND.rushStart = Date.now();
-  let el = document.getElementById("rush-clock");
-  if (!el) { el = document.createElement("div"); el.id = "rush-clock"; $("#app").appendChild(el); }
   const paint = () => {
     const left = ROUND.rushMs - (Date.now() - ROUND.rushStart);
     if (left <= 0) { rushExpire(); return; }
-    const s = Math.ceil(left / 1000), pct = Math.max(0, left / ROUND.rushMs * 100);
-    el.innerHTML = `<span class="rc-lbl">⏱️ In a Rush — <b>${s}s</b></span><span class="rc-track"><i style="width:${pct}%"></i></span>`;
-    el.classList.toggle("urgent", s <= 10);
+    const s = Math.ceil(left / 1000);
+    document.querySelectorAll(".rush-badge").forEach(el => {
+      const b = el.querySelector("b"); if (b) b.textContent = s;
+      el.classList.toggle("urgent", s <= 10);
+    });
   };
-  el.style.display = "flex"; paint();
+  paint();
   ROUND._rushTimer = setInterval(paint, 200);
 }
 // Out of time on a timed customer. This is just the normal customer RESULTS page with the
@@ -6522,8 +6539,8 @@ function renderScoop() {
       <div class="scoop-front" id="scoop-front"></div>
       <div class="scoop-secret" id="scoop-secret"></div>
     </div>
-    ${roundTop({ count: true })}
-    <div class="scoop-head">
+    ${roundTop({ count: true, countClass: ROUND.rush ? "under-timer" : "under-pet" })}
+    <div class="scoop-head${ROUND.rush ? " timed" : ""}">
       <div class="scoop-sub" id="scoop-step">Scoop 1 of ${scoops}</div>
       <div class="scoop-instr" id="scoop-text">✋ Swipe side to side to shake off the glitter!</div>
     </div>
@@ -7556,6 +7573,7 @@ function paintMix() {
         <div class="m2-cust"></div>
         <button class="round-menu mixv-menu" id="hud-menu" aria-label="Menu">☰</button>
       </div>
+      ${rushBadgeHtml("mix-rush")}
       <div class="m2-stage">
         <div class="m2-cauldron ${exciteClass}" id="cauldron-tap" style="--mix-color:${mixColor}">
           <div class="caul-art ${equippedCauldronClass()} ${pulseColor ? "pulsing" : ""}" id="cauldron"${pulseColor ? ` style="--pulse-color:${pulseColor}"` : ""}>

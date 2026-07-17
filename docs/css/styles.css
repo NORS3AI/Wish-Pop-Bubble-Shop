@@ -169,7 +169,7 @@ html, body {
 
 /* --- ASMR pop phase: a cluster of squishy bubbles you burst --- */
 .pop-sub { text-align: center; font-size: 13px; margin: calc(var(--safe-t) + 192px) 10px 0; }
-.pop-sub.timed { margin-top: calc(var(--safe-t) + 214px); }
+.pop-sub.timed { margin-top: calc(var(--safe-t) + 270px); }
 .bubble-field { flex: 1; min-height: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center;
   gap: 10px 12px; padding: 10px 8px; overflow: hidden; }
 .pbubble { position: relative; width: 62px; height: 62px; border: none; padding: 0; cursor: pointer; font-size: 26px;
@@ -363,12 +363,22 @@ html, body {
   text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 7px rgba(120,180,255,.75); }
 .phase-count.bumped { animation: phaseCountBump .28s ease; }
 @keyframes phaseCountBump { 0% { transform: translateX(-50%) scale(1); } 40% { transform: translateX(-50%) scale(1.18); } 100% { transform: translateX(-50%) scale(1); } }
-/* pop-phase placement variants: tuck the running tally under the pet, or under the timer if the customer is timed */
-.phase-count.under-pet { top: calc(var(--safe-t) + 128px); left: 35px; transform: none; }
-.phase-count.under-pet.bumped { animation: phaseCountBumpPlain .28s ease; }
-.phase-count.under-timer { top: calc(var(--safe-t) + 152px); }
+/* the running tally tucks UNDER the pet — or drops below the round timer when the customer is timed */
+.phase-count.under-pet   { top: calc(var(--safe-t) + 128px); left: 35px; transform: none; }
+.phase-count.under-timer { top: calc(var(--safe-t) + 208px); left: 35px; transform: none; }
+.phase-count.under-pet.bumped, .phase-count.under-timer.bumped { animation: phaseCountBumpPlain .28s ease; }
 @keyframes phaseCountBumpPlain { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
-.scoop-head { position: absolute; top: calc(var(--safe-t) + 150px); left: 0; right: 0; z-index: 12; text-align: center; pointer-events: none; }
+/* In-a-Rush countdown: a round badge docked under the pet — same look on scoop, pop and mix */
+.rush-badge { width: 72px; height: 72px; border-radius: 50%; z-index: 42; pointer-events: none;
+  background: radial-gradient(circle at 50% 34%, #ff5a5a, #c62828); border: 4px solid var(--gold); color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,.5); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.rush-badge b { font-size: 27px; line-height: 1; font-weight: 900; }
+.rush-badge span { font-size: 10px; letter-spacing: .5px; opacity: .95; }
+.rush-badge.urgent { animation: hgpulse .6s infinite; }
+.round-top .rush-badge.rt-rush { position: absolute; top: calc(var(--safe-t) + 128px); left: 25px; }
+.mixv2 .rush-badge.mix-rush { position: absolute; top: 118px; left: 27px; }
+.scoop-head { position: absolute; top: calc(var(--safe-t) + 192px); left: 0; right: 0; z-index: 12; text-align: center; pointer-events: none; }
+.scoop-head.timed { top: calc(var(--safe-t) + 272px); }
 /* ☰ popup menu (round screens) */
 .hudmenu-ov { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; padding: 24px;
   background: rgba(10,6,20,.72); animation: fade .18s ease; }
