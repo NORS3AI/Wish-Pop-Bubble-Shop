@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v412"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v413"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -397,7 +397,7 @@ function applyCustomBackground() {
 // The home/start screen gets its own scene background (art/home_bg.jpg). Scoped to
 // the start screen so it never hurts readability on the busy gameplay screens.
 function applyHomeBackground() {
-  const url = "art/home_bg.jpg";
+  const url = "art/home_bg.jpg?v=" + BUILD;
   const im = new Image();
   im.onload = () => { const s = document.getElementById("screen-start"); if (s) { s.style.backgroundImage = "url('" + url + "')"; s.classList.add("has-home-bg"); } };
   im.src = url;
@@ -623,7 +623,7 @@ function renderStart() {
     </div>
     <div class="grow"></div>
     <button class="home-play" id="play-btn">
-      <img class="home-play-bg" src="art/ui/btn_play.png" alt="Play" draggable="false">
+      <img class="home-play-bg" src="art/ui/btn_play.png?v=${BUILD}" alt="Play" draggable="false">
     </button>
     <div class="home-nav">
       ${navBtn("nav-shop", "🛍️", "Shop")}

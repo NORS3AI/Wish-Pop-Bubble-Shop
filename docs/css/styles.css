@@ -364,7 +364,9 @@ html, body {
 #round-hud .hud-gold .hud-gold-ic { font-size: 19px; }
 #round-hud .hud-gold:active { transform: scale(.94); }
 /* the currency drop-down (tap the gold chip) */
-.curr-ov { position: fixed; inset: 0; z-index: 96; }
+/* absolute (relative to the #app game column), NOT fixed — otherwise on a wide screen (iPad) the
+   right-aligned card lands at the viewport edge, far off the game column. */
+.curr-ov { position: absolute; inset: 0; z-index: 96; }
 .curr-card { position: absolute; top: calc(var(--safe-t) + 64px); right: 10px; min-width: 196px;
   background: linear-gradient(180deg, rgba(48,30,74,.98), rgba(26,15,46,.98)); border: 2px solid rgba(240,200,110,.6);
   border-radius: 16px; box-shadow: 0 10px 26px rgba(0,0,0,.55); padding: 8px; animation: fade .16s ease; }
@@ -994,8 +996,10 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 #app.has-bg::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(20,10,40,.35), rgba(20,10,40,.55)); }
 #app.has-bg > .screen { position: relative; z-index: 1; }
-/* Home-screen scene background (art/home_bg.jpg) with a top/bottom readability scrim */
-#screen-start.has-home-bg { position: relative; background-size: cover; background-position: center; }
+/* Home-screen scene background (art/home_bg.jpg) with a top/bottom readability scrim.
+   Breaks out of #app's side padding so the art runs edge to edge; padding keeps content inset. */
+#screen-start.has-home-bg { position: relative; background-size: cover; background-position: center;
+  margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
 #screen-start.has-home-bg::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(18,10,34,.5) 0%, rgba(18,10,34,.2) 34%, rgba(18,10,34,.32) 64%, rgba(18,10,34,.6) 100%); }
 #screen-start.has-home-bg > * { position: relative; z-index: 1; }
