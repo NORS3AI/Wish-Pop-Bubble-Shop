@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v414"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v415"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -636,10 +636,10 @@ function renderStart() {
   on("#play-btn", "click", startRound);
   on("#home-daily", "click", renderQuests);
   on("#home-well", "click", renderWell);
-  on("#nav-shop", "click", renderMenu);
+  on("#nav-shop", "click", renderShop);
   on("#nav-satchel", "click", renderSatchel);
   on("#nav-map", "click", renderMap);
-  on("#nav-vault", "click", renderVault);
+  on("#nav-vault", "click", renderCollection);
   applyHomeBackground();
   show("start");
   maybeShowHuntCelebrate();
@@ -1688,7 +1688,7 @@ function renderSatchel() {
     <button class="btn secondary" id="sat-back">←  Back</button>
   `);
   document.querySelectorAll("#screen-satchel .inv-item").forEach(el => el.addEventListener("click", () => openInvQuest(el.dataset.g)));
-  on("#inv-pearls", "click", renderWardrobe);
+  on("#inv-pearls", "click", renderShop);
   on("#sat-back", "click", renderStart);
   show("satchel");
 }
@@ -2024,32 +2024,22 @@ function renderAdmin() {
 function todayStr() { const d = new Date(); return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); }
 function dailyAvailable() { return GAME.lastDaily !== todayStr(); }
 function renderMenu() {
-  const A = D.FAMILIAR.abilities;
-  const abilityRow = key => {
-    const ab = A[key], owned = !!GAME.unlocked[key], afford = GAME.gold >= ab.unlockCost;
-    return `<div class="up-card"><div class="up-body"><div class="up-name">${ab.name}</div>
-      <div class="muted" style="font-size:12px">${ab.desc}</div></div>
-      <button class="btn small ${owned ? "secondary" : "good"}" id="unlock-${key}" ${owned || !afford ? "disabled" : ""}>${owned ? "✓ Owned" : "🪙 " + ab.unlockCost}</button></div>`;
-  };
   const canDaily = dailyAvailable();
   html("menu", `
-    ${hud("Shop & Upgrades")}
+    ${hud("Extras")}
     <div class="grow" style="overflow-y:auto">
       <div class="card center" style="margin-bottom:10px;gap:8px">
         <div style="font-weight:800">🎁 Daily Gift</div>
         <button class="btn ${canDaily ? "" : "secondary"}" id="daily-btn" ${canDaily ? "" : "disabled"} style="max-width:240px">${canDaily ? "Claim 🪙 " + BALANCE.DAILY_GRANT : "Come back tomorrow!"}</button>
       </div>
       <button class="btn ${anyQuestClaimable() ? "good" : ""}" id="quests-btn" style="margin-bottom:10px">📋 Quests${anyQuestClaimable() ? ` <span class="q-badge">!</span>` : ""}</button>
-      <div class="row" style="margin-bottom:10px;gap:10px">
-        ${GAME.wellIntro >= 1 ? `<button class="btn" id="well-btn" style="flex:1">🌟 Wishing Well</button>` : ""}
-        <button class="btn secondary" id="wardrobe-btn" style="flex:1">🎨 My Skins</button>
-      </div>
+      ${GAME.wellIntro >= 1 ? `<button class="btn" id="well-btn" style="margin-bottom:10px">🌟 Wishing Well</button>` : ""}
       <div class="row" style="margin-bottom:10px;gap:10px">
         <button class="btn secondary" id="recycle-btn" style="flex:1">🗑️ Recycle <span class="muted" style="font-weight:500;font-size:12px">· ${GAME.trash.length}/${BALANCE.TRASH_BIN_MAX}</span></button>
         <button class="btn ${GAME.keys > 0 ? "good" : "secondary"}" id="vault-btn" style="flex:1">🗝️ Vault <span class="muted" style="font-weight:500;font-size:12px">· ${GAME.keys}</span></button>
       </div>
       <button class="btn ${satchelTotal() > 0 ? "good" : "secondary"}" id="satchel-btn" style="margin-bottom:10px">🎒 Satchel${satchelTotal() > 0 ? ` <span class="q-badge">${satchelTotal()}</span>` : ""}</button>
-      <div class="card" style="margin-bottom:10px">
+      <div class="card">
         <div style="font-weight:800;margin-bottom:8px">🐸 Treats <span class="muted" style="font-weight:500;font-size:13px">· ${GAME.treats} owned · 🪙${BALANCE.PRICES.treat} each</span></div>
         <div class="row" style="align-items:center;justify-content:center">
           <button class="shelf-arrow" id="tr-minus">−</button>
@@ -2057,11 +2047,6 @@ function renderMenu() {
           <button class="shelf-arrow" id="tr-plus">+</button>
           <button class="btn good small" id="tr-buy" style="margin-left:8px">Buy <span id="tr-cost">🪙${BALANCE.PRICES.treat}</span></button>
         </div>
-      </div>
-      <div class="card">
-        <div style="font-weight:800;margin-bottom:8px">🐾 Pet Upgrades</div>
-        <div class="up-grid">${abilityRow("scoop")}${abilityRow("charm")}${abilityRow("undo")}</div>
-        <div class="muted" style="font-size:11px;margin-top:8px">New fairytale locations with fresh customers are coming soon!</div>
       </div>
     </div>
     <button class="btn secondary" id="menu-back">←  Back</button>
@@ -2071,11 +2056,9 @@ function renderMenu() {
   on("#tr-minus", "click", () => { qty = Math.max(1, qty - 1); updQty(); });
   on("#tr-plus", "click", () => { qty = Math.min(25, qty + 1); updQty(); });
   on("#tr-buy", "click", () => buyTreats(qty));
-  ["scoop", "charm", "undo"].forEach(k => on("#unlock-" + k, "click", () => unlockAbility(k)));
   on("#daily-btn", "click", claimDaily);
   on("#quests-btn", "click", renderQuests);
   on("#well-btn", "click", renderWell);
-  on("#wardrobe-btn", "click", renderWardrobe);
   on("#recycle-btn", "click", () => renderRecycle("coins"));
   on("#vault-btn", "click", renderVault);
   on("#satchel-btn", "click", renderSatchel);
@@ -2093,7 +2076,7 @@ function unlockAbility(key) {
   if (GAME.unlocked[key]) return;
   if (GAME.gold < ab.unlockCost) { toast("Not enough gold."); return; }
   GAME.gold -= ab.unlockCost; GAME.unlocked[key] = true; save();
-  toast(`Unlocked ${ab.name}! 🎉`); renderMenu();
+  toast(`Unlocked ${ab.name}! 🎉`); renderShop();
 }
 function claimDaily() {
   if (!dailyAvailable()) { toast("Already claimed today."); return; }
@@ -2392,7 +2375,12 @@ function skinDesc(c) {
   if (c.pearl) return `A rare ${noun} skin, bought only with Wishy the Fish's pearls.`;
   return `A lovely ${c.name} look for your ${noun}.`;
 }
+// The skins screen serves two views: the SHOP (things you don't own yet — buy/earn) and the
+// COLLECTION (things you own — equip / favorite / cycle). Same layout, filtered by ownership.
+function renderShop() { WARD_MODE = "shop"; WARD_SCROLL = 0; renderWardrobe(); }
+function renderCollection() { WARD_MODE = "collection"; WARD_SCROLL = 0; renderWardrobe(); }
 function renderWardrobe() {
+  const shop = WARD_MODE === "shop";
   const wardTile = (kind, c) => {
     const owned = !!GAME.owned[c.id], equipped = GAME.equipped[kind] === c.id, fav = !!GAME.favs[c.id];
     const star = owned ? `<button class="ward-star ${fav ? "on" : ""}" data-id="${c.id}" aria-label="Favorite">${fav ? "★" : "☆"}</button>` : "";
@@ -2406,24 +2394,43 @@ function renderWardrobe() {
     </div>`;
   };
   const section = (kind, title) => {
-    const tiles = D.COSMETICS[kind].map(c => wardTile(kind, c)).join("");
+    const items = D.COSMETICS[kind].filter(c => shop ? !GAME.owned[c.id] : !!GAME.owned[c.id]);
+    if (!items.length) return "";                         // hide a section with nothing to show in this view
+    const tiles = items.map(c => wardTile(kind, c)).join("");
     const cycleOn = !!GAME.cycleFav[kind], n = favList(kind).length;
-    return `<div class="ward-group">
-      <div class="ward-group-head">
-        <span class="ward-group-name">${title}</span>
-        <button class="ward-cycle ${cycleOn ? "on" : ""}" data-kind="${kind}" aria-label="Cycle through favorites">
+    // "Cycle favorites" is a Collection-only control (it rotates the ones you own + starred)
+    const cycle = shop ? "" : `<button class="ward-cycle ${cycleOn ? "on" : ""}" data-kind="${kind}" aria-label="Cycle through favorites">
           <span class="ward-cycle-box">${cycleOn ? "✓" : ""}</span>Cycle favorites${n ? ` <span class="ward-cycle-n">${n}</span>` : ""}
-        </button>
-      </div>
+        </button>`;
+    return `<div class="ward-group">
+      <div class="ward-group-head"><span class="ward-group-name">${title}</span>${cycle}</div>
       <div class="ward-grid">${tiles}</div>
     </div>`;
   };
+  const skinSections = section("cauldron", "🫕 Cauldron Skins") + section("familiar", "🐾 Pet Skins");
+  // SHOP only: pet perks (the ability upgrades) + a link to the leftover extras (treats/recycle/vault/…)
+  const A = D.FAMILIAR.abilities;
+  const abilityRow = key => {
+    const ab = A[key], owned = !!GAME.unlocked[key], afford = GAME.gold >= ab.unlockCost;
+    return `<div class="up-card"><div class="up-body"><div class="up-name">${ab.name}</div>
+      <div class="muted" style="font-size:12px">${ab.desc}</div></div>
+      <button class="btn small ${owned ? "secondary" : "good"}" id="unlock-${key}" ${owned || !afford ? "disabled" : ""}>${owned ? "✓ Owned" : "🪙 " + ab.unlockCost}</button></div>`;
+  };
+  const perks = shop ? `<div class="ward-group">
+      <div class="ward-group-head"><span class="ward-group-name">🐾 Pet Perks</span></div>
+      <div class="up-grid">${abilityRow("scoop")}${abilityRow("charm")}${abilityRow("undo")}</div>
+    </div>
+    <button class="btn secondary" id="ward-extras" style="margin-top:2px">🪙 Treats, Recycle &amp; more</button>` : "";
+  const empty = !skinSections ? `<div class="ward-empty">${shop
+    ? "You own every skin! ✨ See them all in your Collection."
+    : "No skins yet — visit the Shop to get your first one!"}</div>` : "";
   html("wardrobe", `
-    ${hud("Skin Shop")}
+    ${hud(shop ? "Shop" : "Collection")}
     <div class="ward-purse">✨ <b>${GAME.stardust}</b> Stardust${(GAME.pearls || 0) > 0 ? ` &nbsp;·&nbsp; ${PEARL} <b>${GAME.pearls}</b> Pearls` : ""}</div>
     <div class="grow ward-scroll" style="overflow-y:auto; padding: 4px 8px 10px">
-      ${section("cauldron", "🫕 Cauldron Skins")}
-      ${section("familiar", "🐾 Pet Skins")}
+      ${skinSections}
+      ${empty}
+      ${perks}
     </div>
     <button class="btn secondary" id="ward-back">←  Back</button>
   `);
@@ -2434,10 +2441,15 @@ function renderWardrobe() {
   $("#screen-wardrobe").querySelectorAll(".ward-star").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); wardFavClick(b); }));
   $("#screen-wardrobe").querySelectorAll(".ward-check").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); wardEquipClick(b); }));
   $("#screen-wardrobe").querySelectorAll(".ward-cycle").forEach(b => b.addEventListener("click", () => toggleCycleFav(b.dataset.kind)));
-  on("#ward-back", "click", renderMenu);
+  if (shop) {
+    ["scoop", "charm", "undo"].forEach(k => on("#unlock-" + k, "click", () => unlockAbility(k)));
+    on("#ward-extras", "click", renderMenu);
+  }
+  on("#ward-back", "click", renderStart);
   show("wardrobe");
 }
 let WARD_SCROLL = 0;
+let WARD_MODE = "collection";   // "shop" (unowned/buyable) or "collection" (owned)
 // tap the corner star: toggle favorite in place (no full re-render, so the scroll stays put)
 function wardFavClick(btn) {
   const id = btn.dataset.id; toggleFav(id);
@@ -8503,7 +8515,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {

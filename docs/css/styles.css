@@ -948,6 +948,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #0a2a12; }
 .ward-cycle.on .ward-cycle-box { background: var(--good); border-color: var(--good); }
 .ward-cycle-n { background: rgba(0,0,0,.32); border-radius: 8px; padding: 1px 7px; font-size: 11px; color: #ffd873; }
+.ward-empty { text-align: center; color: #cbbde8; font-size: 14px; line-height: 1.4; padding: 24px 16px; }
 .ward-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .ward-tile { position: relative; min-width: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer;
   border-radius: 14px; border: 1px solid rgba(255,255,255,.12); padding: 8px 6px 7px;
