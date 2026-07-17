@@ -1001,12 +1001,10 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 #app.has-bg::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(20,10,40,.35), rgba(20,10,40,.55)); }
 #app.has-bg > .screen { position: relative; z-index: 1; }
-/* Home-screen scene background (art/home_bg.jpg) with a top/bottom readability scrim.
+/* Home-screen scene background (art/home_bg.jpg), shown crisp with NO darkening scrim.
    Breaks out of #app's side padding so the art runs edge to edge; padding keeps content inset. */
 #screen-start.has-home-bg { position: relative; background-size: cover; background-position: center;
   margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
-#screen-start.has-home-bg::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(18,10,34,.5) 0%, rgba(18,10,34,.2) 34%, rgba(18,10,34,.32) 64%, rgba(18,10,34,.6) 100%); }
 #screen-start.has-home-bg > * { position: relative; z-index: 1; }
 /* Fantasy display font on buttons and headings (body/stat text stays sans) */
 .btn, .hud .title, .result-title, .realm-here, .home-build { font-family: var(--ff-display); }
