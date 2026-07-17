@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v413"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v414"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -2828,8 +2828,10 @@ function syncRoundHud(phase) {
     ? `<button class="hud-gold" id="hud-gold" aria-label="Currencies"><span class="hud-gold-ic">🪙</span><b>${(GAME.gold || 0).toLocaleString()}</b></button>`
     : "";
   const petChip = buddyArt(activePetId(!home), "", GAME.petFace);   // round screens may show a rotating favorite pet
+  const petBadge = home ? "" :   // the pet is hidden on the home screen (treats live in the currency drop-down)
+    `<div class="petbadge ${showPet ? "" : "nopet"}" id="familiar"><div class="petbadge-pet">${showPet ? petChip : "🔒"}</div>${count != null ? `<div class="petbadge-count">${count}</div>` : ""}</div>`;
   hud.innerHTML =
-    `<div class="petbadge ${showPet ? "" : "nopet"}" id="familiar"><div class="petbadge-pet">${showPet ? petChip : "🔒"}</div>${count != null ? `<div class="petbadge-count">${count}</div>` : ""}</div>` +
+    petBadge +
     (timer ? rushBadgeHtml("rt-rush") : "") +
     (tally ? `<div class="phase-count ${tallyClass}" id="phase-count"><img class="phase-count-bub" src="${ART.url("bubble")}" alt="" draggable="false"><span class="phase-count-n" id="phase-count-n">${tallyN}</span></div>` : "") +
     goldChip +

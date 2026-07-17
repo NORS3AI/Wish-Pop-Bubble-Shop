@@ -377,7 +377,7 @@ html, body {
 .curr-n { color: #fff; font-family: var(--ff-display); font-weight: 900; font-size: 17px; }
 /* home top row is now the overlay (pet left, gold + menu right); reserve enough height that the
    logo below clears the pet badge */
-.home-topspace { height: 140px; flex: 0 0 auto; }
+.home-topspace { height: 48px; flex: 0 0 auto; }
 /* running tally — one of our bubbles with the live count inside it, tucked under the pet */
 .phase-count { position: absolute; z-index: 41; width: 54px; height: 54px; display: grid; place-items: center; pointer-events: none; }
 .phase-count-bub { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
@@ -1020,10 +1020,15 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   background: radial-gradient(circle at 50% 35%, #3a2560, #201234); border: 2px solid rgba(240,200,110,.6); box-shadow: 0 0 8px rgba(255,210,110,.4); }
 .home-gear:active { transform: scale(.92); }
 .home-logo { display: flex; flex-direction: column; align-items: center; }
-#screen-start .wp-logo { width: 98%; max-width: 400px; }
-#screen-start .logo-stage { padding: 10px 0 4px; }
-.home-play { position: relative; align-self: center; width: 82%; max-width: 336px; margin: 0 auto; padding: 0; border: none; background: none; cursor: pointer; }
-.home-play-bg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)); }
+#screen-start .wp-logo { width: 100%; max-width: 448px; }
+#screen-start .logo-stage { padding: 4px 0 4px; }
+.home-play { position: relative; align-self: center; width: 84%; max-width: 348px; margin: 0 auto 42px; padding: 0; border: none; background: none; cursor: pointer; }
+.home-play-bg { display: block; width: 100%; height: auto; animation: playPulse 1.6s ease-in-out infinite; }
+@keyframes playPulse {
+  0%, 100% { filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)) drop-shadow(0 0 5px rgba(255,206,110,.45)); }
+  50%      { filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)) drop-shadow(0 0 20px rgba(255,214,120,.95)); }
+}
+@media (prefers-reduced-motion: reduce) { .home-play-bg { animation: none; filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)); } }
 .home-play-lbl { position: absolute; left: 0; right: 0; top: 56%; transform: translateY(-50%); text-align: center;
   font-family: var(--ff-display); font-weight: 700; font-size: 52px; letter-spacing: 1px; color: #fff;
   text-shadow: 0 3px 6px rgba(0,10,40,.75), 0 0 4px rgba(30,80,160,.9); }
