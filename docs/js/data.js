@@ -365,6 +365,13 @@ const COSMETICS = {
     { id: "cauldron_wishy",    name: "Wishy's Fish Bowl", chip: "🐠", art: true, well: true },
   ],
   familiar: [
+    // hand-painted multi-face pets — each has 4 expressions (buddy_<id>_0..3). Face 0 is the
+    // front-facing default; spending a treat on your pet flips it to a different expression.
+    { id: "pet_frog",     name: "Frog",     chip: "🐸", faces: 4 },
+    { id: "pet_sheep",    name: "Sheep",    chip: "🐑", faces: 4 },
+    { id: "pet_cat",      name: "Cat",      chip: "🐱", faces: 4 },
+    { id: "pet_squirrel", name: "Squirrel", chip: "🐿️", faces: 4 },
+    { id: "pet_crow",     name: "Crow",     chip: "🐦‍⬛", faces: 4 },
     { id: "toad_classic", name: "Toad",    chip: "🐸", default: true },
     { id: "toad_dragon",  name: "Dragon",  chip: "🐲" },
     { id: "toad_cat",     name: "Cat",     chip: "🐱" },

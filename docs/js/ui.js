@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v406"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v407"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -75,6 +75,12 @@ function normalizeGame(g) {
     const def = D.COSMETICS[kind].find(c => c.default) || D.COSMETICS[kind][0];
     if (!g.equipped[kind] || !D.COSMETIC_BY_ID[g.equipped[kind]]) g.equipped[kind] = def.id;
   });
+  if (typeof g.petFace !== "number") g.petFace = 0; // which expression the equipped pet is showing (0 = default front-facing)
+  // one-time: hand every player the five painted pets to try, and start them on the friendly Frog
+  if (!g.petsSeeded) {
+    ["pet_frog", "pet_sheep", "pet_cat", "pet_squirrel", "pet_crow"].forEach(id => { g.owned[id] = true; });
+    g.equipped.familiar = "pet_frog"; g.petFace = 0; g.petsSeeded = true;
+  }
   return g;
 }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(GAME)); } catch (e) {} }
@@ -258,7 +264,7 @@ function drawMirrorFace(faces) {
   ROUND.mirrorFace = ROUND.mirrorBag.shift();
   return ROUND.mirrorFace;
 }
-function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar); }
+function equippedFamiliarChip() { return buddyArt(GAME.equipped.familiar, "", GAME.petFace); }
 
 /* --- custom art helpers: use an uploaded image if present, else the emoji ---
  * (see art.js + /docs/art/README.md). Each returns an inline HTML string. */
@@ -333,7 +339,25 @@ function logoSparkles() {
   }
   return out.join("");
 }
-function buddyArt(id, cls) { const c = D.COSMETIC_BY_ID[id]; return ART.tag("buddy_" + id, c ? c.chip : D.FAMILIAR.emoji, cls || ""); }
+// The art key for a pet buddy. Multi-face pets (faces:N) live at buddy_<id>_<face>; simple ones at buddy_<id>.
+function buddyKey(id, face) {
+  const c = D.COSMETIC_BY_ID[id];
+  if (c && c.faces) return "buddy_" + id + "_" + Math.max(0, Math.min(c.faces - 1, face | 0));
+  return "buddy_" + id;
+}
+function buddyArt(id, cls, face) {
+  const c = D.COSMETIC_BY_ID[id];
+  const extra = (c && c.faces) ? " buddy-multi" : "";   // multi-face pets get the bigger, over-the-rim treatment
+  return ART.tag(buddyKey(id, face), c ? c.chip : D.FAMILIAR.emoji, (cls || "") + extra);
+}
+// pick a new random expression for the equipped pet (different from the one showing), used when a treat is spent
+function advancePetFace() {
+  const c = D.COSMETIC_BY_ID[GAME.equipped.familiar];
+  if (!c || !c.faces || c.faces < 2) return;
+  let next = GAME.petFace | 0;
+  do { next = Math.floor(Math.random() * c.faces); } while (next === (GAME.petFace | 0));
+  GAME.petFace = next;
+}
 function trashArt(id, cls) { const t = D.TRASH_BY_ID[id]; return ART.tag("trash_" + id, t ? t.emoji : "🗑️", cls || "trash-art"); }
 // recycle values for a piece of trash
 function trashCoins(id) { const t = D.TRASH_BY_ID[id]; return t ? t.coins : 0; }
@@ -501,7 +525,7 @@ function syncHud(id) {
 // The home top bar: current pet (left), keys + coins, and a gear → Admin (right).
 function homeBar() {
   return `<div class="home-bar">
-    <div class="home-pet" title="Your buddy">${buddyArt(GAME.equipped.familiar, "home-pet-art")}</div>
+    <div class="home-pet" title="Your buddy">${buddyArt(GAME.equipped.familiar, "home-pet-art", GAME.petFace)}</div>
     <div class="home-res">
       ${GAME.pearls > 0 ? `<span class="res-chip pearls"><span class="res-ic"></span><b>${GAME.pearls.toLocaleString()}</b></span>` : ""}
       <span class="res-chip"><span class="res-ic">🗝️</span><b>${GAME.keys || 0}</b></span>
@@ -1406,7 +1430,7 @@ function showSkinReward(id, kicker, onDone) {
   const c = D.COSMETIC_BY_ID[id]; if (!c) { showNextSkinReward(); return; }
   const kind = skinKindOf(id);
   // make sure the art is loaded so we show the real picture, not the emoji stand-in
-  if (c.art || kind === "familiar") ART.ensure(kind === "familiar" ? ("buddy_" + id) : skinArtKey(id), () => {
+  if (c.art || kind === "familiar") ART.ensure(kind === "familiar" ? buddyKey(id, 0) : skinArtKey(id), () => {
     const w = document.querySelector("#skin-reward-overlay .sr-img-wrap"); if (w) w.innerHTML = skinPreviewTag(id, "sr-img");
   });
   const kick = kicker || (kind === "cauldron" ? "New Cauldron!" : "New Pet Skin!");
@@ -2353,7 +2377,9 @@ function renderWardrobe() {
 }
 function equipSkin(kind, id) {
   if (!GAME.owned[id]) return;
-  GAME.equipped[kind] = id; save();
+  GAME.equipped[kind] = id;
+  if (kind === "familiar") GAME.petFace = 0;   // a freshly-worn pet shows its friendly default face
+  save();
   const c = D.COSMETIC_BY_ID[id]; toast(`${c.chip} ${c.name} equipped!`);
   renderWardrobe();
 }
@@ -8285,7 +8311,9 @@ function familiarUndo() {
   if (GAME.treats <= 0) { toast("No treats left! Buy more with gold."); return; }
   if (ROUND.treatsUsed >= BALANCE.MAX_TREATS_PER_ROUND) { toast("Your pet's had enough (5 per round)."); return; }
   confirmDialog("Undo the last ingredient? (1 treat) 🐾", () => {
-    GAME.treats--; ROUND.treatsUsed++; save();
+    GAME.treats--; ROUND.treatsUsed++;
+    advancePetFace();                 // your pet reacts to the treat with a new expression (stays till next treat)
+    save();
     ROUND.slots.pop();
     toast("🐾 Removed the last ingredient.");
     paintMix();
@@ -8326,6 +8354,9 @@ function preloadCommonArt() {
     if (!c.art) ["_happy", "_angry", "_allergic"].forEach(m => keys.push("customer_" + c.id + m));
   });
   ["scoop_spoon", "bubble", "bubble_bonus", "logo", "background"].forEach(k => keys.push(k));
+  // warm all expressions of the equipped pet so a treat-triggered face change never flashes an emoji
+  const fam = D.COSMETIC_BY_ID[GAME.equipped.familiar];
+  if (fam && fam.faces) for (let f = 0; f < fam.faces; f++) keys.push("buddy_" + fam.id + "_" + f);
   Array.from(new Set(keys)).forEach(k => ART.ensure(k, () => {}));   // warms as WebP
   // hardcoded UI (PNG) + backdrops (JPG) aren't loaded through ART — warm the common ones directly
   ["banner_new", "banner_vip", "name_plate", "name_plaque", "kit_13", "kit_16", "kit_17", "btn_scoop",

@@ -933,6 +933,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   background: radial-gradient(circle at 50% 35%, #43306a, #241636);
   border: 3px solid #f0c063; box-shadow: 0 0 10px rgba(255,210,110,.55), inset 0 2px 5px rgba(0,0,0,.5); }
 .home-pet .home-pet-art, .home-pet img.art { height: 50px; width: auto; }
+.home-pet img.buddy-multi { height: 60px !important; width: 60px !important; object-fit: contain; }
 .home-pet .art-emoji { font-size: 40px; line-height: 1; }
 .home-res { display: flex; gap: 8px; flex: 1; }
 .res-chip { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 15px; color: #fff; font-weight: 700; font-size: 19px;
@@ -1898,11 +1899,17 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 /* header: pet badge (left), customer (center), menu (right) */
 .mixv-head { display: flex; align-items: center; gap: 8px; padding: 2px 2px 4px; }
 .petbadge { position: relative; width: 108px; height: 118px; flex: 0 0 auto; cursor: pointer;
-  background: url('../art/pet_frame.webp') center/contain no-repeat; }
+  background: url('../art/pet_frame_dark.webp') center/contain no-repeat; }
 .petbadge-pet { position: absolute; left: 50%; top: 32%; transform: translate(-50%,-50%);
   width: 73px; height: 73px; display: flex; align-items: center; justify-content: center; font-size: 54px; }
 .petbadge-pet img.art { width: 71px !important; height: 71px !important; max-width: none; max-height: none; object-fit: contain; }
-.petbadge-count { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+/* painted multi-face pets: fill the dark circle, let ears/head spill over the top rim, keep the
+   treat scroll below visible. The pet element spans the whole frame so it can overflow the rim. */
+.petbadge-pet:has(img.buddy-multi) { inset: 0; left: 0; top: 0; width: auto; height: auto; transform: none; display: block; }
+.petbadge-pet img.buddy-multi { position: absolute; left: 50%; top: 47px; transform: translate(-50%,-50%);
+  width: 100px !important; height: 100px !important; object-fit: contain; object-position: center;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.55)); pointer-events: none; }
+.petbadge-count { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 2;
   font-weight: 900; font-size: 16px; color: #4a2f0c; white-space: nowrap; letter-spacing: .3px; }
 .mixv-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 5px;
   font-weight: 700; font-size: 13px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
