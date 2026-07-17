@@ -982,6 +982,11 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   background: linear-gradient(180deg, rgba(24,14,40,.62) 0%, rgba(24,14,40,.34) 22%, rgba(24,14,40,.40) 60%, rgba(24,14,40,.72) 100%); }
 #screen-customer > *:not(.cust-bg) { position: relative; z-index: 1; }
 .cust-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 2px 6px 2px; }
+/* arrival/result top bar with only the ☰ menu (top-right), matching the round screens */
+.cust-top-menu { justify-content: flex-end; margin-top: calc(var(--safe-t) + 6px); position: relative; z-index: 20; }
+.cust-menu { width: 40px; height: 40px; border-radius: 11px; font-size: 20px; color: #ffe6b0; flex: 0 0 auto;
+  background: rgba(50,24,72,.7); border: 1.5px solid rgba(255,214,110,.55); cursor: pointer; }
+.cust-menu:active { transform: scale(.92); }
 .cust-realm { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 14px; font-family: var(--ff-display); font-size: 14px; color: #ffe6a8;
   background: linear-gradient(180deg, rgba(58,38,86,.85), rgba(26,15,46,.9)); border: 2px solid rgba(240,200,110,.6); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
 .cust-coin { display: flex; align-items: center; gap: 6px; padding: 3px 14px 3px 4px; border-radius: 16px; font-family: var(--ff-body); font-weight: 700; font-size: 18px; color: #fff;

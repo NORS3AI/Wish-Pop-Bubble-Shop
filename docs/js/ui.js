@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v409"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v410"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -480,6 +480,11 @@ function openHudMenu() {
   on("#hm-sound", "click", () => { SFX.unlock(); SFX.toggle(); const b = document.getElementById("hm-sound"); if (b) b.textContent = soundLbl(); });
   on("#hm-home", "click", () => { close(); goHome(); });
   on("#hm-close", "click", close);
+}
+// Slim top bar for the customer-arrival + result screens: just the ☰ menu top-right (same popup
+// as scoop/pop/mix). No location or currency counts — those are gone from these screens.
+function custTopMenu(extraCls) {
+  return `<div class="cust-top cust-top-menu ${extraCls || ""}"><button class="round-menu cust-menu" id="hud-menu" aria-label="Menu">☰</button></div>`;
 }
 // Escape hatch present on every screen's HUD: back to the home screen. If a round
 // is in progress (scoop/pop/cauldron) we confirm first, since it won't be saved.
@@ -2712,13 +2717,7 @@ function rushExpire() {
   const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
   html("result", `
     ${custBgEl}
-    <div class="cust-top res-top">
-      <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
-      <div class="cust-wallet">
-        ${GAME.pearls > 0 ? `<div class="cust-coin pearls">${PEARL} <b>${GAME.pearls.toLocaleString()}</b></div>` : ""}
-        <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold || 0).toLocaleString()}</b></div>
-      </div>
-    </div>
+    ${custTopMenu("res-top")}
     <div class="grow res-body">
       <div class="cust-banner res-banner"><img src="art/ui/banner_toolate.png" alt="You're Too Late!" draggable="false"></div>
       <div class="cust-portrait res-portrait">
@@ -6451,13 +6450,7 @@ function renderCustomer() {
   const wishLocked = wishSteps.length > 1;
   html("customer", `
     ${custBgEl}
-    <div class="cust-top">
-      <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
-      <div class="cust-wallet">
-        ${GAME.pearls > 0 ? `<div class="cust-coin pearls">${PEARL} <b>${GAME.pearls.toLocaleString()}</b></div>` : ""}
-        <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold||0).toLocaleString()}</b></div>
-      </div>
-    </div>
+    ${custTopMenu()}
     <div class="grow" style="flex:0 1 auto; overflow:hidden; display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:4px">
       <div class="cust-banner"><img src="art/ui/${bannerImg}.png" alt="A New Customer Arrives" draggable="false"></div>
       <div class="cust-portrait">
@@ -8028,13 +8021,7 @@ function renderResult(res) {
   const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
   html("result", `
     ${custBgEl}
-    <div class="cust-top res-top">
-      <div class="cust-realm">${realm.icon} <span>${realm.name}</span></div>
-      <div class="cust-wallet">
-        ${GAME.pearls > 0 ? `<div class="cust-coin pearls">${PEARL} <b>${GAME.pearls.toLocaleString()}</b></div>` : ""}
-        <div class="cust-coin"><img src="art/ui/kit_13.png" alt="🪙"><b>${(GAME.gold || 0).toLocaleString()}</b></div>
-      </div>
-    </div>
+    ${custTopMenu("res-top")}
     <div class="grow res-body">
       <div class="cust-banner res-banner"><img src="art/ui/${bannerImg}.png" alt="${bannerAlt}" draggable="false"></div>
       <div class="cust-portrait res-portrait">
