@@ -382,7 +382,7 @@ html, body {
 .curr-n { color: #fff; font-family: var(--ff-display); font-weight: 900; font-size: 17px; }
 /* home top row is now the overlay (pet left, gold + menu right); reserve enough height that the
    logo below clears the pet badge */
-.home-topspace { height: 48px; flex: 0 0 auto; }
+.home-topspace { height: 34px; flex: 0 0 auto; }
 /* running tally — one of our bubbles with the live count inside it, tucked under the pet */
 .phase-count { position: absolute; z-index: 41; width: 54px; height: 54px; display: grid; place-items: center; pointer-events: none; }
 .phase-count-bub { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
@@ -1041,6 +1041,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .home-nav { display: flex; justify-content: space-between; align-items: flex-end; gap: 5px; padding: 6px 2px 0; }
 .home-nav-btn { position: relative; flex: 1; min-width: 0; display: block; background: none; border: none; padding: 0; cursor: pointer; }
 .nav-badge { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
+.home-nav-btn .nav-badge { width: 87%; margin: 0 auto; }   /* the four bottom icons a touch smaller */
 /* little count tag on a nav badge (e.g. active quests on the Satchel) */
 .nav-count { position: absolute; top: 0; right: 6px; z-index: 3; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px;
   background: #e0455a; color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center;
