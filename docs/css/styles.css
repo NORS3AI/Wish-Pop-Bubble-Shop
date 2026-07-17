@@ -168,8 +168,8 @@ html, body {
 .big-bubble:active { transform: scale(0.94); }
 
 /* --- ASMR pop phase: a cluster of squishy bubbles you burst --- */
-.pop-sub { text-align: center; font-size: 13px; margin: calc(var(--safe-t) + 192px) 10px 0; }
-.pop-sub.timed { margin-top: calc(var(--safe-t) + 270px); }
+.pop-sub { text-align: center; font-size: 13px; margin: calc(var(--safe-t) + 212px) 10px 0; }
+.pop-sub.timed { margin-top: calc(var(--safe-t) + 292px); }
 .bubble-field { flex: 1; min-height: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center;
   gap: 10px 12px; padding: 10px 8px; overflow: hidden; }
 .pbubble { position: relative; width: 62px; height: 62px; border: none; padding: 0; cursor: pointer; font-size: 26px;
@@ -346,27 +346,25 @@ html, body {
 .scoop-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; }
 .scoop-front { position: absolute; inset: 0; z-index: 3; background-size: cover; background-position: center; pointer-events: none; }
 /* floating chrome over the scene */
-/* Shared round-screen top bar (scoop / pop / mix): pet badge (left), phase counter (centre),
-   ☰ menu (right). Fixed so it lands identically on every screen regardless of its own layout. */
-/* absolute (relative to the #app game column), NOT fixed — otherwise on wide screens (iPad) these
-   pin to the device edges instead of the game's edges and fly out to the sides. */
-.round-top .petbadge { position: absolute; top: calc(var(--safe-t) + 4px); left: 8px; z-index: 41; }
-.round-top .round-menu { position: absolute; top: calc(var(--safe-t) + 14px); right: 12px; z-index: 41;
+/* Shared HUD overlay (#round-hud): the pet badge (left), round timer + running tally (under it),
+   and the ☰ menu (right). It's a child of #app spanning the whole column, so its absolutely-
+   positioned children land in the SAME spot on scoop, pop, mix and home — regardless of each
+   screen's own padding. It never blocks the game (pointer-events pass through except on controls). */
+#round-hud { position: absolute; inset: 0; z-index: 41; pointer-events: none; }
+#round-hud .petbadge { position: absolute; top: calc(var(--safe-t) + 12px); left: 15px; pointer-events: auto; }
+#round-hud .round-menu { position: absolute; top: calc(var(--safe-t) + 18px); right: 14px; pointer-events: auto;
   width: 40px; height: 40px; border-radius: 11px; font-size: 20px; color: #ffe6b0;
   background: rgba(50,24,72,.7); border: 1.5px solid rgba(255,214,110,.55); cursor: pointer; }
-.round-top .round-menu:active { transform: scale(.92); }
-/* running tally — one of our bubbles pinned top-centre with the live count inside it */
-.phase-count { position: absolute; top: calc(var(--safe-t) + 8px); left: 50%; transform: translateX(-50%); z-index: 41;
-  width: 54px; height: 54px; display: grid; place-items: center; pointer-events: none; }
+#round-hud .round-menu:active { transform: scale(.92); }
+/* running tally — one of our bubbles with the live count inside it, tucked under the pet */
+.phase-count { position: absolute; z-index: 41; width: 54px; height: 54px; display: grid; place-items: center; pointer-events: none; }
 .phase-count-bub { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
 .phase-count-n { position: relative; z-index: 2; font-family: var(--ff-display); font-size: 23px; font-weight: 900; color: #fff;
   text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 7px rgba(120,180,255,.75); }
-.phase-count.bumped { animation: phaseCountBump .28s ease; }
-@keyframes phaseCountBump { 0% { transform: translateX(-50%) scale(1); } 40% { transform: translateX(-50%) scale(1.18); } 100% { transform: translateX(-50%) scale(1); } }
 /* the running tally tucks UNDER the pet — or drops below the round timer when the customer is timed */
-.phase-count.under-pet   { top: calc(var(--safe-t) + 128px); left: 35px; transform: none; }
-.phase-count.under-timer { top: calc(var(--safe-t) + 208px); left: 35px; transform: none; }
-.phase-count.under-pet.bumped, .phase-count.under-timer.bumped { animation: phaseCountBumpPlain .28s ease; }
+.phase-count.under-pet   { top: calc(var(--safe-t) + 152px); left: 52px; }
+.phase-count.under-timer { top: calc(var(--safe-t) + 232px); left: 52px; }
+.phase-count.bumped { animation: phaseCountBumpPlain .28s ease; }
 @keyframes phaseCountBumpPlain { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 /* In-a-Rush countdown: a round badge docked under the pet — same look on scoop, pop and mix */
 .rush-badge { width: 72px; height: 72px; border-radius: 50%; z-index: 42; pointer-events: none;
@@ -375,10 +373,9 @@ html, body {
 .rush-badge b { font-size: 27px; line-height: 1; font-weight: 900; }
 .rush-badge span { font-size: 10px; letter-spacing: .5px; opacity: .95; }
 .rush-badge.urgent { animation: hgpulse .6s infinite; }
-.round-top .rush-badge.rt-rush { position: absolute; top: calc(var(--safe-t) + 128px); left: 25px; }
-.mixv2 .rush-badge.mix-rush { position: absolute; top: 118px; left: 27px; }
-.scoop-head { position: absolute; top: calc(var(--safe-t) + 192px); left: 0; right: 0; z-index: 12; text-align: center; pointer-events: none; }
-.scoop-head.timed { top: calc(var(--safe-t) + 272px); }
+#round-hud .rush-badge.rt-rush { position: absolute; top: calc(var(--safe-t) + 152px); left: 43px; }
+.scoop-head { position: absolute; top: calc(var(--safe-t) + 212px); left: 0; right: 0; z-index: 12; text-align: center; pointer-events: none; }
+.scoop-head.timed { top: calc(var(--safe-t) + 292px); }
 /* ☰ popup menu (round screens) */
 .hudmenu-ov { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; padding: 24px;
   background: rgba(10,6,20,.72); animation: fade .18s ease; }
@@ -938,13 +935,8 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .home-bar { display: flex; align-items: center; gap: 9px; margin: 2px 6px 6px; padding: 7px 9px 7px 7px; border-radius: 22px;
   background: linear-gradient(180deg, rgba(58,38,86,.80), rgba(26,15,46,.88));
   border: 2px solid rgba(240,200,110,.6); box-shadow: 0 3px 12px rgba(0,0,0,.5), inset 0 0 16px rgba(120,80,160,.24); }
-.home-pet { width: 62px; height: 62px; border-radius: 50%; flex: 0 0 auto; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 50% 35%, #43306a, #241636);
-  border: 3px solid #f0c063; box-shadow: 0 0 10px rgba(255,210,110,.55), inset 0 2px 5px rgba(0,0,0,.5); }
-.home-pet .home-pet-art, .home-pet img.art { height: 50px; width: auto; }
-.home-pet img.buddy-multi { height: 60px !important; width: 60px !important; object-fit: contain; }
-.home-pet .art-emoji { font-size: 40px; line-height: 1; }
+/* the home pet is now the shared framed badge in #round-hud; this just reserves its width in the bar */
+.home-pet-spacer { width: 118px; height: 1px; flex: 0 0 auto; }
 .home-res { display: flex; gap: 8px; flex: 1; }
 .res-chip { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 15px; color: #fff; font-weight: 700; font-size: 19px;
   font-family: var(--ff-display); background: rgba(16,10,30,.72); border: 1.5px solid rgba(240,200,110,.45); box-shadow: inset 0 1px 3px rgba(0,0,0,.4); }
@@ -1908,19 +1900,19 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   background: linear-gradient(rgba(24,10,34,.5), rgba(24,10,34,.66)), url('../art/mix_bg.jpg') center/cover no-repeat; }
 /* header: pet badge (left), customer (center), menu (right) */
 .mixv-head { display: flex; align-items: center; gap: 8px; padding: 2px 2px 4px; }
-.petbadge { position: relative; width: 108px; height: 118px; flex: 0 0 auto; cursor: pointer;
+.petbadge { position: relative; width: 128px; height: 132px; flex: 0 0 auto; cursor: pointer;
   background: url('../art/pet_frame_dark.webp') center/contain no-repeat; }
 .petbadge-pet { position: absolute; left: 50%; top: 32%; transform: translate(-50%,-50%);
-  width: 73px; height: 73px; display: flex; align-items: center; justify-content: center; font-size: 54px; }
-.petbadge-pet img.art { width: 71px !important; height: 71px !important; max-width: none; max-height: none; object-fit: contain; }
+  width: 86px; height: 86px; display: flex; align-items: center; justify-content: center; font-size: 64px; }
+.petbadge-pet img.art { width: 84px !important; height: 84px !important; max-width: none; max-height: none; object-fit: contain; }
 /* painted multi-face pets: fill the dark circle, let ears/head spill over the top rim, keep the
    treat scroll below visible. The pet element spans the whole frame so it can overflow the rim. */
 .petbadge-pet:has(img.buddy-multi) { inset: 0; left: 0; top: 0; width: auto; height: auto; transform: none; display: block; }
-.petbadge-pet img.buddy-multi { position: absolute; left: 50%; top: 47px; transform: translate(-50%,-50%);
-  width: 100px !important; height: 100px !important; object-fit: contain; object-position: center;
+.petbadge-pet img.buddy-multi { position: absolute; left: 50%; top: 56px; transform: translate(-50%,-50%);
+  width: 120px !important; height: 120px !important; object-fit: contain; object-position: center;
   filter: drop-shadow(0 3px 4px rgba(0,0,0,.55)); pointer-events: none; }
-.petbadge-count { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 2;
-  font-weight: 900; font-size: 16px; color: #4a2f0c; white-space: nowrap; letter-spacing: .3px; }
+.petbadge-count { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2;
+  font-weight: 900; font-size: 17px; color: #4a2f0c; white-space: nowrap; letter-spacing: .3px; }
 .mixv-cust { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 5px;
   font-weight: 700; font-size: 13px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
 .mixv-cust span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2066,7 +2058,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    change ONLY the .m2-readout order below from 20 to 45 (see note). Delete this whole block to
    restore the original centered layout. --- */
 .mixv2 { justify-content: flex-start; position: relative; }
-.m2-head    { order: 10; }
+.m2-head    { order: 10; min-height: 132px; }   /* reserves the space the overlay pet floats over */
 .m2-readout { order: 20; margin-top: -42px !important; }   /* % position — change to order: 45 to put it back under the cauldron */
 .m2-readout b { font-size: clamp(34px, 12vw, 52px) !important; }   /* bigger % number */
 .m2-timer   { position: absolute !important; top: 108px; left: 18px; margin: 0 !important; z-index: 8; }  /* In-a-Rush countdown docks under the pet badge */

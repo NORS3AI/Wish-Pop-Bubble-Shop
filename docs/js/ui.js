@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v408"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v409"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -423,6 +423,9 @@ function show(id) {
   // and floats a corner menu button so the art fills the screen.
   const app = document.getElementById("app");
   if (app) app.classList.toggle("mg-full", !!sc.querySelector(".mg-fullbleed"));
+  // the shared pet/timer/tally/menu overlay only lives on the round screens + home
+  if (id === "scoop" || id === "pop" || id === "mix" || id === "start") syncRoundHud(id);
+  else removeRoundHud();
 }
 function html(id, markup) { screen(id).innerHTML = markup; }
 function on(sel, ev, fn) { const e = $(sel); if (e) e.addEventListener(ev, fn); }
@@ -526,7 +529,7 @@ function syncHud(id) {
 // The home top bar: current pet (left), keys + coins, and a gear → Admin (right).
 function homeBar() {
   return `<div class="home-bar">
-    <div class="home-pet" title="Your buddy">${buddyArt(GAME.equipped.familiar, "home-pet-art", GAME.petFace)}</div>
+    <div class="home-pet-spacer" aria-hidden="true"></div>
     <div class="home-res">
       ${GAME.pearls > 0 ? `<span class="res-chip pearls"><span class="res-ic"></span><b>${GAME.pearls.toLocaleString()}</b></span>` : ""}
       <span class="res-chip"><span class="res-ic">🗝️</span><b>${GAME.keys || 0}</b></span>
@@ -2660,6 +2663,45 @@ function startRushClock() {
   };
   paint();
   ROUND._rushTimer = setInterval(paint, 200);
+}
+/* ---- Shared top-left HUD overlay --------------------------------------------
+ * The pet badge (+ its count), the round timer, the running tally and the ☰ menu
+ * are mounted ONCE on #app (not inside a screen), so they land in the EXACT same
+ * spot on scoop, pop, mix and home. Everything positions relative to #app, so the
+ * per-screen padding differences that used to nudge the pet around no longer matter. */
+function removeRoundHud() { const h = document.getElementById("round-hud"); if (h) h.remove(); }
+function syncRoundHud(phase) {
+  const app = document.getElementById("app"); if (!app) return;
+  const home = phase === "start";
+  let hud = document.getElementById("round-hud");
+  if (!hud) { hud = document.createElement("div"); hud.id = "round-hud"; }
+  app.appendChild(hud);                       // keep it last so it overlays the active screen
+  hud.className = "round-hud phase-" + phase;
+  const villain = !home && ROUND && ROUND.villain;
+  const showPet = !villain;                   // villain events capture the pet → locked slot
+  // count on the scroll: HOME shows total treats owned; round screens show treats-left this round
+  let count = null;
+  if (home) count = "🐸 " + (GAME.treats || 0);
+  else if (showPet && GAME.unlocked.undo) count = mixTreatsLeft() + "/" + BALANCE.MAX_TREATS_PER_ROUND;
+  const timer = !home && ROUND && ROUND.rush;
+  const tally = phase === "scoop" || phase === "pop";
+  const tallyN = phase === "pop" && ROUND ? ROUND.inventory.length : 0;
+  const tallyClass = timer ? "under-timer" : "under-pet";
+  hud.innerHTML =
+    `<div class="petbadge ${showPet ? "" : "nopet"}" id="familiar"><div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>${count != null ? `<div class="petbadge-count">${count}</div>` : ""}</div>` +
+    (timer ? rushBadgeHtml("rt-rush") : "") +
+    (tally ? `<div class="phase-count ${tallyClass}" id="phase-count"><img class="phase-count-bub" src="${ART.url("bubble")}" alt="" draggable="false"><span class="phase-count-n" id="phase-count-n">${tallyN}</span></div>` : "") +
+    (home ? "" : `<button class="round-menu" id="hud-menu" aria-label="Menu">☰</button>`);
+  const fam = hud.querySelector("#familiar");
+  if (fam) fam.onclick = () => petClickHud(phase);
+  if (timer) startRushClock();
+}
+// pet tap: same helper hints as before (mix spends a treat to undo); home pet is decorative for now
+function petClickHud(phase) {
+  if (phase === "start" || (ROUND && ROUND.villain)) return;
+  if (phase === "mix") { if (GAME.unlocked.undo) familiarUndo(); else toast("🐾 Unlock 'Undo' in Shop & Upgrades!"); }
+  else if (phase === "scoop") toast(GAME.unlocked.scoop ? "🐾 Better Scoop is boosting your haul!" : "🐾 Unlock 'Better Scoop' in Shop & Upgrades!");
+  else toast(GAME.unlocked.charm ? "🐾 Keen Nose — sniffing out extra charms & ingredients!" : "🐾 Unlock 'Keen Nose' in Shop & Upgrades!");
 }
 // Out of time on a timed customer. This is just the normal customer RESULTS page with the
 // "You're Too Late" banner — the impatient customer, no earnings, streak broken.
@@ -6539,7 +6581,6 @@ function renderScoop() {
       <div class="scoop-front" id="scoop-front"></div>
       <div class="scoop-secret" id="scoop-secret"></div>
     </div>
-    ${roundTop({ count: true, countClass: ROUND.rush ? "under-timer" : "under-pet" })}
     <div class="scoop-head${ROUND.rush ? " timed" : ""}">
       <div class="scoop-sub" id="scoop-step">Scoop 1 of ${scoops}</div>
       <div class="scoop-instr" id="scoop-text">✋ Swipe side to side to shake off the glitter!</div>
@@ -6661,7 +6702,7 @@ function renderScoop() {
     b.style.setProperty("--fx", rnd(-30, 30) + "px"); b.classList.add("floatup");
     revealed++;
     SFX.count(k); if (navigator.vibrate) navigator.vibrate(5);
-    const cn = document.querySelector("#screen-scoop #phase-count-n"); if (cn) { cn.textContent = revealed; cn.parentNode.classList.remove("bumped"); void cn.parentNode.offsetWidth; cn.parentNode.classList.add("bumped"); }
+    const cn = document.querySelector("#round-hud #phase-count-n"); if (cn) { cn.textContent = revealed; cn.parentNode.classList.remove("bumped"); void cn.parentNode.offsetWidth; cn.parentNode.classList.add("bumped"); }
   }
   function shakeTick(intensity) {
     if (state !== "shaking") return;
@@ -6890,7 +6931,6 @@ function renderPop() {
   const bubbles = ROUND.haul.map((_, i) => bubbleHTML(i)).join("");
   html("pop", `
     <div class="pop-bg" id="pop-bg"></div>
-    ${roundTop({ count: true, countClass: ROUND.rush ? "under-timer" : "under-pet" })}
     <div class="pop-sub muted${ROUND.rush ? " timed" : ""}" id="pop-hint">Tap each bubble to pop it — everything inside goes in your bag!</div>
     <div class="bubble-field" id="bubble-field">${bubbles}</div>
     <div id="hand-line" class="muted" style="font-size:13px;text-align:center;min-height:20px"></div>
@@ -7267,7 +7307,7 @@ function charmCelebrate(emoji) {
 function refreshPop() {
   const total = ROUND.haul.length, left = total - ROUND.popIndex;
   // running ingredient tally in the top bubble (like the scoop phase's bubble count)
-  const cn = document.querySelector("#screen-pop #phase-count-n");
+  const cn = document.querySelector("#round-hud #phase-count-n");
   if (cn && +cn.textContent !== ROUND.inventory.length) { cn.textContent = ROUND.inventory.length; cn.parentNode.classList.remove("bumped"); void cn.parentNode.offsetWidth; cn.parentNode.classList.add("bumped"); }
   const hl = $("#hand-line");
   if (hl) hl.innerHTML = left > 0
@@ -7565,15 +7605,7 @@ function paintMix() {
   html("mix", `
     <div class="mixv2 ${ROUND.villain ? "villain" : ""}">
       ${ROUND.villain ? `<div class="mix-lightning"></div>` : ""}
-      <div class="m2-head">
-        <div class="petbadge ${showPet ? "" : "nopet"}" id="familiar">
-          <div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>
-          ${banner ? `<div class="petbadge-count">${banner}</div>` : ""}
-        </div>
-        <div class="m2-cust"></div>
-        <button class="round-menu mixv-menu" id="hud-menu" aria-label="Menu">☰</button>
-      </div>
-      ${rushBadgeHtml("mix-rush")}
+      <div class="m2-head"><div class="m2-cust"></div></div>
       <div class="m2-stage">
         <div class="m2-cauldron ${exciteClass}" id="cauldron-tap" style="--mix-color:${mixColor}">
           <div class="caul-art ${equippedCauldronClass()} ${pulseColor ? "pulsing" : ""}" id="cauldron"${pulseColor ? ` style="--pulse-color:${pulseColor}"` : ""}>
@@ -8335,6 +8367,7 @@ function familiarUndo() {
     ROUND.slots.pop();
     toast("🐾 Removed the last ingredient.");
     paintMix();
+    syncRoundHud("mix");                // refresh the overlay pet (new face) + treat count
   });
 }
 
