@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v416"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v417"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -586,9 +586,18 @@ function homeBar() {
   return `<div class="home-topspace" aria-hidden="true"></div>`;
 }
 // A bottom-nav plaque button: a framed wood plaque with an icon, label beneath.
-// A home nav button: one painted badge image (icon + label baked in).
-function navBtn(id, imgKey, label) {
-  return `<button class="home-nav-btn" id="${id}" aria-label="${label}"><img class="nav-badge" src="art/ui/${imgKey}.png?v=${BUILD}" alt="${label}" draggable="false"></button>`;
+// A home nav button: one painted badge image (icon + label baked in). `badge` shows a little count tag.
+function navBtn(id, imgKey, label, badge) {
+  const tag = badge ? `<span class="nav-count">${badge}</span>` : "";
+  return `<button class="home-nav-btn" id="${id}" aria-label="${label}"><img class="nav-badge" src="art/ui/${imgKey}.png?v=${BUILD}" alt="${label}" draggable="false">${tag}</button>`;
+}
+// how many quests are currently in progress (drives the Satchel badge on home + the order in the satchel)
+function activeQuestCount() {
+  let n = 0;
+  if (satchelCount("teddy") > 0) n++;
+  const bstep = GAME.bandStep || 0; if (bstep >= 1 && bstep < 5) n++;
+  Object.keys(HUNTS).forEach(realm => { const st = huntState(realm); if (st.found && !st.done) n++; });
+  return n;
 }
 // realm id -> hanging-sign art (shown behind the bobbing logo on home)
 const REALM_SIGN = { willow: "sign_willow", courtyard: "sign_courtyard", drury: "sign_drury", desert: "sign_desert" };
@@ -620,7 +629,6 @@ function renderStart() {
         <div class="logo-float">${signHtml}${logoMarkup()}</div>
       </div>
       ${signKey ? "" : `<div class="realm-here">${realm.icon} ${realm.name}</div>`}
-      ${huntChipHtml()}
     </div>
     <div class="grow"></div>
     <button class="home-play" id="play-btn">
@@ -628,7 +636,7 @@ function renderStart() {
     </button>
     <div class="home-nav">
       ${navBtn("nav-shop", "nav_shop", "Shop")}
-      ${navBtn("nav-satchel", "nav_satchel", "Satchel")}
+      ${navBtn("nav-satchel", "nav_satchel", "Satchel", activeQuestCount() || "")}
       ${navBtn("nav-map", "nav_realms", "Realms")}
       ${navBtn("nav-vault", "nav_collection", "Collection")}
     </div>
@@ -1665,6 +1673,8 @@ function inventoryGroups() {
       desc: `${h.char}’s little ones wandered off. Find them all as you play to earn ${h.char}’s thanks — and a special skin!`,
       progress: `${st.found} of ${h.need} rounded up${st.done ? " — complete! 🎉" : ""}.` });
   });
+  // quests (active progress) float to the TOP of the satchel; story keepsakes follow
+  groups.sort((a, b) => (a.kind === "quest" ? 0 : 1) - (b.kind === "quest" ? 0 : 1));
   return groups;
 }
 function renderSatchel() {
