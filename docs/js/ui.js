@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v410"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v411"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -467,11 +467,15 @@ function roundTop(opts) {
 function openHudMenu() {
   if (document.getElementById("hudmenu-ov")) return;
   const soundLbl = () => SFX.isMuted() ? "🔇 Sound: Off" : "🔊 Sound: On";
+  const active = document.querySelector(".screen.active");
+  const onHome = active && active.id === "screen-start";
   const ov = document.createElement("div"); ov.id = "hudmenu-ov"; ov.className = "hudmenu-ov";
   ov.innerHTML = `<div class="hudmenu-card">
     <div class="hudmenu-title">Menu</div>
     <button class="hudmenu-item" id="hm-sound">${soundLbl()}</button>
-    <button class="hudmenu-item" id="hm-home">🏠 Main Menu</button>
+    ${onHome
+      ? `<button class="hudmenu-item" id="hm-admin">⚙️ Admin &amp; Settings</button>`
+      : `<button class="hudmenu-item" id="hm-home">🏠 Main Menu</button>`}
     <button class="hudmenu-item hm-close" id="hm-close">Close</button>
   </div>`;
   document.getElementById("app").appendChild(ov);
@@ -479,7 +483,24 @@ function openHudMenu() {
   ov.addEventListener("click", e => { if (e.target === ov) close(); });
   on("#hm-sound", "click", () => { SFX.unlock(); SFX.toggle(); const b = document.getElementById("hm-sound"); if (b) b.textContent = soundLbl(); });
   on("#hm-home", "click", () => { close(); goHome(); });
+  on("#hm-admin", "click", () => { close(); renderAdmin(); });
   on("#hm-close", "click", close);
+}
+// Home only: tapping the gold chip drops down a little card listing every currency + keys.
+function openCurrencyMenu() {
+  if (document.getElementById("curr-ov")) return;
+  const rows = [
+    ["🪙", "Gold", GAME.gold || 0],
+    ["✨", "Stardust", GAME.stardust || 0],
+    [PEARL, "Pearls", GAME.pearls || 0],
+    ["🗝️", "Keys", GAME.keys || 0],
+    ["🐸", "Treats", GAME.treats || 0],
+  ];
+  const ov = document.createElement("div"); ov.id = "curr-ov"; ov.className = "curr-ov";
+  ov.innerHTML = `<div class="curr-card">${rows.map(([ic, nm, n]) =>
+    `<div class="curr-row"><span class="curr-ic">${ic}</span><span class="curr-name">${nm}</span><b class="curr-n">${n.toLocaleString()}</b></div>`).join("")}</div>`;
+  document.getElementById("app").appendChild(ov);
+  ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
 }
 // Slim top bar for the customer-arrival + result screens: just the ☰ menu top-right (same popup
 // as scoop/pop/mix). No location or currency counts — those are gone from these screens.
@@ -531,17 +552,10 @@ function syncHud(id) {
 /* ======================================================================= */
 /* START                                                                   */
 /* ======================================================================= */
-// The home top bar: current pet (left), keys + coins, and a gear → Admin (right).
+// The home top row is now the shared overlay: the pet (left) + a gold chip and ☰ menu (right).
+// Admin lives inside the ☰ menu. This just reserves the vertical space the old bar took.
 function homeBar() {
-  return `<div class="home-bar">
-    <div class="home-pet-spacer" aria-hidden="true"></div>
-    <div class="home-res">
-      ${GAME.pearls > 0 ? `<span class="res-chip pearls"><span class="res-ic"></span><b>${GAME.pearls.toLocaleString()}</b></span>` : ""}
-      <span class="res-chip"><span class="res-ic">🗝️</span><b>${GAME.keys || 0}</b></span>
-      <span class="res-chip"><span class="res-ic">🪙</span><b>${(GAME.gold || 0).toLocaleString()}</b></span>
-    </div>
-    <button class="home-gear" id="home-gear" aria-label="Admin &amp; Settings">⚙️</button>
-  </div>`;
+  return `<div class="home-topspace" aria-hidden="true"></div>`;
 }
 // A bottom-nav plaque button: a framed wood plaque with an icon, label beneath.
 function navBtn(id, icon, label) {
@@ -598,7 +612,6 @@ function renderStart() {
   on("#nav-satchel", "click", renderSatchel);
   on("#nav-map", "click", renderMap);
   on("#nav-vault", "click", renderVault);
-  on("#home-gear", "click", renderAdmin);
   applyHomeBackground();
   show("start");
   maybeShowHuntCelebrate();
@@ -2692,13 +2705,20 @@ function syncRoundHud(phase) {
   const tally = phase === "scoop" || phase === "pop";
   const tallyN = phase === "pop" && ROUND ? ROUND.inventory.length : 0;
   const tallyClass = timer ? "under-timer" : "under-pet";
+  // home only: a gold chip sits just left of the ☰ menu; tapping it reveals every currency
+  const goldChip = home
+    ? `<button class="hud-gold" id="hud-gold" aria-label="Currencies"><span class="hud-gold-ic">🪙</span><b>${(GAME.gold || 0).toLocaleString()}</b></button>`
+    : "";
   hud.innerHTML =
     `<div class="petbadge ${showPet ? "" : "nopet"}" id="familiar"><div class="petbadge-pet">${showPet ? equippedFamiliarChip() : "🔒"}</div>${count != null ? `<div class="petbadge-count">${count}</div>` : ""}</div>` +
     (timer ? rushBadgeHtml("rt-rush") : "") +
     (tally ? `<div class="phase-count ${tallyClass}" id="phase-count"><img class="phase-count-bub" src="${ART.url("bubble")}" alt="" draggable="false"><span class="phase-count-n" id="phase-count-n">${tallyN}</span></div>` : "") +
-    (home ? "" : `<button class="round-menu" id="hud-menu" aria-label="Menu">☰</button>`);
+    goldChip +
+    `<button class="round-menu" id="hud-menu" aria-label="Menu">☰</button>`;
   const fam = hud.querySelector("#familiar");
   if (fam) fam.onclick = () => petClickHud(phase);
+  const gold = hud.querySelector("#hud-gold");
+  if (gold) gold.onclick = openCurrencyMenu;
   if (timer) startRushClock();
 }
 // pet tap: same helper hints as before (mix spends a treat to undo); home pet is decorative for now

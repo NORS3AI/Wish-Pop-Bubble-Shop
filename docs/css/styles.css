@@ -356,6 +356,26 @@ html, body {
   width: 40px; height: 40px; border-radius: 11px; font-size: 20px; color: #ffe6b0;
   background: rgba(50,24,72,.7); border: 1.5px solid rgba(255,214,110,.55); cursor: pointer; }
 #round-hud .round-menu:active { transform: scale(.92); }
+/* home only: a tappable gold chip sits just left of the ☰ menu */
+#round-hud .hud-gold { position: absolute; top: calc(var(--safe-t) + 18px); right: 62px; height: 40px; pointer-events: auto;
+  display: flex; align-items: center; gap: 5px; padding: 0 12px 0 9px; border-radius: 12px; cursor: pointer;
+  font-family: var(--ff-display); font-weight: 800; font-size: 18px; color: #fff;
+  background: rgba(50,24,72,.7); border: 1.5px solid rgba(255,214,110,.55); }
+#round-hud .hud-gold .hud-gold-ic { font-size: 19px; }
+#round-hud .hud-gold:active { transform: scale(.94); }
+/* the currency drop-down (tap the gold chip) */
+.curr-ov { position: fixed; inset: 0; z-index: 96; }
+.curr-card { position: absolute; top: calc(var(--safe-t) + 64px); right: 10px; min-width: 196px;
+  background: linear-gradient(180deg, rgba(48,30,74,.98), rgba(26,15,46,.98)); border: 2px solid rgba(240,200,110,.6);
+  border-radius: 16px; box-shadow: 0 10px 26px rgba(0,0,0,.55); padding: 8px; animation: fade .16s ease; }
+.curr-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; }
+.curr-row + .curr-row { border-top: 1px solid rgba(255,255,255,.09); }
+.curr-ic { font-size: 20px; width: 24px; text-align: center; }
+.curr-name { flex: 1; color: #e9ddff; font-weight: 700; font-size: 15px; }
+.curr-n { color: #fff; font-family: var(--ff-display); font-weight: 900; font-size: 17px; }
+/* home top row is now the overlay (pet left, gold + menu right); reserve enough height that the
+   logo below clears the pet badge */
+.home-topspace { height: 140px; flex: 0 0 auto; }
 /* running tally — one of our bubbles with the live count inside it, tucked under the pet */
 .phase-count { position: absolute; z-index: 41; width: 54px; height: 54px; display: grid; place-items: center; pointer-events: none; }
 .phase-count-bub { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
