@@ -1047,6 +1047,16 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .home-nav-btn:active { transform: scale(.92); }
 /* round corner badges (Dailies / Well) */
 .corner-badge { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
+/* hover micro-interaction: home buttons grow a touch and glow golden */
+.home-nav-btn .nav-badge, .home-daily .corner-badge, .home-well .corner-badge { transition: transform .16s ease, filter .16s ease; }
+.home-play { transition: transform .16s ease; }
+@media (hover: hover) {
+  .home-nav-btn:hover .nav-badge, .home-daily:hover .corner-badge, .home-well:hover .corner-badge {
+    transform: scale(1.1);
+    filter: drop-shadow(0 4px 9px rgba(0,0,0,.5)) drop-shadow(0 0 13px rgba(255,214,120,.95));
+  }
+  .home-play:hover { transform: scale(1.04); }
+}
 /* Left-side Dailies plaque (opens the quests screen). The #screen-start prefix
    raises specificity so it beats the `.has-home-bg > *` position override. */
 #screen-start .home-daily { position: absolute; left: 4px; top: 42%; transform: translateY(-50%); z-index: 3;
