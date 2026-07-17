@@ -120,6 +120,11 @@ html, body {
 @keyframes logoGlow { 0%,100% { opacity: .7; transform: scale(.96); } 50% { opacity: 1; transform: scale(1.04); } }
 .logo-float { position: relative; z-index: 2; animation: logoFloat 4.6s ease-in-out infinite; will-change: transform; }
 @keyframes logoFloat { 0%,100% { transform: translateY(-5px); } 50% { transform: translateY(5px); } }
+/* the realm's hanging sign sits BEHIND the logo and bobs with it — it looks like it hangs from
+   the logo by its ropes. The logo image is layered in front (z-index 2). */
+.logo-float > .wp-logo, .logo-float > .logo, .logo-float > .sub { position: relative; z-index: 2; }
+.realm-sign { position: absolute; left: 50%; transform: translateX(-50%); z-index: 1; width: 62%; top: calc(100% - 30px);
+  pointer-events: none; filter: drop-shadow(0 8px 9px rgba(0,0,0,.45)); }
 .logo-sparkles { position: absolute; inset: -6px 0; overflow: hidden; z-index: 1; pointer-events: none; }
 .lspark { position: absolute; top: -8%; border-radius: 50%;
   background: radial-gradient(circle, #fff, rgba(255,220,240,.95) 45%, rgba(255,158,224,0) 72%);
@@ -902,10 +907,9 @@ html, body {
 /* Home-screen Well button (mirrors Dailies on the right) + its "new!" arrow.
    Extra #app on the selector out-specifies "#screen-start.has-home-bg > *" (which
    would otherwise force position:relative and drop it into the layout flow). */
-#app #screen-start .home-well { position: absolute; right: 2px; top: 45%; transform: translateY(-50%); z-index: 3;
-  display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; cursor: pointer; }
-#screen-start .home-well .nav-lbl { font-size: 17px; }
-.home-well:active .home-daily-plaque { transform: scale(.92); }
+#app #screen-start .home-well { position: absolute; right: 4px; top: 42%; transform: translateY(-50%); z-index: 3;
+  width: 96px; background: none; border: none; padding: 0; cursor: pointer; }
+.home-well:active { transform: translateY(-50%) scale(.93); }
 .home-well.nudge-well { animation: wellNudge 1.1s ease-in-out infinite; }
 @keyframes wellNudge { 0%,100% { transform: translateY(-50%); } 50% { transform: translate(3px, -50%); } }
 .well-arrow { position: absolute; left: -30px; top: 40%; font-size: 30px; animation: wellArrow 1s ease-in-out infinite; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
@@ -1034,21 +1038,17 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   font-family: var(--ff-display); font-weight: 700; font-size: 52px; letter-spacing: 1px; color: #fff;
   text-shadow: 0 3px 6px rgba(0,10,40,.75), 0 0 4px rgba(30,80,160,.9); }
 .home-play:active { transform: scale(.97); }
-.home-nav { display: flex; justify-content: space-between; gap: 4px; padding: 6px 2px 0; }
-.home-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; padding: 0; cursor: pointer; }
-.nav-plaque { position: relative; width: 122px; height: 122px; display: flex; align-items: center; justify-content: center; }
-.nav-plaque img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 8px rgba(0,0,0,.55)); }
-.nav-ic { position: relative; z-index: 1; font-size: 52px; margin-top: 18px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
-.nav-lbl { font-family: var(--ff-display); font-weight: 700; font-size: 19px; color: #ffe6a8; text-shadow: 0 1px 3px rgba(0,0,0,.85); margin-top: -4px; }
-.home-nav-btn:active .nav-plaque { transform: scale(.9); }
+.home-nav { display: flex; justify-content: space-between; align-items: flex-end; gap: 5px; padding: 6px 2px 0; }
+.home-nav-btn { flex: 1; min-width: 0; display: block; background: none; border: none; padding: 0; cursor: pointer; }
+.nav-badge { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
+.home-nav-btn:active { transform: scale(.92); }
+/* round corner badges (Dailies / Well) */
+.corner-badge { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
 /* Left-side Dailies plaque (opens the quests screen). The #screen-start prefix
    raises specificity so it beats the `.has-home-bg > *` position override. */
-#screen-start .home-daily { position: absolute; left: 2px; top: 45%; transform: translateY(-50%); z-index: 3;
-  display: flex; flex-direction: column; align-items: center; gap: 1px; background: none; border: none; padding: 0; cursor: pointer; }
-.home-daily-plaque { width: 104px; height: 104px; }
-.home-daily-plaque .nav-ic { margin-top: 15px; font-size: 44px; }
-.home-daily .nav-lbl { font-size: 17px; }
-.home-daily:active .home-daily-plaque { transform: scale(.92); }
+#screen-start .home-daily { position: absolute; left: 4px; top: 42%; transform: translateY(-50%); z-index: 3;
+  width: 96px; background: none; border: none; padding: 0; cursor: pointer; }
+.home-daily:active { transform: translateY(-50%) scale(.93); }
 .daily-badge { position: absolute; top: 6px; right: 6px; z-index: 2; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px;
   background: #e0455a; color: #fff; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center;
   box-shadow: 0 1px 3px rgba(0,0,0,.55); border: 2px solid #fff; }

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v415"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v416"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -586,12 +586,12 @@ function homeBar() {
   return `<div class="home-topspace" aria-hidden="true"></div>`;
 }
 // A bottom-nav plaque button: a framed wood plaque with an icon, label beneath.
-function navBtn(id, icon, label) {
-  return `<button class="home-nav-btn" id="${id}">
-    <span class="nav-plaque"><img src="art/ui/btn_11.png" alt="" draggable="false"><span class="nav-ic">${icon}</span></span>
-    <span class="nav-lbl">${label}</span>
-  </button>`;
+// A home nav button: one painted badge image (icon + label baked in).
+function navBtn(id, imgKey, label) {
+  return `<button class="home-nav-btn" id="${id}" aria-label="${label}"><img class="nav-badge" src="art/ui/${imgKey}.png?v=${BUILD}" alt="${label}" draggable="false"></button>`;
 }
+// realm id -> hanging-sign art (shown behind the bobbing logo on home)
+const REALM_SIGN = { willow: "sign_willow", courtyard: "sign_courtyard", drury: "sign_drury", desert: "sign_desert" };
 // how many daily quests are ready to claim (drives the Dailies badge)
 function claimableDailies() {
   try { return ((GAME.quests && GAME.quests.daily) || []).filter(e => !e.claimed && questProgress(e).claimable).length; }
@@ -602,34 +602,35 @@ function renderStart() {
   const realm = currentRealm();
   const ready = claimableDailies();
   const dailyBadge = ready > 0 ? `<span class="daily-badge">${ready}</span>` : "";
+  const signKey = REALM_SIGN[realm.id];
+  const signHtml = signKey ? `<img class="realm-sign" src="art/ui/${signKey}.png?v=${BUILD}" alt="${realm.name}" draggable="false">` : "";
   html("start", `
     ${homeBar()}
-    <button class="home-daily" id="home-daily">
-      <span class="nav-plaque home-daily-plaque"><img src="art/ui/btn_11.png" alt="" draggable="false"><span class="nav-ic">🎁</span>${dailyBadge}</span>
-      <span class="nav-lbl">Dailies</span>
+    <button class="home-daily" id="home-daily" aria-label="Dailies">
+      <img class="nav-badge corner-badge" src="art/ui/nav_dailies.png?v=${BUILD}" alt="Dailies" draggable="false">
+      ${dailyBadge}
     </button>
-    ${GAME.wellIntro >= 1 ? `<button class="home-well${GAME.wellIntro === 1 ? " nudge-well" : ""}" id="home-well">
-      <span class="nav-plaque home-daily-plaque"><img src="art/ui/btn_11.png" alt="" draggable="false"><span class="nav-ic">🌟</span></span>
-      <span class="nav-lbl">Well</span>
+    ${GAME.wellIntro >= 1 ? `<button class="home-well${GAME.wellIntro === 1 ? " nudge-well" : ""}" id="home-well" aria-label="Well">
+      <img class="nav-badge corner-badge" src="art/ui/nav_well.png?v=${BUILD}" alt="Well" draggable="false">
       ${GAME.wellIntro === 1 ? `<span class="well-arrow" aria-hidden="true">👉</span>` : ""}
     </button>` : ""}
     <div class="home-logo">
       <div class="logo-stage">
         <div class="logo-sparkles" aria-hidden="true">${logoSparkles()}</div>
-        <div class="logo-float">${logoMarkup()}</div>
+        <div class="logo-float">${signHtml}${logoMarkup()}</div>
       </div>
-      <div class="realm-here">${realm.icon} ${realm.name}</div>
+      ${signKey ? "" : `<div class="realm-here">${realm.icon} ${realm.name}</div>`}
       ${huntChipHtml()}
     </div>
     <div class="grow"></div>
     <button class="home-play" id="play-btn">
-      <img class="home-play-bg" src="art/ui/btn_play.png?v=${BUILD}" alt="Play" draggable="false">
+      <img class="home-play-bg" src="art/ui/home_play.png?v=${BUILD}" alt="Play" draggable="false">
     </button>
     <div class="home-nav">
-      ${navBtn("nav-shop", "🛍️", "Shop")}
-      ${navBtn("nav-satchel", "🎒", "Satchel")}
-      ${navBtn("nav-map", "🗺️", "Realms")}
-      ${navBtn("nav-vault", "🧰", "Collection")}
+      ${navBtn("nav-shop", "nav_shop", "Shop")}
+      ${navBtn("nav-satchel", "nav_satchel", "Satchel")}
+      ${navBtn("nav-map", "nav_realms", "Realms")}
+      ${navBtn("nav-vault", "nav_collection", "Collection")}
     </div>
     <div class="home-build">Build ${BUILD}</div>
   `);
