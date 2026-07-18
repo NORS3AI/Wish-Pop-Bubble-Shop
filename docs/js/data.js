@@ -139,7 +139,6 @@ const INFUSED_INGREDIENTS = [
 // King's Courtyard reskins (same effects, royal flavor). Golden Goose Egg is saved for Beanstalk Bank.
 const COURT_INFUSED = [
   { id: "kc_griffin_egg", name: "Griffin Egg", qualities: ["Valor", "Majesty"], emoji: "🪺", infused: "potentNext", flex: true },
-  { id: "kc_royal_seal",  name: "Royal Seal",  qualities: ["Honor", "Wisdom"],  emoji: "🔒", infused: "lockBar",    flex: true },
 ];
 COURT_INFUSED.forEach(i => INGREDIENT_BY_ID[i.id] = i);
 INFUSED_INGREDIENTS.forEach(i => INGREDIENT_BY_ID[i.id] = i);
@@ -163,8 +162,8 @@ const COURTYARD_INGREDIENTS = [
   { id: "kc_peacock",      name: "Peacock Plume",     qualities: ["Glamour", "Cunning"],   emoji: "🦚" },
   { id: "kc_regal_tea",    name: "Regal Tea",         qualities: ["Majesty", "Serenity"],  emoji: "🫖" },
   { id: "kc_court_wand",   name: "Court Wand",        qualities: ["Cunning", "Radiance"],  emoji: "🪄" },
-  { id: "kc_white_dove",   name: "White Dove",        qualities: ["Wisdom", "Honor"],      emoji: "🕊️" },
-  { id: "kc_blackbird_pie",name: "Blackbird Pie",     qualities: ["Serenity", "Mirth"],    emoji: "🥧" },
+  { id: "kc_white_dove",   name: "White Dove",        qualities: ["Serenity", "Honor"],    emoji: "🕊️" },
+  { id: "kc_blackbird_pie",name: "Blackbird Pie",     qualities: ["Cunning", "Mirth"],     emoji: "🥧" },
   { id: "kc_silk_rosette", name: "Silk Rosette",      qualities: ["Serenity", "Glamour"],  emoji: "🏵️" },
   { id: "kc_royal_cocoa",  name: "Royal Cocoa",       qualities: ["Fortune", "Cunning"],   emoji: "🍫" },
 ];
