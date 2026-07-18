@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v425"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v426"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -8185,6 +8185,34 @@ function playCharm(i) {
 /* ======================================================================= */
 /* RESULT                                                                  */
 /* ======================================================================= */
+function playGothelScene(res, done) {
+  ["gothel_allergy","gothel_scheme","gothel_confident","gothel_sly"].forEach(k => ART.ensure(k, () => {}));
+  const beats = [];
+  if (res.gothelCurse) {
+    const n = res.gothelCurse.count;
+    beats.push(
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_allergy", bg: "shop_interior",
+        text: "That STENCH… *shudder*. You dare taint my enchantment potion with that wretched ingredient?",
+        cta: "I— it slipped— ▸" },
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_scheme", bg: "shop_interior",
+        text: n === 2
+          ? "How tiresome. Next round, two of your finest ingredients will wake up utterly rotten. Consider them cursed."
+          : "How tiresome. One of your ingredients will wake up rotten next round. A gentle reminder of what I expect.",
+        cta: res.gothelSteal ? "That's not all? ▸" : "She cursed me... ▸" }
+    );
+  }
+  if (res.gothelSteal) {
+    beats.push(
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_confident", bg: "shop_interior",
+        text: "You failed me. I came for a proper enchantment and left with nothing. That simply will not do.",
+        cta: "I'm sorry— ▸" },
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_sly", bg: "shop_interior",
+        text: "Next time I'm in your shop, I'll be helping myself to something from your cauldron while you brew. Call it a lesson in quality.",
+        cta: "She wouldn't dare ▸" }
+    );
+  }
+  renderStoryBeats(beats, done);
+}
 function serve() {
   if (ROUND.slots.length === 0) return;
   if (ROUND.villain) { queenServe(); return; }    // villain events score their own way
@@ -8260,7 +8288,11 @@ function serve() {
     if (ROUND.customer && !ROUND.story) advanceCustStory(ROUND.customer.id);   // next chapter of their story
   }
   servedTotal++; localStorage.setItem("wishpop_served", servedTotal); save();
-  renderResult(res);
+  if (res.gothelCurse || res.gothelSteal) {
+    playGothelScene(res, () => renderResult(res));
+  } else {
+    renderResult(res);
+  }
 }
 function renderResult(res) {
   const win = res.success, c = ROUND.customer, realm = currentRealm(), zone = res.allergy && res.allergy.zone;
