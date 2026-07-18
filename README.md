@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧙‍♀️ **Lady Gothel visits the King's Courtyard — and she curses.** She always arrives as a VIP.
+  Trigger her allergy (yellow or red) and she'll **rot one or two of your ingredients** at the start
+  of your next round. Rotten ingredients carry her allergy magic into the cauldron and — each time
+  you drop a new ingredient in — spread that rot one step further to nearby items in your hand.
+  Keep an eye out for the pulsing 🍂 badge: that's the contagious one.
+
 - ☠️ **Villain fights got trickier — and cursed.** A single **disguised cursed ingredient** now hides
   in every villain round. It looks completely normal… until you scoop it into the cauldron, when it
   **bursts and splatters poison** on the ingredients next to it in your tray. Those neighbours turn
