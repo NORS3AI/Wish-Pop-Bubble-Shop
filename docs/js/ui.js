@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v424"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v425"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -1828,8 +1828,9 @@ function adminCustomer(id) {
   const rec = (D.CUSTOMERS || []).find(c => c.id === id) || (currentRealm().customers || []).find(c => c.id === id);
   if (!rec) { toast("Customer not found in this realm."); return; }
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: [rec], ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
-  injectInfused(ROUND); injectKeys(ROUND);
-  ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
+  injectInfused(ROUND); injectKeys(ROUND); injectRot(ROUND);
+  if (GAME.gothelSteal) { ROUND.gothelStealActive = true; GAME.gothelSteal = false; save(); }
+  ROUND.rush = false; ROUND.vip = !!(rec && rec.alwaysVip); ROUND.keyStaked = false;
   applyCustArc(ROUND);
   renderCustomer();
 }
@@ -1904,6 +1905,11 @@ function renderAdmin() {
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen (villain)</button>
         <button class="btn" id="ad-stepmother" style="margin-bottom:8px">🖤 The Wicked Stepmother (villain)</button>
+        <button class="btn" id="ad-gothel" style="margin-bottom:8px">🧙‍♀️ Lady Gothel (King's Courtyard)</button>
+        <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px">
+          <button class="btn small" id="ad-gothel-curse">🍂 Set curse (active next round)</button>
+          <button class="btn small" id="ad-gothel-steal">🫴 Set steal (active next round)</button>
+        </div>
         <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Ball: Knight</button>
         <button class="btn" id="ad-dance2" style="margin-bottom:8px">🤴 Ball: Prince</button>
         <button class="btn" id="ad-dance3" style="margin-bottom:8px">👸 Ball: Cinderella</button>
@@ -1979,6 +1985,23 @@ function renderAdmin() {
   on("#ad-stepmother", "click", () => {
     if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); }
     renderVillainIntro("stepmother");
+  });
+  on("#ad-gothel", "click", () => {
+    GAME.finaleWon = GAME.finaleWon || {};
+    GAME.finaleWon.willow = true;
+    GAME.unlockedRealms = GAME.unlockedRealms || {};
+    GAME.unlockedRealms.courtyard = true;
+    GAME.realm = "courtyard";
+    save(); applyRealmTheme();
+    adminCustomer("gothel");
+  });
+  on("#ad-gothel-curse", "click", () => {
+    GAME.gothelCurse = { count: 2, allergies: ["Majesty", "Glamour"] };
+    save(); toast("🍂 Gothel curse set — spawn her or start next round.");
+  });
+  on("#ad-gothel-steal", "click", () => {
+    GAME.gothelSteal = true;
+    save(); toast("🫴 Gothel steal armed — next round she may swipe a cauldron ingredient.");
   });
   on("#ad-dance", "click", () => renderDanceIntro("knight"));
   on("#ad-dance2", "click", () => renderDanceIntro("prince"));
