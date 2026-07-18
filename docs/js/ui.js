@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v427"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v428"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -79,8 +79,9 @@ function normalizeGame(g) {
   if (!g.favs || typeof g.favs !== "object") g.favs = {};              // skinId -> true (favorite skins, starred in the shop)
   if (!g.cycleFav || typeof g.cycleFav !== "object") g.cycleFav = {};  // kind -> true (rotate through favorites each customer)
   if (!g.favIdx || typeof g.favIdx !== "object") g.favIdx = { cauldron: 0, familiar: 0 }; // rotation position per kind
-  if (typeof g.gothelCurse  === "undefined") g.gothelCurse  = null;  // pending rot curse for next round (set when Gothel's allergy is triggered)
-  if (typeof g.gothelSteal  === "undefined") g.gothelSteal  = false; // pending steal for next round (set when her wish is failed)
+  if (typeof g.gothelCurse      === "undefined") g.gothelCurse      = null;
+  if (typeof g.gothelSteal      === "undefined") g.gothelSteal      = false;
+  if (typeof g.lastCustomerId   === "undefined") g.lastCustomerId   = null;  // prevents back-to-back Gothel
   // one-time: hand every player the five painted pets to try, and start them on the friendly Frog
   if (!g.petsSeeded) {
     ["pet_frog", "pet_sheep", "pet_cat", "pet_squirrel", "pet_crow"].forEach(id => { g.owned[id] = true; });
@@ -6568,11 +6569,21 @@ function startRound() {
   if (maybeTortoise()) return;   // the Tortoise plods in as the very last customer before the finale
   if (maybeJunkRound()) return;  // full trash bin? a junk visitor (Rumpelstiltskin or the goblin)
   if (maybeEvent()) return;   // a fairytale event takes this turn instead of a customer
+  // record who just served before we build the next roster
+  if (ROUND && ROUND.customer) { GAME.lastCustomerId = ROUND.customer.id; save(); }
   // once the pigs have moved, they no longer wander into the Willow shop
   let roster = currentRealm().customers || D.CUSTOMERS;
   if (GAME.pigsMoved) roster = roster.filter(c => c.id !== "pig_straw" && c.id !== "pig_stick");
   roster = roster.filter(c => c.id !== "hare" && c.id !== "tortoise"); // the race pair only appear via their scripted early/late arrivals
   if (!GAME.bopeepMet) roster = roster.filter(c => c.id !== "bo_peep"); // Bo Peep joins the regulars only after her sheep-quest intro
+  // alwaysVip customers (Gothel) never enter the normal random pool — they get a
+  // dedicated 15% window on non-boss rounds and can never appear two rounds in a row.
+  const isBossRound = (servedTotal + 1) % BALANCE.BOSS_EVERY === 0;
+  const alwaysVipPool = roster.filter(c => c.alwaysVip && c.id !== GAME.lastCustomerId);
+  roster = roster.filter(c => !c.alwaysVip);
+  if (!isBossRound && alwaysVipPool.length && Math.random() < 0.15) {
+    roster = [R.pick(alwaysVipPool)];
+  }
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: roster, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
