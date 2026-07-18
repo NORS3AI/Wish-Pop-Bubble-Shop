@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v423"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v424"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -79,7 +79,8 @@ function normalizeGame(g) {
   if (!g.favs || typeof g.favs !== "object") g.favs = {};              // skinId -> true (favorite skins, starred in the shop)
   if (!g.cycleFav || typeof g.cycleFav !== "object") g.cycleFav = {};  // kind -> true (rotate through favorites each customer)
   if (!g.favIdx || typeof g.favIdx !== "object") g.favIdx = { cauldron: 0, familiar: 0 }; // rotation position per kind
-  if (typeof g.gothelCurse === "undefined") g.gothelCurse = null; // pending rot curse for next round (set when Gothel's allergy is triggered)
+  if (typeof g.gothelCurse  === "undefined") g.gothelCurse  = null;  // pending rot curse for next round (set when Gothel's allergy is triggered)
+  if (typeof g.gothelSteal  === "undefined") g.gothelSteal  = false; // pending steal for next round (set when her wish is failed)
   // one-time: hand every player the five painted pets to try, and start them on the friendly Frog
   if (!g.petsSeeded) {
     ["pet_frog", "pet_sheep", "pet_cat", "pet_squirrel", "pet_crow"].forEach(id => { g.owned[id] = true; });
@@ -6553,6 +6554,7 @@ function startRound() {
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   injectRot(ROUND);       // Lady Gothel's pending rot curse lands on 1-2 haul ingredients
+  if (GAME.gothelSteal) { ROUND.gothelStealActive = true; GAME.gothelSteal = false; save(); }
   setupHunt(ROUND);       // maybe a hidden collection item (sheep/bead) turns up this round
   applyCustArc(ROUND);    // if this customer has an ongoing story, use their current wish line
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
@@ -7959,6 +7961,42 @@ function spreadRot() {
   });
 }
 
+// Lady Gothel's steal mechanic: her hand slides in from the right, fills the bottle
+// with the stolen ingredient's magic color, then retreats. Called immediately after the
+// ingredient is pushed to ROUND.slots so we can splice it back out once the animation runs.
+const GOTHEL_FILL = {
+  a: { l: 68.8, t: 35.6, w: 23.7, h: 18.0, rx: "50%" },
+  b: { l: 72.7, t: 35.6, w: 16.3, h: 15.4, rx: "40% 40% 50% 50%" },
+  c: { l: 69.7, t: 35.5, w: 22.5, h: 17.5, rx: "50%" },
+};
+function playGothelSteal(inst) {
+  ROUND.gothelStealActive = false;
+  const variant  = ["a","b","c"][Math.floor(Math.random() * 3)];
+  const pos      = GOTHEL_FILL[variant];
+  const magic    = instMainMagic(inst);
+  const fillClr  = D.MAGIC[magic] || "#8b5cf6";
+
+  const ov = document.createElement("div");
+  ov.className = "gothel-steal-overlay";
+  ov.innerHTML = `<div class="gothel-steal-scene" id="gst-scene">` +
+    `<div class="gothel-steal-fill" id="gst-fill" style="left:${pos.l}%;top:${pos.t}%;width:${pos.w}%;height:${pos.h}%;border-radius:${pos.rx};background:${fillClr};"></div>` +
+    `<img class="gothel-steal-arm" src="art/gothel_steal_${variant}.webp" alt="🧙‍♀️" draggable="false"></div>`;
+  document.body.appendChild(ov);
+
+  const scene = ov.querySelector("#gst-scene");
+  const fill  = ov.querySelector("#gst-fill");
+
+  requestAnimationFrame(() => requestAnimationFrame(() => scene.classList.add("in")));
+  setTimeout(() => fill.classList.add("filled"), 350);
+  setTimeout(() => toast("🧙‍♀️ Lady Gothel stole an ingredient!"), 500);
+  setTimeout(() => {
+    const i = ROUND.slots.indexOf(inst); if (i !== -1) ROUND.slots.splice(i, 1);
+    paintMix();
+  }, 700);
+  setTimeout(() => scene.classList.remove("in"), 1500);
+  setTimeout(() => ov.remove(), 2100);
+}
+
 const KEY_DROP_CHANCE = 0.22;   // ~1 Treasure Key every ~5 rounds
 // Occasionally swap a plain ingredient bubble for a Treasure Key (banks on pop).
 function injectKeys(round) {
@@ -8003,6 +8041,7 @@ function addToSlot(idx, fromEl) {
   if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), flyChar);
   ROUND.slots.push(inst);
   spreadRot();                // rot spreads one step further from any original rotten inventory items
+  if (ROUND.gothelStealActive && Math.random() < 0.4) playGothelSteal(inst);
   applyInfusedEffect(inst);   // built-in charm effect (Dragon Egg / Frost Gem) fires on drop-in
   mixPulseColor = D.MAGIC[instMainMagic(inst)] || "#c9a3ff";   // aura pulses in the added ingredient's color
   { const mf = equippedMirrorFaces(); if (mf) drawMirrorFace(mf); }   // Queen's Mirror: reveal a new random face
@@ -8163,6 +8202,11 @@ function serve() {
     GAME.gothelCurse = { count: curseCount, allergies: allergyList.slice(0, curseCount) };
     res.gothelCurse = GAME.gothelCurse;
   }
+  // Lady Gothel's steal: if her wish was FAILED, she pickpockets an ingredient from the cauldron next round
+  if (ROUND.customer && ROUND.customer.id === "gothel" && !res.success) {
+    GAME.gothelSteal = true; save();
+    res.gothelSteal = true;
+  }
   // In-a-Rush: bonus for serving one in time
   if (ROUND.rush && res.success) { res.rushBonus = BALANCE.RUSH_BONUS; res.gold += res.rushBonus; }
   // VIP key wager: win → multiply the whole payout + bonus Stardust (key kept);
@@ -8236,6 +8280,8 @@ function renderResult(res) {
   const hintLine = hintTxt ? `<div class="res-hint muted" id="${win ? "rb-hint" : "trash-hint"}">${hintTxt}</div>` : "";
   const curseLine = res.gothelCurse
     ? `<div class="res-curse-warn">🍂 Lady Gothel's curse will rot ${res.gothelCurse.count === 2 ? "2 ingredients" : "1 ingredient"} next round!</div>`
+    : res.gothelSteal
+    ? `<div class="res-curse-warn">🧙‍♀️ Lady Gothel will steal an ingredient from your cauldron next round!</div>`
     : "";
   const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
   html("result", `
