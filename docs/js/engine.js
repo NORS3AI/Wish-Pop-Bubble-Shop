@@ -375,6 +375,13 @@ function allergyStatus(slots, allergyType, offset) {
     if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
     if (p && inst.shrunk) p = Math.round(p * BALANCE.PINCH_MULT);
     points += p;
+    // Gothel's rot curse: ingredient carries extra allergy qualities it doesn't naturally have
+    if (inst.rotQualities && inst.rotQualities.includes(allergyType) && !ing.qualities.includes(allergyType)) {
+      let rp = BALANCE.MAIN_POWER;
+      if (inst.potent) rp = Math.round(rp * BALANCE.POTENT_MULT);
+      if (inst.shrunk) rp = Math.round(rp * BALANCE.PINCH_MULT);
+      points += rp;
+    }
   });
   points = Math.max(0, points - (offset || 0));
   const zone = points >= BALANCE.ALLERGY_RED_AT ? "red" : points >= BALANCE.ALLERGY_YELLOW_AT ? "yellow" : "green";

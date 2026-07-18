@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v422"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v423"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -79,6 +79,7 @@ function normalizeGame(g) {
   if (!g.favs || typeof g.favs !== "object") g.favs = {};              // skinId -> true (favorite skins, starred in the shop)
   if (!g.cycleFav || typeof g.cycleFav !== "object") g.cycleFav = {};  // kind -> true (rotate through favorites each customer)
   if (!g.favIdx || typeof g.favIdx !== "object") g.favIdx = { cauldron: 0, familiar: 0 }; // rotation position per kind
+  if (typeof g.gothelCurse === "undefined") g.gothelCurse = null; // pending rot curse for next round (set when Gothel's allergy is triggered)
   // one-time: hand every player the five painted pets to try, and start them on the friendly Frog
   if (!g.petsSeeded) {
     ["pet_frog", "pet_sheep", "pet_cat", "pet_squirrel", "pet_crow"].forEach(id => { g.owned[id] = true; });
@@ -5992,8 +5993,9 @@ const QUEEN_REQUIRED = 72, QUEEN_SKIN = "cauldron_queen", QUEEN_POISON_CHANCE = 
 // Per-piece poison: every ingredient you collect in a villain round independently rolls
 // for a hidden ☠️ taint, so even two of the SAME ingredient can differ. Rolled here at
 // collection time (only for villain rounds; normal rounds always get poison:false).
-function ingInst(id) {
+function ingInst(id, extra) {
   const inst = { id, potent: false, poison: !!(ROUND && ROUND.villain) && R.chance(QUEEN_POISON_CHANCE) };
+  if (extra) Object.assign(inst, extra);
   const ing = D.INGREDIENT_BY_ID[id];
   // flex infused ingredients get a RANDOM magic from this round's needs — always useful
   if (ing && ing.flex && ROUND && ROUND.wish && ROUND.wish.needs.length) inst.magic = R.pick(ROUND.wish.needs.map(n => n.type));
@@ -6550,6 +6552,7 @@ function startRound() {
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: roster, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
+  injectRot(ROUND);       // Lady Gothel's pending rot curse lands on 1-2 haul ingredients
   setupHunt(ROUND);       // maybe a hidden collection item (sheep/bead) turns up this round
   applyCustArc(ROUND);    // if this customer has an ongoing story, use their current wish line
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
@@ -6558,6 +6561,8 @@ function startRound() {
   if (ROUND.rush) { ROUND.rushMs = BALANCE.RUSH_MS; ROUND.rushStart = null; }
   // a VIP guest (any realm) — you may wager a key on the customer screen for a bigger reward
   ROUND.vip = !ROUND.wish.boss && !ROUND.rush && Math.random() < BALANCE.VIP_CHANCE;
+  // Lady Gothel (and any alwaysVip customer) is always a VIP — never a rush round
+  if (ROUND.customer && ROUND.customer.alwaysVip) { ROUND.vip = true; ROUND.rush = false; }
   ROUND.keyStaked = false;
   // some customers pay in a rare currency (the wish-fish pays pearls); keep those rounds plain (no rush/VIP overlay)
   if (ROUND.customer && ROUND.customer.pays && ROUND.customer.pays !== "gold") { ROUND.rush = false; ROUND.vip = false; }
@@ -7267,7 +7272,8 @@ function popAt(i, el, fromCascade, power) {
     SFX.pop(popCombo, power); burstAt(cx, cy, flavor, power);
     // always float OUT of the bubble so you see it pop; during Pop-them-all it
     // auto-collects shortly (a satisfying shower), otherwise you tap to catch it.
-    spawnFloatingIngredient(item.id, cx, cy, fromCascade ? 850 : 0);
+    const rotExtra = item.rotten ? { rotten: true, rotQualities: (item.rotQualities || []).slice() } : null;
+    spawnFloatingIngredient(item.id, cx, cy, fromCascade ? 850 : 0, rotExtra);
   } else {
     SFX.pop(popCombo, power); SFX.reveal(info.kind, popCombo);
     burstAt(cx, cy, flavor, power); floatReward(cx, cy, info, flavor.rare);
@@ -7358,12 +7364,13 @@ function collectCharm(id, tok) {
 }
 // Ingredient floats out of the popped bubble; tap to catch it (or it drifts up and
 // auto-banks, so you never lose it). Catching just feels good.
-function spawnFloatingIngredient(id, x, y, autoMs) {
-  const layer = $("#catch-layer"); if (!layer) { ROUND.inventory.push(ingInst(id)); return; }
+function spawnFloatingIngredient(id, x, y, autoMs, extra) {
+  const layer = $("#catch-layer"); if (!layer) { ROUND.inventory.push(ingInst(id, extra)); return; }
   const ing = D.INGREDIENT_BY_ID[id];
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const tok = document.createElement("div");
   tok.className = "ing-token"; tok.dataset.ing = id;
+  if (extra && extra.rotten) { tok.dataset.rotten = "1"; tok.dataset.rotQuals = JSON.stringify(extra.rotQualities || []); }
   // clamp on-screen (and above the bottom buttons) so it never drifts away uncatchable
   const vw = window.innerWidth, vh = window.innerHeight;
   tok.style.left = Math.max(42, Math.min(vw - 42, x)) + "px";
@@ -7378,7 +7385,8 @@ function spawnFloatingIngredient(id, x, y, autoMs) {
 }
 function collectIngredient(id, tok, silent) {
   if (!tok || tok._caught) return; tok._caught = true; clearTimeout(tok._timer);
-  ROUND.inventory.push(ingInst(id));
+  const extra = (tok && tok.dataset.rotten) ? { rotten: true, rotQualities: JSON.parse(tok.dataset.rotQuals || "[]") } : null;
+  ROUND.inventory.push(ingInst(id, extra));
   if (!silent) {
     SFX.unlock(); SFX.reveal("ingredient", 0);
     const r = tok.getBoundingClientRect();
@@ -7417,7 +7425,9 @@ function collectAllFloating() {
     if (!tok.classList.contains("caught")) { gainCharm(tok.dataset.charm); tok.remove(); } // respect the per-round cap
   });
   document.querySelectorAll("#catch-layer .ing-token").forEach(tok => {
-    if (!tok._caught) { tok._caught = true; clearTimeout(tok._timer); ROUND.inventory.push(ingInst(tok.dataset.ing)); tok.remove(); }
+    if (!tok._caught) { tok._caught = true; clearTimeout(tok._timer);
+      const ex = tok.dataset.rotten ? { rotten: true, rotQualities: JSON.parse(tok.dataset.rotQuals || "[]") } : null;
+      ROUND.inventory.push(ingInst(tok.dataset.ing, ex)); tok.remove(); }
   });
 }
 
@@ -7882,15 +7892,18 @@ function ingCard(st) {
   // flag any magic that matches this customer's allergy so you don't have to scan back to the bars —
   // but NOT on the villain's ransom round, where spotting the hidden poison is the whole challenge
   const allergens = ROUND.villain ? [] : [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
-  const mkPill = q => {
+  // Gothel's rot curse: show rot qualities as extra pills on rotten/touched cards
+  const rotQualities = (inst.rotten || inst.rotTouched) ? (inst.rotQualities || []) : [];
+  const rotClass = inst.rotten ? " rotten" : (inst.rotTouched ? " rot-touched" : "");
+  const mkPill = (q, isRot) => {
     const isPoison = q === "Poison";   // the splatter's toxic quality — always shown, ☠️ styled
     const warn = allergens.includes(q);
     const long = q.length >= 9;   // e.g. "Protection" — nudge the font down so it never clips
-    const mc = isPoison ? "#7fbf3a" : (D.MAGIC[q] || "#888");
-    const mark = isPoison ? `<span class="mp-warn">☠️</span>` : (warn ? `<span class="mp-warn">⚠️</span>` : "");
-    return `<span class="mp${warn ? " allergen" : ""}${isPoison ? " poison" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${q}</span>${mark}</span>`;
+    const mc = isPoison ? "#7fbf3a" : isRot ? "#8b6914" : (D.MAGIC[q] || "#888");
+    const mark = isPoison ? `<span class="mp-warn">☠️</span>` : isRot ? `<span class="mp-warn">🍂</span>` : (warn ? `<span class="mp-warn">⚠️</span>` : "");
+    return `<span class="mp${warn ? " allergen" : ""}${isPoison ? " poison" : ""}${isRot ? " rot" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${q}</span>${mark}</span>`;
   };
-  const revealPill = (q, r) => (q === "Poison" || r === 0 || insight || singleKnown) ? mkPill(q) : `<span class="mp hidden">?</span>`;
+  const revealPill = (q, r) => (q === "Poison" || r === 0 || insight || singleKnown) ? mkPill(q, false) : `<span class="mp hidden">?</span>`;
   let pills = "";
   if (infusedFx) {
     // infused shows its real magic pill(s) then a plain-language effect line (no blank reserves)
@@ -7899,9 +7912,11 @@ function ingCard(st) {
   } else {
     for (let r = 0; r < 3; r++) pills += (r < list.length) ? revealPill(list[r], r) : `<span class="mp blank"></span>`;
   }
+  // append rot quality pills below the normal pills (always visible — that's the curse warning)
+  rotQualities.forEach(q => { if (!list.includes(q)) pills += mkPill(q, true); });
   const poisoned = (ROUND.insight && inst.poison) || inst.splashed;
-  const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
-  return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}${inst.splashed ? " splashed" : ""}" title="${name}" data-idx="${idx}">
+  const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.rotten ? `<span class="rot-badge">🍂</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
+  return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}${inst.splashed ? " splashed" : ""}${rotClass}" title="${name}" data-idx="${idx}">
     <div class="icard-l"><div class="icard-art">${art}${badges}<span class="icard-gem" style="background:${D.MAGIC[mainMagic] || "#888"}"></span></div><div class="icard-nm">${name}</div></div>
     <div class="icard-r">${pills}</div>
     ${inst.potent ? `<span class="icard-star">✨</span>` : (infusedFx ? `<span class="icard-inf">💠</span>` : "")}${n > 1 ? `<span class="icard-count">×${n}</span>` : ""}</button>`;
@@ -7916,6 +7931,34 @@ function injectInfused(round) {
   const n = INFUSED_PER_ROUND + (Math.random() < 0.4 ? 1 : 0); // 1, sometimes 2
   for (let k = 0; k < n && k < idxs.length; k++) round.haul[idxs[k]] = { kind: "ingredient", id: R.pick(list).id };
 }
+// Lady Gothel's rot curse: mark 1-2 random haul ingredients as rotten for the next round.
+// Called after round setup if a pending curse is stored in GAME.gothelCurse.
+function injectRot(round) {
+  const curse = GAME.gothelCurse; if (!curse || !curse.count) return;
+  const idxs = [];
+  round.haul.forEach((it, i) => { if (it.kind === "ingredient") idxs.push(i); });
+  for (let i = idxs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idxs[i], idxs[j]] = [idxs[j], idxs[i]]; }
+  const n = Math.min(curse.count, idxs.length);
+  for (let k = 0; k < n; k++) {
+    round.haul[idxs[k]] = Object.assign({}, round.haul[idxs[k]], { rotten: true, rotQualities: curse.allergies.slice() });
+  }
+  GAME.gothelCurse = null; save();
+}
+// After each ingredient drop, rot from original rotten inventory items spreads
+// one step further (reach = number of items now in the cauldron).
+function spreadRot() {
+  const reach = ROUND.slots.length; if (!reach) return;
+  ROUND.inventory.forEach((inst, i) => {
+    if (inst.rotten || inst.essence || inst.wild) return;
+    const close = ROUND.inventory.some((other, j) => other.rotten && Math.abs(i - j) <= reach);
+    if (close && !inst.rotTouched) {
+      inst.rotTouched = true;
+      const origin = ROUND.inventory.find((other, j) => other.rotten && Math.abs(i - j) <= reach);
+      inst.rotQualities = (origin && origin.rotQualities) ? origin.rotQualities.slice() : [];
+    }
+  });
+}
+
 const KEY_DROP_CHANCE = 0.22;   // ~1 Treasure Key every ~5 rounds
 // Occasionally swap a plain ingredient bubble for a Treasure Key (banks on pop).
 function injectKeys(round) {
@@ -7959,6 +8002,7 @@ function addToSlot(idx, fromEl) {
   const flyChar = inst.essence ? "💧" : D.INGREDIENT_BY_ID[inst.id].emoji;
   if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), flyChar);
   ROUND.slots.push(inst);
+  spreadRot();                // rot spreads one step further from any original rotten inventory items
   applyInfusedEffect(inst);   // built-in charm effect (Dragon Egg / Frost Gem) fires on drop-in
   mixPulseColor = D.MAGIC[instMainMagic(inst)] || "#c9a3ff";   // aura pulses in the added ingredient's color
   { const mf = equippedMirrorFaces(); if (mf) drawMirrorFace(mf); }   // Queen's Mirror: reveal a new random face
@@ -8112,6 +8156,13 @@ function serve() {
   }
   res.cleanStreak = GAME.cleanStreak;
   res.hadAllergy = hadAllergy;
+  // Lady Gothel's curse: if her allergy was triggered, curse 1 (yellow) or 2 (red) ingredients next round
+  if (ROUND.customer && ROUND.customer.id === "gothel" && reacted) {
+    const allergyList = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
+    const curseCount = (res.allergy && res.allergy.zone === "red") ? Math.min(2, allergyList.length) : 1;
+    GAME.gothelCurse = { count: curseCount, allergies: allergyList.slice(0, curseCount) };
+    res.gothelCurse = GAME.gothelCurse;
+  }
   // In-a-Rush: bonus for serving one in time
   if (ROUND.rush && res.success) { res.rushBonus = BALANCE.RUSH_BONUS; res.gold += res.rushBonus; }
   // VIP key wager: win → multiply the whole payout + bonus Stardust (key kept);
@@ -8183,6 +8234,9 @@ function renderResult(res) {
     ? (roundDust > 0 ? "Pop for coins — and your Stardust! 🫧" : res.tip > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧")
     : (trashN ? "Catch the junk to recycle it later! 🍌" : "");
   const hintLine = hintTxt ? `<div class="res-hint muted" id="${win ? "rb-hint" : "trash-hint"}">${hintTxt}</div>` : "";
+  const curseLine = res.gothelCurse
+    ? `<div class="res-curse-warn">🍂 Lady Gothel's curse will rot ${res.gothelCurse.count === 2 ? "2 ingredients" : "1 ingredient"} next round!</div>`
+    : "";
   const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
   html("result", `
     ${custBgEl}
@@ -8196,6 +8250,7 @@ function renderResult(res) {
       <div class="res-panel">
         ${earnedLine}
         <div class="res-react">${blurb}</div>
+        ${curseLine}
         ${resultBadgesMarkup(res)}
         ${hintLine}
       </div>
