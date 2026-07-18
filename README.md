@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧙‍♀️ **Lady Gothel visits the King's Courtyard — and she's vengeful.** She always arrives as a VIP.
+  Trigger her allergy and she'll **rot one or two of your ingredients** at the start of your next
+  round — rotten ingredients carry her allergy magic and spread it to neighbours as you brew, each
+  drop extending the rot's reach. Fail her wish entirely and she's worse: her arm slides in holding
+  an ornate potion bottle, and she **steals a random cauldron ingredient right out from under you**,
+  filling the bottle with its color as she retreats. Watch for the 🍂 badge and tread carefully.
+
 - ☠️ **Villain fights got trickier — and cursed.** A single **disguised cursed ingredient** now hides
   in every villain round. It looks completely normal… until you scoop it into the cauldron, when it
   **bursts and splatters poison** on the ingredients next to it in your tray. Those neighbours turn
