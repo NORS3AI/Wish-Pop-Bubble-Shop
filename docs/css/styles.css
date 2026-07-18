@@ -694,11 +694,17 @@ html, body {
 .res-curse-warn { font-family: var(--ff-read); font-size: 13px; color: #8b6914; font-weight: 700; text-align: center; margin-top: 4px; padding: 4px 10px; background: rgba(139,105,20,.15); border-radius: 8px; border: 1px solid rgba(139,105,20,.35); }
 
 /* ===== LADY GOTHEL STEAL OVERLAY ===== */
-.gothel-steal-overlay { position: fixed; inset: 0; z-index: 200; pointer-events: none; overflow: hidden; }
+/* Overlay is pinned to the game column (max 520px), not the full viewport */
+.gothel-steal-overlay {
+  position: fixed; top: 0; bottom: 0;
+  left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 520px;
+  z-index: 200; pointer-events: none; overflow: hidden;
+}
 .gothel-steal-scene {
   position: absolute;
   right: 0; bottom: 0;
-  width: 68%;
+  width: 48%;
   aspect-ratio: 1130 / 1392;
   transform: translateX(110%);
   transition: transform 1.2s cubic-bezier(.25,.7,.35,1);
@@ -710,6 +716,7 @@ html, body {
   transform: scaleY(0);
   transform-origin: center bottom;
   transition: transform 1.4s cubic-bezier(.22,1,.36,1);
+  opacity: 0.8;
   box-shadow: inset 0 -4px 14px rgba(0,0,0,.28), inset 0 6px 18px rgba(255,255,255,.18);
 }
 .gothel-steal-fill.filled { transform: scaleY(1); }
