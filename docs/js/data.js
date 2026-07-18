@@ -208,6 +208,8 @@ const COURTYARD_CUSTOMERS = [
     line: "A little serenity, perhaps. No one visits a cursed king." },
   { id: "stepmother", name: "The Stepmother", emoji: "🖤", location: "King's Courtyard", wishType: "c_Spite",
     line: "Something glamorous for my daughters — and be quick about it." },
+  { id: "gothel", name: "Lady Gothel", emoji: "🧙‍♀️", location: "King's Courtyard", wishType: "c_Enchant", alwaysVip: true,
+    line: "A potion for my enchantments, darling — I do so hate when my spells start to… fade." },
 ];
 // eventsNeeded = how many events make up a realm's "story" (the pacing backbone: you play
 // through these before its finale/next realm opens). Scales up per realm (fast first, longer
@@ -253,6 +255,7 @@ const COURT_WISH_TYPES = {
   c_Gala:    { main: ["Glamour", "Majesty"],  second: ["Radiance", "Mirth"],   twist: ["Fortune", "Serenity", "Wisdom"] },
   c_Sorrow:  { main: ["Serenity", "Majesty"], second: ["Wisdom", "Honor"],     twist: ["Glamour", "Radiance", "Mirth"] },
   c_Spite:   { main: ["Glamour", "Cunning"],  second: ["Majesty", "Fortune"],  twist: ["Radiance", "Mirth", "Honor"] },
+  c_Enchant: { main: ["Majesty", "Glamour"], second: ["Radiance", "Cunning"],  twist: ["Wisdom", "Fortune", "Serenity"] },
 };
 Object.assign(WISH_TYPES, COURT_WISH_TYPES);
 

@@ -684,6 +684,7 @@ html, body {
 .res-react { text-align: center; font-family: var(--ff-read); font-size: 18px; line-height: 1.32; color: #5a2a7a; max-width: 320px;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .res-hint { font-family: var(--ff-read); font-size: 12.5px; color: #7a5a2a; margin-top: 1px; text-align: center; }
+.res-curse-warn { font-family: var(--ff-read); font-size: 13px; color: #8b6914; font-weight: 700; text-align: center; margin-top: 4px; padding: 4px 10px; background: rgba(139,105,20,.15); border-radius: 8px; border: 1px solid rgba(139,105,20,.35); }
 /* two ornate streak badges; the count sits in the frame's empty slot */
 .res-badges { display: flex; gap: 10px; justify-content: center; align-items: flex-start; width: 100%; margin-top: 2px; }
 .res-badge { position: relative; flex: 1 1 0; max-width: 176px; }
@@ -2412,6 +2413,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   animation: psBit .6s ease-out forwards; }
 @keyframes psBit { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(.25); opacity: 0; } }
 .mp.poison { box-shadow: inset 0 -1px 3px rgba(0,0,0,.3), 0 0 0 1.4px #3f6b16; }
+.mp.rot { --mc: #8b6914; box-shadow: inset 0 -1px 3px rgba(0,0,0,.3), 0 0 0 1.4px #5d3f00; }
 .icard.splash-hit { animation: splashHit .5s ease; }
 @keyframes splashHit { 0%,100% { box-shadow: 0 0 0 rgba(150,220,70,0); } 40% { box-shadow: 0 0 13px 4px rgba(150,220,70,.9); } }
 /* Potent = warm GOLD card; Infused = cool PURPLE card — kept clearly different at a glance */
@@ -2421,9 +2423,13 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   background: linear-gradient(150deg, rgba(139,96,255,.42), rgba(40,26,84,.72) 62%); }
 .icard.essence { border-style: dashed; }
 .icard.poisoned { border-color: var(--bad); }
+.icard.rotten { border-color: #8b6914; border-width: 2px; box-shadow: 0 0 14px rgba(180,100,0,.65); animation: rotPulse 2s ease-in-out infinite; background: linear-gradient(150deg, rgba(139,105,20,.38), rgba(60,35,5,.62) 62%); }
+.icard.rot-touched { border-color: #5d3f00; border-width: 1.5px; box-shadow: 0 0 7px rgba(140,70,0,.4); background: linear-gradient(150deg, rgba(100,70,10,.22), rgba(40,20,2,.44) 62%); }
+@keyframes rotPulse { 0%,100% { box-shadow: 0 0 10px rgba(180,100,0,.5); } 50% { box-shadow: 0 0 22px rgba(220,120,0,.85); } }
 .m2-tray.cutting .icard.cuttable { outline: 2px solid var(--gold); outline-offset: 1px; animation: cutpulse 1s ease-in-out infinite; }
 .icard.glow { animation: tileGlow 1.6s ease; }
 .icard .poison-badge { position: absolute; top: -3px; right: -3px; font-size: 13px; }
+.icard .rot-badge { position: absolute; top: -3px; left: -3px; font-size: 13px; z-index: 2; }
 .icard .pinch-badge { position: absolute; bottom: -3px; right: -3px; font-size: 12px; }
 .tray-empty { margin: auto; text-align: center; color: var(--ink-dim); font-size: 13px; line-height: 1.5; }
 /* Thin black outline so light-colored magic labels stay readable on light pills
