@@ -19,7 +19,10 @@ const ART = (() => {
   let VER = "";        // cache-bust suffix (set to the build once at boot)
 
   function setVersion(v) { VER = v ? ("?v=" + v) : ""; }
-  function url(key) { return DIR + key + EXT + VER; }
+  function url(key) {
+    if (key.startsWith("ing_kc_")) return DIR + "ingredients/" + key.slice(4) + ".png" + VER;
+    return DIR + key + EXT + VER;
+  }
 
   function swapPlaceholders(key) {
     document.querySelectorAll('[data-art="' + key + '"]').forEach(el => {
