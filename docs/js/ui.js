@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v426"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v427"; // bump on each deploy; shown on the start screen to verify the live version
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7100,10 +7100,13 @@ function wireBubble(el) {
 function bubbleHTML(i, golden) {
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const dur = (5.5 + Math.random() * 3).toFixed(1), del = (Math.random() * 4).toFixed(1);
-  const cls = golden ? "pbubble bonus" : "pbubble";
+  const item = ROUND.haul[i];
+  const isRotten = !golden && item && item.rotten;
+  const cls = golden ? "pbubble bonus" : isRotten ? "pbubble rotten" : "pbubble";
+  const rotBadge = isRotten ? `<span class="bub-rot">🍂</span>` : "";
   return `<button class="${cls}" data-i="${i}" style="--dur:${dur}s;--del:-${del}s;` +
     `--ax:${rnd(-46, 46)}px;--ay:${rnd(-34, 34)}px;--bx:${rnd(-46, 46)}px;--by:${rnd(-30, 34)}px;` +
-    `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span><span class="bglyph">🫧</span></button>`;
+    `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span><span class="bglyph">🫧</span>${rotBadge}</button>`;
 }
 
 function renderPop() {
@@ -7299,6 +7302,7 @@ function popAt(i, el, fromCascade, power) {
     // auto-collects shortly (a satisfying shower), otherwise you tap to catch it.
     const rotExtra = item.rotten ? { rotten: true, rotQualities: (item.rotQualities || []).slice() } : null;
     spawnFloatingIngredient(item.id, cx, cy, fromCascade ? 850 : 0, rotExtra);
+    if (item.rotten && !fromCascade) setTimeout(() => toast("🍂 Cursed by Lady Gothel — this ingredient has rotted!"), 250);
   } else {
     SFX.pop(popCombo, power); SFX.reveal(info.kind, popCombo);
     burstAt(cx, cy, flavor, power); floatReward(cx, cy, info, flavor.rare);
@@ -7998,26 +8002,32 @@ function playGothelSteal(inst) {
   const pos      = GOTHEL_FILL[variant];
   const magic    = instMainMagic(inst);
   const fillClr  = D.MAGIC[magic] || "#8b5cf6";
-
   const ov = document.createElement("div");
   ov.className = "gothel-steal-overlay";
   ov.innerHTML = `<div class="gothel-steal-scene" id="gst-scene">` +
     `<div class="gothel-steal-fill" id="gst-fill" style="left:${pos.l}%;top:${pos.t}%;width:${pos.w}%;height:${pos.h}%;border-radius:${pos.rx};background:${fillClr};"></div>` +
-    `<img class="gothel-steal-arm" src="art/gothel_steal_${variant}.webp" alt="🧙‍♀️" draggable="false"></div>`;
+    `<img class="gothel-steal-arm" src="art/gothel_steal_${variant}.webp" alt="\u{1F9D9}\u{200D}♀️" draggable="false"></div>`;
   document.body.appendChild(ov);
-
   const scene = ov.querySelector("#gst-scene");
   const fill  = ov.querySelector("#gst-fill");
-
+  // 1: slide in slowly (1.2s transition)
   requestAnimationFrame(() => requestAnimationFrame(() => scene.classList.add("in")));
-  setTimeout(() => fill.classList.add("filled"), 350);
-  setTimeout(() => toast("🧙‍♀️ Lady Gothel stole an ingredient!"), 500);
+  // 2: bottle glows after arm fully arrives
+  setTimeout(() => scene.classList.add("glowing"), 1350);
+  // 3: bottle slowly fills (1.4s transition)
+  setTimeout(() => fill.classList.add("filled"), 1750);
+  // 4: toast at peak of fill
+  setTimeout(() => toast("\u{1F9D9}\u{200D}♀️ Lady Gothel stole an ingredient!"), 2500);
+  // 5: remove ingredient once fill completes (~3200ms)
   setTimeout(() => {
     const i = ROUND.slots.indexOf(inst); if (i !== -1) ROUND.slots.splice(i, 1);
+    else ROUND.slots.pop();
     paintMix();
-  }, 700);
-  setTimeout(() => scene.classList.remove("in"), 1500);
-  setTimeout(() => ov.remove(), 2100);
+  }, 3250);
+  // 6: pause, then retreat the way she came
+  setTimeout(() => { scene.classList.remove("in"); scene.classList.remove("glowing"); }, 3800);
+  // 7: remove overlay after retreat finishes
+  setTimeout(() => ov.remove(), 5100);
 }
 
 const KEY_DROP_CHANCE = 0.22;   // ~1 Treasure Key every ~5 rounds
@@ -8064,6 +8074,7 @@ function addToSlot(idx, fromEl) {
   if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), flyChar);
   ROUND.slots.push(inst);
   spreadRot();                // rot spreads one step further from any original rotten inventory items
+  if (inst.rotten) toast("🍂 Rotten ingredient in the cauldron — rot is spreading!");
   if (ROUND.gothelStealActive && Math.random() < 0.4) playGothelSteal(inst);
   applyInfusedEffect(inst);   // built-in charm effect (Dragon Egg / Frost Gem) fires on drop-in
   mixPulseColor = D.MAGIC[instMainMagic(inst)] || "#c9a3ff";   // aura pulses in the added ingredient's color
