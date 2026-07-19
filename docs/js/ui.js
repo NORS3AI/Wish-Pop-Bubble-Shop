@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v459"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v460"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8354,8 +8354,10 @@ function serve() {
   }
   res.cleanStreak = GAME.cleanStreak;
   res.hadAllergy = hadAllergy;
-  // Lady Gothel's curse: if her allergy was triggered, curse 1 (yellow) or 2 (red) ingredients next round
-  if (ROUND.customer && ROUND.customer.id === "gothel" && reacted) {
+  // Lady Gothel's curse: only on a WON brew that still triggered her allergy (she got
+  // her potion but you tainted it). A failed potion is just a failure — her steal
+  // handles that below, no allergy curse on top.
+  if (ROUND.customer && ROUND.customer.id === "gothel" && reacted && res.success) {
     const allergyList = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
     const curseCount = (res.allergy && res.allergy.zone === "red") ? Math.min(2, allergyList.length) : 1;
     GAME.gothelCurse = { count: curseCount, allergies: allergyList.slice(0, curseCount) };
