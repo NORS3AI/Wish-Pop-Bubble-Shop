@@ -703,10 +703,10 @@ html, body {
 }
 .gothel-steal-scene {
   position: absolute;
-  right: 0; bottom: 0;
-  width: 48%;
+  left: 0; top: 22%;
+  width: 65%;
   aspect-ratio: 1130 / 1392;
-  transform: translateX(110%);
+  transform: translateX(-110%);
   transition: transform 1.2s cubic-bezier(.25,.7,.35,1);
 }
 .gothel-steal-scene.in { transform: translateX(0); }
