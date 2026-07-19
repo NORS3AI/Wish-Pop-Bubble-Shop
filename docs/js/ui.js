@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v456"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v457"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -310,8 +310,7 @@ const CHAR_SCALE = { owl: 0.76, tortoise: 0.82, hare: 0.9, fish: 0.66, pigs_movi
 // per-character vertical nudge in the portrait frame (% of the frame width; positive = lower)
 const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 6, stepmother: 6 };
 // per-character horizontal nudge (% of the art's own width; negative = shifts left).
-// Gothel's staff sits far left, so shift her left to centre her figure (staff runs off-frame).
-const CHAR_OFFX = { gothel: -13 };
+const CHAR_OFFX = {};
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
