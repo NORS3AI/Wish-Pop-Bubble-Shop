@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v451"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v452"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -306,9 +306,9 @@ function charmArt(id, cls) { const ch = D.SPECIAL_CHARMS[id]; return ART.tag("ch
 function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoji, cls || "cust-art"); }
 // Per-customer size tweaks in the arch frame (1 = default). Some art fills its
 // canvas more than others, so a few get scaled down to sit comfortably.
-const CHAR_SCALE = { owl: 0.76, tortoise: 0.82, hare: 0.9, fish: 0.66, pigs_moving: 0.78, gingerbread: 0.85 };
+const CHAR_SCALE = { owl: 0.76, tortoise: 0.82, hare: 0.9, fish: 0.66, pigs_moving: 0.78, gingerbread: 0.85, gothel: 1.35, stepmother: 1.35 };
 // per-character vertical nudge in the portrait frame (% of the frame width; positive = lower)
-const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5 };
+const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 10, stepmother: 10 };
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
