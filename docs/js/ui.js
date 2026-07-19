@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v439"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v440"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -6581,11 +6581,13 @@ function startRound() {
   roster = roster.filter(c => c.id !== "hare" && c.id !== "tortoise"); // the race pair only appear via their scripted early/late arrivals
   if (!GAME.bopeepMet) roster = roster.filter(c => c.id !== "bo_peep"); // Bo Peep joins the regulars only after her sheep-quest intro
   // alwaysVip customers (Gothel) never enter the normal random pool — they get a
-  // dedicated 15% window on non-boss rounds and can never appear two rounds in a row.
+  // dedicated window on non-boss rounds and can never appear two rounds in a row.
+  // specialChance is realm-tuned (higher in courtyard so Gothel is a regular presence).
   const isBossRound = (servedTotal + 1) % BALANCE.BOSS_EVERY === 0;
+  const specialChance = currentRealm().specialChance || 0.15;
   const alwaysVipPool = roster.filter(c => c.alwaysVip && c.id !== GAME.lastCustomerId);
   roster = roster.filter(c => !c.alwaysVip);
-  if (!isBossRound && alwaysVipPool.length && Math.random() < 0.15) {
+  if (!isBossRound && alwaysVipPool.length && Math.random() < specialChance) {
     roster = [R.pick(alwaysVipPool)];
   }
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: roster, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
@@ -6601,7 +6603,9 @@ function startRound() {
   ROUND.rush = !ROUND.wish.boss && Math.random() < BALANCE.RUSH_CHANCE;
   if (ROUND.rush) { ROUND.rushMs = BALANCE.RUSH_MS; ROUND.rushStart = null; }
   // a VIP guest (any realm) — you may wager a key on the customer screen for a bigger reward
-  ROUND.vip = !ROUND.wish.boss && !ROUND.rush && Math.random() < BALANCE.VIP_CHANCE;
+  // realms can set vipChance to tune how often regular customers get VIP treatment
+  const realmVipChance = currentRealm().vipChance !== undefined ? currentRealm().vipChance : BALANCE.VIP_CHANCE;
+  ROUND.vip = !ROUND.wish.boss && !ROUND.rush && Math.random() < realmVipChance;
   // Lady Gothel (and any alwaysVip customer) is always a VIP — never a rush round
   if (ROUND.customer && ROUND.customer.alwaysVip) { ROUND.vip = true; ROUND.rush = false; }
   ROUND.keyStaked = false;

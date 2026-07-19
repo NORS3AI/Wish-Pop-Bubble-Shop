@@ -221,7 +221,8 @@ const COURTYARD_CUSTOMERS = [
 const REALMS = [
   { id: "willow",    name: "Willow-Wish Village", icon: "🏘️", tagline: "The cozy hamlet where your bubble shop began.", eventsNeeded: 5, reqBonus: -5 },
   { id: "courtyard", name: "King's Courtyard",    icon: "🏰", tagline: "Jesters, knights, and an enchanted (grumpy) crown.", eventsNeeded: 8, reqBonus: 5,
-    unlock: { gold: 3000, keys: 10, keyFrom: "willow" }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS, magics: COURT_MAGIC_TYPES, infused: COURT_INFUSED },
+    unlock: { gold: 3000, keys: 10, keyFrom: "willow" }, theme: "courtyard", customers: COURTYARD_CUSTOMERS, ingredients: COURTYARD_INGREDIENTS, magics: COURT_MAGIC_TYPES, infused: COURT_INFUSED,
+    specialChance: 0.28, vipChance: 0.07 },
   { id: "oasis",     name: "Forgotten Oasis",     icon: "🏜️", comingSoon: true, tagline: "Lamps, genies, and desert wishes.", eventsNeeded: 5, reqBonus: 8 },
   { id: "drury",     name: "Drury Lane",          icon: "🎭", comingSoon: true, tagline: "The Muffin Man, gingerbread, and treats down every lane.", eventsNeeded: 5, reqBonus: 9 },
   { id: "thieves",   name: "Thieves' Corner",     icon: "🗝️", comingSoon: true, tagline: "Rogues, locks, and light fingers.", eventsNeeded: 5, reqBonus: 10 },
