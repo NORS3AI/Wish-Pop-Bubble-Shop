@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v444"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v445"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8275,33 +8275,36 @@ function playCharm(i) {
 /* RESULT                                                                  */
 /* ======================================================================= */
 function playGothelScene(res, done) {
-  ["gothel_allergy","gothel_scheme","gothel_confident","gothel_sly","gothel_triumph","gothel_laugh","gothel_spellbook"].forEach(k => ART.ensure(k, () => {}));
+  // Lady Gothel's OWN art (teal sorceress): front view for confronting you, back
+  // view as she sweeps off. (The purple gothel_* files are the Stepmother's design
+  // and must not appear here — that's a different character.)
+  ["customer_gothel","gothel_back"].forEach(k => ART.ensure(k, () => {}));
   const beats = [];
   if (res.gothelCurse) {
     const n = res.gothelCurse.count;
     beats.push(
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_allergy", bg: "shop_interior",
+      { name: "Lady Gothel 🧙‍♀️", fig: "customer_gothel", bg: "shop_interior",
         text: "That STENCH… *shudder*. You dare taint my enchantment potion with that wretched ingredient?",
         cta: "I— it slipped— ▸" },
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_scheme", bg: "shop_interior",
+      { name: "Lady Gothel 🧙‍♀️", fig: "customer_gothel", bg: "shop_interior",
         text: n === 2
           ? "How tiresome. Next round, two of your finest ingredients will wake up utterly rotten. Consider them cursed."
           : "How tiresome. One of your ingredients will wake up rotten next round. A gentle reminder of what I expect.",
         cta: res.gothelSteal ? "That's not all? ▸" : "Enjoy your little curse... ▸" },
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_triumph", bg: "shop_interior",
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_back", bg: "shop_interior",
         text: res.gothelSteal ? "And before I forget — I'll be collecting a small… tribute." : "Consider yourself warned, little brewer. My standards are not optional.",
         cta: res.gothelSteal ? "Wait— ▸" : "She's gone... ▸" }
     );
   }
   if (res.gothelSteal) {
     beats.push(
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_confident", bg: "shop_interior",
+      { name: "Lady Gothel 🧙‍♀️", fig: "customer_gothel", bg: "shop_interior",
         text: "You failed me. I came for a proper enchantment and left with nothing. That simply will not do.",
         cta: "I'm sorry— ▸" },
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_sly", bg: "shop_interior",
+      { name: "Lady Gothel 🧙‍♀️", fig: "customer_gothel", bg: "shop_interior",
         text: "Next time I'm in your shop, I'll be helping myself to something from your cauldron while you brew. Call it a lesson in quality.",
         cta: "She wouldn't dare ▸" },
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_laugh", bg: "shop_interior",
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_back", bg: "shop_interior",
         text: "Oh, but I would. I already did. *laughs* Do better next time, darling.",
         cta: "She's gone... ▸" }
     );
