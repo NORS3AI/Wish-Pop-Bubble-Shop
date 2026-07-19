@@ -347,9 +347,11 @@ function newVillainRound(opts) {
 /* --- Triple match: 3 identical ingredients -> 1 Potent ------------------ */
 function applyTripleMatch(inventory) {
   const counts = {};
-  inventory.forEach(inst => { if (inst.id && !inst.wild && !inst.essence && !inst.magic) counts[inst.id] = (counts[inst.id] || 0) + 1; });
+  // Rotten (Gothel-cursed) pieces are NEVER merged — merging rebuilds them as plain
+  // {id,potent} and would silently strip their rot/rotQualities, cancelling her curse.
+  inventory.forEach(inst => { if (inst.id && !inst.wild && !inst.essence && !inst.magic && !inst.rotten) counts[inst.id] = (counts[inst.id] || 0) + 1; });
   const out = [], merged = [];
-  inventory.filter(i => i.wild || i.essence || i.magic).forEach(i => out.push(i)); // pass wild + essences + flex-magic through untouched
+  inventory.filter(i => i.wild || i.essence || i.magic || i.rotten).forEach(i => out.push(i)); // pass wild + essences + flex-magic + rotten through untouched
   Object.keys(counts).forEach(id => {
     let n = counts[id];
     while (n >= 3) { out.push({ id, potent: true }); merged.push(id); n -= 3; }
