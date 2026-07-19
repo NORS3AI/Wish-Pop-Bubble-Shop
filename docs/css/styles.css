@@ -1280,6 +1280,13 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   margin-top: 0; animation: custBalloon 3s ease-in-out infinite; }
 .cust-char.balloon-cust::after { display: none; }
 @keyframes custBalloon { 0%, 100% { transform: translateY(5px); } 50% { transform: translateY(-7px); } }
+/* floating customer (Enchanted Portrait): whole framed portrait shown, hovering up & down.
+   She has her own ornate frame, so drop the outer box border so it's not a double-frame. */
+.cust-char.float-cust { align-items: center; overflow: visible; border: none; box-shadow: none; }
+.cust-char.float-cust img.art { height: auto; max-height: 94%; max-width: 96%; width: auto;
+  margin-top: 0; animation: custHover 3.2s ease-in-out infinite; }
+.cust-char.float-cust::after { display: none; }
+@keyframes custHover { 0%, 100% { transform: translateY(-6px); } 50% { transform: translateY(6px); } }
 .cust-frame { display: none; }
 /* purple name plaque below the arch — holds the customer NAME. The plaque is long
    and slim so it fits longer names without crowding. */

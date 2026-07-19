@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v457"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v458"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -355,6 +355,9 @@ function custMoodArt(c, mood, fallbackEmoji, cls) {
   const key = mood && mood !== "normal" ? "customer_" + c.id + "_" + mood : "customer_" + c.id;
   return ART.tag(key, fallbackEmoji || c.emoji, cls || "cust-art");
 }
+// Customers whose portrait should hover (shown whole + gently floating). The
+// Enchanted Portrait (Queen Rosalinda) drifts up and down in every UI.
+function custFloatClass(c) { return (c && c.id === "rosalinda") ? " float-cust" : ""; }
 // The main-screen brand mark. If art/logo.webp is present, show it; otherwise show
 // the "Wish Pop / Bubble Shop" wordmark, and hot-swap to the image if it loads.
 function logoMarkup() {
@@ -2931,7 +2934,7 @@ function rushExpire() {
     <div class="grow res-body">
       <div class="cust-banner res-banner"><img src="art/ui/banner_toolate.png" alt="You're Too Late!" draggable="false"></div>
       <div class="cust-portrait res-portrait">
-        <div class="cust-char" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custMoodArt(c, "angry", "😾", "cust-char-art")}</div>
+        <div class="cust-char${custFloatClass(c)}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custMoodArt(c, "angry", "😾", "cust-char-art")}</div>
       </div>
       <div class="res-panel">
         <div class="res-earned lose">Earned <b>nothing</b></div>
@@ -6691,7 +6694,7 @@ function renderCustomer() {
       <div class="cust-portrait">
         ${streakChip}
         ${badgesHtml}
-        <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custArt(c, "cust-char-art")}</div>
+        <div class="cust-char ${w.boss ? "boss-emoji" : ""}${custFloatClass(c)}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custArt(c, "cust-char-art")}</div>
       </div>
       <div class="cust-nameplate"><img src="art/ui/name_plaque.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
       <div class="cust-wishbox${wishSteps.length > 1 ? " has-next" : ""}">
@@ -8449,7 +8452,7 @@ function renderResult(res) {
       <div class="cust-banner res-banner"><img src="art/ui/${bannerImg}.png" alt="${bannerAlt}" draggable="false"></div>
       <div class="cust-portrait res-portrait">
         <button class="res-results" id="recap-btn" aria-label="Round recap"><img src="art/ui/res_results.png" alt="Results" draggable="false"></button>
-        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}${custFx}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
+        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}${custFx}${custFloatClass(c)}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
       </div>
       <div class="res-panel">
         ${earnedLine}

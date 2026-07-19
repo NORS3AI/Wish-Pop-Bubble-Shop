@@ -212,6 +212,8 @@ const COURTYARD_CUSTOMERS = [
     line: "A taste of what I once was — before Lady Gothel turned me into… this." },
   { id: "beast_prince", name: "Beast Prince", emoji: "🦁", location: "King's Courtyard", wishType: "c_Sorrow",
     line: "Something warm. Something kind. I've quite forgotten what being human felt like." },
+  { id: "rosalinda", name: "Queen Rosalinda", emoji: "🖼️", location: "King's Courtyard", wishType: "c_Vanity",
+    line: "Normally everyone comes to see me — but lucky you, I'm here for a visit. Now: a magic paintbrush to touch up my makeup each morning. Flawless, darling, naturally." },
   { id: "gothel", name: "Lady Gothel", emoji: "🧙‍♀️", location: "King's Courtyard", wishType: "c_Enchant", alwaysBoss: true,
     line: "A potion for my enchantments, darling — I do so hate when my spells start to… fade." },
 ];
@@ -261,6 +263,7 @@ const COURT_WISH_TYPES = {
   c_Sorrow:  { main: ["Serenity", "Majesty"], second: ["Wisdom", "Honor"],     twist: ["Glamour", "Radiance", "Mirth"] },
   c_Spite:   { main: ["Glamour", "Cunning"],  second: ["Majesty", "Fortune"],  twist: ["Radiance", "Mirth", "Honor"] },
   c_Enchant: { main: ["Majesty", "Glamour"], second: ["Radiance", "Cunning"],  twist: ["Wisdom", "Fortune", "Serenity"] },
+  c_Vanity:  { main: ["Glamour", "Radiance"], second: ["Majesty", "Mirth"],    twist: ["Fortune", "Cunning", "Serenity"] },
 };
 Object.assign(WISH_TYPES, COURT_WISH_TYPES);
 
