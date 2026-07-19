@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v438"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v439"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1832,8 +1832,10 @@ function adminCustomer(id) {
   if (!rec) { toast("Customer not found in this realm."); return; }
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: [rec], ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
   injectInfused(ROUND); injectKeys(ROUND); injectRot(ROUND);
-  if (GAME.gothelSteal) { ROUND.gothelStealActive = true; GAME.gothelSteal = false; save(); }
+  const pendingStealDbg = !!GAME.gothelSteal;
+  if (pendingStealDbg) { GAME.gothelSteal = false; save(); }
   ROUND.rush = false; ROUND.vip = !!(rec && rec.alwaysVip); ROUND.keyStaked = false;
+  if (pendingStealDbg) armGothelSteals(ROUND);
   applyCustArc(ROUND);
   renderCustomer();
 }
@@ -6590,7 +6592,8 @@ function startRound() {
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   injectRot(ROUND);       // Lady Gothel's pending rot curse lands on 1-2 haul ingredients
-  if (GAME.gothelSteal) { ROUND.gothelStealActive = true; GAME.gothelSteal = false; save(); }
+  const pendingSteal = !!GAME.gothelSteal;
+  if (pendingSteal) { GAME.gothelSteal = false; save(); }
   setupHunt(ROUND);       // maybe a hidden collection item (sheep/bead) turns up this round
   applyCustArc(ROUND);    // if this customer has an ongoing story, use their current wish line
   // occasionally an "In a Rush" customer (never a boss) — a patience clock starts
@@ -6604,6 +6607,8 @@ function startRound() {
   ROUND.keyStaked = false;
   // some customers pay in a rare currency (the wish-fish pays pearls); keep those rounds plain (no rush/VIP overlay)
   if (ROUND.customer && ROUND.customer.pays && ROUND.customer.pays !== "gold") { ROUND.rush = false; ROUND.vip = false; }
+  // Gothel steal: arm timed steal slots now that VIP status is known
+  if (pendingSteal) armGothelSteals(ROUND);
   renderCustomer();
 }
 // Which arched portrait frame each realm uses (falls back to the gold one)
@@ -8032,8 +8037,21 @@ const GOTHEL_STEAL_LINES = [
   "Such a shame.",
   "Don’t take it personally.",
 ];
+// Schedule which ingredient slots Gothel steals at.
+// VIP customer: steal once (random slot 1-3).
+// Normal customer: steal twice — once in slots 1-3, once in slots 4-6.
+// If the player finishes before a later slot fires, they dodge that steal naturally.
+function armGothelSteals(round) {
+  if (round.vip) {
+    round.gothelStealAt = [1 + Math.floor(Math.random() * 3)];
+  } else {
+    round.gothelStealAt = [
+      1 + Math.floor(Math.random() * 3),
+      4 + Math.floor(Math.random() * 3),
+    ];
+  }
+}
 function playGothelSteal(inst) {
-  ROUND.gothelStealActive = false;
   const variant  = ["a","b","c"][Math.floor(Math.random() * 3)];
   const pos      = GOTHEL_FILL[variant];
   const magic    = instMainMagic(inst);
@@ -8114,7 +8132,10 @@ function addToSlot(idx, fromEl) {
   ROUND.slots.push(inst);
   spreadRot();                // rot spreads one step further from any original rotten inventory items
   if (inst.rotten) toast("🍂 Rotten ingredient in the cauldron — rot is spreading!");
-  if (ROUND.gothelStealActive && Math.random() < 0.4) playGothelSteal(inst);
+  if (ROUND.gothelStealAt && ROUND.gothelStealAt.length && ROUND.slots.length === ROUND.gothelStealAt[0]) {
+    ROUND.gothelStealAt.shift();
+    playGothelSteal(inst);
+  }
   applyInfusedEffect(inst);   // built-in charm effect (Dragon Egg / Frost Gem) fires on drop-in
   mixPulseColor = D.MAGIC[instMainMagic(inst)] || "#c9a3ff";   // aura pulses in the added ingredient's color
   { const mf = equippedMirrorFaces(); if (mf) drawMirrorFace(mf); }   // Queen's Mirror: reveal a new random face
