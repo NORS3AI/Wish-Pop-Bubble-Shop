@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v432"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v433"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8035,8 +8035,8 @@ function playGothelSteal(inst) {
   document.body.appendChild(ov);
   const scene = ov.querySelector("#gst-scene");
   const fill  = ov.querySelector("#gst-fill");
-  // 1: slide in slowly (1.2s transition)
-  requestAnimationFrame(() => requestAnimationFrame(() => scene.classList.add("in")));
+  // 1: slide in slowly (1.2s transition); dim the background behind the arm
+  requestAnimationFrame(() => requestAnimationFrame(() => { scene.classList.add("in"); ov.classList.add("dimmed"); }));
   // 2: bottle glows after arm fully arrives
   setTimeout(() => scene.classList.add("glowing"), 1350);
   // 3: bottle slowly fills (1.4s transition)
@@ -8049,8 +8049,8 @@ function playGothelSteal(inst) {
     else ROUND.slots.pop();
     paintMix();
   }, 3250);
-  // 6: pause, then retreat the way she came
-  setTimeout(() => { scene.classList.remove("in"); scene.classList.remove("glowing"); }, 3800);
+  // 6: pause, then retreat the way she came; un-dim the background
+  setTimeout(() => { scene.classList.remove("in"); scene.classList.remove("glowing"); ov.classList.remove("dimmed"); }, 3800);
   // 7: remove overlay after retreat finishes
   setTimeout(() => ov.remove(), 5100);
 }

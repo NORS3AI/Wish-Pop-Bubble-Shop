@@ -700,7 +700,10 @@ html, body {
   left: 50%; transform: translateX(-50%);
   width: 100%; max-width: 520px;
   z-index: 200; pointer-events: none; overflow: hidden;
+  background: rgba(0,0,0,0);
+  transition: background 0.8s ease;
 }
+.gothel-steal-overlay.dimmed { background: rgba(0,0,0,0.45); }
 .gothel-steal-scene {
   position: absolute;
   left: 0; top: 22%;
