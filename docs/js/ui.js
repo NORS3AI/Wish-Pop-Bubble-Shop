@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v454"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v455"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -308,7 +308,10 @@ function custArt(c, cls)  { return ART.tag(c.art || ("customer_" + c.id), c.emoj
 // canvas more than others, so a few get scaled down to sit comfortably.
 const CHAR_SCALE = { owl: 0.76, tortoise: 0.82, hare: 0.9, fish: 0.66, pigs_moving: 0.78, gingerbread: 0.85, gothel: 1.35, stepmother: 1.35 };
 // per-character vertical nudge in the portrait frame (% of the frame width; positive = lower)
-const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 10, stepmother: 10 };
+const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 6, stepmother: 6 };
+// per-character horizontal nudge (% of the art's own width; negative = shifts left).
+// Gothel's staff sits far left, so shift her left to centre her figure (staff runs off-frame).
+const CHAR_OFFX = { gothel: -13 };
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2929,7 +2932,7 @@ function rushExpire() {
     <div class="grow res-body">
       <div class="cust-banner res-banner"><img src="art/ui/banner_toolate.png" alt="You're Too Late!" draggable="false"></div>
       <div class="cust-portrait res-portrait">
-        <div class="cust-char" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%">${custMoodArt(c, "angry", "😾", "cust-char-art")}</div>
+        <div class="cust-char" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custMoodArt(c, "angry", "😾", "cust-char-art")}</div>
       </div>
       <div class="res-panel">
         <div class="res-earned lose">Earned <b>nothing</b></div>
@@ -6689,7 +6692,7 @@ function renderCustomer() {
       <div class="cust-portrait">
         ${streakChip}
         ${badgesHtml}
-        <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%">${custArt(c, "cust-char-art")}</div>
+        <div class="cust-char ${w.boss ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custArt(c, "cust-char-art")}</div>
       </div>
       <div class="cust-nameplate"><img src="art/ui/name_plaque.png" alt="" draggable="false"><span class="cust-name">${w.boss ? "👑 " : ROUND.vip ? "⭐ " : ""}${c.name}</span></div>
       <div class="cust-wishbox${wishSteps.length > 1 ? " has-next" : ""}">
@@ -8447,7 +8450,7 @@ function renderResult(res) {
       <div class="cust-banner res-banner"><img src="art/ui/${bannerImg}.png" alt="${bannerAlt}" draggable="false"></div>
       <div class="cust-portrait res-portrait">
         <button class="res-results" id="recap-btn" aria-label="Round recap"><img src="art/ui/res_results.png" alt="Results" draggable="false"></button>
-        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}${custFx}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
+        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}${custFx}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
       </div>
       <div class="res-panel">
         ${earnedLine}

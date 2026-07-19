@@ -1268,7 +1268,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .cust-char { position: relative; width: 100%; aspect-ratio: 0.92; margin: 0 auto; z-index: 1; overflow: hidden;
   border-radius: 26px; border: 3px solid rgba(255,220,150,.5); box-shadow: 0 14px 34px rgba(0,0,0,.55);
   display: flex; align-items: flex-start; justify-content: center; }
-.cust-char img.art { height: calc(120% * var(--char-scale, 1)); width: auto; max-width: none; margin-top: calc(3% + var(--char-y, 0%)); filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+.cust-char img.art { height: calc(120% * var(--char-scale, 1)); width: auto; max-width: none; margin-top: calc(3% + var(--char-y, 0%)); transform: translateX(var(--char-x, 0%)); filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
 .cust-char .art-emoji { position: absolute; top: 49%; left: 50%; transform: translate(-50%, -50%); margin: 0;
   font-size: 168px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
 /* soft fade at the bottom so the portrait crop blends into the nameplate */
