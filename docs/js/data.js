@@ -208,6 +208,10 @@ const COURTYARD_CUSTOMERS = [
     line: "A little serenity, perhaps. No one visits a cursed king." },
   { id: "stepmother", name: "The Stepmother", emoji: "🖤", location: "King's Courtyard", wishType: "c_Spite",
     line: "Something glamorous for my daughters — and be quick about it." },
+  { id: "frog_prince", name: "Frog Prince", emoji: "🐸", location: "King's Courtyard", wishType: "c_Crown",
+    line: "A taste of what I once was — before Lady Gothel turned me into… this." },
+  { id: "beast_prince", name: "Beast Prince", emoji: "🦁", location: "King's Courtyard", wishType: "c_Sorrow",
+    line: "Something warm. Something kind. I've quite forgotten what being human felt like." },
   { id: "gothel", name: "Lady Gothel", emoji: "🧙‍♀️", location: "King's Courtyard", wishType: "c_Enchant", alwaysVip: true,
     line: "A potion for my enchantments, darling — I do so hate when my spells start to… fade." },
 ];
