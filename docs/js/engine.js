@@ -371,12 +371,14 @@ function allergyStatus(slots, allergyType, offset) {
     if (inst.essence) { if (inst.magic === allergyType) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; }
     if (inst.magic) { if (inst.magic === allergyType) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; } // flex infused: single assigned magic
     const ing = DATA.INGREDIENT_BY_ID[inst.id];
-    let p = ingredientPointsFor(ing, allergyType);
-    if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
-    if (p && inst.shrunk) p = Math.round(p * BALANCE.PINCH_MULT);
-    points += p;
+    if (!inst.rotten) {
+      let p = ingredientPointsFor(ing, allergyType);
+      if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT);
+      if (p && inst.shrunk) p = Math.round(p * BALANCE.PINCH_MULT);
+      points += p;
+    }
     // Gothel's rot curse: ingredient carries extra allergy qualities it doesn't naturally have
-    if (inst.rotQualities && inst.rotQualities.includes(allergyType) && !ing.qualities.includes(allergyType)) {
+    if (inst.rotQualities && inst.rotQualities.includes(allergyType) && (inst.rotten || !ing.qualities.includes(allergyType))) {
       let rp = BALANCE.MAIN_POWER;
       if (inst.potent) rp = Math.round(rp * BALANCE.POTENT_MULT);
       if (inst.shrunk) rp = Math.round(rp * BALANCE.PINCH_MULT);
@@ -403,6 +405,7 @@ function pointsForNeed(slots, type) {
     if (inst.essence) { if (inst.magic === type) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; }
     if (inst.magic) { if (inst.magic === type) points += BALANCE.MAIN_POWER * (inst.potent ? BALANCE.POTENT_MULT : 1) * pinch; return; } // flex infused: single assigned magic
     const ing = DATA.INGREDIENT_BY_ID[inst.id];
+    if (inst.rotten) return; // rotten ingredients contribute no positive magic to wish bars
     let p = ingredientPointsFor(ing, type);
     if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT * 10) / 10;
     if (p && inst.shrunk) p = Math.round(p * BALANCE.PINCH_MULT * 10) / 10;
