@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v463"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v464"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8306,19 +8306,19 @@ function playGothelScene(res, done) {
           cta: "She's gone... ▸" }
       );
     } else {
-      // YELLOW allergy: a milder itch — irritated, but restrained. Lighter curse.
-      ["gothel_allergy","gothel_scheme","gothel_triumph"].forEach(k => ART.ensure(k, () => {}));
+      // YELLOW allergy: a milder (but mortifying) reaction — she sprouts a beard.
+      ["gothel_beard_1","gothel_beard_2","gothel_beard_3"].forEach(k => ART.ensure(k, () => {}));
       beats.push(
-        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_allergy", bg: "shop_interior",
-          text: "That STENCH… *shudder*. You dare taint my enchantment potion with that wretched ingredient?",
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_beard_1", bg: "shop_interior",
+          text: "A BEARD?! You've given me a BEARD! The utter indignity — do you know WHO I AM?",
           cta: "I— it slipped— ▸" },
-        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_scheme", bg: "shop_interior",
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_beard_2", bg: "shop_interior",
           text: n === 2
-            ? "How tiresome. Next round, two of your finest ingredients will wake up utterly rotten. Consider them cursed."
-            : "How tiresome. One of your ingredients will wake up rotten next round. A gentle reminder of what I expect.",
+            ? "Have you ANY idea how long this takes to charm away? Two of your ingredients will wake up rotten next round. Consider us even."
+            : "Have you ANY idea how long this takes to charm away? One of your ingredients will wake up rotten next round. Consider us even.",
           cta: "Enjoy your little curse... ▸" },
-        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_triumph", bg: "shop_interior",
-          text: "Consider yourself warned, little brewer. My standards are not optional.",
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_beard_3", bg: "shop_interior",
+          text: "I'll take my leave before anyone SEES. Do better next time, darling — or the next curse won't be so kind. *storms off*",
           cta: "She's gone... ▸" }
       );
     }
