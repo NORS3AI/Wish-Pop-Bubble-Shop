@@ -717,7 +717,7 @@ html, body {
 .gothel-steal-scene {
   position: absolute;
   left: 0; top: 22%;
-  width: 72%;
+  width: 85%;
   aspect-ratio: 1130 / 1392;
   transform: translateX(-130%);
   transition: transform 1.2s cubic-bezier(.25,.7,.35,1);
