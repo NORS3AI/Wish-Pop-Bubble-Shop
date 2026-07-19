@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v461"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v462"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7148,13 +7148,12 @@ function wireBubble(el) {
 function bubbleHTML(i, golden) {
   const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
   const dur = (5.5 + Math.random() * 3).toFixed(1), del = (Math.random() * 4).toFixed(1);
-  const item = ROUND.haul[i];
-  const isRotten = !golden && item && item.rotten;
-  const cls = golden ? "pbubble bonus" : isRotten ? "pbubble rotten" : "pbubble";
-  const rotBadge = isRotten ? `<span class="bub-rot">🍂</span>` : "";
+  // Rotten (Gothel-cursed) ingredients pop & collect exactly like any other bubble —
+  // no special badge or styling here (their rot is revealed later, in the cauldron).
+  const cls = golden ? "pbubble bonus" : "pbubble";
   return `<button class="${cls}" data-i="${i}" style="--dur:${dur}s;--del:-${del}s;` +
     `--ax:${rnd(-46, 46)}px;--ay:${rnd(-34, 34)}px;--bx:${rnd(-46, 46)}px;--by:${rnd(-30, 34)}px;` +
-    `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span><span class="bglyph">🫧</span>${rotBadge}</button>`;
+    `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span><span class="bglyph">🫧</span></button>`;
 }
 
 function renderPop() {
