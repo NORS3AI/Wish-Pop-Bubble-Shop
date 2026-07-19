@@ -704,6 +704,16 @@ html, body {
   transition: background 0.8s ease;
 }
 .gothel-steal-overlay.dimmed { background: rgba(0,0,0,0.45); }
+.gothel-steal-caption {
+  position: absolute;
+  bottom: calc(36px + var(--safe-b));
+  left: 0; right: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 0 20px;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+.gothel-steal-caption.show { opacity: 1; }
 .gothel-steal-scene {
   position: absolute;
   left: 0; top: 22%;

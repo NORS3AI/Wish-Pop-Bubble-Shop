@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v433"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v434"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8021,24 +8021,36 @@ const GOTHEL_FILL = {
   b: { l: 72.7, t: 35.6, w: 16.3, h: 15.4, rx: "40% 40% 50% 50%" },
   c: { l: 69.7, t: 35.5, w: 22.5, h: 17.5, rx: "50%" },
 };
+const GOTHEL_STEAL_LINES = [
+  "I'll take that.",
+  "This is mine now.",
+  "How… unfortunate for you.",
+  "Consider it a gift. To me.",
+  "You won’t be needing this.",
+  "Such a shame.",
+  "Don’t take it personally.",
+];
 function playGothelSteal(inst) {
   ROUND.gothelStealActive = false;
   const variant  = ["a","b","c"][Math.floor(Math.random() * 3)];
   const pos      = GOTHEL_FILL[variant];
   const magic    = instMainMagic(inst);
   const fillClr  = D.MAGIC[magic] || "#8b5cf6";
+  const line     = GOTHEL_STEAL_LINES[Math.floor(Math.random() * GOTHEL_STEAL_LINES.length)];
   const ov = document.createElement("div");
   ov.className = "gothel-steal-overlay";
   ov.innerHTML = `<div class="gothel-steal-scene" id="gst-scene">` +
     `<div class="gothel-steal-fill" id="gst-fill" style="left:${pos.l}%;top:${pos.t}%;width:${pos.w}%;height:${pos.h}%;border-radius:${pos.rx};background:${fillClr};"></div>` +
-    `<img class="gothel-steal-arm" src="art/gothel_steal_${variant}.webp" alt="\u{1F9D9}\u{200D}♀️" draggable="false"></div>`;
+    `<img class="gothel-steal-arm" src="art/gothel_steal_${variant}.webp" alt="\u{1F9D9}\u{200D}♀️" draggable="false"></div>` +
+    `<div class="gothel-steal-caption" id="gst-caption"><div class="story-name">Lady Gothel</div><div class="story-speech">${line}</div></div>`;
   document.body.appendChild(ov);
-  const scene = ov.querySelector("#gst-scene");
-  const fill  = ov.querySelector("#gst-fill");
+  const scene   = ov.querySelector("#gst-scene");
+  const fill    = ov.querySelector("#gst-fill");
+  const caption = ov.querySelector("#gst-caption");
   // 1: slide in slowly (1.2s transition); dim the background behind the arm
   requestAnimationFrame(() => requestAnimationFrame(() => { scene.classList.add("in"); ov.classList.add("dimmed"); }));
-  // 2: bottle glows after arm fully arrives
-  setTimeout(() => scene.classList.add("glowing"), 1350);
+  // 2: bottle glows after arm fully arrives; show name + dialogue
+  setTimeout(() => { scene.classList.add("glowing"); caption.classList.add("show"); }, 1350);
   // 3: bottle slowly fills (1.4s transition)
   setTimeout(() => fill.classList.add("filled"), 1750);
   // 4: toast at peak of fill
@@ -8049,8 +8061,8 @@ function playGothelSteal(inst) {
     else ROUND.slots.pop();
     paintMix();
   }, 3250);
-  // 6: pause, then retreat the way she came; un-dim the background
-  setTimeout(() => { scene.classList.remove("in"); scene.classList.remove("glowing"); ov.classList.remove("dimmed"); }, 3800);
+  // 6: pause, then retreat the way she came; fade caption and un-dim
+  setTimeout(() => { scene.classList.remove("in"); scene.classList.remove("glowing"); caption.classList.remove("show"); ov.classList.remove("dimmed"); }, 3800);
   // 7: remove overlay after retreat finishes
   setTimeout(() => ov.remove(), 5100);
 }
