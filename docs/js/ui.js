@@ -7,7 +7,9 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v430"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v431"; // bump on each deploy; shown on the start screen to verify the live version
+
+
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
 
 /* --- persistent save ---------------------------------------------------- */
@@ -7922,6 +7924,13 @@ function ingCard(st) {
     list = inst.magic ? [inst.magic] : ing.qualities.slice();
     mainMagic = list[0]; cls = (inst.potent ? "potent " : "") + (inst.shrunk ? "shrunk " : "") + (ing.infused ? "infused" : "");
     art = ingArt(inst.id);
+    if (inst.rotten) {
+      art = ART.tag("rot_fruit", "🍂", "icard-art-img");
+      name = "Cursed Fruit";
+      list = (inst.rotQualities && inst.rotQualities.length) ? inst.rotQualities.slice() : [];
+      mainMagic = "";
+      cls = "rotten-full";
+    }
   }
   // splattered by a cursed ingredient (villain rounds): a visible, extra Poison quality
   if (ROUND.villain && inst.splashed && !list.includes("Poison")) list = list.concat("Poison");
@@ -7945,19 +7954,24 @@ function ingCard(st) {
   };
   const revealPill = (q, r) => (q === "Poison" || r === 0 || insight || singleKnown) ? mkPill(q, false) : `<span class="mp hidden">?</span>`;
   let pills = "";
-  if (infusedFx) {
+  if (inst.rotten) {
+    // fully rotten: only show rot quality pills (always visible — allergy warning)
+    pills = list.map(q => mkPill(q, true)).join("");
+    if (!pills) pills = `<span class="mp blank"></span>`;
+  } else if (infusedFx) {
     // infused shows its real magic pill(s) then a plain-language effect line (no blank reserves)
     for (let r = 0; r < list.length; r++) pills += revealPill(list[r], r);
     pills += `<span class="icard-fx">${infusedFx}</span>`;
   } else {
     for (let r = 0; r < 3; r++) pills += (r < list.length) ? revealPill(list[r], r) : `<span class="mp blank"></span>`;
+    // append rot quality pills below the normal pills (always visible — that's the curse warning)
+    rotQualities.forEach(q => { if (!list.includes(q)) pills += mkPill(q, true); });
   }
-  // append rot quality pills below the normal pills (always visible — that's the curse warning)
-  rotQualities.forEach(q => { if (!list.includes(q)) pills += mkPill(q, true); });
   const poisoned = (ROUND.insight && inst.poison) || inst.splashed;
-  const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.rotten ? `<span class="rot-badge">🍂</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
+  const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.rotTouched ? `<span class="rot-badge">🍂</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
+  const rotDesc = inst.rotten ? `<div class="icard-desc">Rot will spread</div>` : "";
   return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}${inst.splashed ? " splashed" : ""}${rotClass}" title="${name}" data-idx="${idx}">
-    <div class="icard-l"><div class="icard-art">${art}${badges}<span class="icard-gem" style="background:${D.MAGIC[mainMagic] || "#888"}"></span></div><div class="icard-nm">${name}</div></div>
+    <div class="icard-l"><div class="icard-art">${art}${badges}<span class="icard-gem" style="background:${D.MAGIC[mainMagic] || "#888"}"></span></div><div class="icard-nm">${name}</div>${rotDesc}</div>
     <div class="icard-r">${pills}</div>
     ${inst.potent ? `<span class="icard-star">✨</span>` : (infusedFx ? `<span class="icard-inf">💠</span>` : "")}${n > 1 ? `<span class="icard-count">×${n}</span>` : ""}</button>`;
 }
