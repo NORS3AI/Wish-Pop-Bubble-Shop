@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v437"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v438"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7941,9 +7941,9 @@ function ingCard(st) {
   // flag any magic that matches this customer's allergy so you don't have to scan back to the bars —
   // but NOT on the villain's ransom round, where spotting the hidden poison is the whole challenge
   const allergens = ROUND.villain ? [] : [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
-  // Gothel's rot curse: show rot qualities as extra pills on rotten/touched cards
-  const rotQualities = (inst.rotten || inst.rotTouched) ? (inst.rotQualities || []) : [];
-  const rotClass = inst.rotten ? " rotten" : (inst.rotTouched ? " rot-touched" : "");
+  // Gothel's rot curse: show rot qualities as extra pills on rotten cards
+  const rotQualities = inst.rotten ? (inst.rotQualities || []) : [];
+  const rotClass = inst.rotten ? " rotten" : "";
   const mkPill = (q, isRot) => {
     const isPoison = q === "Poison";   // the splatter's toxic quality — always shown, ☠️ styled
     const warn = allergens.includes(q);
@@ -7955,8 +7955,8 @@ function ingCard(st) {
   const revealPill = (q, r) => (q === "Poison" || r === 0 || insight || singleKnown) ? mkPill(q, false) : `<span class="mp hidden">?</span>`;
   let pills = "";
   if (inst.rotten) {
-    // fully rotten: only show rot quality pills (always visible — allergy warning)
-    pills = list.map(q => mkPill(q, true)).join("");
+    // fully rotten: show qualities with normal allergy styling (⚠️ if allergen)
+    pills = list.map(q => mkPill(q, false)).join("");
     if (!pills) pills = `<span class="mp blank"></span>`;
   } else if (infusedFx) {
     // infused shows its real magic pill(s) then a plain-language effect line (no blank reserves)
@@ -7968,8 +7968,8 @@ function ingCard(st) {
     rotQualities.forEach(q => { if (!list.includes(q)) pills += mkPill(q, true); });
   }
   const poisoned = (ROUND.insight && inst.poison) || inst.splashed;
-  const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.rotTouched ? `<span class="rot-badge">🍂</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
-  const rotDesc = inst.rotten ? `<div class="icard-desc">Rot will spread</div>` : "";
+  const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
+  const rotDesc = (inst.rotten && !inst.rotFromSpread) ? `<div class="icard-desc">Rot will spread</div>` : "";
   return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}${inst.splashed ? " splashed" : ""}${rotClass}" title="${name}" data-idx="${idx}">
     <div class="icard-l"><div class="icard-art">${art}${badges}<span class="icard-gem" style="background:${D.MAGIC[mainMagic] || "#888"}"></span></div><div class="icard-nm">${name}</div>${rotDesc}</div>
     <div class="icard-r">${pills}</div>
@@ -8000,15 +8000,17 @@ function injectRot(round) {
 }
 // After each ingredient drop, rot from original rotten inventory items spreads
 // one step further (reach = number of items now in the cauldron).
+// Secondary rotten (rotFromSpread=true) cannot spread further.
 function spreadRot() {
   const reach = ROUND.slots.length; if (!reach) return;
   ROUND.inventory.forEach((inst, i) => {
     if (inst.rotten || inst.essence || inst.wild) return;
-    const close = ROUND.inventory.some((other, j) => other.rotten && Math.abs(i - j) <= reach);
-    if (close && !inst.rotTouched) {
-      inst.rotTouched = true;
-      const origin = ROUND.inventory.find((other, j) => other.rotten && Math.abs(i - j) <= reach);
-      inst.rotQualities = (origin && origin.rotQualities) ? origin.rotQualities.slice() : [];
+    // only primary rotten items (not rotFromSpread) can spread
+    const origin = ROUND.inventory.find((other, j) => other.rotten && !other.rotFromSpread && Math.abs(i - j) <= reach);
+    if (origin) {
+      inst.rotten = true;
+      inst.rotFromSpread = true;
+      inst.rotQualities = origin.rotQualities ? origin.rotQualities.slice() : [];
     }
   });
 }
@@ -8234,7 +8236,7 @@ function playCharm(i) {
 /* RESULT                                                                  */
 /* ======================================================================= */
 function playGothelScene(res, done) {
-  ["gothel_allergy","gothel_scheme","gothel_confident","gothel_sly"].forEach(k => ART.ensure(k, () => {}));
+  ["gothel_allergy","gothel_scheme","gothel_confident","gothel_sly","gothel_triumph","gothel_laugh","gothel_spellbook"].forEach(k => ART.ensure(k, () => {}));
   const beats = [];
   if (res.gothelCurse) {
     const n = res.gothelCurse.count;
@@ -8246,7 +8248,10 @@ function playGothelScene(res, done) {
         text: n === 2
           ? "How tiresome. Next round, two of your finest ingredients will wake up utterly rotten. Consider them cursed."
           : "How tiresome. One of your ingredients will wake up rotten next round. A gentle reminder of what I expect.",
-        cta: res.gothelSteal ? "That's not all? ▸" : "She cursed me... ▸" }
+        cta: res.gothelSteal ? "That's not all? ▸" : "Enjoy your little curse... ▸" },
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_triumph", bg: "shop_interior",
+        text: res.gothelSteal ? "And before I forget — I'll be collecting a small… tribute." : "Consider yourself warned, little brewer. My standards are not optional.",
+        cta: res.gothelSteal ? "Wait— ▸" : "She's gone... ▸" }
     );
   }
   if (res.gothelSteal) {
@@ -8256,7 +8261,10 @@ function playGothelScene(res, done) {
         cta: "I'm sorry— ▸" },
       { name: "Lady Gothel 🧙‍♀️", fig: "gothel_sly", bg: "shop_interior",
         text: "Next time I'm in your shop, I'll be helping myself to something from your cauldron while you brew. Call it a lesson in quality.",
-        cta: "She wouldn't dare ▸" }
+        cta: "She wouldn't dare ▸" },
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_laugh", bg: "shop_interior",
+        text: "Oh, but I would. I already did. *laughs* Do better next time, darling.",
+        cta: "She's gone... ▸" }
     );
   }
   renderStoryBeats(beats, done);

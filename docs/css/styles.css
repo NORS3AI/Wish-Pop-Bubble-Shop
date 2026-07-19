@@ -2477,9 +2477,9 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   background: linear-gradient(150deg, rgba(139,96,255,.42), rgba(40,26,84,.72) 62%); }
 .icard.essence { border-style: dashed; }
 .icard.poisoned { border-color: var(--bad); }
-.icard.rotten { border-color: #8b6914; border-width: 2px; box-shadow: 0 0 14px rgba(180,100,0,.65); animation: rotPulse 2s ease-in-out infinite; background: linear-gradient(150deg, rgba(139,105,20,.38), rgba(60,35,5,.62) 62%); }
+.icard.rotten { border-color: #c0392b; border-width: 2px; box-shadow: 0 0 14px rgba(200,40,40,.65); animation: rotPulse 2s ease-in-out infinite; background: linear-gradient(150deg, rgba(160,20,20,.38), rgba(70,5,5,.62) 62%); }
 .icard.rot-touched { border-color: #5d3f00; border-width: 1.5px; box-shadow: 0 0 7px rgba(140,70,0,.4); background: linear-gradient(150deg, rgba(100,70,10,.22), rgba(40,20,2,.44) 62%); }
-@keyframes rotPulse { 0%,100% { box-shadow: 0 0 10px rgba(180,100,0,.5); } 50% { box-shadow: 0 0 22px rgba(220,120,0,.85); } }
+@keyframes rotPulse { 0%,100% { box-shadow: 0 0 10px rgba(200,40,40,.5); } 50% { box-shadow: 0 0 22px rgba(230,60,60,.9); } }
 .m2-tray.cutting .icard.cuttable { outline: 2px solid var(--gold); outline-offset: 1px; animation: cutpulse 1s ease-in-out infinite; }
 .icard.glow { animation: tileGlow 1.6s ease; }
 .icard .poison-badge { position: absolute; top: -3px; right: -3px; font-size: 13px; }
