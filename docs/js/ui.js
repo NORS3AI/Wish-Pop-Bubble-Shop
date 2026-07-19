@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v435"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v436"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8017,9 +8017,9 @@ function spreadRot() {
 // with the stolen ingredient's magic color, then retreats. Called immediately after the
 // ingredient is pushed to ROUND.slots so we can splice it back out once the animation runs.
 const GOTHEL_FILL = {
-  a: { l: 68.8, t: 35.6, w: 23.7, h: 18.0, rx: "50%" },
-  b: { l: 72.7, t: 35.6, w: 16.3, h: 15.4, rx: "40% 40% 50% 50%" },
-  c: { l: 69.7, t: 35.5, w: 22.5, h: 17.5, rx: "50%" },
+  a: { l: 68.8, t: 35.6, w: 23.7, h: 18.0 },
+  b: { l: 72.7, t: 35.6, w: 16.3, h: 15.4 },
+  c: { l: 69.7, t: 35.5, w: 22.5, h: 17.5 },
 };
 const GOTHEL_STEAL_LINES = [
   "I'll take that.",
@@ -8040,7 +8040,7 @@ function playGothelSteal(inst) {
   const ov = document.createElement("div");
   ov.className = "gothel-steal-overlay";
   ov.innerHTML = `<div class="gothel-steal-scene" id="gst-scene">` +
-    `<div class="gothel-steal-fill" id="gst-fill" style="left:${pos.l}%;top:${pos.t}%;width:${pos.w}%;height:${pos.h}%;border-radius:${pos.rx};background:${fillClr};"></div>` +
+    `<div class="gothel-steal-fill" id="gst-fill" style="left:${pos.l}%;top:${pos.t}%;width:${pos.w}%;height:${pos.h}%;background:${fillClr};-webkit-mask-image:url('art/gothel_fill_mask_${variant}.webp');mask-image:url('art/gothel_fill_mask_${variant}.webp');-webkit-mask-size:100% 100%;mask-size:100% 100%;"></div>` +
     `<img class="gothel-steal-arm" src="art/gothel_steal_${variant}.webp" alt="\u{1F9D9}\u{200D}♀️" draggable="false"></div>` +
     `<div class="gothel-steal-caption" id="gst-caption"><div class="story-name">Lady Gothel</div><div class="story-speech">${line}</div></div>`;
   document.body.appendChild(ov);
@@ -8062,9 +8062,9 @@ function playGothelSteal(inst) {
     paintMix();
   }, 3250);
   // 6: pause, then retreat the way she came; fade caption and un-dim
-  setTimeout(() => { scene.classList.remove("in"); scene.classList.remove("glowing"); caption.classList.remove("show"); ov.classList.remove("dimmed"); }, 3800);
+  setTimeout(() => { scene.classList.remove("in"); scene.classList.remove("glowing"); caption.classList.remove("show"); ov.classList.remove("dimmed"); }, 4800);
   // 7: remove overlay after retreat finishes
-  setTimeout(() => ov.remove(), 5100);
+  setTimeout(() => ov.remove(), 6100);
 }
 
 const KEY_DROP_CHANCE = 0.22;   // ~1 Treasure Key every ~5 rounds
