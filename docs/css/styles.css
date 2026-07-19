@@ -1285,7 +1285,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
    character frame, sized to fit with headroom so it stays fully visible as it
    gently hovers up & down. */
 .cust-char.float-cust { align-items: center; }
-.cust-char.float-cust img.art { height: auto; max-height: 80%; max-width: 86%; width: auto;
+.cust-char.float-cust img.art { height: auto; max-height: 68%; max-width: 76%; width: auto;
   margin-top: 0; animation: custHover 3.2s ease-in-out infinite; }
 .cust-char.float-cust::after { display: none; }
 @keyframes custHover { 0%, 100% { transform: translateY(-6px); } 50% { transform: translateY(6px); } }
