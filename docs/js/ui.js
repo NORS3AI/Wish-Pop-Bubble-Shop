@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v440"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v441"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -746,6 +746,20 @@ function storyPaint() {
   `);
   on("#story-next", "click", storyAdvance);
   show("event");
+  // Beat-guard: lock the CTA for a moment so the player can't autopilot past an event.
+  // First beat of a sequence locks longest (1.4s) since it's the surprise interruption.
+  // Later beats use a shorter guard (0.5s) to prevent accidental double-taps.
+  clearTimeout(window._beatGuardTimer);
+  const guardBtn = document.getElementById("story-next");
+  if (guardBtn) {
+    guardBtn.classList.add("beat-locked");
+    guardBtn.classList.remove("beat-revealed");
+    const guardMs = STORY_I === 0 ? 1400 : 500;
+    window._beatGuardTimer = setTimeout(() => {
+      const el = document.getElementById("story-next");
+      if (el) { el.classList.remove("beat-locked"); el.classList.add("beat-revealed"); }
+    }, guardMs);
+  }
   if (b.gallery) wireGallery();
   // art loads asynchronously; if this figure's art isn't cached yet, repaint once it arrives
   else if (!b.scene && !b.vista && !b.figEmoji) {

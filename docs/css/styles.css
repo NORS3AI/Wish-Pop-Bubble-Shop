@@ -2702,7 +2702,52 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 .goldi-bear .goldi-bear-img.art { height: 80px; width: auto; max-width: none; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
 .goldi-bear .art-emoji { font-size: 52px; line-height: 1; }
 .goldi-hint { font-family: var(--ff-read); font-size: 14.5px; color: #ffe7ac; text-shadow: 0 1px 3px rgba(0,0,0,.8); letter-spacing: .3px; }
-.btn.story-next { width: 100%; max-width: 400px; }
+.btn.story-next { width: 100%; max-width: 400px; position: relative; overflow: visible; }
+
+/* Beat-guard locked state: grayed out, untappable */
+.btn.story-next.beat-locked {
+  opacity: 0.28;
+  pointer-events: none;
+  filter: saturate(0) brightness(0.55);
+  transform: scale(0.94);
+  transition: none;
+}
+
+/* Magic-poof reveal: button materialises with a bounce and a sparkle ring */
+@keyframes beatReveal {
+  0%   { transform: scale(0.82); filter: brightness(0.4) saturate(0); opacity: 0.3; }
+  38%  { transform: scale(1.1);  filter: brightness(1.55) saturate(1.4); opacity: 1; }
+  58%  { transform: scale(0.96); filter: brightness(1); }
+  76%  { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes beatPoofRing {
+  0%   { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes beatPoofSparkle {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  60%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -160%) scale(0.6); }
+}
+.btn.story-next.beat-revealed {
+  animation: beatReveal 0.52s cubic-bezier(.22,.68,0,1.2) forwards;
+}
+.btn.story-next.beat-revealed::before {
+  content: "";
+  position: absolute; inset: -4px; border-radius: inherit;
+  border: 2.5px solid rgba(200,160,255,.85);
+  animation: beatPoofRing 0.55s ease-out forwards;
+  pointer-events: none;
+}
+.btn.story-next.beat-revealed::after {
+  content: "✨";
+  position: absolute; top: 50%; left: 50%;
+  font-size: 22px; line-height: 1;
+  animation: beatPoofSparkle 0.55s ease-out forwards;
+  pointer-events: none;
+}
+
 @keyframes storyIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes storyFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
