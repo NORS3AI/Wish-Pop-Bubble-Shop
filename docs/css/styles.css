@@ -2719,39 +2719,13 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
   transition: none;
 }
 
-/* Magic-poof reveal: button materialises with a bounce and a sparkle ring */
+/* Simple, calm reveal: the locked button just fades back in (no bounce/sparkle) */
 @keyframes beatReveal {
-  0%   { transform: scale(0.82); filter: brightness(0.4) saturate(0); opacity: 0.3; }
-  38%  { transform: scale(1.1);  filter: brightness(1.55) saturate(1.4); opacity: 1; }
-  58%  { transform: scale(0.96); filter: brightness(1); }
-  76%  { transform: scale(1.04); }
-  100% { transform: scale(1); opacity: 1; }
-}
-@keyframes beatPoofRing {
-  0%   { transform: scale(0.5); opacity: 1; }
-  100% { transform: scale(2.6); opacity: 0; }
-}
-@keyframes beatPoofSparkle {
-  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  60%  { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -160%) scale(0.6); }
+  0%   { opacity: 0.28; filter: saturate(0) brightness(0.55); transform: scale(0.97); }
+  100% { opacity: 1; filter: saturate(1) brightness(1); transform: scale(1); }
 }
 .btn.story-next.beat-revealed {
-  animation: beatReveal 0.52s cubic-bezier(.22,.68,0,1.2) forwards;
-}
-.btn.story-next.beat-revealed::before {
-  content: "";
-  position: absolute; inset: -4px; border-radius: inherit;
-  border: 2.5px solid rgba(200,160,255,.85);
-  animation: beatPoofRing 0.55s ease-out forwards;
-  pointer-events: none;
-}
-.btn.story-next.beat-revealed::after {
-  content: "✨";
-  position: absolute; top: 50%; left: 50%;
-  font-size: 22px; line-height: 1;
-  animation: beatPoofSparkle 0.55s ease-out forwards;
-  pointer-events: none;
+  animation: beatReveal 0.3s ease-out forwards;
 }
 
 @keyframes storyIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
