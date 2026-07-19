@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v458"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v459"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -6613,6 +6613,11 @@ function startRound() {
     forceSpecialBoss = true;
   }
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, forceBoss: forceSpecialBoss, customers: roster, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
+  // Wish-line variety: if this customer has a pool of lines, pick one for this
+  // visit so their dialogue doesn't repeat. (A copy — never mutate shared data.)
+  if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) {
+    ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
+  }
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   injectRot(ROUND);       // Lady Gothel's pending rot curse lands on 1-2 haul ingredients
