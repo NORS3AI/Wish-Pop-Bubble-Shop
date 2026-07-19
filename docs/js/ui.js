@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v453"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v454"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1844,11 +1844,11 @@ function adminCustomer(id) {
   SFX.unlock(); stopRoundTimers(); refreshQuests();
   const rec = (D.CUSTOMERS || []).find(c => c.id === id) || (currentRealm().customers || []).find(c => c.id === id);
   if (!rec) { toast("Customer not found in this realm."); return; }
-  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: [rec], ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, forceBoss: !!(rec && rec.alwaysBoss), customers: [rec], ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
   injectInfused(ROUND); injectKeys(ROUND); injectRot(ROUND);
   const pendingStealDbg = !!GAME.gothelSteal;
   if (pendingStealDbg) { GAME.gothelSteal = false; save(); }
-  ROUND.rush = false; ROUND.vip = !!(rec && rec.alwaysVip); ROUND.keyStaked = false;
+  ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
   if (pendingStealDbg) armGothelSteals(ROUND);
   applyCustArc(ROUND);
   renderCustomer();
@@ -6594,17 +6594,20 @@ function startRound() {
   if (GAME.pigsMoved) roster = roster.filter(c => c.id !== "pig_straw" && c.id !== "pig_stick");
   roster = roster.filter(c => c.id !== "hare" && c.id !== "tortoise"); // the race pair only appear via their scripted early/late arrivals
   if (!GAME.bopeepMet) roster = roster.filter(c => c.id !== "bo_peep"); // Bo Peep joins the regulars only after her sheep-quest intro
-  // alwaysVip customers (Gothel) never enter the normal random pool — they get a
+  // alwaysBoss customers (Gothel) never enter the normal random pool — they get a
   // dedicated window on non-boss rounds and can never appear two rounds in a row.
   // specialChance is realm-tuned (higher in courtyard so Gothel is a regular presence).
+  // When drawn, her round runs as a BOSS (tight 4-slot cauldron, bigger scoops, 👑).
   const isBossRound = (servedTotal + 1) % BALANCE.BOSS_EVERY === 0;
   const specialChance = currentRealm().specialChance || 0.15;
-  const alwaysVipPool = roster.filter(c => c.alwaysVip && c.id !== GAME.lastCustomerId);
-  roster = roster.filter(c => !c.alwaysVip);
-  if (!isBossRound && alwaysVipPool.length && Math.random() < specialChance) {
-    roster = [R.pick(alwaysVipPool)];
+  const alwaysBossPool = roster.filter(c => c.alwaysBoss && c.id !== GAME.lastCustomerId);
+  roster = roster.filter(c => !c.alwaysBoss);
+  let forceSpecialBoss = false;
+  if (!isBossRound && alwaysBossPool.length && Math.random() < specialChance) {
+    roster = [R.pick(alwaysBossPool)];
+    forceSpecialBoss = true;
   }
-  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: roster, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, forceBoss: forceSpecialBoss, customers: roster, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
   injectInfused(ROUND);   // sprinkle in the new infused ingredients (Dragon Egg / Frost Gem)
   injectKeys(ROUND);      // occasionally a Treasure Key pops from a bubble
   injectRot(ROUND);       // Lady Gothel's pending rot curse lands on 1-2 haul ingredients
@@ -6619,9 +6622,8 @@ function startRound() {
   // a VIP guest (any realm) — you may wager a key on the customer screen for a bigger reward
   // realms can set vipChance to tune how often regular customers get VIP treatment
   const realmVipChance = currentRealm().vipChance !== undefined ? currentRealm().vipChance : BALANCE.VIP_CHANCE;
-  ROUND.vip = !ROUND.wish.boss && !ROUND.rush && Math.random() < realmVipChance;
-  // Lady Gothel (and any alwaysVip customer) is always a VIP — never a rush round
-  if (ROUND.customer && ROUND.customer.alwaysVip) { ROUND.vip = true; ROUND.rush = false; }
+  // VIP is behind a master switch (off for now); boss rounds are never VIP anyway.
+  ROUND.vip = BALANCE.VIP_ENABLED && !ROUND.wish.boss && !ROUND.rush && Math.random() < realmVipChance;
   ROUND.keyStaked = false;
   // some customers pay in a rare currency (the wish-fish pays pearls); keep those rounds plain (no rush/VIP overlay)
   if (ROUND.customer && ROUND.customer.pays && ROUND.customer.pays !== "gold") { ROUND.rush = false; ROUND.vip = false; }

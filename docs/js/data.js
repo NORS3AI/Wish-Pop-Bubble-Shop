@@ -212,7 +212,7 @@ const COURTYARD_CUSTOMERS = [
     line: "A taste of what I once was — before Lady Gothel turned me into… this." },
   { id: "beast_prince", name: "Beast Prince", emoji: "🦁", location: "King's Courtyard", wishType: "c_Sorrow",
     line: "Something warm. Something kind. I've quite forgotten what being human felt like." },
-  { id: "gothel", name: "Lady Gothel", emoji: "🧙‍♀️", location: "King's Courtyard", wishType: "c_Enchant", alwaysVip: true,
+  { id: "gothel", name: "Lady Gothel", emoji: "🧙‍♀️", location: "King's Courtyard", wishType: "c_Enchant", alwaysBoss: true,
     line: "A potion for my enchantments, darling — I do so hate when my spells start to… fade." },
 ];
 // eventsNeeded = how many events make up a realm's "story" (the pacing backbone: you play
