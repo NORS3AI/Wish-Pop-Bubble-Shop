@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v460"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v461"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8287,26 +8287,45 @@ function playCharm(i) {
 /* RESULT                                                                  */
 /* ======================================================================= */
 function playGothelScene(res, done) {
-  // Lady Gothel's OWN art — the teal sorceress, a distinct expression per beat.
-  ["gothel_allergy","gothel_scheme","gothel_triumph","gothel_confident","gothel_sly","gothel_laugh"].forEach(k => ART.ensure(k, () => {}));
   const beats = [];
   if (res.gothelCurse) {
     const n = res.gothelCurse.count;
-    beats.push(
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_allergy", bg: "shop_interior",
-        text: "That STENCH… *shudder*. You dare taint my enchantment potion with that wretched ingredient?",
-        cta: "I— it slipped— ▸" },
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_scheme", bg: "shop_interior",
-        text: n === 2
-          ? "How tiresome. Next round, two of your finest ingredients will wake up utterly rotten. Consider them cursed."
-          : "How tiresome. One of your ingredients will wake up rotten next round. A gentle reminder of what I expect.",
-        cta: res.gothelSteal ? "That's not all? ▸" : "Enjoy your little curse... ▸" },
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_triumph", bg: "shop_interior",
-        text: res.gothelSteal ? "And before I forget — I'll be collecting a small… tribute." : "Consider yourself warned, little brewer. My standards are not optional.",
-        cta: res.gothelSteal ? "Wait— ▸" : "She's gone... ▸" }
-    );
+    if (res.gothelCurse.zone === "red") {
+      // RED allergy: a violent reaction — her hair falls out. Angrier, harsher curse.
+      ["customer_gothel_allergic_red","gothel_bald_1","gothel_bald_2","gothel_bald_3"].forEach(k => ART.ensure(k, () => {}));
+      beats.push(
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_bald_1", bg: "shop_interior",
+          text: "My HAIR—! My beautiful, glorious hair… GONE! You've made me BALD, you wretched little brewer!",
+          cta: "I— I didn't mean to— ▸" },
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_bald_2", bg: "shop_interior",
+          text: n === 2
+            ? "UNFORGIVABLE. Two of your finest ingredients will rot to the very core next round — a mercy, considering what you've done to me."
+            : "UNFORGIVABLE. One of your ingredients will rot to the very core next round — a mercy, considering what you've done to me.",
+          cta: "That's not fair— ▸" },
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_bald_3", bg: "shop_interior",
+          text: "Fix this humiliation before I return, or you'll wish you had. I do NOT forget. *storms off*",
+          cta: "She's gone... ▸" }
+      );
+    } else {
+      // YELLOW allergy: a milder itch — irritated, but restrained. Lighter curse.
+      ["gothel_allergy","gothel_scheme","gothel_triumph"].forEach(k => ART.ensure(k, () => {}));
+      beats.push(
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_allergy", bg: "shop_interior",
+          text: "That STENCH… *shudder*. You dare taint my enchantment potion with that wretched ingredient?",
+          cta: "I— it slipped— ▸" },
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_scheme", bg: "shop_interior",
+          text: n === 2
+            ? "How tiresome. Next round, two of your finest ingredients will wake up utterly rotten. Consider them cursed."
+            : "How tiresome. One of your ingredients will wake up rotten next round. A gentle reminder of what I expect.",
+          cta: "Enjoy your little curse... ▸" },
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_triumph", bg: "shop_interior",
+          text: "Consider yourself warned, little brewer. My standards are not optional.",
+          cta: "She's gone... ▸" }
+      );
+    }
   }
   if (res.gothelSteal) {
+    ["gothel_confident","gothel_sly","gothel_laugh"].forEach(k => ART.ensure(k, () => {}));
     beats.push(
       { name: "Lady Gothel 🧙‍♀️", fig: "gothel_confident", bg: "shop_interior",
         text: "You failed me. I came for a proper enchantment and left with nothing. That simply will not do.",
@@ -8360,7 +8379,7 @@ function serve() {
   if (ROUND.customer && ROUND.customer.id === "gothel" && reacted && res.success) {
     const allergyList = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
     const curseCount = (res.allergy && res.allergy.zone === "red") ? Math.min(2, allergyList.length) : 1;
-    GAME.gothelCurse = { count: curseCount, allergies: allergyList.slice(0, curseCount) };
+    GAME.gothelCurse = { count: curseCount, allergies: allergyList.slice(0, curseCount), zone: res.allergy.zone };
     res.gothelCurse = GAME.gothelCurse;
   }
   // Lady Gothel's steal: if her wish was FAILED, she pickpockets an ingredient from the cauldron next round
@@ -8398,11 +8417,8 @@ function serve() {
     if (ROUND.customer && !ROUND.story) advanceCustStory(ROUND.customer.id);   // next chapter of their story
   }
   servedTotal++; localStorage.setItem("wishpop_served", servedTotal); save();
-  if (res.gothelCurse || res.gothelSteal) {
-    playGothelScene(res, () => renderResult(res));
-  } else {
-    renderResult(res);
-  }
+  // Results UI first; Lady Gothel's reaction scene plays AFTER it, on "Next" (see renderResult).
+  renderResult(res);
 }
 function renderResult(res) {
   const win = res.success, c = ROUND.customer, realm = currentRealm(), zone = res.allergy && res.allergy.zone;
@@ -8414,7 +8430,9 @@ function renderResult(res) {
   const emoji = !win ? "😤" : isPerfect ? "🥳" : zone === "red" ? "🤧" : zone === "yellow" ? "😅" : (res.tip > 0 ? "🤩" : "😊");
   // Which of the customer's four faces to show: angry on a fail, allergic on an
   // allergy reaction, otherwise happy. Falls back to the emotion emoji above.
-  const mood = !win ? "angry" : allergic ? "allergic" : "happy";
+  let mood = !win ? "angry" : allergic ? "allergic" : "happy";
+  // Lady Gothel's RED allergy is a distinct reaction (she goes bald!) — its own image.
+  if (c.id === "gothel" && allergic && zone === "red") mood = "allergic_red";
   // Outcome banner (baked-text image): granted / worked-but / failed.
   const bannerImg = !win ? "banner_failed" : allergic ? "banner_partial" : "banner_granted";
   const bannerAlt = !win ? "Wish Failed!" : allergic ? "It Sort of Worked." : "You Did It!";
@@ -8471,7 +8489,13 @@ function renderResult(res) {
     </div>
     <button class="res-next" id="next-btn" aria-label="Next customer"><img src="art/ui/btn_next.png" alt="Next Customer" draggable="false"></button>
   `);
-  on("#next-btn", "click", () => { if (itemGateBlocks()) return; (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound(); });
+  on("#next-btn", "click", () => {
+    if (itemGateBlocks()) return;
+    const cont = () => (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound();
+    // Gothel's curse/steal reaction plays here — after the player has seen the results.
+    if (res.gothelCurse || res.gothelSteal) playGothelScene(res, cont);
+    else cont();
+  });
   on("#recap-btn", "click", showRoundRecap);
   applyRealmBackground(document.querySelector("#screen-result #cust-bg"));
   show("result");
