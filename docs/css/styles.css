@@ -1274,6 +1274,12 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* soft fade at the bottom so the portrait crop blends into the nameplate */
 .cust-char::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 22%; z-index: 3;
   pointer-events: none; background: linear-gradient(180deg, transparent, rgba(16,9,26,.55)); }
+/* balloon customer (Frog Prince allergic): show the whole round frog, smaller, gently floating */
+.cust-char.balloon-cust { align-items: center; overflow: visible; }
+.cust-char.balloon-cust img.art { height: auto; max-height: 80%; max-width: 84%; width: auto;
+  margin-top: 0; animation: custBalloon 3s ease-in-out infinite; }
+.cust-char.balloon-cust::after { display: none; }
+@keyframes custBalloon { 0%, 100% { transform: translateY(5px); } 50% { transform: translateY(-7px); } }
 .cust-frame { display: none; }
 /* purple name plaque below the arch — holds the customer NAME. The plaque is long
    and slim so it fits longer names without crowding. */

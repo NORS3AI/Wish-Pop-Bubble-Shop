@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v450"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v451"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8435,6 +8435,9 @@ function renderResult(res) {
     ? `<div class="res-curse-warn">🧙‍♀️ Lady Gothel will steal an ingredient from your cauldron next round!</div>`
     : "";
   const custBgEl = REALM_BG[GAME.realm] ? `<div class="cust-bg mg-fullbleed" id="cust-bg"></div>` : "";
+  // The Frog Prince's allergic pose is a big round "balloon" frog — shrink it to fit
+  // fully in the portrait and let it bob gently like a floating balloon.
+  const custFx = (c.id === "frog_prince" && mood === "allergic") ? " balloon-cust" : "";
   html("result", `
     ${custBgEl}
     ${custTopMenu("res-top")}
@@ -8442,7 +8445,7 @@ function renderResult(res) {
       <div class="cust-banner res-banner"><img src="art/ui/${bannerImg}.png" alt="${bannerAlt}" draggable="false"></div>
       <div class="cust-portrait res-portrait">
         <button class="res-results" id="recap-btn" aria-label="Round recap"><img src="art/ui/res_results.png" alt="Results" draggable="false"></button>
-        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
+        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}${custFx}" style="--char-scale:${CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
       </div>
       <div class="res-panel">
         ${earnedLine}
