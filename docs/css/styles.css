@@ -704,19 +704,19 @@ html, body {
 .gothel-steal-scene {
   position: absolute;
   left: 0; top: 22%;
-  width: 65%;
+  width: 72%;
   aspect-ratio: 1130 / 1392;
-  transform: translateX(-110%);
+  transform: translateX(-130%);
   transition: transform 1.2s cubic-bezier(.25,.7,.35,1);
 }
-.gothel-steal-scene.in { transform: translateX(0); }
+.gothel-steal-scene.in { transform: translateX(-20%); }
 .gothel-steal-arm { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
 .gothel-steal-fill {
   position: absolute;
   transform: scaleY(0);
   transform-origin: center bottom;
   transition: transform 1.4s cubic-bezier(.22,1,.36,1);
-  opacity: 0.8;
+  opacity: 0.9;
   box-shadow: inset 0 -4px 14px rgba(0,0,0,.28), inset 0 6px 18px rgba(255,255,255,.18);
 }
 .gothel-steal-fill.filled { transform: scaleY(1); }
