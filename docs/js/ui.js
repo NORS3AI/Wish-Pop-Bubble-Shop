@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v462"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v463"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7349,7 +7349,7 @@ function popAt(i, el, fromCascade, power) {
     // auto-collects shortly (a satisfying shower), otherwise you tap to catch it.
     const rotExtra = item.rotten ? { rotten: true, rotQualities: (item.rotQualities || []).slice() } : null;
     spawnFloatingIngredient(item.id, cx, cy, fromCascade ? 850 : 0, rotExtra);
-    if (item.rotten && !fromCascade) setTimeout(() => toast("🍂 Cursed by Lady Gothel — this ingredient has rotted!"), 250);
+    if (item.rotten && !fromCascade) setTimeout(() => toast("Cursed by Lady Gothel — this ingredient has rotted!"), 250);
   } else {
     SFX.pop(popCombo, power); SFX.reveal(info.kind, popCombo);
     burstAt(cx, cy, flavor, power); floatReward(cx, cy, info, flavor.rare);
@@ -7983,7 +7983,7 @@ function ingCard(st) {
     const warn = allergens.includes(q);
     const long = q.length >= 9;   // e.g. "Protection" — nudge the font down so it never clips
     const mc = isPoison ? "#7fbf3a" : isRot ? "#8b6914" : (D.MAGIC[q] || "#888");
-    const mark = isPoison ? `<span class="mp-warn">☠️</span>` : isRot ? `<span class="mp-warn">🍂</span>` : (warn ? `<span class="mp-warn">⚠️</span>` : "");
+    const mark = isPoison ? `<span class="mp-warn">☠️</span>` : (warn ? `<span class="mp-warn">⚠️</span>` : "");
     return `<span class="mp${warn ? " allergen" : ""}${isPoison ? " poison" : ""}${isRot ? " rot" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${q}</span>${mark}</span>`;
   };
   const revealPill = (q, r) => (q === "Poison" || r === 0 || insight || singleKnown) ? mkPill(q, false) : `<span class="mp hidden">?</span>`;
@@ -8160,7 +8160,7 @@ function addToSlot(idx, fromEl) {
   if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), flyChar);
   ROUND.slots.push(inst);
   spreadRot();                // rot spreads one step further from any original rotten inventory items
-  if (inst.rotten) toast("🍂 Rotten ingredient in the cauldron — rot is spreading!");
+  if (inst.rotten) toast("Rotten ingredient in the cauldron — rot is spreading!");
   if (ROUND.gothelStealAt && ROUND.gothelStealAt.length && ROUND.slots.length === ROUND.gothelStealAt[0]) {
     ROUND.gothelStealAt.shift();
     playGothelSteal(inst);
@@ -8461,7 +8461,7 @@ function renderResult(res) {
     : (trashN ? "Catch the junk to recycle it later! 🍌" : "");
   const hintLine = hintTxt ? `<div class="res-hint muted" id="${win ? "rb-hint" : "trash-hint"}">${hintTxt}</div>` : "";
   const curseLine = res.gothelCurse
-    ? `<div class="res-curse-warn">🍂 Lady Gothel's curse will rot ${res.gothelCurse.count === 2 ? "2 ingredients" : "1 ingredient"} next round!</div>`
+    ? `<div class="res-curse-warn">${ART.tag("rot_fruit", "", "res-rot-ic")} Lady Gothel's curse will rot ${res.gothelCurse.count === 2 ? "2 ingredients" : "1 ingredient"} next round!</div>`
     : res.gothelSteal
     ? `<div class="res-curse-warn">🧙‍♀️ Lady Gothel will steal an ingredient from your cauldron next round!</div>`
     : "";

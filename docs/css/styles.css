@@ -692,6 +692,7 @@ html, body {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .res-hint { font-family: var(--ff-read); font-size: 12.5px; color: #7a5a2a; margin-top: 1px; text-align: center; }
 .res-curse-warn { font-family: var(--ff-read); font-size: 13px; color: #8b6914; font-weight: 700; text-align: center; margin-top: 4px; padding: 4px 10px; background: rgba(139,105,20,.15); border-radius: 8px; border: 1px solid rgba(139,105,20,.35); }
+.res-curse-warn .res-rot-ic { width: 20px; height: 20px; vertical-align: -5px; margin-right: 3px; }
 
 /* ===== LADY GOTHEL STEAL OVERLAY ===== */
 /* Overlay is pinned to the game column (max 520px), not the full viewport */
