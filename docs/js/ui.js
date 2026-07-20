@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v476"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v477"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8426,7 +8426,7 @@ function startCopycatRound() {
   if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) {
     ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
   }
-  ROUND.copycat = true; ROUND.maxSlots = 8;   // 4 pairs — more moves to steer each need bar
+  ROUND.copycat = true; ROUND.maxSlots = 10;   // 5 pairs — trying a bigger mirror
   ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
   // make sure the Pet Undo is available to test with (unlocked + a few treats on hand)
   GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true;
@@ -8458,7 +8458,8 @@ function startCopycatRound() {
   // get the ×2.5 potency boost. (A pre-set potent flag would be wiped by triple-match.)
   // Cleanse is here so a brutal allergy surprise is survivable, not an instant loss.
   // A few Loaded Dice (🎲) let you reroll the mirror's third qualities when they're all bad.
-  ROUND.charms = ["insight", "die", "die", "die", "potent", "pinch", "cleanse", "transmute"];
+  // Peek (⏭️) reveals a hidden need bar — one per use, so enough to uncover all three.
+  ROUND.charms = ["insight", "peek", "peek", "peek", "die", "die", "die", "potent", "pinch", "cleanse", "transmute"];
   ROUND.haul = [];
   renderMix();
 }

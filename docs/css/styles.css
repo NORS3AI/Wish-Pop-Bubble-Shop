@@ -2525,12 +2525,13 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   width: 45%; height: 100%; z-index: 3; pointer-events: none;
   background: linear-gradient(105deg, transparent, rgba(255,255,255,.4), transparent);
   transform: skewX(-18deg); animation: ccSheen 3.4s ease-in-out infinite; }
-/* 8 slots in one portrait row: shrink them a touch so they never overflow on small phones */
-.mixv2.copycat .m2-slots { gap: 4px; flex-wrap: nowrap; }
-.mixv2.copycat .m2-slots .slot { width: 32px; height: 32px; font-size: 17px; }
-.mixv2.copycat .m2-slots .slot .orb { width: 18px; height: 18px; }
+/* 10 slots in one portrait row: shrink them so they never overflow on small phones */
+.mixv2.copycat .m2-slots { gap: 3px; flex-wrap: nowrap; }
+.mixv2.copycat .m2-slots .slot { width: 28px; height: 28px; font-size: 15px; border-radius: 8px; }
+.mixv2.copycat .m2-slots .slot .orb { width: 16px; height: 16px; }
+.mixv2.copycat .m2-slots .slot img.art { max-width: 1em; }
 /* a hair of extra space where your side meets the copycat's, so the mirror reads clearly */
-.mixv2.copycat .m2-slots .slot.copy-start { margin-left: 8px; }
+.mixv2.copycat .m2-slots .slot.copy-start { margin-left: 7px; }
 /* placement poof where a copy card vanishes into the pot */
 .cc-poof { position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -50%); }
 .cc-poof .cc-poof-cloud { position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%;
