@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v475"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v476"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8457,7 +8457,8 @@ function startCopycatRound() {
   // Potent charm included so you can prime an ingredient and see its copy's third quality
   // get the ×2.5 potency boost. (A pre-set potent flag would be wiped by triple-match.)
   // Cleanse is here so a brutal allergy surprise is survivable, not an instant loss.
-  ROUND.charms = ["insight", "potent", "pinch", "cleanse", "transmute"];
+  // A few Loaded Dice (🎲) let you reroll the mirror's third qualities when they're all bad.
+  ROUND.charms = ["insight", "die", "die", "die", "potent", "pinch", "cleanse", "transmute"];
   ROUND.haul = [];
   renderMix();
 }
@@ -8466,6 +8467,7 @@ function playCharm(i) {
   const consume = () => { ROUND.charms.splice(i, 1); paintMix(); };
   if (id === "cleanse") { if (!w.allergy) { toast("No allergy to cleanse!"); return; } ROUND.allergyOffset += BALANCE.ALLERGY_CLEANSE; toast("🧹 Allergy calmed."); consume(); }
   else if (id === "insight") { if (ROUND.insight) { toast("Hidden magic already revealed."); return; } ROUND.insight = true; toast("🔍 Hidden magic revealed!"); consume(); }
+  else if (id === "die") { if (!ROUND.copycat) { toast("The die only rattles in the copycat's parlor."); return; } reshuffleCopyRolls(); SFX.unlock(); if (SFX.charm) SFX.charm(); if (navigator.vibrate) navigator.vibrate([8, 20, 8]); toast("🎲 Rerolled the copycat's third qualities!"); consume(); }
   else if (id === "potent") { if (ROUND.potentNext) { toast("Potent is already primed."); return; } ROUND.potentNext = true; toast("✨ Your next ingredient counts double!"); consume(); }
   else if (id === "peek") { const n = w.needs.find(x => !x.revealed); if (!n) { toast("All needs already revealed."); return; } n.revealed = true; toast(`⏭️ Revealed: ${n.type}!`); consume(); }
   else if (id === "wild") { if (ROUND.slots.length >= ROUND.maxSlots) { toast("The cauldron is full!"); return; } const magic = R.pick(w.needs.map(x => x.type)); ROUND.slots.push({ wild: true, magic, strength: BALANCE.WILD_STRENGTH }); toast(`🌈 Wild ${magic} magic added!`); consume(); }
