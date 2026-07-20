@@ -2520,6 +2520,12 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .mixv2.copycat .m2-slots .slot.copy-slot { border-color: rgba(190,150,255,.55);
   background: rgba(120,74,196,.28); box-shadow: 0 0 7px rgba(150,110,255,.3) inset; }
 .mixv2.copycat .m2-slots .slot.copy-slot.filled { background: rgba(120,74,196,.5); }
+/* 8 slots in one portrait row: shrink them a touch so they never overflow on small phones */
+.mixv2.copycat .m2-slots { gap: 4px; flex-wrap: nowrap; }
+.mixv2.copycat .m2-slots .slot { width: 32px; height: 32px; font-size: 17px; }
+.mixv2.copycat .m2-slots .slot .orb { width: 18px; height: 18px; }
+/* a hair of extra space where your side meets the copycat's, so the mirror reads clearly */
+.mixv2.copycat .m2-slots .slot.copy-start { margin-left: 8px; }
 /* placement poof where a copy card vanishes into the pot */
 .cc-poof { position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -50%); }
 .cc-poof .cc-poof-cloud { position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%;

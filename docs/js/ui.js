@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v471"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v472"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7853,8 +7853,9 @@ function paintMix() {
       : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>` : ingArt(inst.id);
     const removable = ROUND.villain && inst;
     const poisonedSlot = inst && ROUND.insight && inst.poison;
-    const copySlot = ROUND.copycat && i >= 3;   // the right half holds the copycat's mirrored copies
-    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""} ${poisonedSlot ? "poisoned" : ""} ${copySlot ? "copy-slot" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${poisonedSlot ? `<span class="poison-badge">☠️</span>` : ""}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
+    const copySlot = ROUND.copycat && i >= ROUND.maxSlots / 2;   // the right half holds the copycat's mirrored copies
+    const copyStart = ROUND.copycat && i === ROUND.maxSlots / 2;  // first copy slot — gets a little gap from your side
+    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""} ${poisonedSlot ? "poisoned" : ""} ${copySlot ? "copy-slot" : ""} ${copyStart ? "copy-start" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${poisonedSlot ? `<span class="poison-badge">☠️</span>` : ""}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
   }
   const showPet = !ROUND.villain;
   const banner = (showPet && GAME.unlocked.undo) ? `${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}` : "";
@@ -8291,7 +8292,7 @@ function addToSlotCopycat(idx, fromEl) {
   if (ROUND.toolMode === "pinch") { pinchIngredient(idx, fromEl); return; }
   if (ROUND.toolMode === "cut") { ROUND.toolMode = null; toast("The copycat won't mirror a cut — use it whole."); paintMix(); return; }
   const pairs = ROUND.slots.filter(s => s && !s.isCopy).length;   // how many of YOUR picks are down
-  if (pairs >= 3) { toast("The cauldron is full!"); return; }
+  if (pairs >= ROUND.maxSlots / 2) { toast("The cauldron is full!"); return; }
   const inst = ROUND.inventory[idx];
   if (!inst || !inst.id) { toast("Pick an ingredient."); return; }
   ROUND.inventory.splice(idx, 1);
@@ -8300,8 +8301,8 @@ function addToSlotCopycat(idx, fromEl) {
   // the copy: same ingredient, mirrors potency + pinch, plus the hidden third quality.
   // extraQ contributes at secondary strength, scaled by potent/pinch (see engine scoring).
   const copy = { id: inst.id, potent: !!inst.potent, shrunk: !!inst.shrunk, isCopy: true, extraQ: ing ? ing.copyQ : null };
-  inst.pos = pairs;          // your pick → next LEFT slot (0,1,2)
-  copy.pos = 5 - pairs;      // copy → mirrored RIGHT slot (5,4,3)
+  inst.pos = pairs;                        // your pick → next LEFT slot (0,1,2,3…)
+  copy.pos = (ROUND.maxSlots - 1) - pairs; // copy → mirrored RIGHT slot (…7,6,5,4)
   // poof the mirrored copy card in the tray, then fly both pieces into the cauldron.
   // Capture rects NOW — paintMix() below rebuilds the tray, detaching these elements.
   const copyEl = fromEl && fromEl.nextElementSibling && fromEl.nextElementSibling.classList.contains("cc-copy") ? fromEl.nextElementSibling : null;
@@ -8390,15 +8391,20 @@ function startCopycatRound() {
   if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) {
     ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
   }
-  ROUND.copycat = true; ROUND.maxSlots = 6;
+  ROUND.copycat = true; ROUND.maxSlots = 8;   // 4 pairs — more moves to steer each need bar
   ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
+  // Gentler green band so a doubled drop can actually LAND in the sweet spot: barely
+  // shrinks as you fill, and a touch wider than normal. (bandShrink can't be 0 — the
+  // engine treats 0 as "unset" and falls back to the default — so use a tiny value.)
+  ROUND.wish.bandShrink = 0.06; ROUND.wish.bandTight = 1.35;
   // make sure the Pet Undo is available to test with (unlocked + a few treats on hand)
   GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true;
   if ((GAME.treats || 0) < 5) GAME.treats = 5;
-  // a curated pantry of courtyard ingredients. No duplicates, so triple-match never merges them.
+  // a curated pantry of courtyard ingredients (more than slots, so you get real CHOICE about
+  // which to use). No duplicates, so triple-match never merges them.
   const set = realm.ingredients.slice();
   for (let i = set.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [set[i], set[j]] = [set[j], set[i]]; }
-  const inv = set.slice(0, 6).map(ing => ({ id: ing.id, potent: false }));
+  const inv = set.slice(0, 8).map(ing => ({ id: ing.id, potent: false }));
   ROUND.inventory = inv;
   // Force the customer to be allergic to ONE ingredient's hidden third quality, so you can
   // actually watch a copy's surprise magic trip the allergy meter. (Skip any that clash with a need.)
@@ -8409,7 +8415,8 @@ function startCopycatRound() {
   }
   // Potent charm included so you can prime an ingredient and see its copy's third quality
   // get the ×2.5 potency boost. (A pre-set potent flag would be wiped by triple-match.)
-  ROUND.charms = ["insight", "potent", "pinch", "transmute"];
+  // Cleanse is here so a brutal allergy surprise is survivable, not an instant loss.
+  ROUND.charms = ["insight", "potent", "pinch", "cleanse", "transmute"];
   ROUND.haul = [];
   renderMix();
 }
@@ -8972,7 +8979,7 @@ function familiarUndo() {
       // otherwise popping just one slot would orphan a piece and skew the meters.
       const yours = ROUND.slots.filter(s => s && !s.isCopy);
       const mine = yours.reduce((a, b) => (a.pos >= b.pos ? a : b));
-      ROUND.slots = ROUND.slots.filter(s => s !== mine && !(s.isCopy && s.pos === 5 - mine.pos));
+      ROUND.slots = ROUND.slots.filter(s => s !== mine && !(s.isCopy && s.pos === (ROUND.maxSlots - 1) - mine.pos));
       ROUND.inventory.push({ id: mine.id, potent: !!mine.potent, shrunk: !!mine.shrunk });
     } else {
       ROUND.slots.pop();
