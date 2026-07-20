@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v489"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v490"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7692,7 +7692,7 @@ function paintMixTop() {
   // have / need readout
   const ro = $("#m2-readout");
   if (ro) {
-    if (ROUND.copycat) {
+    if (ROUND.copycat || ROUND.frostTest) {
       // Prize ladder: show current % over the NEXT tier's threshold (climbs as you progress),
       // with the prize you've currently earned named right underneath.
       const pct = score.weighted, tier = copycatTier(pct), nextT = copycatNextThreshold(pct);
@@ -8210,9 +8210,9 @@ function addToSlot(idx, fromEl) {
   // (Potent while frozen solid → normal → a pinch as it melts → allergy mush if fully gone).
   { const fz = ROUND.inventory[idx]; if (fz && fz.frozen) {
       const s = frostStage(fz, Date.now());
-      if (s.stage === 4) { meltFrozen(fz); toast("🫠 Too late — it melted into allergy mush!"); }
-      else { fz.potent = (s.stage === 1); fz.shrunk = (s.stage === 3); delete fz.frozen; delete fz.thawStart;
-             toast(s.stage === 1 ? "🧊 Frozen solid — dropped in Potent!" : s.stage === 3 ? "💧 Half-melted — just a pinch." : "❄️ Fresh — full strength."); }
+      if (s.stage === 4) { meltFrozen(fz); }
+      else { fz.potent = (s.stage === 1); fz.shrunk = (s.stage === 3); delete fz.frozen; delete fz.thawStart; }
+      // (no strength popup — the card's fill/label/outline already show it, and the toast blocked the tray)
   } }
   const inst = ROUND.inventory.splice(idx, 1)[0];
   if (ROUND.potentNext) { inst.potent = true; ROUND.potentNext = false; toast("✨ Potent!"); }
@@ -8591,6 +8591,7 @@ function startFrostRound() {
   if (rest[1]) { used.add(rest[1].id); for (let k = 0; k < 3; k++) inv.push({ id: rest[1].id, potent: false }); }  // TRIPLE → Potent-frozen
   for (let i = 2; i < rest.length && inv.length < 12; i++) inv.push({ id: rest[i].id, potent: false });          // Fresh-frozen singles
   ROUND.inventory = inv;   // freezing happens in renderMix → freezeAllForFrost (after triple-match)
+  ROUND.wish.requiredMatch = 60;   // prize ladder starts at 60% — the "ready" glow marks it
   // force a (non-need) allergy so a melted piece's "allergy mush" is actually testable
   const nonNeed = (realm.magics || D.MAGIC_TYPES).filter(m => !needTypes.includes(m));
   if (nonNeed.length) { ROUND.wish.allergy = R.pick(nonNeed); ROUND.wish.allergy2 = null; }
@@ -8736,7 +8737,7 @@ function serve() {
   if (ROUND.slots.length === 0) return;
   if (ROUND.stealing) return;                     // defensive: never score mid-steal
   if (ROUND.villain) { queenServe(); return; }    // villain events score their own way
-  if (ROUND.copycat) { copycatServe(); return; }  // copycat rounds pay on a graded prize ladder
+  if (ROUND.copycat || ROUND.frostTest) { copycatServe(); return; }  // copycat & frost rounds pay on a graded prize ladder
   stopRoundTimers();                              // served in time — stop the rush clock
   const res = scoreResult(ROUND);
   const isPerfect = res.success && res.weighted === 100 && !(res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red"));
