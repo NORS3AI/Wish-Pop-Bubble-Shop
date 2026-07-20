@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v479"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v480"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8433,7 +8433,7 @@ function startCopycatRound() {
   // make sure the Pet Undo is available to test with (unlocked + a few treats on hand)
   GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true;
   if ((GAME.treats || 0) < 5) GAME.treats = 5;
-  ROUND.wish.requiredMatch = 75;   // flat 75% target for all copycat rounds (may tune later)
+  ROUND.wish.requiredMatch = 60;   // prize ladder starts at 60% — the "ready to serve" glow marks it (higher % = bigger prize)
   // Curated pantry: GUARANTEE one ingredient whose MAIN quality matches each need (a fair hand),
   // then salt in a TRIPLE (3-of-a-kind → merges into a Potent) and a STACK (2-of-a-kind → ×2 card)
   // so both behaviors are testable, plus a few distinct singles for choice.
@@ -8548,9 +8548,44 @@ function playGothelScene(res, done) {
   }
   renderStoryBeats(beats, done);
 }
+// Copycat rounds pay on a graded PRIZE LADDER (not pass/fail): the higher your match %,
+// the bigger the reward. Allergy pay-cuts still apply. Tunable.
+const COPYCAT_PRIZES = [
+  { min: 100, name: "Grand Prize",  coins: 160, dust: 15, key: 1 },
+  { min: 90,  name: "Large Prize",  coins: 110, dust: 8,  key: 0 },
+  { min: 80,  name: "Medium Prize", coins: 70,  dust: 3,  key: 0 },
+  { min: 70,  name: "Small Prize",  coins: 40,  dust: 0,  key: 0 },
+  { min: 60,  name: "Tiny Prize",   coins: 20,  dust: 0,  key: 0 },
+  { min: 0,   name: "No Prize",     coins: 0,   dust: 0,  key: 0 },
+];
+function copycatTier(pct) { return COPYCAT_PRIZES.find(t => pct >= t.min); }
+function copycatServe() {
+  stopRoundTimers();
+  const sc = scoreMix(ROUND.slots, ROUND.wish, ROUND.allergyOffset || 0);
+  const weighted = sc.weighted, allergy = sc.allergy, zone = allergy && allergy.zone;
+  const reacted = zone === "yellow" || zone === "red";
+  const mult = zone === "red" ? 0.5 : zone === "yellow" ? 0.75 : 1;   // allergy pay-cut, as normal
+  const tier = copycatTier(weighted);
+  const coins = Math.round(tier.coins * mult);
+  const dust = Math.round((tier.dust || 0) * mult);
+  const keys = (tier.key && !reacted) ? tier.key : 0;   // the Realm Key only drops on a CLEAN top brew
+  GAME.gold += coins;
+  if (dust) GAME.stardust += dust;
+  if (keys) GAME.keys = (GAME.keys || 0) + keys;
+  if (weighted >= 60) bumpStat("served");
+  servedTotal++; localStorage.setItem("wishpop_served", servedTotal); save();
+  renderResult({
+    copycat: true, weighted, success: weighted >= 60,
+    allergy, allergies: sc.allergies, hadAllergy: false,
+    gold: coins, tip: 0, cleanDust: dust, vipStardust: 0, streakBonus: 0,
+    streak: GAME.streak || 0, cleanStreak: GAME.cleanStreak || 0,
+    copycatTier: tier, copycatKey: keys, trash: [],
+  });
+}
 function serve() {
   if (ROUND.slots.length === 0) return;
   if (ROUND.villain) { queenServe(); return; }    // villain events score their own way
+  if (ROUND.copycat) { copycatServe(); return; }  // copycat rounds pay on a graded prize ladder
   stopRoundTimers();                              // served in time — stop the rush clock
   const res = scoreResult(ROUND);
   const isPerfect = res.success && res.weighted === 100 && !(res.allergy && (res.allergy.zone === "yellow" || res.allergy.zone === "red"));
@@ -8644,7 +8679,11 @@ function renderResult(res) {
   // Outcome banner (baked-text image): granted / worked-but / failed.
   const bannerImg = !win ? "banner_failed" : allergic ? "banner_partial" : "banner_granted";
   const bannerAlt = !win ? "Wish Failed!" : allergic ? "It Sort of Worked." : "You Did It!";
-  const blurb = !win
+  const blurb = res.copycat
+    ? (res.copycatTier.coins === 0
+        ? `Only ${res.weighted}% — no prize this time. Reach 60% to win one!`
+        : `You reached ${res.weighted}% — ${res.copycatTier.name}!${res.copycatKey ? " 🗝️ …and a Realm Key!" : ""}${zone === "red" ? " (allergy cut it in half)" : zone === "yellow" ? " (allergy trimmed it a little)" : ""}`)
+    : !win
     ? c.name + " storms off in a huff — and pelts you with trash on the way out!"
     : isPerfect ? c.name + " got a flawless potion — 100% perfect! ✨"
     : zone === "red" ? "The wish worked… but " + c.name + " reacted to the " + res.allergy.type + " magic! Half pay."
@@ -8661,9 +8700,12 @@ function renderResult(res) {
   const roundDust = (res.cleanDust || 0) + (res.vipStardust || 0);
   const dustBit = win && roundDust > 0 ? ` <span class="res-dust">✨ <b id="rb-dust">0</b></span>` : "";
   // A little pill by "Total Earned" flags the allergy pay cut (yellow = −25%, red = −50%).
+  const keyBit = res.copycatKey > 0 ? ` <span class="res-key">🗝️ ${res.copycatKey}</span>` : "";
   const allergyTag = allergic ? `<span class="res-atag ${zone}">Allergy −${zone === "red" ? "50" : "25"}%</span>` : "";
   const earnedLine = win
-    ? `<div class="res-earned">Total Earned: ${curIcon} <b id="rb-count">0</b>${dustBit}${allergyTag}</div>`
+    ? `<div class="res-earned">Total Earned: ${curIcon} <b id="rb-count">0</b>${dustBit}${keyBit}${allergyTag}</div>`
+    : res.copycat
+    ? `<div class="res-earned lose">No prize — reach 60%!</div>`
     : `<div class="res-earned lose">🗑️ Caught <b id="trash-count">0</b>/${trashN}</div>`;
   const hintTxt = win
     ? (roundDust > 0 ? "Pop for coins — and your Stardust! 🫧" : res.tip > 0 ? "Catch the floating coins to collect them! 🫧" : "Pop your reward bubble! 🫧")
