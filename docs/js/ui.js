@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v498"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v499"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8334,23 +8334,27 @@ function pinchIngredient(idx, fromEl) {
 /* ======================================================================= */
 function addToSlotCopycat(idx, fromEl) {
   // Tools act on YOUR tray ingredient; the copy is minted from it at drop time, so it
-  // automatically inherits a transmute (new id) or pinch (shrunk). Cut would break the
-  // 1-in → 1-copy pairing, so the copycat refuses it.
+  // automatically inherits a transmute (new id) or pinch (shrunk). Knife cuts a whole
+  // ingredient into essences in the tray — the copy row then mirrors those essences too.
   if (ROUND.toolMode === "transmute") { transmuteIngredient(idx, fromEl); return; }
   if (ROUND.toolMode === "pinch") { pinchIngredient(idx, fromEl); return; }
-  if (ROUND.toolMode === "cut") { ROUND.toolMode = null; toast("The copycat won't mirror a cut — use it whole."); paintMix(); return; }
+  if (ROUND.toolMode === "cut") { cutIngredient(idx, fromEl); return; }
   const pairs = ROUND.slots.filter(s => s && !s.isCopy).length;   // how many of YOUR picks are down
   if (pairs >= ROUND.maxSlots / 2) { toast("The cauldron is full!"); return; }
   const inst = ROUND.inventory[idx];
-  if (!inst || !inst.id) { toast("Pick an ingredient."); return; }
+  if (!inst || (!inst.id && !inst.essence)) { toast("Pick an ingredient."); return; }
   ROUND.inventory.splice(idx, 1);
   if (ROUND.potentNext) { inst.potent = true; ROUND.potentNext = false; toast("✨ Potent!"); }
-  const ing = D.INGREDIENT_BY_ID[inst.id];
-  // the copy: same ingredient, mirrors potency + pinch, plus the copycat's DYNAMIC third
-  // quality (a random magic + a random ± sign — "what you see is what you get"). It
-  // contributes at secondary strength, scaled by potency/pinch, added or drained by sign.
-  const roll = copyRollFor(inst);   // exactly what the copy card is showing right now
-  const copy = { id: inst.id, potent: !!inst.potent, shrunk: !!inst.shrunk, isCopy: true, extraQ: roll.q, extraSign: roll.sign };
+  const ing = inst.id ? D.INGREDIENT_BY_ID[inst.id] : null;
+  // the copy: mirrors potency + pinch. A whole ingredient's copy also gets the DYNAMIC ± third
+  // quality; a cut ESSENCE mirrors as a pure essence (no third quality — it's already one magic).
+  let copy;
+  if (inst.essence) {
+    copy = { essence: true, magic: inst.magic, potent: !!inst.potent, shrunk: !!inst.shrunk, isCopy: true };
+  } else {
+    const roll = copyRollFor(inst);   // exactly what the copy card is showing right now
+    copy = { id: inst.id, potent: !!inst.potent, shrunk: !!inst.shrunk, isCopy: true, extraQ: roll.q, extraSign: roll.sign };
+  }
   inst.pos = pairs;                        // your pick → next LEFT slot (0,1,2,3…)
   copy.pos = (ROUND.maxSlots - 1) - pairs; // copy → mirrored RIGHT slot (…7,6,5,4)
   // poof the mirrored copy card in the tray, then fly both pieces into the cauldron.
@@ -8360,7 +8364,7 @@ function addToSlotCopycat(idx, fromEl) {
   const caulRect = cauldron ? cauldron.getBoundingClientRect() : null;
   const fromRect = fromEl ? fromEl.getBoundingClientRect() : null;
   const copyRect = copyEl ? copyEl.getBoundingClientRect() : null;
-  const flyChar = ing ? ing.emoji : "✨";
+  const flyChar = ing ? ing.emoji : (inst.essence ? "💧" : "✨");
   if (copyRect) copycatPoof(copyRect);
   if (fromRect && caulRect) flyEmoji(fromRect, caulRect, flyChar);
   if (copyRect && caulRect) setTimeout(() => flyEmoji(copyRect, caulRect, flyChar), 90);
@@ -8417,7 +8421,22 @@ function copycatPoof(rect) {
 // copycat's churning ± third quality.
 function copyCard(st) {
   const inst = st.rep;
-  if (!inst || !inst.id || inst.essence || inst.wild) return `<div class="icard cc-copy cc-blank" aria-hidden="true"></div>`;
+  if (!inst || inst.wild) return `<div class="icard cc-copy cc-blank" aria-hidden="true"></div>`;
+  // Cut ESSENCE: a pure single-magic mirror (no ± third quality — it's already one magic).
+  if (inst.essence) {
+    const q = inst.magic, mc = D.MAGIC[q] || "#888";
+    const eName = (inst.shrunk ? "½ " : "") + q + " Essence";
+    const eWarn = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean).includes(q);
+    const ePill = `<span class="mp${eWarn ? " allergen" : ""}" style="--mc:${mc}"><span class="mp-txt">${q}</span>${eWarn ? `<span class="mp-warn">⚠️</span>` : ""}</span>`;
+    const eBadges = inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "";
+    const eN = st.idxs.length;
+    return `<div class="icard cc-copy essence${inst.potent ? " potent" : ""}${inst.shrunk ? " shrunk" : ""}" title="Copycat's copy (locked)" aria-hidden="true">
+      <div class="icard-l"><div class="icard-art"><span class="orb" style="background:${mc}"></span>${eBadges}<span class="icard-gem" style="background:${mc}"></span></div><div class="icard-nm">${eName}</div></div>
+      <div class="icard-r">${ePill}<span class="mp blank"></span><span class="mp blank"></span></div>
+      <span class="cc-sheen"></span>
+      ${inst.potent ? `<span class="icard-star">✨</span>` : ""}${eN > 1 ? `<span class="icard-count">×${eN}</span>` : ""}</div>`;
+  }
+  if (!inst.id) return `<div class="icard cc-copy cc-blank" aria-hidden="true"></div>`;
   const ing = D.INGREDIENT_BY_ID[inst.id];
   const name = (inst.shrunk ? "½ " : "") + ing.name;
   const base = inst.magic ? [inst.magic] : ing.qualities.slice(0, 2);
@@ -8483,11 +8502,11 @@ function startCopycatRound() {
   ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
   if (ROUND.wish.boss) { ROUND.wish.boss = false; delete ROUND.wish.bandTight; delete ROUND.wish.bandShrink; ROUND.wish.allergy2 = null; }
   ROUND.wish.requiredMatch = 60;   // prize ladder starts at 60%
-  // The mirror can't sensibly copy a KNIFE (fragments an ingredient into essences) or a WILD
-  // (adds a single un-mirrored magic straight to a slot), so keep both OUT of copycat rounds.
-  // Let the Die be collected when popped (mode-only charms are otherwise rejected by gainCharm).
-  ROUND.allowedCharms = (ROUND.allowedCharms || []).filter(c => c !== "knife" && c !== "wild").concat("die");
-  ROUND.haul = (ROUND.haul || []).map(it => (it.kind === "charm" && (it.id === "knife" || it.id === "wild")) ? { kind: "ingredient", id: R.pick(realm.ingredients).id } : it);
+  // Knife WORKS in copycat now (it cuts a whole ingredient into essences, and the copy row
+  // mirrors those essences too). Wild still doesn't fit (a lone un-mirrored magic), so keep it
+  // out. Let the Die be collected when popped (mode-only charms are otherwise rejected).
+  ROUND.allowedCharms = (ROUND.allowedCharms || []).filter(c => c !== "wild").concat("die");
+  ROUND.haul = (ROUND.haul || []).map(it => (it.kind === "charm" && it.id === "wild") ? { kind: "ingredient", id: R.pick(realm.ingredients).id } : it);
   guaranteeHaulCharm(ROUND, "die", 2);
   renderCustomer();        // real flow: customer → scoop → pop → mix (the mirror applies at mix)
 }
