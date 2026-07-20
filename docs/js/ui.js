@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v496"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v497"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8483,9 +8483,11 @@ function startCopycatRound() {
   ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
   if (ROUND.wish.boss) { ROUND.wish.boss = false; delete ROUND.wish.bandTight; delete ROUND.wish.bandShrink; ROUND.wish.allergy2 = null; }
   ROUND.wish.requiredMatch = 60;   // prize ladder starts at 60%
-  // let the copycat Die be COLLECTED when popped (frostOnly/copycatOnly charms are excluded from
-  // the normal pool, so gainCharm would reject them), and guarantee a couple in the haul.
-  ROUND.allowedCharms = (ROUND.allowedCharms || []).concat("die");
+  // The mirror can't sensibly copy a KNIFE (fragments an ingredient into essences) or a WILD
+  // (adds a single un-mirrored magic straight to a slot), so keep both OUT of copycat rounds.
+  // Let the Die be collected when popped (mode-only charms are otherwise rejected by gainCharm).
+  ROUND.allowedCharms = (ROUND.allowedCharms || []).filter(c => c !== "knife" && c !== "wild").concat("die");
+  ROUND.haul = (ROUND.haul || []).map(it => (it.kind === "charm" && (it.id === "knife" || it.id === "wild")) ? { kind: "ingredient", id: R.pick(realm.ingredients).id } : it);
   guaranteeHaulCharm(ROUND, "die", 2);
   renderCustomer();        // real flow: customer → scoop → pop → mix (the mirror applies at mix)
 }
