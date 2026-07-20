@@ -48,7 +48,10 @@ rotQualities), and the Frost Gem infused. Low build risk, high flavor.
 - **Optional skill bonus:** small reward for using a piece at the *exact* strength a need
   wanted (rewards reading the drain).
 
-**Status:** idea / backlog — not built. Good candidate for the ice realm whenever we get there.
+**Status:** PROTOTYPED in admin (v484) — "🧊 Frost/Thaw Round (repeat test)". 25s real-time
+drain, potency stages, melt→allergy mush, Frost Gem re-freeze all working. Not yet wired into
+a real realm. Open refinement: truly PAUSE the clock between phases (currently wall-clock keeps
+running if you leave the mix screen).
 
 ---
 
