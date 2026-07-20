@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v478"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v479"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8002,7 +8002,9 @@ function ingCard(st) {
     const mark = isPoison ? `<span class="mp-warn">☠️</span>` : (warn ? `<span class="mp-warn">⚠️</span>` : "");
     return `<span class="mp${warn ? " allergen" : ""}${isPoison ? " poison" : ""}${isRot ? " rot" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${q}</span>${mark}</span>`;
   };
-  const revealPill = (q, r) => (q === "Poison" || r === 0 || insight || singleKnown) ? mkPill(q, false) : `<span class="mp hidden">?</span>`;
+  // Copycat reveals every ingredient's magics (no Insight needed) — the mode's only mystery
+  // is the copies' churning ± third quality, so your own qualities are all laid bare.
+  const revealPill = (q, r) => (q === "Poison" || r === 0 || insight || singleKnown || ROUND.copycat) ? mkPill(q, false) : `<span class="mp hidden">?</span>`;
   let pills = "";
   if (inst.rotten) {
     // fully rotten: show qualities with normal allergy styling (⚠️ if allergen)
@@ -8367,12 +8369,12 @@ function copycatPoof(rect) {
   setTimeout(() => fx.remove(), 640);
 }
 // The locked mirror card shown directly beneath each of your ingredients: same art + name,
-// but THREE quality pills (its two + the hidden copyQ). Pills 2 & 3 stay "?" until Insight.
+// but THREE quality pills: its two base magics (both always shown in copycat) plus the
+// copycat's churning ± third quality.
 function copyCard(st) {
   const inst = st.rep;
   if (!inst || !inst.id || inst.essence || inst.wild) return `<div class="icard cc-copy cc-blank" aria-hidden="true"></div>`;
   const ing = D.INGREDIENT_BY_ID[inst.id];
-  const insight = !!ROUND.insight;
   const name = (inst.shrunk ? "½ " : "") + ing.name;
   const base = inst.magic ? [inst.magic] : ing.qualities.slice(0, 2);
   const mainMagic = base[0];
@@ -8391,9 +8393,9 @@ function copyCard(st) {
     return `<span class="mp signed ${plus ? "plus" : "minus"}${danger ? " allergen" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${plus ? "+" : "−"}${q}</span>${danger ? `<span class="mp-warn">⚠️</span>` : ""}</span>`;
   };
   let pills = "";
-  pills += pill(mainMagic);                                                       // 1st: main quality, always shown
-  pills += (insight && base[1]) ? pill(base[1]) : `<span class="mp hidden">?</span>`;   // 2nd: hidden until Insight
-  pills += signedPill(roll.q, roll.sign);                                         // 3rd: dynamic ±, always shown
+  pills += pill(mainMagic);                                    // 1st: main quality, always shown
+  pills += base[1] ? pill(base[1]) : `<span class="mp blank"></span>`;   // 2nd: now always shown (no Insight in copycat)
+  pills += signedPill(roll.q, roll.sign);                      // 3rd: dynamic ±, always shown
   const n = st.idxs.length;
   const badges = inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "";
   return `<div class="icard cc-copy${inst.potent ? " potent" : ""}${inst.shrunk ? " shrunk" : ""}" title="Copycat's copy (locked)" aria-hidden="true">
@@ -8411,9 +8413,9 @@ function copycatTrayHtml() {
   stacks.forEach(st => { cards += ingCard(st) + copyCard(st); });
   return `<div class="m2-ing cc-tray" id="inv-row">${cards}</div>`;
 }
-// Kick off a copycat test round (admin): jump straight to the mix bench with a small
-// courtyard pantry, an Insight charm (to reveal the copies' hidden qualities) and the
-// Pinch/Transmute tools so all the mirroring can be exercised. Repeats on "Next".
+// Kick off a copycat test round (admin): jump straight to the mix bench with a courtyard
+// pantry (all qualities revealed — no Insight in copycat) plus Peek/Die/Potent/Pinch/
+// Cleanse/Transmute charms so all the mirroring can be exercised. Repeats on "Next".
 function startCopycatRound() {
   SFX.unlock(); stopRoundTimers(); refreshQuests();
   GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true;
@@ -8457,9 +8459,9 @@ function startCopycatRound() {
   // Potent charm included so you can prime an ingredient and see its copy's third quality
   // get the ×2.5 potency boost. (A pre-set potent flag would be wiped by triple-match.)
   // Cleanse is here so a brutal allergy surprise is survivable, not an instant loss.
-  // A few Loaded Dice (🎲) let you reroll the mirror's third qualities when they're all bad.
-  // Peek (⏭️) reveals a hidden need bar — one per use, so enough to uncover all three.
-  ROUND.charms = ["insight", "peek", "peek", "peek", "die", "die", "die", "potent", "pinch", "cleanse", "transmute"];
+  // No Insight in copycat — all ingredient qualities are revealed by default. A few Loaded
+  // Dice (🎲) reroll the mirror's third qualities; Peek (⏭️) reveals a hidden need bar.
+  ROUND.charms = ["peek", "peek", "peek", "die", "die", "die", "potent", "pinch", "cleanse", "transmute"];
   ROUND.haul = [];
   renderMix();
 }
