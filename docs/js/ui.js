@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v488"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v489"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7649,7 +7649,11 @@ function mixStacks() {
   const order = inv.map((inst, idx) => ({ inst, idx }));
   order.sort((a, b) => {
     const ta = instTier(a.inst), tb = instTier(b.inst); if (ta !== tb) return ta - tb;
-    if (ta === 0) return a.idx - b.idx;   // frozen pieces: keep a STABLE leftmost order (don't reshuffle on transmute)
+    if (ta === 0) {   // frozen pieces: strongest (Potent) stay LEFTMOST, then Fresh, then ½; stable by slot within a stage
+      const nowT = Date.now(), sa = frostStage(a.inst, nowT).stage, sb = frostStage(b.inst, nowT).stage;
+      if (sa !== sb) return sa - sb;
+      return a.idx - b.idx;
+    }
     const ma = instMainMagic(a.inst), mb = instMainMagic(b.inst); if (ma !== mb) return ma.localeCompare(mb);
     const na = instName(a.inst), nb = instName(b.inst); if (na !== nb) return na.localeCompare(nb);
     return a.idx - b.idx;
@@ -8294,7 +8298,7 @@ function transmuteIngredient(idx, fromEl) {
   ROUND.inventory[idx] = { id: ing.id, potent: inst.potent, _glow: true };
   // a FROZEN piece stays frozen (same thaw clock) when transmuted, so it keeps its icy
   // timer and stays in the leftmost frozen group instead of jumping across the bag.
-  if (inst.frozen) { ROUND.inventory[idx].frozen = true; ROUND.inventory[idx].thawStart = inst.thawStart; }
+  if (inst.frozen) { ROUND.inventory[idx].frozen = true; ROUND.inventory[idx].thawStart = inst.thawStart; ROUND.inventory[idx].frostSolid = inst.frostSolid; }
   const ti = ROUND.charms.indexOf("transmute"); if (ti >= 0) ROUND.charms.splice(ti, 1);
   ROUND.toolMode = null;
   SFX.unlock(); SFX.reveal("charm", 0);
@@ -8511,7 +8515,7 @@ function startCopycatRound() {
 /* into an allergy-ridden mush. Place a piece at the strength you need. The    */
 /* Frost Gem (❄️) re-freezes everything back to full. Frozen pieces sort left. */
 /* ======================================================================= */
-const THAW_MS = 50000;
+const THAW_MS = 60000;
 const FROST_LABEL = { 1: "❄️ Potent", 2: "Fresh", 3: "½ Melting", 4: "Gone!" };
 // Current thaw stage of a frozen piece: 1 Potent, 2 normal, 3 pinch, 4 melted. rem = fill 0..1.
 function frostStage(inst, now) {
@@ -8530,6 +8534,7 @@ function freezeAllForFrost() {
     if (!inst || !inst.id || inst.essence || inst.wild || inst.rotten) return;
     const wasTriple = !!inst.potent;    // triple-match promoted it to Potent
     inst.frozen = true;
+    inst.frostSolid = wasTriple;        // remember its ORIGINAL grade (Potent triple vs Fresh normal)
     delete inst.potent;                 // strength now comes purely from the thaw stage
     inst.thawStart = wasTriple ? now : freshStart;
   });
@@ -8600,18 +8605,19 @@ function playCharm(i) {
   else if (id === "insight") { if (ROUND.insight) { toast("Hidden magic already revealed."); return; } ROUND.insight = true; toast("🔍 Hidden magic revealed!"); consume(); }
   else if (id === "die") { if (!ROUND.copycat) { toast("The die only rattles in the copycat's parlor."); return; } reshuffleCopyRolls(); SFX.unlock(); if (SFX.charm) SFX.charm(); if (navigator.vibrate) navigator.vibrate([8, 20, 8]); toast("🎲 Rerolled the copycat's third qualities!"); consume(); }
   else if (id === "refreeze") {
-    const now = Date.now(); let cnt = 0;
-    // re-freeze anything still in the bag that's thawing OR already melted (restores it to full)
+    const now = Date.now(), freshStart = now - Math.floor(THAW_MS / 3); let cnt = 0;
+    // re-freeze anything still in the bag that's thawing OR already melted — but back to its
+    // ORIGINAL grade: triples return to Potent (full), ordinary pieces return to Fresh.
     ROUND.inventory.forEach(inst => {
       if (inst && (inst.frozen || inst.melted)) {
-        inst.frozen = true; inst.thawStart = now;
+        inst.frozen = true; inst.thawStart = inst.frostSolid ? now : freshStart;
         delete inst.rotten; delete inst.rotFromSpread; delete inst.melted; delete inst.rotQualities; delete inst.potent; delete inst.shrunk;
         cnt++;
       }
     });
     if (!cnt) { toast("Nothing to re-freeze."); return; }
     SFX.unlock(); if (SFX.charm) SFX.charm(); if (navigator.vibrate) navigator.vibrate(14);
-    toast(`❄️ Frost Gem — re-froze ${cnt} ingredient${cnt > 1 ? "s" : ""} to full!`); consume();
+    toast(`❄️ Frost Gem — re-froze ${cnt} ingredient${cnt > 1 ? "s" : ""}!`); consume();
   }
   else if (id === "potent") { if (ROUND.potentNext) { toast("Potent is already primed."); return; } ROUND.potentNext = true; toast("✨ Your next ingredient counts double!"); consume(); }
   else if (id === "peek") { const n = w.needs.find(x => !x.revealed); if (!n) { toast("All needs already revealed."); return; } n.revealed = true; toast(`⏭️ Revealed: ${n.type}!`); consume(); }
