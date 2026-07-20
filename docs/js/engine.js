@@ -9,6 +9,7 @@ const BALANCE = {
   // center, not "as much as possible". Small chunks so amount is controllable.
   NEED_TARGET: 6,               // center of the green band (magic points) — reachable for all 3 needs in 6 slots
   MAIN_POWER: 2, SECONDARY_POWER: 1, POTENT_MULT: 2.5, PINCH_MULT: 0.5, // small chunks (granularity); Pinch halves a contribution
+  COPYCAT_EXTRA_POWER: 3,        // strength of a copycat copy's dynamic ± third quality (was secondary=1; punchier)
   BAND_HALF_BASE: 2.5,          // green band half-width with 0 ingredients
   BAND_SHRINK_PER_ADD: 0.18,    // band narrows this much per ingredient in the pot
   BAND_HALF_MIN: 1.5,           // never narrower than this
@@ -389,7 +390,7 @@ function allergyStatus(slots, allergyType, offset) {
     }
     // Copycat copy: the dynamic THIRD quality can trip an allergy (+) OR calm it (−).
     if (inst.extraQ === allergyType) {
-      let ep = BALANCE.SECONDARY_POWER;
+      let ep = BALANCE.COPYCAT_EXTRA_POWER;
       if (inst.potent) ep = Math.round(ep * BALANCE.POTENT_MULT);
       if (inst.shrunk) ep = Math.round(ep * BALANCE.PINCH_MULT);
       points += ep * (inst.extraSign || 1);
@@ -423,7 +424,7 @@ function pointsForNeed(slots, type) {
     // Copycat copy: the dynamic THIRD quality contributes at secondary strength, scaled by
     // potency/pinch — and its sign can be NEGATIVE (a "minus" reflection drains that bar).
     if (inst.extraQ === type) {
-      let ep = BALANCE.SECONDARY_POWER;
+      let ep = BALANCE.COPYCAT_EXTRA_POWER;
       if (inst.potent) ep = Math.round(ep * BALANCE.POTENT_MULT * 10) / 10;
       if (inst.shrunk) ep = Math.round(ep * BALANCE.PINCH_MULT * 10) / 10;
       points += ep * (inst.extraSign || 1);

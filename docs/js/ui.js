@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v499"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v500"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8503,10 +8503,11 @@ function startCopycatRound() {
   if (ROUND.wish.boss) { ROUND.wish.boss = false; delete ROUND.wish.bandTight; delete ROUND.wish.bandShrink; ROUND.wish.allergy2 = null; }
   ROUND.wish.requiredMatch = 60;   // prize ladder starts at 60%
   // Knife WORKS in copycat now (it cuts a whole ingredient into essences, and the copy row
-  // mirrors those essences too). Wild still doesn't fit (a lone un-mirrored magic), so keep it
-  // out. Let the Die be collected when popped (mode-only charms are otherwise rejected).
-  ROUND.allowedCharms = (ROUND.allowedCharms || []).filter(c => c !== "wild").concat("die");
-  ROUND.haul = (ROUND.haul || []).map(it => (it.kind === "charm" && it.id === "wild") ? { kind: "ingredient", id: R.pick(realm.ingredients).id } : it);
+  // mirrors those essences too). Wild doesn't fit (a lone un-mirrored magic) and Insight is a
+  // no-op (copycat reveals everything) — keep both OUT. Let the Die be collected when popped.
+  const dropCharms = ["wild", "insight"];
+  ROUND.allowedCharms = (ROUND.allowedCharms || []).filter(c => !dropCharms.includes(c)).concat("die");
+  ROUND.haul = (ROUND.haul || []).map(it => (it.kind === "charm" && dropCharms.includes(it.id)) ? { kind: "ingredient", id: R.pick(realm.ingredients).id } : it);
   guaranteeHaulCharm(ROUND, "die", 2);
   renderCustomer();        // real flow: customer → scoop → pop → mix (the mirror applies at mix)
 }
