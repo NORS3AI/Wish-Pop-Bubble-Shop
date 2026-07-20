@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v493"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v494"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8609,16 +8609,12 @@ function playCharm(i) {
   else if (id === "die") { if (!ROUND.copycat) { toast("The die only rattles in the copycat's parlor."); return; } reshuffleCopyRolls(); SFX.unlock(); if (SFX.charm) SFX.charm(); if (navigator.vibrate) navigator.vibrate([8, 20, 8]); toast("🎲 Rerolled the copycat's third qualities!"); consume(); }
   else if (id === "refreeze") {
     const now = Date.now(), freshStart = now - (Math.floor(THAW_MS / 3) + 900); let cnt = 0;
-    // re-freeze anything still in the bag that's thawing OR already melted — but back to its
-    // ORIGINAL grade: triples return to Potent (full), ordinary pieces return to Fresh.
+    // re-freeze only STILL-THAWING pieces, back to their ORIGINAL grade (triples → Potent,
+    // ordinary → Fresh). A fully MELTED piece is gone for good — the gem can't revive mush.
     ROUND.inventory.forEach(inst => {
-      if (inst && (inst.frozen || inst.melted)) {
-        inst.frozen = true; inst.thawStart = inst.frostSolid ? now : freshStart;
-        delete inst.rotten; delete inst.rotFromSpread; delete inst.melted; delete inst.rotQualities; delete inst.potent; delete inst.shrunk;
-        cnt++;
-      }
+      if (inst && inst.frozen && !inst.melted) { inst.thawStart = inst.frostSolid ? now : freshStart; cnt++; }
     });
-    if (!cnt) { toast("Nothing to re-freeze."); return; }
+    if (!cnt) { toast("Nothing left to re-freeze."); return; }
     SFX.unlock(); if (SFX.charm) SFX.charm(); if (navigator.vibrate) navigator.vibrate(14);
     toast(`❄️ Frost Gem — re-froze ${cnt} ingredient${cnt > 1 ? "s" : ""}!`); consume();
   }
