@@ -2513,6 +2513,9 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .icard.frozen { position: relative; overflow: hidden; border-color: rgba(150,214,255,.8);
   box-shadow: 0 0 10px rgba(120,200,255,.5), inset 0 0 12px rgba(150,214,255,.22); }
 .icard.frozen > .icard-l, .icard.frozen > .icard-r { position: relative; z-index: 1; }
+/* frozen-SOLID = still Potent: the usual gold potent outline (drops off once it hits Fresh) */
+.icard.frozen.thaw-potent { border-color: var(--gold); border-width: 2px;
+  box-shadow: 0 0 11px rgba(255,216,107,.7), inset 0 0 12px rgba(150,214,255,.22); }
 .frost-fill { position: absolute; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none;
   background: linear-gradient(0deg, rgba(90,170,235,.62), rgba(165,224,255,.5));
   border-top: 2px solid rgba(215,242,255,.9); transition: height .3s linear; }

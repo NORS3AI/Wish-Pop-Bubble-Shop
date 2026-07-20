@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v485"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v486"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8042,7 +8042,7 @@ function ingCard(st) {
   const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
   const rotDesc = (inst.rotten && !inst.rotFromSpread) ? `<div class="icard-desc">Rot will spread</div>` : "";
   // Frozen (ice-realm) piece: an icy fill that DRAINS as its 25s clock runs, plus a stage label.
-  const frostClass = frost ? " frozen" + (frost.rem <= 1/3 ? " thaw-warn" : frost.rem <= 2/3 ? " thaw-mid" : "") : "";
+  const frostClass = frost ? " frozen" + (frost.rem <= 1/3 ? " thaw-warn" : frost.rem <= 2/3 ? " thaw-mid" : " thaw-potent") : "";
   const frostFill = frost ? `<div class="frost-fill" style="height:${(frost.rem * 100).toFixed(1)}%"></div>` : "";
   const frostStageEl = frost ? `<span class="frost-stage">${FROST_LABEL[frost.stage]}</span>` : "";
   return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}${inst.splashed ? " splashed" : ""}${rotClass}${frostClass}" title="${name}" data-idx="${idx}">
@@ -8538,6 +8538,7 @@ function thawTick() {
     const badge = card.querySelector(".frost-stage"); if (badge) badge.textContent = FROST_LABEL[s.stage];
     card.classList.toggle("thaw-warn", s.rem <= 1 / 3);
     card.classList.toggle("thaw-mid", s.rem > 1 / 3 && s.rem <= 2 / 3);
+    card.classList.toggle("thaw-potent", s.rem > 2 / 3);   // gold potent outline while frozen solid
   });
   if (spoiled) { if (SFX.sneeze) SFX.sneeze(); paintMix(); }
 }
@@ -8567,7 +8568,7 @@ function startFrostRound() {
   const order = inv.map((_, i) => i);
   for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
   const nFrozen = Math.max(2, Math.round(inv.length / 2));
-  order.slice(0, nFrozen).forEach((i, k) => { inv[i].frozen = true; inv[i].thawStart = now - k * 5000; });   // piece k is already 5k s into thawing
+  order.slice(0, nFrozen).forEach(i => { inv[i].frozen = true; inv[i].thawStart = now; });   // each starts frozen solid with the FULL clock
   ROUND.inventory = inv;
   // force a (non-need) allergy so a melted piece's "allergy mush" is actually testable
   const nonNeed = (realm.magics || D.MAGIC_TYPES).filter(m => !needTypes.includes(m));
