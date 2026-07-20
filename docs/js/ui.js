@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v469"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v470"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1930,6 +1930,7 @@ function renderAdmin() {
         <button class="btn" id="ad-boutique" style="margin-bottom:8px">🐭 Mouse Boutique (practice)</button>
         <button class="btn" id="ad-carpet" style="margin-bottom:8px">🧞 Magic Carpet Dash (practice)</button>
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
+        <button class="btn" id="ad-copycat" style="margin-bottom:8px">🃏 Copycat Round (repeat test)</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen (villain)</button>
         <button class="btn" id="ad-stepmother" style="margin-bottom:8px">🖤 The Wicked Stepmother (villain)</button>
         <button class="btn" id="ad-gothel" style="margin-bottom:8px">🧙‍♀️ Lady Gothel (King's Courtyard)</button>
@@ -2005,6 +2006,7 @@ function renderAdmin() {
   on("#ad-boutique", "click", renderBoutiqueIntro);
   on("#ad-carpet", "click", renderCarpetIntro);
   on("#ad-courtyard", "click", () => { GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true; GAME.unlockedRealms.courtyard = true; save(); travelRealm("courtyard"); });
+  on("#ad-copycat", "click", startCopycatRound);
   on("#ad-queen", "click", () => {
     if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); } // need gold to pay her ransom
     renderVillainIntro("queen");
@@ -7588,7 +7590,7 @@ function renderMix() {
   paintMix(); show("mix");
   if (ROUND._mixTimer) clearInterval(ROUND._mixTimer);
   ROUND._mixTimer = setInterval(paintMixTop, 500);
-  const afterTriples = () => { if (rawCount > BALANCE.SNEEZE_AT && !ROUND.wish.boss && !ROUND.villain) setTimeout(sneezeAllergy, 250); }; // bosses/villains don't sneeze
+  const afterTriples = () => { if (rawCount > BALANCE.SNEEZE_AT && !ROUND.wish.boss && !ROUND.villain && !ROUND.copycat) setTimeout(sneezeAllergy, 250); }; // bosses/villains/copycat don't sneeze
   if (merged.merged.length) showTriple(merged.merged, afterTriples);
   else setTimeout(afterTriples, 350);
 }
@@ -7841,18 +7843,23 @@ function paintMix() {
     </div>`;
   }
   const slotCells = [];
+  // Copycat rounds seat pieces by their .pos (your picks 0-2 on the left, copies 5-3 on
+  // the right) rather than by array order, so the mirror reads left-to-right in the pot.
+  const ccByPos = [];
+  if (ROUND.copycat) ROUND.slots.forEach(s => { if (s && s.pos != null) ccByPos[s.pos] = s; });
   for (let i = 0; i < ROUND.maxSlots; i++) {
-    const inst = ROUND.slots[i];
+    const inst = ROUND.copycat ? ccByPos[i] : ROUND.slots[i];
     const face = !inst ? "" : inst.wild ? "🌈"
       : inst.essence ? `<span class="orb" style="background:${D.MAGIC[inst.magic]}"></span>` : ingArt(inst.id);
     const removable = ROUND.villain && inst;
     const poisonedSlot = inst && ROUND.insight && inst.poison;
-    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""} ${poisonedSlot ? "poisoned" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${poisonedSlot ? `<span class="poison-badge">☠️</span>` : ""}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
+    const copySlot = ROUND.copycat && i >= 3;   // the right half holds the copycat's mirrored copies
+    slotCells.push(`<div class="slot ${inst ? "filled" : ""} ${inst && inst.potent ? "potent" : ""} ${inst && inst.shrunk ? "shrunk" : ""} ${removable ? "removable" : ""} ${poisonedSlot ? "poisoned" : ""} ${copySlot ? "copy-slot" : ""}" ${removable ? `data-slot="${i}"` : ""}>${face}${poisonedSlot ? `<span class="poison-badge">☠️</span>` : ""}${inst && inst.shrunk ? `<span class="pinch-badge">🤏</span>` : ""}</div>`);
   }
   const showPet = !ROUND.villain;
   const banner = (showPet && GAME.unlocked.undo) ? `${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}` : "";
   html("mix", `
-    <div class="mixv2 ${ROUND.villain ? "villain" : ""}">
+    <div class="mixv2 ${ROUND.villain ? "villain" : ""} ${ROUND.copycat ? "copycat" : ""}">
       ${ROUND.villain ? `<div class="mix-lightning"></div>` : ""}
       <div class="m2-head"><div class="m2-cust"></div></div>
       <div class="m2-stage">
@@ -7935,6 +7942,7 @@ function mixCharmBarHtml() {
 }
 // Bottom tray: ingredient cards, 3 across, scrolling sideways.
 function mixTrayHtml() {
+  if (ROUND.copycat) return copycatTrayHtml();
   const stacks = mixStacks();
   const cards = stacks.length ? stacks.map(ingCard).join("") : `<div class="tray-empty">Bag empty —<br>double-tap the cauldron to serve!</div>`;
   return `<div class="m2-ing" id="inv-row">${cards}</div>`;
@@ -8157,6 +8165,7 @@ function applyInfusedEffect(inst) {
 }
 function addToSlot(idx, fromEl) {
   { const peek = ROUND.inventory[idx]; if (peek && peek.cursed) { triggerCurse(idx, fromEl); return; } }  // disguised cursed piece → it bursts, not brews
+  if (ROUND.copycat) { addToSlotCopycat(idx, fromEl); return; }   // copycat realm: every drop is mirrored
   if (ROUND.toolMode === "cut") { cutIngredient(idx, fromEl); return; }
   if (ROUND.toolMode === "transmute") { transmuteIngredient(idx, fromEl); return; }
   if (ROUND.toolMode === "pinch") { pinchIngredient(idx, fromEl); return; }
@@ -8264,6 +8273,135 @@ function pinchIngredient(idx, fromEl) {
   const nm = inst.essence ? inst.magic + " Essence" : D.INGREDIENT_BY_ID[inst.id].name;
   toast(`🤏 Just a pinch — ${nm}'s magic is halved.`);
   paintMix();
+}
+
+/* ======================================================================= */
+/* COPYCAT ROUNDS (prototype) — a mischief mechanic                         */
+/* Every ingredient you place is mirrored by the copycat into the OPPOSITE   */
+/* cauldron slot, doubling it. Each copy also carries a hidden THIRD quality  */
+/* (the ingredient's `copyQ`) that only the Insight charm reveals. Your picks */
+/* fill the left slots (0,1,2); the copies fill the right (5,4,3), meeting in */
+/* the middle. Pinch/Transmute the source and the copy inherits it on drop.   */
+/* ======================================================================= */
+function addToSlotCopycat(idx, fromEl) {
+  // Tools act on YOUR tray ingredient; the copy is minted from it at drop time, so it
+  // automatically inherits a transmute (new id) or pinch (shrunk). Cut would break the
+  // 1-in → 1-copy pairing, so the copycat refuses it.
+  if (ROUND.toolMode === "transmute") { transmuteIngredient(idx, fromEl); return; }
+  if (ROUND.toolMode === "pinch") { pinchIngredient(idx, fromEl); return; }
+  if (ROUND.toolMode === "cut") { ROUND.toolMode = null; toast("The copycat won't mirror a cut — use it whole."); paintMix(); return; }
+  const pairs = ROUND.slots.filter(s => s && !s.isCopy).length;   // how many of YOUR picks are down
+  if (pairs >= 3) { toast("The cauldron is full!"); return; }
+  const inst = ROUND.inventory[idx];
+  if (!inst || !inst.id) { toast("Pick an ingredient."); return; }
+  ROUND.inventory.splice(idx, 1);
+  if (ROUND.potentNext) { inst.potent = true; ROUND.potentNext = false; toast("✨ Potent!"); }
+  const ing = D.INGREDIENT_BY_ID[inst.id];
+  // the copy: same ingredient, mirrors potency + pinch, plus the hidden third quality.
+  // extraQ contributes at secondary strength, scaled by potent/pinch (see engine scoring).
+  const copy = { id: inst.id, potent: !!inst.potent, shrunk: !!inst.shrunk, isCopy: true, extraQ: ing ? ing.copyQ : null };
+  inst.pos = pairs;          // your pick → next LEFT slot (0,1,2)
+  copy.pos = 5 - pairs;      // copy → mirrored RIGHT slot (5,4,3)
+  // poof the mirrored copy card in the tray, then fly both pieces into the cauldron.
+  // Capture rects NOW — paintMix() below rebuilds the tray, detaching these elements.
+  const copyEl = fromEl && fromEl.nextElementSibling && fromEl.nextElementSibling.classList.contains("cc-copy") ? fromEl.nextElementSibling : null;
+  const cauldron = document.getElementById("cauldron");
+  const caulRect = cauldron ? cauldron.getBoundingClientRect() : null;
+  const fromRect = fromEl ? fromEl.getBoundingClientRect() : null;
+  const copyRect = copyEl ? copyEl.getBoundingClientRect() : null;
+  const flyChar = ing ? ing.emoji : "✨";
+  if (copyRect) copycatPoof(copyRect);
+  if (fromRect && caulRect) flyEmoji(fromRect, caulRect, flyChar);
+  if (copyRect && caulRect) setTimeout(() => flyEmoji(copyRect, caulRect, flyChar), 90);
+  ROUND.slots.push(inst, copy);
+  mixPulseColor = D.MAGIC[instMainMagic(inst)] || "#c9a3ff";
+  SFX.unlock(); if (SFX.pop) SFX.pop(1);
+  if (navigator.vibrate) navigator.vibrate(10);
+  paintMix();
+  const c2 = document.getElementById("cauldron"); if (c2) { c2.classList.remove("splash"); void c2.offsetWidth; c2.classList.add("splash"); }
+}
+// A little sparkle-poof where the copycat's copy card sat before it vanished into the pot.
+function copycatPoof(rect) {
+  if (!rect) return;
+  const host = document.getElementById("app") || document.body;
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  const fx = document.createElement("div"); fx.className = "cc-poof";
+  fx.style.left = cx + "px"; fx.style.top = cy + "px";
+  let bits = `<span class="cc-poof-cloud"></span>`;
+  for (let i = 0; i < 8; i++) {
+    const ang = (i / 8) * Math.PI * 2, d = 15 + Math.random() * 16;
+    bits += `<i class="cc-spark" style="--dx:${(Math.cos(ang) * d).toFixed(1)}px;--dy:${(Math.sin(ang) * d).toFixed(1)}px"></i>`;
+  }
+  fx.innerHTML = bits;
+  host.appendChild(fx);
+  setTimeout(() => fx.remove(), 640);
+}
+// The locked mirror card shown directly beneath each of your ingredients: same art + name,
+// but THREE quality pills (its two + the hidden copyQ). Pills 2 & 3 stay "?" until Insight.
+function copyCard(st) {
+  const inst = st.rep;
+  if (!inst || !inst.id || inst.essence || inst.wild) return `<div class="icard cc-copy cc-blank" aria-hidden="true"></div>`;
+  const ing = D.INGREDIENT_BY_ID[inst.id];
+  const insight = !!ROUND.insight;
+  const name = (inst.shrunk ? "½ " : "") + ing.name;
+  const base = inst.magic ? [inst.magic] : ing.qualities.slice(0, 2);
+  const list = base.concat(ing.copyQ ? [ing.copyQ] : []);   // 2 base + hidden 3rd
+  const mainMagic = list[0];
+  const art = ingArt(inst.id);
+  const allergens = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
+  const pill = q => {
+    const warn = allergens.includes(q), long = q.length >= 9, mc = D.MAGIC[q] || "#888";
+    return `<span class="mp${warn ? " allergen" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${q}</span>${warn ? `<span class="mp-warn">⚠️</span>` : ""}</span>`;
+  };
+  let pills = "";
+  for (let r = 0; r < 3; r++) {
+    if (r < list.length) pills += (r === 0 || insight) ? pill(list[r]) : `<span class="mp hidden">?</span>`;
+    else pills += `<span class="mp blank"></span>`;
+  }
+  const n = st.idxs.length;
+  const badges = inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "";
+  return `<div class="icard cc-copy${inst.potent ? " potent" : ""}${inst.shrunk ? " shrunk" : ""}" title="Copycat's copy (locked)" aria-hidden="true">
+    <div class="icard-l"><div class="icard-art">${art}${badges}<span class="icard-gem" style="background:${D.MAGIC[mainMagic] || "#888"}"></span></div><div class="icard-nm">${name}</div></div>
+    <div class="icard-r">${pills}</div>
+    <span class="cc-sheen"></span>
+    ${inst.potent ? `<span class="icard-star">✨</span>` : ""}${n > 1 ? `<span class="icard-count">×${n}</span>` : ""}</div>`;
+}
+// Copycat tray: your stacks on the top row, each mirrored by a locked copy card directly
+// below (the .m2-ing grid already lays cards out in two rows, column by column).
+function copycatTrayHtml() {
+  const stacks = mixStacks();
+  if (!stacks.length) return `<div class="m2-ing cc-tray" id="inv-row"><div class="tray-empty">Bag empty —<br>double-tap the cauldron to serve!</div></div>`;
+  let cards = "";
+  stacks.forEach(st => { cards += ingCard(st) + copyCard(st); });
+  return `<div class="m2-ing cc-tray" id="inv-row">${cards}</div>`;
+}
+// Kick off a copycat test round (admin): jump straight to the mix bench with a small
+// courtyard pantry, an Insight charm (to reveal the copies' hidden qualities) and the
+// Pinch/Transmute tools so all the mirroring can be exercised. Repeats on "Next".
+function startCopycatRound() {
+  SFX.unlock(); stopRoundTimers(); refreshQuests();
+  GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true;
+  GAME.unlockedRealms = GAME.unlockedRealms || {}; GAME.unlockedRealms.courtyard = true;
+  GAME.realm = "courtyard"; save(); applyRealmTheme();
+  const realm = D.REALM_BY_ID["courtyard"] || currentRealm();
+  const pool = (realm.customers || []).filter(c => !c.alwaysBoss);
+  const cust = R.pick(pool.length ? pool : realm.customers);
+  ROUND = newRound({ servedTotal, customers: [cust], ingredientSet: realm.ingredients, magicPool: realm.magics, reqBonus: realm.reqBonus || 0 });
+  if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) {
+    ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
+  }
+  ROUND.copycat = true; ROUND.maxSlots = 6;
+  ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
+  // a curated pantry of courtyard ingredients (one Potent so you can see potency mirror
+  // onto the copy's third quality). No duplicates, so triple-match never merges them.
+  const set = realm.ingredients.slice();
+  for (let i = set.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [set[i], set[j]] = [set[j], set[i]]; }
+  const inv = set.slice(0, 6).map(ing => ({ id: ing.id, potent: false }));
+  if (inv[1]) inv[1].potent = true;
+  ROUND.inventory = inv;
+  ROUND.charms = ["insight", "pinch", "transmute"];
+  ROUND.haul = [];
+  renderMix();
 }
 function playCharm(i) {
   const id = ROUND.charms[i]; if (!id) return; const w = ROUND.wish;
@@ -8496,9 +8634,11 @@ function renderResult(res) {
     </div>
     <button class="res-next" id="next-btn" aria-label="Next customer"><img src="art/ui/btn_next.png" alt="Next Customer" draggable="false"></button>
   `);
+  const wasCopycat = !!(ROUND && ROUND.copycat);
   on("#next-btn", "click", () => {
     if (itemGateBlocks()) return;
-    const cont = () => (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound();
+    const cont = () => wasCopycat ? startCopycatRound()                       // admin copycat test: loop straight into another
+      : (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound();
     // Gothel's curse/steal reaction plays here — after the player has seen the results.
     if (res.gothelCurse || res.gothelSteal) playGothelScene(res, cont);
     else cont();

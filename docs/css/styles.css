@@ -2501,6 +2501,34 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .icard .rot-badge { position: absolute; top: -5px; left: -5px; font-size: 16px; z-index: 2; filter: drop-shadow(0 0 4px rgba(180,100,0,.7)); }
 .icard .pinch-badge { position: absolute; bottom: -3px; right: -3px; font-size: 12px; }
 .tray-empty { margin: auto; text-align: center; color: var(--ink-dim); font-size: 13px; line-height: 1.5; }
+
+/* ---- COPYCAT ROUNDS ---- the copycat's mirror row + slots -------------------- */
+/* The tray is already a 2-row grid, so your card lands on top and its copy directly
+   below. The copy row is tinted violet, locked (no taps), and has a sliding sheen. */
+.icard.cc-copy { cursor: default; pointer-events: none; overflow: hidden;
+  background: linear-gradient(150deg, rgba(120,74,196,.42), rgba(58,26,104,.66) 70%);
+  border-color: rgba(190,150,255,.55); box-shadow: 0 0 9px rgba(150,110,255,.35) inset; }
+.icard.cc-copy .icard-nm { color: #e8dcff; }
+.icard.cc-copy.cc-blank { visibility: hidden; }
+.mixv2.copycat .cc-tray { padding-bottom: 5px; }
+/* the moving shine that marks a card as a copy */
+.cc-sheen { position: absolute; top: 0; left: -60%; width: 45%; height: 100%; z-index: 1; pointer-events: none;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,.28), transparent);
+  transform: skewX(-18deg); animation: ccSheen 3.4s ease-in-out infinite; }
+@keyframes ccSheen { 0%, 62% { left: -60%; } 100% { left: 150%; } }
+/* the right half of the cauldron row = the copycat's mirrored copies */
+.mixv2.copycat .m2-slots .slot.copy-slot { border-color: rgba(190,150,255,.55);
+  background: rgba(120,74,196,.28); box-shadow: 0 0 7px rgba(150,110,255,.3) inset; }
+.mixv2.copycat .m2-slots .slot.copy-slot.filled { background: rgba(120,74,196,.5); }
+/* placement poof where a copy card vanishes into the pot */
+.cc-poof { position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -50%); }
+.cc-poof .cc-poof-cloud { position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(210,180,255,.85), rgba(150,110,255,0) 70%); animation: ccPoofCloud .5s ease-out forwards; }
+.cc-poof .cc-spark { position: absolute; left: 0; top: 0; width: 6px; height: 6px; margin: -3px; border-radius: 50%;
+  background: #efe2ff; box-shadow: 0 0 5px rgba(200,160,255,.9); animation: ccPoofSpark .55s ease-out forwards; }
+@keyframes ccPoofCloud { 0% { transform: scale(.3); opacity: .9; } 100% { transform: scale(1.5); opacity: 0; } }
+@keyframes ccPoofSpark { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cc-sheen { animation: none; display: none; } }
 /* Thin black outline so light-colored magic labels stay readable on light pills
    (e.g. white "Light" on a pale-yellow chip). Skips small descriptions like .icard-fx. */
 .mp, .mbar-lbl, .allerg-nm, .icard-nm, .m2-readout b, .m2-readout span,

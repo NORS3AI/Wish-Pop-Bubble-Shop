@@ -387,6 +387,13 @@ function allergyStatus(slots, allergyType, offset) {
       if (inst.shrunk) rp = Math.round(rp * BALANCE.PINCH_MULT);
       points += rp;
     }
+    // Copycat copy: hidden THIRD quality can also trip an allergy (scaled by potency/pinch).
+    if (inst.extraQ === allergyType) {
+      let ep = BALANCE.SECONDARY_POWER;
+      if (inst.potent) ep = Math.round(ep * BALANCE.POTENT_MULT);
+      if (inst.shrunk) ep = Math.round(ep * BALANCE.PINCH_MULT);
+      points += ep;
+    }
   });
   points = Math.max(0, points - (offset || 0));
   const zone = points >= BALANCE.ALLERGY_RED_AT ? "red" : points >= BALANCE.ALLERGY_YELLOW_AT ? "yellow" : "green";
@@ -413,6 +420,13 @@ function pointsForNeed(slots, type) {
     if (p && inst.potent) p = Math.round(p * BALANCE.POTENT_MULT * 10) / 10;
     if (p && inst.shrunk) p = Math.round(p * BALANCE.PINCH_MULT * 10) / 10;
     points += p;
+    // Copycat copy: hidden THIRD quality contributes at secondary strength, scaled by potency/pinch.
+    if (inst.extraQ === type) {
+      let ep = BALANCE.SECONDARY_POWER;
+      if (inst.potent) ep = Math.round(ep * BALANCE.POTENT_MULT * 10) / 10;
+      if (inst.shrunk) ep = Math.round(ep * BALANCE.PINCH_MULT * 10) / 10;
+      points += ep;
+    }
   });
   return points;
 }
