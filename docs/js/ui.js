@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v492"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v493"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8571,42 +8571,35 @@ function thawTick() {
   });
   if (spoiled) { if (SFX.sneeze) SFX.sneeze(); paintMix(); }
 }
-// Admin frost/thaw test round: EVERY ingredient is frozen (renderMix → freezeAllForFrost).
-// A couple of TRIPLES merge into Potent-frozen goods (full 50s); the rest are Fresh-frozen.
-// A couple of Frost Gems to re-freeze. Repeats on "Next".
+// Guarantee at least one Frost Gem (re-freeze charm) drops during the pop phase of a frost round.
+function injectFrostGem(round) {
+  const idxs = []; round.haul.forEach((it, i) => { if (it.kind === "ingredient" && !D.INGREDIENT_BY_ID[it.id].infused) idxs.push(i); });
+  if (idxs.length) round.haul[R.pick(idxs)] = { kind: "charm", id: "refreeze" };
+}
+// Admin frost/thaw test round — now runs the REAL round flow (scoop → pop → mix) so ingredients
+// arrive the normal way (need-bias, normal counts) and charms drop as usual, plus a guaranteed
+// Frost Gem. EVERY piece freezes at the mix bench (renderMix → freezeAllForFrost); triples that
+// merge become Potent-frozen. Never a boss. Repeats on "Next".
 function startFrostRound() {
   SFX.unlock(); stopRoundTimers(); refreshQuests();
   GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true;
   GAME.unlockedRealms = GAME.unlockedRealms || {}; GAME.unlockedRealms.courtyard = true;
   GAME.realm = "courtyard"; save(); applyRealmTheme();
   const realm = D.REALM_BY_ID["courtyard"] || currentRealm();
-  const pool = (realm.customers || []).filter(c => !c.alwaysBoss);
-  const cust = R.pick(pool.length ? pool : realm.customers);
-  ROUND = newRound({ servedTotal, customers: [cust], ingredientSet: realm.ingredients, magicPool: realm.magics, reqBonus: realm.reqBonus || 0 });
+  // give the tester a well-equipped hand: bigger scoops + Keen Nose (more ingredients & charms),
+  // Pet Undo, and a few treats — so we're judging the mechanic, not a starved bag.
+  GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true; GAME.unlocked.scoop = true; GAME.unlocked.charm = true;
+  if ((GAME.treats || 0) < 5) GAME.treats = 5;
+  const roster = (realm.customers || []).filter(c => !c.alwaysBoss);
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: roster, ingredientSet: realm.ingredients, magicPool: realm.magics, reqBonus: realm.reqBonus || 0 });
   if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
   ROUND.frostTest = true; ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
-  // frozen rounds are NEVER a tight 4-slot boss (newRound auto-bosses every 5th served) —
-  // force a normal 6-slot round so there's always room to work the thaw.
+  // never a tight 4-slot boss — force a normal 6-slot round with normal-width bands
   ROUND.maxSlots = BALANCE.MIX_SLOTS;
-  if (ROUND.wish.boss) { ROUND.wish.boss = false; delete ROUND.wish.bandTight; delete ROUND.wish.bandShrink; }
-  GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true; if ((GAME.treats || 0) < 5) GAME.treats = 5;
-  // pantry: guaranteed one main-match per need, TWO triples (→ Potent-frozen), then singles
-  const needTypes = ROUND.wish.needs.map(n => n.type);
-  const all = realm.ingredients, used = new Set(), inv = [];
-  needTypes.forEach(nt => { let c = all.filter(i => i.qualities[0] === nt && !used.has(i.id)); if (!c.length) c = all.filter(i => i.qualities.includes(nt) && !used.has(i.id)); if (c.length) { const p = R.pick(c); used.add(p.id); inv.push({ id: p.id, potent: false }); } });
-  const rest = all.filter(i => !used.has(i.id));
-  for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
-  if (rest[0]) { used.add(rest[0].id); for (let k = 0; k < 3; k++) inv.push({ id: rest[0].id, potent: false }); }  // TRIPLE → Potent-frozen
-  if (rest[1]) { used.add(rest[1].id); for (let k = 0; k < 3; k++) inv.push({ id: rest[1].id, potent: false }); }  // TRIPLE → Potent-frozen
-  for (let i = 2; i < rest.length && inv.length < 12; i++) inv.push({ id: rest[i].id, potent: false });          // Fresh-frozen singles
-  ROUND.inventory = inv;   // freezing happens in renderMix → freezeAllForFrost (after triple-match)
+  if (ROUND.wish.boss) { ROUND.wish.boss = false; delete ROUND.wish.bandTight; delete ROUND.wish.bandShrink; ROUND.wish.allergy2 = null; }
   ROUND.wish.requiredMatch = 60;   // prize ladder starts at 60% — the "ready" glow marks it
-  // force a (non-need) allergy so a melted piece's "allergy mush" is actually testable
-  const nonNeed = (realm.magics || D.MAGIC_TYPES).filter(m => !needTypes.includes(m));
-  if (nonNeed.length) { ROUND.wish.allergy = R.pick(nonNeed); ROUND.wish.allergy2 = null; }
-  ROUND.charms = ["refreeze", "refreeze", "pinch", "transmute", "cleanse"];
-  ROUND.haul = [];
-  renderMix();
+  injectFrostGem(ROUND);   // at least one Frost Gem drops during popping
+  renderCustomer();        // real flow: customer → scoop → pop → mix (freezing applies at mix)
 }
 function playCharm(i) {
   const id = ROUND.charms[i]; if (!id) return; const w = ROUND.wish;
