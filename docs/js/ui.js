@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v494"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v495"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8598,6 +8598,9 @@ function startFrostRound() {
   ROUND.maxSlots = BALANCE.MIX_SLOTS;
   if (ROUND.wish.boss) { ROUND.wish.boss = false; delete ROUND.wish.bandTight; delete ROUND.wish.bandShrink; ROUND.wish.allergy2 = null; }
   ROUND.wish.requiredMatch = 60;   // prize ladder starts at 60% — the "ready" glow marks it
+  // allow the Frost Gem to actually be COLLECTED when popped (gainCharm rejects charms not in
+  // this list; refreeze is frostOnly so it's excluded from the normal pool).
+  ROUND.allowedCharms = (ROUND.allowedCharms || []).concat("refreeze");
   injectFrostGem(ROUND);   // at least one Frost Gem drops during popping
   renderCustomer();        // real flow: customer → scoop → pop → mix (freezing applies at mix)
 }
