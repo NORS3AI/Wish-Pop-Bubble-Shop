@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v491"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v492"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8531,7 +8531,10 @@ function frostStage(inst, now) {
 // stage — it begins at the ⅔ mark and has less time before it melts). Called after triple-match.
 function freezeAllForFrost() {
   const now = Date.now();
-  const freshStart = now - Math.floor(THAW_MS / 3);   // ⅓ elapsed → begins at the Fresh boundary
+  // Start Fresh pieces a hair PAST the ⅓ mark (not exactly on it): sitting exactly on the
+  // boundary makes 1−⅓ round to just above ⅔, so on the first frame a Fresh piece reads as
+  // Potent (stage 1) and won't sort apart from real triples until a re-render nudges it.
+  const freshStart = now - (Math.floor(THAW_MS / 3) + 900);
   ROUND.inventory.forEach(inst => {
     if (!inst || !inst.id || inst.essence || inst.wild || inst.rotten) return;
     const wasTriple = !!inst.potent;    // triple-match promoted it to Potent
@@ -8612,7 +8615,7 @@ function playCharm(i) {
   else if (id === "insight") { if (ROUND.insight) { toast("Hidden magic already revealed."); return; } ROUND.insight = true; toast("🔍 Hidden magic revealed!"); consume(); }
   else if (id === "die") { if (!ROUND.copycat) { toast("The die only rattles in the copycat's parlor."); return; } reshuffleCopyRolls(); SFX.unlock(); if (SFX.charm) SFX.charm(); if (navigator.vibrate) navigator.vibrate([8, 20, 8]); toast("🎲 Rerolled the copycat's third qualities!"); consume(); }
   else if (id === "refreeze") {
-    const now = Date.now(), freshStart = now - Math.floor(THAW_MS / 3); let cnt = 0;
+    const now = Date.now(), freshStart = now - (Math.floor(THAW_MS / 3) + 900); let cnt = 0;
     // re-freeze anything still in the bag that's thawing OR already melted — but back to its
     // ORIGINAL grade: triples return to Potent (full), ordinary pieces return to Fresh.
     ROUND.inventory.forEach(inst => {
