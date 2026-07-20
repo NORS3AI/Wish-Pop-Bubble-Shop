@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v474"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v475"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7572,9 +7572,10 @@ function refreshPop() {
 /* ======================================================================= */
 function renderMix() {
   const rawCount = ROUND.inventory.length;                 // how abundant this round was
-  // villain rounds skip triple-match so each piece keeps its own hidden-poison flag;
-  // copycat skips it too (merging would rebuild pieces and drop their live copy-roll)
-  const merged = (ROUND.villain || ROUND.copycat) ? { inventory: ROUND.inventory, merged: [] } : applyTripleMatch(ROUND.inventory);
+  // villain rounds skip triple-match so each piece keeps its own hidden-poison flag.
+  // (Copycat DOES triple-match — 3-of-a-kind merge into a Potent; its ± rolls live on
+  //  ROUND.copyRolls keyed by stack, so rebuilding the pieces doesn't lose them.)
+  const merged = ROUND.villain ? { inventory: ROUND.inventory, merged: [] } : applyTripleMatch(ROUND.inventory);
   ROUND.inventory = merged.inventory;
   if (ROUND.stats) ROUND.stats.triples = merged.merged.length;
   ROUND.slots = []; ROUND.mixStart = Date.now();
@@ -8325,18 +8326,25 @@ function addToSlotCopycat(idx, fromEl) {
   paintMix();
   const c2 = document.getElementById("cauldron"); if (c2) { c2.classList.remove("splash"); void c2.offsetWidth; c2.classList.add("splash"); }
 }
-// The copycat's ever-changing reflection: a random magic (from the whole realm palette — no
-// bias) and a 50/50 ± sign. A "+" reflection adds that magic to its bar, a "−" drains it.
-function rollCopyQ() {
-  const pool = (currentRealm().magics && currentRealm().magics.length) ? currentRealm().magics : D.MAGIC_TYPES;
+// The copycat's ever-changing reflection: a random magic and a 50/50 ± sign. A "+" reflection
+// adds that magic to its bar, a "−" drains it. The third quality is NEVER one of the two
+// qualities the ingredient already has (it's always a genuinely different, extra magic).
+function rollCopyQ(exclude) {
+  let pool = (currentRealm().magics && currentRealm().magics.length) ? currentRealm().magics : D.MAGIC_TYPES;
+  if (exclude && exclude.length) { const ex = pool.filter(m => !exclude.includes(m)); if (ex.length) pool = ex; }
   return { q: R.pick(pool), sign: R.chance(0.5) ? 1 : -1 };
 }
 // Third qualities are stored per STACK (keyed by instStackKey), so every ingredient in a
-// stack of multiples shares the SAME ± reflection. Missing keys are rolled on demand.
+// stack of multiples shares the SAME ± reflection. Missing keys are rolled on demand,
+// excluding that ingredient's own two magics.
 function copyRollFor(inst) {
   if (!ROUND.copyRolls) ROUND.copyRolls = {};
   const k = instStackKey(inst);
-  if (!ROUND.copyRolls[k]) ROUND.copyRolls[k] = rollCopyQ();
+  if (!ROUND.copyRolls[k]) {
+    const ing = inst.id ? D.INGREDIENT_BY_ID[inst.id] : null;
+    const own = inst.magic ? [inst.magic] : (ing ? ing.qualities : []);
+    ROUND.copyRolls[k] = rollCopyQ(own);
+  }
   return ROUND.copyRolls[k];
 }
 // Re-roll the whole mirror: clear the map so every stack gets a fresh ± on the next paint
@@ -8423,8 +8431,10 @@ function startCopycatRound() {
   // make sure the Pet Undo is available to test with (unlocked + a few treats on hand)
   GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true;
   if ((GAME.treats || 0) < 5) GAME.treats = 5;
-  // Curated pantry: GUARANTEE one ingredient whose MAIN quality matches each need (so every
-  // bar is fillable — a fair hand), then fill the rest with distinct randoms up to 8 for choice.
+  ROUND.wish.requiredMatch = 75;   // flat 75% target for all copycat rounds (may tune later)
+  // Curated pantry: GUARANTEE one ingredient whose MAIN quality matches each need (a fair hand),
+  // then salt in a TRIPLE (3-of-a-kind → merges into a Potent) and a STACK (2-of-a-kind → ×2 card)
+  // so both behaviors are testable, plus a few distinct singles for choice.
   const needTypes = ROUND.wish.needs.map(n => n.type);
   const all = realm.ingredients;
   const used = new Set(), inv = [];
@@ -8435,7 +8445,9 @@ function startCopycatRound() {
   });
   const rest = all.filter(i => !used.has(i.id));
   for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
-  for (const ing of rest) { if (inv.length >= 8) break; inv.push({ id: ing.id, potent: false }); }
+  if (rest[0]) { used.add(rest[0].id); for (let k = 0; k < 3; k++) inv.push({ id: rest[0].id, potent: false }); }  // TRIPLE → Potent
+  if (rest[1]) { used.add(rest[1].id); for (let k = 0; k < 2; k++) inv.push({ id: rest[1].id, potent: false }); }  // STACK ×2
+  for (let i = 2; i < rest.length && inv.length < 12; i++) inv.push({ id: rest[i].id, potent: false });           // singles for choice
   ROUND.inventory = inv;
   reshuffleCopyRolls();   // seed each copy's starting ± third quality
   // Force an allergy (a magic that ISN'T a need) so there's always a danger bar to test the
@@ -9002,19 +9014,17 @@ function familiarUndo() {
     GAME.treats--; ROUND.treatsUsed++;
     advancePetFace();                 // your pet reacts to the treat with a new expression (stays till next treat)
     save();
-    let msg = "🐾 Removed the last ingredient.";
+    let msg = "🐾 Destroyed the last ingredient.";
     if (ROUND.copycat) {
-      // Copycat: a placement is a PAIR (your pick + the copycat's mirror). Pull the most
-      // recent pair back out — your ingredient RETURNS to the bag, the copy vanishes —
-      // otherwise popping just one slot would orphan a piece and skew the meters.
+      // Copycat: a placement is a PAIR (your pick + the copycat's mirror). DESTROY the most
+      // recent pair — both pieces are gone for good (never returned to the bag) — otherwise
+      // popping just one slot would orphan a piece and skew the meters.
       const yours = ROUND.slots.filter(s => s && !s.isCopy && s.pos != null);
       if (yours.length) {
         const mine = yours.reduce((a, b) => (a.pos >= b.pos ? a : b));
         const copyPos = (ROUND.maxSlots - 1) - mine.pos;
         ROUND.slots = ROUND.slots.filter(s => s !== mine && !(s.isCopy && s.pos === copyPos));
-        ROUND.inventory.push({ id: mine.id, potent: !!mine.potent, shrunk: !!mine.shrunk });  // back in your bag
-        reshuffleCopyRolls();   // the mirror re-rolls, and the returned ingredient gets a fresh ±
-        msg = "🐾 Pulled that pair back — your ingredient's in the bag.";
+        msg = "🐾 Destroyed the last ingredient (and its copy).";
       } else {
         ROUND.slots.pop();
       }

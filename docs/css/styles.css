@@ -2518,8 +2518,13 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 @keyframes ccSheen { 0%, 62% { left: -60%; } 100% { left: 150%; } }
 /* the right half of the cauldron row = the copycat's mirrored copies */
 .mixv2.copycat .m2-slots .slot.copy-slot { border-color: rgba(190,150,255,.55);
-  background: rgba(120,74,196,.28); box-shadow: 0 0 7px rgba(150,110,255,.3) inset; }
+  background: rgba(120,74,196,.28); box-shadow: 0 0 7px rgba(150,110,255,.3) inset; position: relative; overflow: hidden; }
 .mixv2.copycat .m2-slots .slot.copy-slot.filled { background: rgba(120,74,196,.5); }
+/* the same sliding sheen the copy CARDS get, now on the copy SLOTS under the cauldron */
+.mixv2.copycat .m2-slots .slot.copy-slot::after { content: ""; position: absolute; top: 0; left: -60%;
+  width: 45%; height: 100%; z-index: 3; pointer-events: none;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,.4), transparent);
+  transform: skewX(-18deg); animation: ccSheen 3.4s ease-in-out infinite; }
 /* 8 slots in one portrait row: shrink them a touch so they never overflow on small phones */
 .mixv2.copycat .m2-slots { gap: 4px; flex-wrap: nowrap; }
 .mixv2.copycat .m2-slots .slot { width: 32px; height: 32px; font-size: 17px; }
@@ -2534,7 +2539,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   background: #efe2ff; box-shadow: 0 0 5px rgba(200,160,255,.9); animation: ccPoofSpark .55s ease-out forwards; }
 @keyframes ccPoofCloud { 0% { transform: scale(.3); opacity: .9; } 100% { transform: scale(1.5); opacity: 0; } }
 @keyframes ccPoofSpark { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .cc-sheen { animation: none; display: none; } }
+@media (prefers-reduced-motion: reduce) { .cc-sheen, .mixv2.copycat .m2-slots .slot.copy-slot::after { animation: none; display: none; } }
 /* the copycat's dynamic ± third quality: green ring = adds to its bar, red/darkened = drains it */
 .mp.signed { box-shadow: inset 0 -1px 3px rgba(0,0,0,.3), 0 0 0 1.6px rgba(255,255,255,.3); }
 .mp.signed.plus { box-shadow: inset 0 -1px 3px rgba(0,0,0,.3), 0 0 0 1.7px #37d67a, 0 0 6px rgba(55,214,122,.55); }
