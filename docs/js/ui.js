@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v484"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v485"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8506,7 +8506,7 @@ function startCopycatRound() {
 /* into an allergy-ridden mush. Place a piece at the strength you need. The    */
 /* Frost Gem (❄️) re-freezes everything back to full. Frozen pieces sort left. */
 /* ======================================================================= */
-const THAW_MS = 25000;
+const THAW_MS = 40000;
 const FROST_LABEL = { 1: "❄️ Potent", 2: "Fresh", 3: "½ Melting", 4: "Gone!" };
 // Current thaw stage of a frozen piece: 1 Potent, 2 normal, 3 pinch, 4 melted. rem = fill 0..1.
 function frostStage(inst, now) {
@@ -8567,7 +8567,7 @@ function startFrostRound() {
   const order = inv.map((_, i) => i);
   for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
   const nFrozen = Math.max(2, Math.round(inv.length / 2));
-  order.slice(0, nFrozen).forEach((i, k) => { inv[i].frozen = true; inv[i].thawStart = now - k * 3500; });   // piece k is already 3.5k s into thawing
+  order.slice(0, nFrozen).forEach((i, k) => { inv[i].frozen = true; inv[i].thawStart = now - k * 5000; });   // piece k is already 5k s into thawing
   ROUND.inventory = inv;
   // force a (non-need) allergy so a melted piece's "allergy mush" is actually testable
   const nonNeed = (realm.magics || D.MAGIC_TYPES).filter(m => !needTypes.includes(m));
