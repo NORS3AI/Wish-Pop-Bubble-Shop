@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v470"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v471"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8392,14 +8392,24 @@ function startCopycatRound() {
   }
   ROUND.copycat = true; ROUND.maxSlots = 6;
   ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
-  // a curated pantry of courtyard ingredients (one Potent so you can see potency mirror
-  // onto the copy's third quality). No duplicates, so triple-match never merges them.
+  // make sure the Pet Undo is available to test with (unlocked + a few treats on hand)
+  GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true;
+  if ((GAME.treats || 0) < 5) GAME.treats = 5;
+  // a curated pantry of courtyard ingredients. No duplicates, so triple-match never merges them.
   const set = realm.ingredients.slice();
   for (let i = set.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [set[i], set[j]] = [set[j], set[i]]; }
   const inv = set.slice(0, 6).map(ing => ({ id: ing.id, potent: false }));
-  if (inv[1]) inv[1].potent = true;
   ROUND.inventory = inv;
-  ROUND.charms = ["insight", "pinch", "transmute"];
+  // Force the customer to be allergic to ONE ingredient's hidden third quality, so you can
+  // actually watch a copy's surprise magic trip the allergy meter. (Skip any that clash with a need.)
+  const needTypes = ROUND.wish.needs.map(n => n.type);
+  for (const it of inv) {
+    const cq = D.INGREDIENT_BY_ID[it.id].copyQ;
+    if (cq && !needTypes.includes(cq)) { ROUND.wish.allergy = cq; ROUND.wish.allergy2 = null; break; }
+  }
+  // Potent charm included so you can prime an ingredient and see its copy's third quality
+  // get the ×2.5 potency boost. (A pre-set potent flag would be wiped by triple-match.)
+  ROUND.charms = ["insight", "potent", "pinch", "transmute"];
   ROUND.haul = [];
   renderMix();
 }
@@ -8956,7 +8966,17 @@ function familiarUndo() {
     GAME.treats--; ROUND.treatsUsed++;
     advancePetFace();                 // your pet reacts to the treat with a new expression (stays till next treat)
     save();
-    ROUND.slots.pop();
+    if (ROUND.copycat) {
+      // Copycat: a placement is a PAIR (your pick + the copycat's mirror). Pull the most
+      // recent pair back out — your ingredient returns to the bag, the copy vanishes —
+      // otherwise popping just one slot would orphan a piece and skew the meters.
+      const yours = ROUND.slots.filter(s => s && !s.isCopy);
+      const mine = yours.reduce((a, b) => (a.pos >= b.pos ? a : b));
+      ROUND.slots = ROUND.slots.filter(s => s !== mine && !(s.isCopy && s.pos === 5 - mine.pos));
+      ROUND.inventory.push({ id: mine.id, potent: !!mine.potent, shrunk: !!mine.shrunk });
+    } else {
+      ROUND.slots.pop();
+    }
     toast("🐾 Removed the last ingredient.");
     paintMix();
     syncRoundHud("mix");                // refresh the overlay pet (new face) + treat count
