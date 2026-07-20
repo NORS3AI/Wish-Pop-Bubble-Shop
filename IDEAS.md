@@ -48,10 +48,13 @@ rotQualities), and the Frost Gem infused. Low build risk, high flavor.
 - **Optional skill bonus:** small reward for using a piece at the *exact* strength a need
   wanted (rewards reading the drain).
 
-**Status:** PROTOTYPED in admin (v484) — "🧊 Frost/Thaw Round (repeat test)". 50s real-time
-drain, potency stages, melt→allergy mush, Frost Gem re-freeze all working. Not yet wired into
-a real realm. Open refinement: truly PAUSE the clock between phases (currently wall-clock keeps
-running if you leave the mix screen).
+**Status:** PROTOTYPED in admin (v488) — "🧊 Frost/Thaw Round (repeat test)". Design landed on:
+**EVERY ingredient is frozen** in an ice round. **Triples** (3-of-a-kind → merged Potent) start
+frozen SOLID at full (Potent, whole 50s clock, gold outline); **ordinary pieces** start already
+at **Fresh** (no Potent stage, ~33s before they melt). So the thaw stage itself marks premium vs
+ordinary, and melting comes in two natural waves. 50s clock, melt→allergy mush, Frost Gem
+re-freeze all working. Not yet wired into a real realm. Open refinement: truly PAUSE the clock
+between phases (currently wall-clock keeps running if you leave the mix screen).
 
 ---
 
