@@ -33,8 +33,12 @@ rotQualities), and the Frost Gem infused. Low build risk, high flavor.
 - **Visual = the ingredient box fills with a color and DRAINS as the timer runs** — the fill
   level *is* the clock (full = just frozen, empty = about to melt into the allergy puddle).
   Simple and readable; no separate ring/badge needed.
-- **Frost Gem re-freezes** a thawing piece (pause/reset its 50s timer) — CONFIRMED, owner
-  likes it. Gives the realm's signature infused a second job and a reason to hold it.
+- **Frost Gem re-freezes** a thawing piece — restores each to its ORIGINAL grade (triples →
+  Potent, ordinary → Fresh), NOT everything to Potent. CONFIRMED, owner likes it.
+- **Guarantee ≥1 Frost Gem per frozen round**, dropped during the POPPING phase (like a
+  guaranteed charm). In the admin test (which skips pop) it's granted directly.
+- **Frozen rounds are NEVER a 4-slot boss round** — always a normal 6-slot round so there's
+  room to work the thaw.
 
 **Refinements / open questions (mine):**
 - **When does the 50s start?** Cleanest: the clock starts when the piece **enters the mix

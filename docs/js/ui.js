@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v490"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v491"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7647,10 +7647,12 @@ function instStackKey(inst) {
 function mixStacks() {
   const inv = ROUND.inventory;
   const order = inv.map((inst, idx) => ({ inst, idx }));
+  const nowT = Date.now();   // ONE timestamp for the whole sort — calling Date.now() per comparison
+                             // made stage flicker at a boundary and scrambled the order (esp. on first render)
   order.sort((a, b) => {
     const ta = instTier(a.inst), tb = instTier(b.inst); if (ta !== tb) return ta - tb;
     if (ta === 0) {   // frozen pieces: strongest (Potent) stay LEFTMOST, then Fresh, then ½; stable by slot within a stage
-      const nowT = Date.now(), sa = frostStage(a.inst, nowT).stage, sb = frostStage(b.inst, nowT).stage;
+      const sa = frostStage(a.inst, nowT).stage, sb = frostStage(b.inst, nowT).stage;
       if (sa !== sb) return sa - sb;
       return a.idx - b.idx;
     }
@@ -8580,6 +8582,10 @@ function startFrostRound() {
   ROUND = newRound({ servedTotal, customers: [cust], ingredientSet: realm.ingredients, magicPool: realm.magics, reqBonus: realm.reqBonus || 0 });
   if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
   ROUND.frostTest = true; ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
+  // frozen rounds are NEVER a tight 4-slot boss (newRound auto-bosses every 5th served) —
+  // force a normal 6-slot round so there's always room to work the thaw.
+  ROUND.maxSlots = BALANCE.MIX_SLOTS;
+  if (ROUND.wish.boss) { ROUND.wish.boss = false; delete ROUND.wish.bandTight; delete ROUND.wish.bandShrink; }
   GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true; if ((GAME.treats || 0) < 5) GAME.treats = 5;
   // pantry: guaranteed one main-match per need, TWO triples (→ Potent-frozen), then singles
   const needTypes = ROUND.wish.needs.map(n => n.type);
