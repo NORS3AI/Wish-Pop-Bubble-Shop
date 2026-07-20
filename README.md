@@ -20,9 +20,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 ## What's new
 
 - 🃏 **The Copycat (early test).** A mischievous new mechanic in the works: every ingredient you
-  drop in is mirrored by the copycat into the opposite cauldron slot, doubling it — and each copy
-  hides a surprise **third magic quality** you only see with the Insight charm. You can try a
-  practice round from the testing menu (Admin → *Copycat Round*); it loops so you can experiment.
+  drop in is mirrored by the copycat into the opposite slot, doubling it — across a roomy **8-slot**
+  cauldron. Each copy also carries a **shifting third quality** that reshuffles every time you place
+  something: a random magic that either **adds to** its bar (+) or **drains** it (−), so the mirror
+  is a moving target you read and time. You can try a practice round from the testing menu
+  (Admin → *Copycat Round*); it loops so you can experiment.
 
 - 🧙‍♀️ **Lady Gothel visits the King's Courtyard — and she's vengeful.** She always arrives as a VIP.
   Trigger her allergy and she'll **rot one or two of your ingredients** at the start of your next
