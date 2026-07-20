@@ -211,7 +211,7 @@ function generateHaul(wish, count, charmFinder, ingredientSet, excludeCharms) {
   for (let k = 1; k < needs.length; k++) {
     let src = SET.filter(i => i.qualities[0] === needs[k]);
     if (!src.length) src = SET.filter(i => i.qualities.includes(needs[k]));
-    if (src.length) items.push(ingItem(R.pick(src)));
+    if (src.length) { items.push(ingItem(R.pick(src))); items.push(ingItem(R.pick(src))); }  // TWO per need (reveal + fill insurance)
   }
   const charmChance = charmFinder ? BALANCE.CHARM_DROP_CHANCE_FINDER : BALANCE.CHARM_DROP_CHANCE;
   while (items.length < count) {
