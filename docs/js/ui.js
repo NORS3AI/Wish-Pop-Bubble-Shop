@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v495"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v496"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8457,57 +8457,37 @@ function copycatTrayHtml() {
   stacks.forEach(st => { cards += ingCard(st) + copyCard(st); });
   return `<div class="m2-ing cc-tray" id="inv-row">${cards}</div>`;
 }
-// Kick off a copycat test round (admin): jump straight to the mix bench with a courtyard
-// pantry (all qualities revealed — no Insight in copycat) plus Peek/Die/Potent/Pinch/
-// Cleanse/Transmute charms so all the mirroring can be exercised. Repeats on "Next".
+// Guarantee `n` copies of a mode-only charm (die / refreeze) in the pop haul.
+function guaranteeHaulCharm(round, id, n) {
+  for (let k = 0; k < (n || 1); k++) {
+    const idxs = []; round.haul.forEach((it, i) => { if (it.kind === "ingredient" && !D.INGREDIENT_BY_ID[it.id].infused) idxs.push(i); });
+    if (idxs.length) round.haul[R.pick(idxs)] = { kind: "charm", id };
+  }
+}
+// Admin copycat test round — runs the REAL round flow (scoop → pop → mix) so ingredients arrive
+// the normal way (need-bias, normal counts) and charms drop as usual, plus a couple of guaranteed
+// Loaded Dice. The 10-slot mirror + ± third qualities apply at the mix bench. Never a boss.
 function startCopycatRound() {
   SFX.unlock(); stopRoundTimers(); refreshQuests();
   GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true;
   GAME.unlockedRealms = GAME.unlockedRealms || {}; GAME.unlockedRealms.courtyard = true;
   GAME.realm = "courtyard"; save(); applyRealmTheme();
   const realm = D.REALM_BY_ID["courtyard"] || currentRealm();
-  const pool = (realm.customers || []).filter(c => !c.alwaysBoss);
-  const cust = R.pick(pool.length ? pool : realm.customers);
-  ROUND = newRound({ servedTotal, customers: [cust], ingredientSet: realm.ingredients, magicPool: realm.magics, reqBonus: realm.reqBonus || 0 });
-  if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) {
-    ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
-  }
-  ROUND.copycat = true; ROUND.maxSlots = 10;   // 5 pairs — trying a bigger mirror
-  ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
-  // make sure the Pet Undo is available to test with (unlocked + a few treats on hand)
-  GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true;
+  // well-equipped hand: bigger scoops + Keen Nose (more ingredients & charms), Pet Undo, treats
+  GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true; GAME.unlocked.scoop = true; GAME.unlocked.charm = true;
   if ((GAME.treats || 0) < 5) GAME.treats = 5;
-  ROUND.wish.requiredMatch = 60;   // prize ladder starts at 60% — the "ready to serve" glow marks it (higher % = bigger prize)
-  // Curated pantry: GUARANTEE one ingredient whose MAIN quality matches each need (a fair hand),
-  // then salt in a TRIPLE (3-of-a-kind → merges into a Potent) and a STACK (2-of-a-kind → ×2 card)
-  // so both behaviors are testable, plus a few distinct singles for choice.
-  const needTypes = ROUND.wish.needs.map(n => n.type);
-  const all = realm.ingredients;
-  const used = new Set(), inv = [];
-  needTypes.forEach(nt => {
-    let cand = all.filter(i => i.qualities[0] === nt && !used.has(i.id));
-    if (!cand.length) cand = all.filter(i => i.qualities.includes(nt) && !used.has(i.id));
-    if (cand.length) { const pick = R.pick(cand); used.add(pick.id); inv.push({ id: pick.id, potent: false }); }
-  });
-  const rest = all.filter(i => !used.has(i.id));
-  for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
-  if (rest[0]) { used.add(rest[0].id); for (let k = 0; k < 3; k++) inv.push({ id: rest[0].id, potent: false }); }  // TRIPLE → Potent
-  if (rest[1]) { used.add(rest[1].id); for (let k = 0; k < 2; k++) inv.push({ id: rest[1].id, potent: false }); }  // STACK ×2
-  for (let i = 2; i < rest.length && inv.length < 12; i++) inv.push({ id: rest[i].id, potent: false });           // singles for choice
-  ROUND.inventory = inv;
-  reshuffleCopyRolls();   // seed each copy's starting ± third quality
-  // Force an allergy (a magic that ISN'T a need) so there's always a danger bar to test the
-  // ± reflections against — a "+[allergen]" copy trips it, a "−[allergen]" copy calms it.
-  const nonNeed = (realm.magics || D.MAGIC_TYPES).filter(m => !needTypes.includes(m));
-  if (nonNeed.length) { ROUND.wish.allergy = R.pick(nonNeed); ROUND.wish.allergy2 = null; }
-  // Potent charm included so you can prime an ingredient and see its copy's third quality
-  // get the ×2.5 potency boost. (A pre-set potent flag would be wiped by triple-match.)
-  // Cleanse is here so a brutal allergy surprise is survivable, not an instant loss.
-  // No Insight in copycat — all ingredient qualities are revealed by default. A few Loaded
-  // Dice (🎲) reroll the mirror's third qualities; Peek (⏭️) reveals a hidden need bar.
-  ROUND.charms = ["peek", "peek", "peek", "die", "die", "die", "potent", "pinch", "cleanse", "transmute"];
-  ROUND.haul = [];
-  renderMix();
+  const roster = (realm.customers || []).filter(c => !c.alwaysBoss);
+  ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, customers: roster, ingredientSet: realm.ingredients, magicPool: realm.magics, reqBonus: realm.reqBonus || 0 });
+  if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
+  ROUND.copycat = true; ROUND.maxSlots = 10;   // 5-pair mirror
+  ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
+  if (ROUND.wish.boss) { ROUND.wish.boss = false; delete ROUND.wish.bandTight; delete ROUND.wish.bandShrink; ROUND.wish.allergy2 = null; }
+  ROUND.wish.requiredMatch = 60;   // prize ladder starts at 60%
+  // let the copycat Die be COLLECTED when popped (frostOnly/copycatOnly charms are excluded from
+  // the normal pool, so gainCharm would reject them), and guarantee a couple in the haul.
+  ROUND.allowedCharms = (ROUND.allowedCharms || []).concat("die");
+  guaranteeHaulCharm(ROUND, "die", 2);
+  renderCustomer();        // real flow: customer → scoop → pop → mix (the mirror applies at mix)
 }
 
 /* ======================================================================= */
