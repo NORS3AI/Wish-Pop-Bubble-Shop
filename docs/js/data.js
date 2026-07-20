@@ -185,9 +185,11 @@ const SPECIAL_CHARMS = {
   pinch:   { id: "pinch",   name: "Pinch",   emoji: "🤏", desc: "Use just a pinch — halve an ingredient's magic." },
   // Copycat-only: reroll the mirror's dynamic third qualities. Never dropped in normal rounds.
   die:     { id: "die",     name: "Loaded Die", emoji: "🎲", desc: "Reroll the copycat's third qualities.", copycatOnly: true },
+  // Ice-realm only: re-freeze every thawing ingredient back to full (resets their timers).
+  refreeze:{ id: "refreeze",name: "Frost Gem", emoji: "❄️", desc: "Re-freeze all thawing ingredients.", frostOnly: true },
 };
-// copycatOnly charms are excluded from the normal drop/allow pools (they're granted only in their mode)
-const SPECIAL_CHARM_IDS = Object.keys(SPECIAL_CHARMS).filter(id => !SPECIAL_CHARMS[id].copycatOnly);
+// mode-only charms (copycat die, frost gem) are excluded from the normal drop/allow pools
+const SPECIAL_CHARM_IDS = Object.keys(SPECIAL_CHARMS).filter(id => !SPECIAL_CHARMS[id].copycatOnly && !SPECIAL_CHARMS[id].frostOnly);
 
 /* --- 4. Wish types: need pools + the customer line that fits them -------- */
 /* --- Realms — themed locations you unlock and travel between. The shop name is

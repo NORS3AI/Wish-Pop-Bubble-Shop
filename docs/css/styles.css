@@ -2509,6 +2509,21 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .icard .pinch-badge { position: absolute; bottom: -3px; right: -3px; font-size: 12px; }
 .tray-empty { margin: auto; text-align: center; color: var(--ink-dim); font-size: 13px; line-height: 1.5; }
 
+/* ---- FROST / THAW (ice realm) — a frozen piece's box fills with ice that DRAINS on a 25s clock ---- */
+.icard.frozen { position: relative; overflow: hidden; border-color: rgba(150,214,255,.8);
+  box-shadow: 0 0 10px rgba(120,200,255,.5), inset 0 0 12px rgba(150,214,255,.22); }
+.icard.frozen > .icard-l, .icard.frozen > .icard-r { position: relative; z-index: 1; }
+.frost-fill { position: absolute; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(0deg, rgba(90,170,235,.62), rgba(165,224,255,.5));
+  border-top: 2px solid rgba(215,242,255,.9); transition: height .3s linear; }
+.icard.thaw-mid .frost-fill { background: linear-gradient(0deg, rgba(110,192,200,.6), rgba(184,236,222,.5)); }
+.icard.thaw-warn { border-color: rgba(255,140,120,.9); animation: thawPulse 1s ease-in-out infinite; }
+.icard.thaw-warn .frost-fill { background: linear-gradient(0deg, rgba(235,150,80,.62), rgba(255,204,124,.5)); border-top-color: rgba(255,222,172,.92); }
+@keyframes thawPulse { 0%,100% { box-shadow: 0 0 8px rgba(255,120,90,.4); } 50% { box-shadow: 0 0 15px rgba(255,120,90,.75); } }
+.frost-stage { position: absolute; top: 2px; left: 0; right: 0; z-index: 2; text-align: center; pointer-events: none;
+  font-family: var(--ff-body); font-weight: 800; font-size: 9px; letter-spacing: .3px; color: #eaf7ff; text-shadow: 0 1px 2px rgba(0,20,40,.85); }
+@media (prefers-reduced-motion: reduce) { .icard.thaw-warn { animation: none; } .frost-fill { transition: none; } }
+
 /* ---- COPYCAT ROUNDS ---- the copycat's mirror row + slots -------------------- */
 /* The tray is already a 2-row grid, so your card lands on top and its copy directly
    below. The copy row is tinted violet, locked (no taps), and has a sliding sheen. */

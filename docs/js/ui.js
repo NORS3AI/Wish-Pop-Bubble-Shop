@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v483"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v484"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1931,6 +1931,7 @@ function renderAdmin() {
         <button class="btn" id="ad-carpet" style="margin-bottom:8px">🧞 Magic Carpet Dash (practice)</button>
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
         <button class="btn" id="ad-copycat" style="margin-bottom:8px">🃏 Copycat Round (repeat test)</button>
+        <button class="btn" id="ad-frost" style="margin-bottom:8px">🧊 Frost/Thaw Round (repeat test)</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen (villain)</button>
         <button class="btn" id="ad-stepmother" style="margin-bottom:8px">🖤 The Wicked Stepmother (villain)</button>
         <button class="btn" id="ad-gothel" style="margin-bottom:8px">🧙‍♀️ Lady Gothel (King's Courtyard)</button>
@@ -2007,6 +2008,7 @@ function renderAdmin() {
   on("#ad-carpet", "click", renderCarpetIntro);
   on("#ad-courtyard", "click", () => { GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true; GAME.unlockedRealms.courtyard = true; save(); travelRealm("courtyard"); });
   on("#ad-copycat", "click", startCopycatRound);
+  on("#ad-frost", "click", startFrostRound);
   on("#ad-queen", "click", () => {
     if (GAME.gold < QUEEN_PACKAGES[0].gold) { GAME.gold += 200; save(); } // need gold to pay her ransom
     renderVillainIntro("queen");
@@ -2843,6 +2845,7 @@ function stopRoundTimers() {
   if (ROUND._mixTimer) { clearInterval(ROUND._mixTimer); ROUND._mixTimer = null; }
   if (ROUND._scoopIv) { clearInterval(ROUND._scoopIv); ROUND._scoopIv = null; }
   if (ROUND._rushTimer) { clearInterval(ROUND._rushTimer); ROUND._rushTimer = null; }
+  if (ROUND._thawTimer) { clearInterval(ROUND._thawTimer); ROUND._thawTimer = null; }
   const el = document.getElementById("rush-clock"); if (el) el.style.display = "none";
 }
 // seconds left on a timed (In-a-Rush) customer, or null if not timed
@@ -7575,7 +7578,7 @@ function renderMix() {
   // villain rounds skip triple-match so each piece keeps its own hidden-poison flag.
   // (Copycat DOES triple-match — 3-of-a-kind merge into a Potent; its ± rolls live on
   //  ROUND.copyRolls keyed by stack, so rebuilding the pieces doesn't lose them.)
-  const merged = ROUND.villain ? { inventory: ROUND.inventory, merged: [] } : applyTripleMatch(ROUND.inventory);
+  const merged = (ROUND.villain || ROUND.frostTest) ? { inventory: ROUND.inventory, merged: [] } : applyTripleMatch(ROUND.inventory);
   ROUND.inventory = merged.inventory;
   if (ROUND.stats) ROUND.stats.triples = merged.merged.length;
   ROUND.slots = []; ROUND.mixStart = Date.now();
@@ -7592,6 +7595,7 @@ function renderMix() {
   paintMix(); show("mix");
   if (ROUND._mixTimer) clearInterval(ROUND._mixTimer);
   ROUND._mixTimer = setInterval(paintMixTop, 500);
+  if (ROUND.frostTest) { if (ROUND._thawTimer) clearInterval(ROUND._thawTimer); ROUND._thawTimer = setInterval(thawTick, 300); }   // real-time ice thaw
   const afterTriples = () => { if (rawCount > BALANCE.SNEEZE_AT && !ROUND.wish.boss && !ROUND.villain && !ROUND.copycat) setTimeout(sneezeAllergy, 250); }; // bosses/villains/copycat don't sneeze
   if (merged.merged.length) showTriple(merged.merged, afterTriples);
   else setTimeout(afterTriples, 350);
@@ -7623,6 +7627,7 @@ function instMainMagic(inst) {
   return inst.magic || (ing ? ing.qualities[0] : "");
 }
 function instTier(inst) {
+  if (inst.frozen) return 0;          // thawing ice pieces sort to the FAR LEFT (they're on a clock)
   const ing = inst.id ? D.INGREDIENT_BY_ID[inst.id] : null;
   if (ing && ing.infused) return 1;   // infused
   if (inst.potent) return 2;          // potent
@@ -7652,6 +7657,8 @@ function mixStacks() {
   for (const o of order) {
     // Rotten (cursed) fruit never piles — each one is its own card (spreading or static).
     if (o.inst.rotten) { stacks.push({ rep: o.inst, idxs: [o.idx] }); continue; }
+    // Frozen pieces never pile either — each has its own thaw clock/fill level.
+    if (o.inst.frozen) { stacks.push({ rep: o.inst, idxs: [o.idx] }); continue; }
     const k = instStackKey(o.inst);
     if (map[k] != null) stacks[map[k]].idxs.push(o.idx);
     else { map[k] = stacks.length; stacks.push({ rep: o.inst, idxs: [o.idx] }); }
@@ -7974,6 +7981,7 @@ function ingCard(st) {
   const glow = st.idxs.some(i => ROUND.inventory[i] && ROUND.inventory[i]._glow);
   const cuttable = ROUND.toolMode ? " cuttable" : "";
   const insight = !!ROUND.insight;
+  const frost = inst.frozen ? frostStage(inst, Date.now()) : null;   // thawing ice piece (ice realm)
   let art, list, name, cls = "", mainMagic = "";
   if (inst.wild) { art = "🌈"; list = ["any"]; name = "Wild"; cls = "wild"; mainMagic = inst.magic || "Love"; }
   else if (inst.essence) {
@@ -7986,8 +7994,8 @@ function ingCard(st) {
     mainMagic = list[0]; cls = (inst.potent ? "potent " : "") + (inst.shrunk ? "shrunk " : "") + (ing.infused ? "infused" : "");
     art = ingArt(inst.id);
     if (inst.rotten) {
-      art = ART.tag("rot_fruit", "🍂", "icard-art-img");
-      name = "Cursed Fruit";
+      art = ART.tag("rot_fruit", inst.melted ? "💧" : "🍂", "icard-art-img");
+      name = inst.melted ? "Melted Mush" : "Cursed Fruit";
       list = (inst.rotQualities && inst.rotQualities.length) ? inst.rotQualities.slice() : [];
       mainMagic = "";
       cls = "rotten-full";
@@ -8033,7 +8041,12 @@ function ingCard(st) {
   const poisoned = (ROUND.insight && inst.poison) || inst.splashed;
   const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
   const rotDesc = (inst.rotten && !inst.rotFromSpread) ? `<div class="icard-desc">Rot will spread</div>` : "";
-  return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}${inst.splashed ? " splashed" : ""}${rotClass}" title="${name}" data-idx="${idx}">
+  // Frozen (ice-realm) piece: an icy fill that DRAINS as its 25s clock runs, plus a stage label.
+  const frostClass = frost ? " frozen" + (frost.rem <= 1/3 ? " thaw-warn" : frost.rem <= 2/3 ? " thaw-mid" : "") : "";
+  const frostFill = frost ? `<div class="frost-fill" style="height:${(frost.rem * 100).toFixed(1)}%"></div>` : "";
+  const frostStageEl = frost ? `<span class="frost-stage">${FROST_LABEL[frost.stage]}</span>` : "";
+  return `<button class="icard ${cls}${cuttable}${glow ? " glow" : ""}${poisoned ? " poisoned" : ""}${inst.splashed ? " splashed" : ""}${rotClass}${frostClass}" title="${name}" data-idx="${idx}">
+    ${frostFill}${frostStageEl}
     <div class="icard-l"><div class="icard-art">${art}${badges}<span class="icard-gem" style="background:${D.MAGIC[mainMagic] || "#888"}"></span></div><div class="icard-nm">${name}</div>${rotDesc}</div>
     <div class="icard-r">${pills}</div>
     ${inst.potent ? `<span class="icard-star">✨</span>` : (infusedFx ? `<span class="icard-inf">💠</span>` : "")}${n > 1 ? `<span class="icard-count">×${n}</span>` : ""}</button>`;
@@ -8187,6 +8200,14 @@ function addToSlot(idx, fromEl) {
   if (ROUND.toolMode === "transmute") { transmuteIngredient(idx, fromEl); return; }
   if (ROUND.toolMode === "pinch") { pinchIngredient(idx, fromEl); return; }
   if (ROUND.slots.length >= ROUND.maxSlots) { toast("The cauldron is full!"); return; }
+  // Frozen (ice-realm) piece: LOCK its strength to its current thaw stage as it goes in
+  // (Potent while frozen solid → normal → a pinch as it melts → allergy mush if fully gone).
+  { const fz = ROUND.inventory[idx]; if (fz && fz.frozen) {
+      const s = frostStage(fz, Date.now());
+      if (s.stage === 4) { meltFrozen(fz); toast("🫠 Too late — it melted into allergy mush!"); }
+      else { fz.potent = (s.stage === 1); fz.shrunk = (s.stage === 3); delete fz.frozen; delete fz.thawStart;
+             toast(s.stage === 1 ? "🧊 Frozen solid — dropped in Potent!" : s.stage === 3 ? "💧 Half-melted — just a pinch." : "❄️ Fresh — full strength."); }
+  } }
   const inst = ROUND.inventory.splice(idx, 1)[0];
   if (ROUND.potentNext) { inst.potent = true; ROUND.potentNext = false; toast("✨ Potent!"); }
   const cauldron = document.getElementById("cauldron");
@@ -8194,7 +8215,7 @@ function addToSlot(idx, fromEl) {
   if (fromEl && cauldron) flyEmoji(fromEl.getBoundingClientRect(), cauldron.getBoundingClientRect(), flyChar);
   ROUND.slots.push(inst);
   spreadRot();                // rot spreads one step further from any original rotten inventory items
-  if (inst.rotten) toast("Rotten ingredient in the cauldron — rot is spreading!");
+  if (inst.rotten && !inst.rotFromSpread) toast("Rotten ingredient in the cauldron — rot is spreading!");
   if (ROUND.gothelStealAt && ROUND.gothelStealAt.length && ROUND.slots.length === ROUND.gothelStealAt[0]) {
     ROUND.gothelStealAt.shift();
     playGothelSteal(inst);
@@ -8477,12 +8498,104 @@ function startCopycatRound() {
   ROUND.haul = [];
   renderMix();
 }
+
+/* ======================================================================= */
+/* FROST / THAW ROUNDS (prototype) — ice-realm melting ingredients          */
+/* Some ingredients arrive FROZEN on a 25s real-time clock. As the ice drains */
+/* they weaken: Potent → Fresh → ½ (pinch). Let one fully melt and it spoils  */
+/* into an allergy-ridden mush. Place a piece at the strength you need. The    */
+/* Frost Gem (❄️) re-freezes everything back to full. Frozen pieces sort left. */
+/* ======================================================================= */
+const THAW_MS = 25000;
+const FROST_LABEL = { 1: "❄️ Potent", 2: "Fresh", 3: "½ Melting", 4: "Gone!" };
+// Current thaw stage of a frozen piece: 1 Potent, 2 normal, 3 pinch, 4 melted. rem = fill 0..1.
+function frostStage(inst, now) {
+  const elapsed = now - (inst.thawStart || now);
+  const rem = Math.max(0, Math.min(1, 1 - elapsed / THAW_MS));
+  const stage = rem > 2 / 3 ? 1 : rem > 1 / 3 ? 2 : rem > 0 ? 3 : 4;
+  return { stage, rem, elapsed };
+}
+// A frozen piece left too long spoils into allergy mush — carries THIS customer's allergen(s)
+// and no good magic. Marked rotFromSpread so it does NOT spread (it's not a Gothel curse).
+function meltFrozen(inst) {
+  const allergens = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
+  delete inst.frozen; delete inst.thawStart; delete inst.potent; delete inst.shrunk;
+  inst.rotten = true; inst.rotFromSpread = true; inst.melted = true;
+  inst.rotQualities = allergens.slice();
+}
+// Real-time tick (~300ms): drain each frozen card's fill in place, spoil any that hit 0.
+function thawTick() {
+  if (!ROUND || !ROUND.frostTest) return;
+  const now = Date.now();
+  let spoiled = false;
+  ROUND.inventory.forEach((inst, i) => {
+    if (!inst || !inst.frozen) return;
+    const s = frostStage(inst, now);
+    if (s.stage === 4) { meltFrozen(inst); spoiled = true; return; }
+    const card = document.querySelector(`#screen-mix .icard[data-idx="${i}"]`);
+    if (!card) return;
+    const fill = card.querySelector(".frost-fill"); if (fill) fill.style.height = (s.rem * 100).toFixed(1) + "%";
+    const badge = card.querySelector(".frost-stage"); if (badge) badge.textContent = FROST_LABEL[s.stage];
+    card.classList.toggle("thaw-warn", s.rem <= 1 / 3);
+    card.classList.toggle("thaw-mid", s.rem > 1 / 3 && s.rem <= 2 / 3);
+  });
+  if (spoiled) { if (SFX.sneeze) SFX.sneeze(); paintMix(); }
+}
+// Admin frost/thaw test round: courtyard pantry with a few FROZEN pieces (staggered clocks),
+// a couple of Frost Gems to re-freeze. Repeats on "Next".
+function startFrostRound() {
+  SFX.unlock(); stopRoundTimers(); refreshQuests();
+  GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true;
+  GAME.unlockedRealms = GAME.unlockedRealms || {}; GAME.unlockedRealms.courtyard = true;
+  GAME.realm = "courtyard"; save(); applyRealmTheme();
+  const realm = D.REALM_BY_ID["courtyard"] || currentRealm();
+  const pool = (realm.customers || []).filter(c => !c.alwaysBoss);
+  const cust = R.pick(pool.length ? pool : realm.customers);
+  ROUND = newRound({ servedTotal, customers: [cust], ingredientSet: realm.ingredients, magicPool: realm.magics, reqBonus: realm.reqBonus || 0 });
+  if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
+  ROUND.frostTest = true; ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
+  GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true; if ((GAME.treats || 0) < 5) GAME.treats = 5;
+  // pantry: guaranteed one main-match per need, then distinct singles up to 8
+  const needTypes = ROUND.wish.needs.map(n => n.type);
+  const all = realm.ingredients, used = new Set(), inv = [];
+  needTypes.forEach(nt => { let c = all.filter(i => i.qualities[0] === nt && !used.has(i.id)); if (!c.length) c = all.filter(i => i.qualities.includes(nt) && !used.has(i.id)); if (c.length) { const p = R.pick(c); used.add(p.id); inv.push({ id: p.id, potent: false }); } });
+  const rest = all.filter(i => !used.has(i.id));
+  for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+  for (const ing of rest) { if (inv.length >= 8) break; inv.push({ id: ing.id, potent: false }); }
+  // freeze about half of them, with STAGGERED start times so they thaw/melt at different moments
+  const now = Date.now();
+  const order = inv.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  const nFrozen = Math.max(2, Math.round(inv.length / 2));
+  order.slice(0, nFrozen).forEach((i, k) => { inv[i].frozen = true; inv[i].thawStart = now - k * 3500; });   // piece k is already 3.5k s into thawing
+  ROUND.inventory = inv;
+  // force a (non-need) allergy so a melted piece's "allergy mush" is actually testable
+  const nonNeed = (realm.magics || D.MAGIC_TYPES).filter(m => !needTypes.includes(m));
+  if (nonNeed.length) { ROUND.wish.allergy = R.pick(nonNeed); ROUND.wish.allergy2 = null; }
+  ROUND.charms = ["refreeze", "refreeze", "pinch", "transmute", "cleanse"];
+  ROUND.haul = [];
+  renderMix();
+}
 function playCharm(i) {
   const id = ROUND.charms[i]; if (!id) return; const w = ROUND.wish;
   const consume = () => { ROUND.charms.splice(i, 1); paintMix(); };
   if (id === "cleanse") { if (!w.allergy) { toast("No allergy to cleanse!"); return; } ROUND.allergyOffset += BALANCE.ALLERGY_CLEANSE; toast("🧹 Allergy calmed."); consume(); }
   else if (id === "insight") { if (ROUND.insight) { toast("Hidden magic already revealed."); return; } ROUND.insight = true; toast("🔍 Hidden magic revealed!"); consume(); }
   else if (id === "die") { if (!ROUND.copycat) { toast("The die only rattles in the copycat's parlor."); return; } reshuffleCopyRolls(); SFX.unlock(); if (SFX.charm) SFX.charm(); if (navigator.vibrate) navigator.vibrate([8, 20, 8]); toast("🎲 Rerolled the copycat's third qualities!"); consume(); }
+  else if (id === "refreeze") {
+    const now = Date.now(); let cnt = 0;
+    // re-freeze anything still in the bag that's thawing OR already melted (restores it to full)
+    ROUND.inventory.forEach(inst => {
+      if (inst && (inst.frozen || inst.melted)) {
+        inst.frozen = true; inst.thawStart = now;
+        delete inst.rotten; delete inst.rotFromSpread; delete inst.melted; delete inst.rotQualities; delete inst.potent; delete inst.shrunk;
+        cnt++;
+      }
+    });
+    if (!cnt) { toast("Nothing to re-freeze."); return; }
+    SFX.unlock(); if (SFX.charm) SFX.charm(); if (navigator.vibrate) navigator.vibrate(14);
+    toast(`❄️ Frost Gem — re-froze ${cnt} ingredient${cnt > 1 ? "s" : ""} to full!`); consume();
+  }
   else if (id === "potent") { if (ROUND.potentNext) { toast("Potent is already primed."); return; } ROUND.potentNext = true; toast("✨ Your next ingredient counts double!"); consume(); }
   else if (id === "peek") { const n = w.needs.find(x => !x.revealed); if (!n) { toast("All needs already revealed."); return; } n.revealed = true; toast(`⏭️ Revealed: ${n.type}!`); consume(); }
   else if (id === "wild") { if (ROUND.slots.length >= ROUND.maxSlots) { toast("The cauldron is full!"); return; } const magic = R.pick(w.needs.map(x => x.type)); ROUND.slots.push({ wild: true, magic, strength: BALANCE.WILD_STRENGTH }); toast(`🌈 Wild ${magic} magic added!`); consume(); }
@@ -8755,9 +8868,11 @@ function renderResult(res) {
     <button class="res-next" id="next-btn" aria-label="Next customer"><img src="art/ui/btn_next.png" alt="Next Customer" draggable="false"></button>
   `);
   const wasCopycat = !!(ROUND && ROUND.copycat);
+  const wasFrost = !!(ROUND && ROUND.frostTest);
   on("#next-btn", "click", () => {
     if (itemGateBlocks()) return;
     const cont = () => wasCopycat ? startCopycatRound()                       // admin copycat test: loop straight into another
+      : wasFrost ? startFrostRound()                                          // admin frost test: loop
       : (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound();
     // Gothel's curse/steal reaction plays here — after the player has seen the results.
     if (res.gothelCurse || res.gothelSteal) playGothelScene(res, cont);
