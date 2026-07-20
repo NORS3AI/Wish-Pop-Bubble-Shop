@@ -29,15 +29,15 @@ a clock. The realm also **brings back the frozen infused ingredient (Frost Gem)*
 rotQualities), and the Frost Gem infused. Low build risk, high flavor.
 
 **Decisions (owner):**
-- **Timer = 40-second real-time countdown** (wall-clock, not per-action).
+- **Timer = 50-second real-time countdown** (wall-clock, not per-action).
 - **Visual = the ingredient box fills with a color and DRAINS as the timer runs** — the fill
   level *is* the clock (full = just frozen, empty = about to melt into the allergy puddle).
   Simple and readable; no separate ring/badge needed.
-- **Frost Gem re-freezes** a thawing piece (pause/reset its 40s timer) — CONFIRMED, owner
+- **Frost Gem re-freezes** a thawing piece (pause/reset its 50s timer) — CONFIRMED, owner
   likes it. Gives the realm's signature infused a second job and a reason to hold it.
 
 **Refinements / open questions (mine):**
-- **When does the 40s start?** Cleanest: the clock starts when the piece **enters the mix
+- **When does the 50s start?** Cleanest: the clock starts when the piece **enters the mix
   tray** (so scoop/pop time doesn't melt it before you can use it). Worth confirming at build
   — does it pause if you leave the mix screen, or keep draining? (I'd pause between phases.)
 - **Potency steps vs the fill:** map the draining fill to the potency drop — e.g. full→⅔ =
@@ -48,7 +48,7 @@ rotQualities), and the Frost Gem infused. Low build risk, high flavor.
 - **Optional skill bonus:** small reward for using a piece at the *exact* strength a need
   wanted (rewards reading the drain).
 
-**Status:** PROTOTYPED in admin (v484) — "🧊 Frost/Thaw Round (repeat test)". 40s real-time
+**Status:** PROTOTYPED in admin (v484) — "🧊 Frost/Thaw Round (repeat test)". 50s real-time
 drain, potency stages, melt→allergy mush, Frost Gem re-freeze all working. Not yet wired into
 a real realm. Open refinement: truly PAUSE the clock between phases (currently wall-clock keeps
 running if you leave the mix screen).

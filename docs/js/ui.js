@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v486"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v487"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7648,6 +7648,7 @@ function mixStacks() {
   const order = inv.map((inst, idx) => ({ inst, idx }));
   order.sort((a, b) => {
     const ta = instTier(a.inst), tb = instTier(b.inst); if (ta !== tb) return ta - tb;
+    if (ta === 0) return a.idx - b.idx;   // frozen pieces: keep a STABLE leftmost order (don't reshuffle on transmute)
     const ma = instMainMagic(a.inst), mb = instMainMagic(b.inst); if (ma !== mb) return ma.localeCompare(mb);
     const na = instName(a.inst), nb = instName(b.inst); if (na !== nb) return na.localeCompare(nb);
     return a.idx - b.idx;
@@ -8290,6 +8291,9 @@ function transmuteIngredient(idx, fromEl) {
   if (!pool.length) pool = SET.filter(i => i.id !== inst.id);
   const ing = R.pick(pool), oldName = D.INGREDIENT_BY_ID[inst.id].name;
   ROUND.inventory[idx] = { id: ing.id, potent: inst.potent, _glow: true };
+  // a FROZEN piece stays frozen (same thaw clock) when transmuted, so it keeps its icy
+  // timer and stays in the leftmost frozen group instead of jumping across the bag.
+  if (inst.frozen) { ROUND.inventory[idx].frozen = true; ROUND.inventory[idx].thawStart = inst.thawStart; }
   const ti = ROUND.charms.indexOf("transmute"); if (ti >= 0) ROUND.charms.splice(ti, 1);
   ROUND.toolMode = null;
   SFX.unlock(); SFX.reveal("charm", 0);
@@ -8506,7 +8510,7 @@ function startCopycatRound() {
 /* into an allergy-ridden mush. Place a piece at the strength you need. The    */
 /* Frost Gem (❄️) re-freezes everything back to full. Frozen pieces sort left. */
 /* ======================================================================= */
-const THAW_MS = 40000;
+const THAW_MS = 50000;
 const FROST_LABEL = { 1: "❄️ Potent", 2: "Fresh", 3: "½ Melting", 4: "Gone!" };
 // Current thaw stage of a frozen piece: 1 Potent, 2 normal, 3 pinch, 4 melted. rem = fill 0..1.
 function frostStage(inst, now) {
