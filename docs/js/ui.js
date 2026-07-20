@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v500"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v501"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8270,16 +8270,26 @@ function poisonSplatter(rect) {
 function cutIngredient(idx, fromEl) {
   const inst = ROUND.inventory[idx];
   if (!inst || !inst.id || inst.essence) { toast("Pick a whole ingredient to cut."); return; }
-  const ing = D.INGREDIENT_BY_ID[inst.id], wasPotent = !!inst.potent;
+  if (inst.rotten) { toast("Can't cut spoiled mush."); return; }
+  let wasPotent = !!inst.potent, wasShrunk = !!inst.shrunk;
+  // A frozen (ice-realm) piece carries its strength in its THAW STAGE, not inst.potent — the
+  // essences lock in at whatever strength it is right now (Potent solid → potent essences, etc.).
+  if (inst.frozen) {
+    const s = frostStage(inst, Date.now());
+    if (s.stage === 4) { meltFrozen(inst); toast("🫠 It melted before you could cut it!"); paintMix(); return; }
+    wasPotent = (s.stage === 1); wasShrunk = (s.stage === 3);
+  }
+  const ing = D.INGREDIENT_BY_ID[inst.id];
   ROUND.inventory.splice(idx, 1);
   // flex ingredients cut into their single assigned magic; normal ones into each quality
   const cutMagics = inst.magic ? [inst.magic] : ing.qualities;
-  cutMagics.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: wasPotent, _glow: true }));
+  cutMagics.forEach(q => ROUND.inventory.push({ essence: true, magic: q, potent: wasPotent, shrunk: wasShrunk, _glow: true }));
   const ki = ROUND.charms.indexOf("knife"); if (ki >= 0) ROUND.charms.splice(ki, 1);
   ROUND.toolMode = null;
   SFX.unlock(); SFX.chop();
   if (navigator.vibrate) navigator.vibrate([8, 30, 8]);
-  toast(`🔪 Cut ${wasPotent ? "Potent " : ""}${ing.name} into ${cutMagics.length} ${wasPotent ? "Potent " : ""}pure magic${cutMagics.length > 1 ? "s" : ""}!`);
+  const strength = wasPotent ? "Potent " : wasShrunk ? "½ " : "";
+  toast(`🔪 Cut ${strength}${ing.name} into ${cutMagics.length} ${strength}pure magic${cutMagics.length > 1 ? "s" : ""}!`);
   tryHuntFind("knife", fromEl);   // a hidden hunt item may be tucked inside an ingredient
   paintMix();
 }
