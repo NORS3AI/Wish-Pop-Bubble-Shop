@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v473"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v474"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8302,7 +8302,7 @@ function addToSlotCopycat(idx, fromEl) {
   // the copy: same ingredient, mirrors potency + pinch, plus the copycat's DYNAMIC third
   // quality (a random magic + a random ± sign — "what you see is what you get"). It
   // contributes at secondary strength, scaled by potency/pinch, added or drained by sign.
-  const roll = inst.copyRoll || rollCopyQ();
+  const roll = copyRollFor(inst);   // exactly what the copy card is showing right now
   const copy = { id: inst.id, potent: !!inst.potent, shrunk: !!inst.shrunk, isCopy: true, extraQ: roll.q, extraSign: roll.sign };
   inst.pos = pairs;                        // your pick → next LEFT slot (0,1,2,3…)
   copy.pos = (ROUND.maxSlots - 1) - pairs; // copy → mirrored RIGHT slot (…7,6,5,4)
@@ -8331,10 +8331,17 @@ function rollCopyQ() {
   const pool = (currentRealm().magics && currentRealm().magics.length) ? currentRealm().magics : D.MAGIC_TYPES;
   return { q: R.pick(pool), sign: R.chance(0.5) ? 1 : -1 };
 }
-// Re-roll the third quality on every ingredient still in the bag (called on each placement).
-function reshuffleCopyRolls() {
-  ROUND.inventory.forEach(inst => { if (inst && inst.id) inst.copyRoll = rollCopyQ(); });
+// Third qualities are stored per STACK (keyed by instStackKey), so every ingredient in a
+// stack of multiples shares the SAME ± reflection. Missing keys are rolled on demand.
+function copyRollFor(inst) {
+  if (!ROUND.copyRolls) ROUND.copyRolls = {};
+  const k = instStackKey(inst);
+  if (!ROUND.copyRolls[k]) ROUND.copyRolls[k] = rollCopyQ();
+  return ROUND.copyRolls[k];
 }
+// Re-roll the whole mirror: clear the map so every stack gets a fresh ± on the next paint
+// (called on each placement — "the mirror reshuffles after you commit").
+function reshuffleCopyRolls() { ROUND.copyRolls = {}; }
 // A little sparkle-poof where the copycat's copy card sat before it vanished into the pot.
 function copycatPoof(rect) {
   if (!rect) return;
@@ -8363,7 +8370,7 @@ function copyCard(st) {
   const mainMagic = base[0];
   const art = ingArt(inst.id);
   const allergens = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
-  const roll = inst.copyRoll || (inst.copyRoll = rollCopyQ());   // the live churning third quality
+  const roll = copyRollFor(inst);   // the live churning third quality (shared across a stack)
   const pill = q => {
     const warn = allergens.includes(q), long = q.length >= 9, mc = D.MAGIC[q] || "#888";
     return `<span class="mp${warn ? " allergen" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${q}</span>${warn ? `<span class="mp-warn">⚠️</span>` : ""}</span>`;
@@ -8413,10 +8420,6 @@ function startCopycatRound() {
   }
   ROUND.copycat = true; ROUND.maxSlots = 8;   // 4 pairs — more moves to steer each need bar
   ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
-  // Gentler green band so a doubled drop can actually LAND in the sweet spot: barely
-  // shrinks as you fill, and a touch wider than normal. (bandShrink can't be 0 — the
-  // engine treats 0 as "unset" and falls back to the default — so use a tiny value.)
-  ROUND.wish.bandShrink = 0.06; ROUND.wish.bandTight = 1.35;
   // make sure the Pet Undo is available to test with (unlocked + a few treats on hand)
   GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true;
   if ((GAME.treats || 0) < 5) GAME.treats = 5;
@@ -8999,18 +9002,26 @@ function familiarUndo() {
     GAME.treats--; ROUND.treatsUsed++;
     advancePetFace();                 // your pet reacts to the treat with a new expression (stays till next treat)
     save();
+    let msg = "🐾 Removed the last ingredient.";
     if (ROUND.copycat) {
       // Copycat: a placement is a PAIR (your pick + the copycat's mirror). Pull the most
-      // recent pair back out — your ingredient returns to the bag, the copy vanishes —
+      // recent pair back out — your ingredient RETURNS to the bag, the copy vanishes —
       // otherwise popping just one slot would orphan a piece and skew the meters.
-      const yours = ROUND.slots.filter(s => s && !s.isCopy);
-      const mine = yours.reduce((a, b) => (a.pos >= b.pos ? a : b));
-      ROUND.slots = ROUND.slots.filter(s => s !== mine && !(s.isCopy && s.pos === (ROUND.maxSlots - 1) - mine.pos));
-      ROUND.inventory.push({ id: mine.id, potent: !!mine.potent, shrunk: !!mine.shrunk });
+      const yours = ROUND.slots.filter(s => s && !s.isCopy && s.pos != null);
+      if (yours.length) {
+        const mine = yours.reduce((a, b) => (a.pos >= b.pos ? a : b));
+        const copyPos = (ROUND.maxSlots - 1) - mine.pos;
+        ROUND.slots = ROUND.slots.filter(s => s !== mine && !(s.isCopy && s.pos === copyPos));
+        ROUND.inventory.push({ id: mine.id, potent: !!mine.potent, shrunk: !!mine.shrunk });  // back in your bag
+        reshuffleCopyRolls();   // the mirror re-rolls, and the returned ingredient gets a fresh ±
+        msg = "🐾 Pulled that pair back — your ingredient's in the bag.";
+      } else {
+        ROUND.slots.pop();
+      }
     } else {
       ROUND.slots.pop();
     }
-    toast("🐾 Removed the last ingredient.");
+    toast(msg);
     paintMix();
     syncRoundHud("mix");                // refresh the overlay pet (new face) + treat count
   });
