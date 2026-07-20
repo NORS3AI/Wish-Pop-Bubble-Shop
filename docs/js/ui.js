@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v481"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v482"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7932,7 +7932,7 @@ function wireDoubleTapServe() {
     // check the actual target, not a timer, so it's reliable even for already-popped bubbles
     if (e.target.closest(".cbub")) { last = 0; return; }
     const now = Date.now();
-    if (now - last < 350) { last = 0; if (itemGateBlocks()) return; if (ROUND.slots.length === 0) { toast("Add some ingredients first!"); return; } serve(); }
+    if (now - last < 350) { last = 0; if (ROUND.stealing) { toast("🧙‍♀️ Lady Gothel is stealing — wait!"); return; } if (itemGateBlocks()) return; if (ROUND.slots.length === 0) { toast("Add some ingredients first!"); return; } serve(); }
     else { last = now; }   // single tap: just arm the double-tap (no pop-up hint — the on-cauldron hint covers it)
   });
 }
@@ -8113,6 +8113,7 @@ function armGothelSteals(round) {
   }
 }
 function playGothelSteal(inst) {
+  ROUND.stealing = true;   // block serving while she's mid-heist — you shouldn't turn in a brew she's about to rob
   const variant  = ["a","b","c"][Math.floor(Math.random() * 3)];
   const pos      = GOTHEL_FILL[variant];
   const magic    = instMainMagic(inst);
@@ -8142,10 +8143,10 @@ function playGothelSteal(inst) {
     else ROUND.slots.pop();
     paintMix();
   }, 3250);
-  // 6: pause, then retreat the way she came; fade caption and un-dim
-  setTimeout(() => { scene.classList.remove("in"); scene.classList.remove("glowing"); caption.classList.remove("show"); ov.classList.remove("dimmed"); }, 4800);
+  // 6: pause, then retreat the way she came; fade caption and un-dim; serving unlocks again
+  setTimeout(() => { scene.classList.remove("in"); scene.classList.remove("glowing"); caption.classList.remove("show"); ov.classList.remove("dimmed"); ROUND.stealing = false; }, 4800);
   // 7: remove overlay after retreat finishes
-  setTimeout(() => ov.remove(), 6100);
+  setTimeout(() => { ROUND.stealing = false; ov.remove(); }, 6100);
 }
 
 const KEY_DROP_CHANCE = 0.22;   // ~1 Treasure Key every ~5 rounds
@@ -8581,7 +8582,7 @@ function copycatServe() {
   const tier = copycatTier(weighted);
   const coins = Math.round(tier.coins * mult);
   const dust = Math.round((tier.dust || 0) * mult);
-  const keys = (tier.key && !reacted) ? tier.key : 0;   // the Realm Key only drops on a CLEAN top brew
+  const keys = (tier.key && !reacted) ? tier.key : 0;   // the bonus 🗝️ key only drops on a CLEAN top brew
   GAME.gold += coins;
   if (dust) GAME.stardust += dust;
   if (keys) GAME.keys = (GAME.keys || 0) + keys;
@@ -8597,6 +8598,7 @@ function copycatServe() {
 }
 function serve() {
   if (ROUND.slots.length === 0) return;
+  if (ROUND.stealing) return;                     // defensive: never score mid-steal
   if (ROUND.villain) { queenServe(); return; }    // villain events score their own way
   if (ROUND.copycat) { copycatServe(); return; }  // copycat rounds pay on a graded prize ladder
   stopRoundTimers();                              // served in time — stop the rush clock
@@ -8695,7 +8697,7 @@ function renderResult(res) {
   const blurb = res.copycat
     ? (res.copycatTier.coins === 0
         ? `Only ${res.weighted}% — no prize this time. Reach 60% to win one!`
-        : `You reached ${res.weighted}% — ${res.copycatTier.name}!${res.copycatKey ? " 🗝️ …and a Realm Key!" : ""}${zone === "red" ? " (allergy cut it in half)" : zone === "yellow" ? " (allergy trimmed it a little)" : ""}`)
+        : `You reached ${res.weighted}% — ${res.copycatTier.name}!${res.copycatKey ? " 🗝️ …and a bonus Key!" : ""}${zone === "red" ? " (allergy cut it in half)" : zone === "yellow" ? " (allergy trimmed it a little)" : ""}`)
     : !win
     ? c.name + " storms off in a huff — and pelts you with trash on the way out!"
     : isPerfect ? c.name + " got a flawless potion — 100% perfect! ✨"
