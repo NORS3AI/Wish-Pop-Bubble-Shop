@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v497"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v498"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8047,7 +8047,7 @@ function ingCard(st) {
     rotQualities.forEach(q => { if (!list.includes(q)) pills += mkPill(q, true); });
   }
   const poisoned = (ROUND.insight && inst.poison) || inst.splashed;
-  const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "");
+  const badges = (poisoned ? `<span class="poison-badge">☠️</span>` : "") + (inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "") + (inst.transmuted ? `<span class="transmute-badge">🔀</span>` : "");
   const rotDesc = (inst.rotten && !inst.rotFromSpread) ? `<div class="icard-desc">Rot will spread</div>` : "";
   // Frozen (ice-realm) piece: an icy fill that DRAINS as its 25s clock runs, plus a stage label.
   const frostClass = frost ? " frozen" + (frost.rem <= 1/3 ? " thaw-warn" : frost.rem <= 2/3 ? " thaw-mid" : " thaw-potent") : "";
@@ -8297,7 +8297,7 @@ function transmuteIngredient(idx, fromEl) {
   let pool = SET.filter(i => needs.includes(i.qualities[0]) && i.id !== inst.id);
   if (!pool.length) pool = SET.filter(i => i.id !== inst.id);
   const ing = R.pick(pool), oldName = D.INGREDIENT_BY_ID[inst.id].name;
-  ROUND.inventory[idx] = { id: ing.id, potent: inst.potent, _glow: true };
+  ROUND.inventory[idx] = { id: ing.id, potent: inst.potent, _glow: true, transmuted: true };   // 🔀 badge so you can spot what it became
   // a FROZEN piece stays frozen (same thaw clock) when transmuted, so it keeps its icy
   // timer and stays in the leftmost frozen group instead of jumping across the bag.
   if (inst.frozen) { ROUND.inventory[idx].frozen = true; ROUND.inventory[idx].thawStart = inst.thawStart; ROUND.inventory[idx].frostSolid = inst.frostSolid; }
