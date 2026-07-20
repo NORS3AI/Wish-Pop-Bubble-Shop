@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v480"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v481"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7678,7 +7678,18 @@ function paintMixTop() {
   el.innerHTML = w.needs.map((n, i) => mixBar(n, score.perNeed[i], MAX)).join("");
   // have / need readout
   const ro = $("#m2-readout");
-  if (ro) { ro.className = "m2-readout" + (meets ? " met" : ""); ro.innerHTML = `<b>${score.weighted}%</b><span>/${req}%</span>`; }
+  if (ro) {
+    if (ROUND.copycat) {
+      // Prize ladder: show current % over the NEXT tier's threshold (climbs as you progress),
+      // with the prize you've currently earned named right underneath.
+      const pct = score.weighted, tier = copycatTier(pct), nextT = copycatNextThreshold(pct);
+      ro.className = "m2-readout copycat" + (tier.coins > 0 ? " met" : "");
+      ro.innerHTML = `<div class="cc-readnum"><b>${pct}%</b><span>/${nextT}%</span></div><div class="cc-prize ${tier.coins > 0 ? "won" : "none"}${tier.min === 100 ? " grand" : ""}">${tier.name}${tier.min === 100 ? "!" : ""}</div>`;
+    } else {
+      ro.className = "m2-readout" + (meets ? " met" : "");
+      ro.innerHTML = `<b>${score.weighted}%</b><span>/${req}%</span>`;
+    }
+  }
   // cauldron ready glow + double-tap hint
   const cd = $("#cauldron-tap"); if (cd) cd.classList.toggle("ready", meets);
   const hint = $("#serve-hint"); if (hint) hint.textContent = meets ? (ROUND.villain ? "double-tap to brew!" : "double-tap to serve!") : "";
@@ -8559,6 +8570,8 @@ const COPYCAT_PRIZES = [
   { min: 0,   name: "No Prize",     coins: 0,   dust: 0,  key: 0 },
 ];
 function copycatTier(pct) { return COPYCAT_PRIZES.find(t => pct >= t.min); }
+// The next tier boundary above your current score (what the readout counts UP toward).
+function copycatNextThreshold(pct) { for (const b of [60, 70, 80, 90, 100]) if (pct < b) return b; return 100; }
 function copycatServe() {
   stopRoundTimers();
   const sc = scoreMix(ROUND.slots, ROUND.wish, ROUND.allergyOffset || 0);

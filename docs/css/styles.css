@@ -2383,6 +2383,12 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .m2-readout b { font-size: clamp(26px, 8vw, 38px); }
 .m2-readout span { font-size: .82em; opacity: .9; margin-left: 3px; }
 .m2-readout.met b { color: var(--good); text-shadow: 0 0 12px rgba(126,224,138,.6); }
+/* copycat prize-ladder readout: current % / next-tier target, with the earned prize named under it */
+.m2-readout.copycat .cc-readnum { display: block; }
+.m2-readout.copycat .cc-prize { font-family: var(--ff-body); font-weight: 900; letter-spacing: .4px; margin-top: 2px;
+  font-size: clamp(13px, 4.4vw, 18px); text-transform: uppercase; }
+.m2-readout.copycat .cc-prize.none { color: #b9a9d6; opacity: .8; }
+.m2-readout.copycat .cc-prize.won { color: var(--gold, #ffd86b); text-shadow: 0 0 10px rgba(255,216,107,.55); }
 /* allergy danger chips — sit inside the bars panel, right under the need bars,
    stretched side by side to span the same full width so they read as one system */
 .m2-allergs { flex: 0 0 auto; display: flex; gap: 6px; min-height: 0; }
