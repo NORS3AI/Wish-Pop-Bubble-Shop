@@ -6,6 +6,48 @@ Newest ideas near the top. When something ships, move it to "Done / shipped".
 
 ---
 
+## 🆕 Frozen Realm — thawing (melting) ingredients with a decay timer
+
+**The mechanic (owner's):** an ice/snow realm where **some** ingredients arrive **frozen**
+and carry a **thaw timer**. As a frozen piece melts it **loses potency** over time
+(Potent → normal → down toward a pinch). If you **don't use it in time**, it melts all the
+way into a **rotten-fruit-type puddle** — no good magic, and **allergy-ridden** (reuses
+Lady Gothel's rot/allergy plumbing). **Randomized — not every ingredient**, just a spice.
+
+**The clever bit (owner):** the decay is a **tool, not just a penalty**. If a need only
+wants a *little* magic, you can **deliberately wait** for a frozen piece to thaw down to
+~a pinch's worth, then drop it in at exactly the strength you need — a natural anti-overshoot
+play. Same "downside-as-tool" depth that makes the copycat's minus and the rush bonus fun.
+
+**Presentation (owner):** frozen/timed pieces **sort to the far LEFT of the tray** — ahead
+of even infused and potent ingredients — so the player is always *aware* which pieces are on
+a clock. The realm also **brings back the frozen infused ingredient (Frost Gem)** that
+**freezes a need bar** (locks it, can't curdle) as its signature infused.
+
+**Why I like it:** thematically airtight (thaw = urgency without a hard round timer), and it
+**reuses systems we already have** — potency tiers, the rot/allergy curse (rotten flag +
+rotQualities), and the Frost Gem infused. Low build risk, high flavor.
+
+**Refinements / open questions (mine):**
+- **Timer model — decide first.** Real-time wall-clock (frantic) vs **per-action** (melts
+  one stage each time you place *any* ingredient — calmer, more strategic, easier to reason
+  about). Leaning per-action or a *slow* wall-clock, and it should **only run during the MIX
+  phase** (freeze during scoop/pop and between phases) so you're never punished for time you
+  couldn't act on.
+- **Clear stages + telegraph:** Frozen (Potent) → Thawing (normal) → Slushy (½/pinch) →
+  Puddle (rotten + allergy). Show a **melt indicator** (frost coating that recedes / a drip /
+  a shrinking ring) so "wait for the pinch" is a **deliberate read, not a gamble**.
+- **Keep it 1–2 per round** so it's a spice, not a stressor — and watch overlap with the
+  In-a-Rush clock (don't stack too many live timers at once).
+- **Frost Gem synergy:** let a Frost Gem also **re-freeze** a thawing piece (pause/reset its
+  timer) — a lovely realm-specific combo, and a reason to hold the gem.
+- **Optional skill bonus:** small reward for using a piece at the *exact* stage a need wanted
+  (rewards reading the melt).
+
+**Status:** idea / backlog — not built. Good candidate for the ice realm whenever we get there.
+
+---
+
 ## 🆕 Realm progression = clear N events, THEN pay to unlock (pacing backbone)
 
 **The structure (owner's):** regular customers flow, and every **~8–12 customers** an
