@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v472"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v473"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7572,8 +7572,9 @@ function refreshPop() {
 /* ======================================================================= */
 function renderMix() {
   const rawCount = ROUND.inventory.length;                 // how abundant this round was
-  // villain rounds skip triple-match so each piece keeps its own hidden-poison flag
-  const merged = ROUND.villain ? { inventory: ROUND.inventory, merged: [] } : applyTripleMatch(ROUND.inventory);
+  // villain rounds skip triple-match so each piece keeps its own hidden-poison flag;
+  // copycat skips it too (merging would rebuild pieces and drop their live copy-roll)
+  const merged = (ROUND.villain || ROUND.copycat) ? { inventory: ROUND.inventory, merged: [] } : applyTripleMatch(ROUND.inventory);
   ROUND.inventory = merged.inventory;
   if (ROUND.stats) ROUND.stats.triples = merged.merged.length;
   ROUND.slots = []; ROUND.mixStart = Date.now();
@@ -8298,9 +8299,11 @@ function addToSlotCopycat(idx, fromEl) {
   ROUND.inventory.splice(idx, 1);
   if (ROUND.potentNext) { inst.potent = true; ROUND.potentNext = false; toast("✨ Potent!"); }
   const ing = D.INGREDIENT_BY_ID[inst.id];
-  // the copy: same ingredient, mirrors potency + pinch, plus the hidden third quality.
-  // extraQ contributes at secondary strength, scaled by potent/pinch (see engine scoring).
-  const copy = { id: inst.id, potent: !!inst.potent, shrunk: !!inst.shrunk, isCopy: true, extraQ: ing ? ing.copyQ : null };
+  // the copy: same ingredient, mirrors potency + pinch, plus the copycat's DYNAMIC third
+  // quality (a random magic + a random ± sign — "what you see is what you get"). It
+  // contributes at secondary strength, scaled by potency/pinch, added or drained by sign.
+  const roll = inst.copyRoll || rollCopyQ();
+  const copy = { id: inst.id, potent: !!inst.potent, shrunk: !!inst.shrunk, isCopy: true, extraQ: roll.q, extraSign: roll.sign };
   inst.pos = pairs;                        // your pick → next LEFT slot (0,1,2,3…)
   copy.pos = (ROUND.maxSlots - 1) - pairs; // copy → mirrored RIGHT slot (…7,6,5,4)
   // poof the mirrored copy card in the tray, then fly both pieces into the cauldron.
@@ -8315,11 +8318,22 @@ function addToSlotCopycat(idx, fromEl) {
   if (fromRect && caulRect) flyEmoji(fromRect, caulRect, flyChar);
   if (copyRect && caulRect) setTimeout(() => flyEmoji(copyRect, caulRect, flyChar), 90);
   ROUND.slots.push(inst, copy);
+  reshuffleCopyRolls();   // the whole mirror re-rolls its third qualities after every placement
   mixPulseColor = D.MAGIC[instMainMagic(inst)] || "#c9a3ff";
   SFX.unlock(); if (SFX.pop) SFX.pop(1);
   if (navigator.vibrate) navigator.vibrate(10);
   paintMix();
   const c2 = document.getElementById("cauldron"); if (c2) { c2.classList.remove("splash"); void c2.offsetWidth; c2.classList.add("splash"); }
+}
+// The copycat's ever-changing reflection: a random magic (from the whole realm palette — no
+// bias) and a 50/50 ± sign. A "+" reflection adds that magic to its bar, a "−" drains it.
+function rollCopyQ() {
+  const pool = (currentRealm().magics && currentRealm().magics.length) ? currentRealm().magics : D.MAGIC_TYPES;
+  return { q: R.pick(pool), sign: R.chance(0.5) ? 1 : -1 };
+}
+// Re-roll the third quality on every ingredient still in the bag (called on each placement).
+function reshuffleCopyRolls() {
+  ROUND.inventory.forEach(inst => { if (inst && inst.id) inst.copyRoll = rollCopyQ(); });
 }
 // A little sparkle-poof where the copycat's copy card sat before it vanished into the pot.
 function copycatPoof(rect) {
@@ -8346,19 +8360,25 @@ function copyCard(st) {
   const insight = !!ROUND.insight;
   const name = (inst.shrunk ? "½ " : "") + ing.name;
   const base = inst.magic ? [inst.magic] : ing.qualities.slice(0, 2);
-  const list = base.concat(ing.copyQ ? [ing.copyQ] : []);   // 2 base + hidden 3rd
-  const mainMagic = list[0];
+  const mainMagic = base[0];
   const art = ingArt(inst.id);
   const allergens = [ROUND.wish.allergy, ROUND.wish.allergy2].filter(Boolean);
+  const roll = inst.copyRoll || (inst.copyRoll = rollCopyQ());   // the live churning third quality
   const pill = q => {
     const warn = allergens.includes(q), long = q.length >= 9, mc = D.MAGIC[q] || "#888";
     return `<span class="mp${warn ? " allergen" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${q}</span>${warn ? `<span class="mp-warn">⚠️</span>` : ""}</span>`;
   };
+  // the churning third quality: ALWAYS visible, colored, with a + (adds to its bar) or
+  // − (drains its bar). A "+" on an allergen is danger; a "−" on an allergen CALMS it.
+  const signedPill = (q, sign) => {
+    const plus = sign > 0, mc = D.MAGIC[q] || "#888", long = q.length >= 9;
+    const danger = plus && allergens.includes(q);
+    return `<span class="mp signed ${plus ? "plus" : "minus"}${danger ? " allergen" : ""}${long ? " long" : ""}" style="--mc:${mc}"><span class="mp-txt">${plus ? "+" : "−"}${q}</span>${danger ? `<span class="mp-warn">⚠️</span>` : ""}</span>`;
+  };
   let pills = "";
-  for (let r = 0; r < 3; r++) {
-    if (r < list.length) pills += (r === 0 || insight) ? pill(list[r]) : `<span class="mp hidden">?</span>`;
-    else pills += `<span class="mp blank"></span>`;
-  }
+  pills += pill(mainMagic);                                                       // 1st: main quality, always shown
+  pills += (insight && base[1]) ? pill(base[1]) : `<span class="mp hidden">?</span>`;   // 2nd: hidden until Insight
+  pills += signedPill(roll.q, roll.sign);                                         // 3rd: dynamic ±, always shown
   const n = st.idxs.length;
   const badges = inst.shrunk ? `<span class="pinch-badge">🤏</span>` : "";
   return `<div class="icard cc-copy${inst.potent ? " potent" : ""}${inst.shrunk ? " shrunk" : ""}" title="Copycat's copy (locked)" aria-hidden="true">
@@ -8400,19 +8420,25 @@ function startCopycatRound() {
   // make sure the Pet Undo is available to test with (unlocked + a few treats on hand)
   GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true;
   if ((GAME.treats || 0) < 5) GAME.treats = 5;
-  // a curated pantry of courtyard ingredients (more than slots, so you get real CHOICE about
-  // which to use). No duplicates, so triple-match never merges them.
-  const set = realm.ingredients.slice();
-  for (let i = set.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [set[i], set[j]] = [set[j], set[i]]; }
-  const inv = set.slice(0, 8).map(ing => ({ id: ing.id, potent: false }));
-  ROUND.inventory = inv;
-  // Force the customer to be allergic to ONE ingredient's hidden third quality, so you can
-  // actually watch a copy's surprise magic trip the allergy meter. (Skip any that clash with a need.)
+  // Curated pantry: GUARANTEE one ingredient whose MAIN quality matches each need (so every
+  // bar is fillable — a fair hand), then fill the rest with distinct randoms up to 8 for choice.
   const needTypes = ROUND.wish.needs.map(n => n.type);
-  for (const it of inv) {
-    const cq = D.INGREDIENT_BY_ID[it.id].copyQ;
-    if (cq && !needTypes.includes(cq)) { ROUND.wish.allergy = cq; ROUND.wish.allergy2 = null; break; }
-  }
+  const all = realm.ingredients;
+  const used = new Set(), inv = [];
+  needTypes.forEach(nt => {
+    let cand = all.filter(i => i.qualities[0] === nt && !used.has(i.id));
+    if (!cand.length) cand = all.filter(i => i.qualities.includes(nt) && !used.has(i.id));
+    if (cand.length) { const pick = R.pick(cand); used.add(pick.id); inv.push({ id: pick.id, potent: false }); }
+  });
+  const rest = all.filter(i => !used.has(i.id));
+  for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+  for (const ing of rest) { if (inv.length >= 8) break; inv.push({ id: ing.id, potent: false }); }
+  ROUND.inventory = inv;
+  reshuffleCopyRolls();   // seed each copy's starting ± third quality
+  // Force an allergy (a magic that ISN'T a need) so there's always a danger bar to test the
+  // ± reflections against — a "+[allergen]" copy trips it, a "−[allergen]" copy calms it.
+  const nonNeed = (realm.magics || D.MAGIC_TYPES).filter(m => !needTypes.includes(m));
+  if (nonNeed.length) { ROUND.wish.allergy = R.pick(nonNeed); ROUND.wish.allergy2 = null; }
   // Potent charm included so you can prime an ingredient and see its copy's third quality
   // get the ×2.5 potency boost. (A pre-set potent flag would be wiped by triple-match.)
   // Cleanse is here so a brutal allergy surprise is survivable, not an instant loss.
