@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v487"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v488"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7578,9 +7578,10 @@ function renderMix() {
   // villain rounds skip triple-match so each piece keeps its own hidden-poison flag.
   // (Copycat DOES triple-match — 3-of-a-kind merge into a Potent; its ± rolls live on
   //  ROUND.copyRolls keyed by stack, so rebuilding the pieces doesn't lose them.)
-  const merged = (ROUND.villain || ROUND.frostTest) ? { inventory: ROUND.inventory, merged: [] } : applyTripleMatch(ROUND.inventory);
+  const merged = ROUND.villain ? { inventory: ROUND.inventory, merged: [] } : applyTripleMatch(ROUND.inventory);
   ROUND.inventory = merged.inventory;
   if (ROUND.stats) ROUND.stats.triples = merged.merged.length;
+  if (ROUND.frostTest) freezeAllForFrost();   // ice realm: every piece frozen — triples start Potent, the rest Fresh
   ROUND.slots = []; ROUND.mixStart = Date.now();
   ROUND.potentNext = false; ROUND.allergyOffset = 0; ROUND.insight = false;
   // Villain rounds: secretly curse ONE ingredient (disguised as normal). Tapping it makes it
@@ -8519,6 +8520,20 @@ function frostStage(inst, now) {
   const stage = rem > 2 / 3 ? 1 : rem > 1 / 3 ? 2 : rem > 0 ? 3 : 4;
   return { stage, rem, elapsed };
 }
+// Ice realm: EVERY ingredient is frozen. A triple (merged → Potent) starts frozen SOLID at
+// full (Potent, the whole clock); an ordinary piece starts already thawed to FRESH (no Potent
+// stage — it begins at the ⅔ mark and has less time before it melts). Called after triple-match.
+function freezeAllForFrost() {
+  const now = Date.now();
+  const freshStart = now - Math.floor(THAW_MS / 3);   // ⅓ elapsed → begins at the Fresh boundary
+  ROUND.inventory.forEach(inst => {
+    if (!inst || !inst.id || inst.essence || inst.wild || inst.rotten) return;
+    const wasTriple = !!inst.potent;    // triple-match promoted it to Potent
+    inst.frozen = true;
+    delete inst.potent;                 // strength now comes purely from the thaw stage
+    inst.thawStart = wasTriple ? now : freshStart;
+  });
+}
 // A frozen piece left too long spoils into allergy mush — carries THIS customer's allergen(s)
 // and no good magic. Marked rotFromSpread so it does NOT spread (it's not a Gothel curse).
 function meltFrozen(inst) {
@@ -8546,8 +8561,9 @@ function thawTick() {
   });
   if (spoiled) { if (SFX.sneeze) SFX.sneeze(); paintMix(); }
 }
-// Admin frost/thaw test round: courtyard pantry with a few FROZEN pieces (staggered clocks),
-// a couple of Frost Gems to re-freeze. Repeats on "Next".
+// Admin frost/thaw test round: EVERY ingredient is frozen (renderMix → freezeAllForFrost).
+// A couple of TRIPLES merge into Potent-frozen goods (full 50s); the rest are Fresh-frozen.
+// A couple of Frost Gems to re-freeze. Repeats on "Next".
 function startFrostRound() {
   SFX.unlock(); stopRoundTimers(); refreshQuests();
   GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true;
@@ -8560,20 +8576,16 @@ function startFrostRound() {
   if (ROUND.customer && Array.isArray(ROUND.customer.lines) && ROUND.customer.lines.length) ROUND.customer = Object.assign({}, ROUND.customer, { line: R.pick(ROUND.customer.lines) });
   ROUND.frostTest = true; ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
   GAME.unlocked = GAME.unlocked || {}; GAME.unlocked.undo = true; if ((GAME.treats || 0) < 5) GAME.treats = 5;
-  // pantry: guaranteed one main-match per need, then distinct singles up to 8
+  // pantry: guaranteed one main-match per need, TWO triples (→ Potent-frozen), then singles
   const needTypes = ROUND.wish.needs.map(n => n.type);
   const all = realm.ingredients, used = new Set(), inv = [];
   needTypes.forEach(nt => { let c = all.filter(i => i.qualities[0] === nt && !used.has(i.id)); if (!c.length) c = all.filter(i => i.qualities.includes(nt) && !used.has(i.id)); if (c.length) { const p = R.pick(c); used.add(p.id); inv.push({ id: p.id, potent: false }); } });
   const rest = all.filter(i => !used.has(i.id));
   for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
-  for (const ing of rest) { if (inv.length >= 8) break; inv.push({ id: ing.id, potent: false }); }
-  // freeze about half of them, with STAGGERED start times so they thaw/melt at different moments
-  const now = Date.now();
-  const order = inv.map((_, i) => i);
-  for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-  const nFrozen = Math.max(2, Math.round(inv.length / 2));
-  order.slice(0, nFrozen).forEach(i => { inv[i].frozen = true; inv[i].thawStart = now; });   // each starts frozen solid with the FULL clock
-  ROUND.inventory = inv;
+  if (rest[0]) { used.add(rest[0].id); for (let k = 0; k < 3; k++) inv.push({ id: rest[0].id, potent: false }); }  // TRIPLE → Potent-frozen
+  if (rest[1]) { used.add(rest[1].id); for (let k = 0; k < 3; k++) inv.push({ id: rest[1].id, potent: false }); }  // TRIPLE → Potent-frozen
+  for (let i = 2; i < rest.length && inv.length < 12; i++) inv.push({ id: rest[i].id, potent: false });          // Fresh-frozen singles
+  ROUND.inventory = inv;   // freezing happens in renderMix → freezeAllForFrost (after triple-match)
   // force a (non-need) allergy so a melted piece's "allergy mush" is actually testable
   const nonNeed = (realm.magics || D.MAGIC_TYPES).filter(m => !needTypes.includes(m));
   if (nonNeed.length) { ROUND.wish.allergy = R.pick(nonNeed); ROUND.wish.allergy2 = null; }
