@@ -28,21 +28,25 @@ a clock. The realm also **brings back the frozen infused ingredient (Frost Gem)*
 **reuses systems we already have** — potency tiers, the rot/allergy curse (rotten flag +
 rotQualities), and the Frost Gem infused. Low build risk, high flavor.
 
+**Decisions (owner):**
+- **Timer = 25-second real-time countdown** (wall-clock, not per-action).
+- **Visual = the ingredient box fills with a color and DRAINS as the timer runs** — the fill
+  level *is* the clock (full = just frozen, empty = about to melt into the allergy puddle).
+  Simple and readable; no separate ring/badge needed.
+- **Frost Gem re-freezes** a thawing piece (pause/reset its 25s timer) — CONFIRMED, owner
+  likes it. Gives the realm's signature infused a second job and a reason to hold it.
+
 **Refinements / open questions (mine):**
-- **Timer model — decide first.** Real-time wall-clock (frantic) vs **per-action** (melts
-  one stage each time you place *any* ingredient — calmer, more strategic, easier to reason
-  about). Leaning per-action or a *slow* wall-clock, and it should **only run during the MIX
-  phase** (freeze during scoop/pop and between phases) so you're never punished for time you
-  couldn't act on.
-- **Clear stages + telegraph:** Frozen (Potent) → Thawing (normal) → Slushy (½/pinch) →
-  Puddle (rotten + allergy). Show a **melt indicator** (frost coating that recedes / a drip /
-  a shrinking ring) so "wait for the pinch" is a **deliberate read, not a gamble**.
+- **When does the 25s start?** Cleanest: the clock starts when the piece **enters the mix
+  tray** (so scoop/pop time doesn't melt it before you can use it). Worth confirming at build
+  — does it pause if you leave the mix screen, or keep draining? (I'd pause between phases.)
+- **Potency steps vs the fill:** map the draining fill to the potency drop — e.g. full→⅔ =
+  Potent, ⅔→⅓ = normal, ⅓→empty = pinch/½, empty = melts to rotten+allergy. So the color
+  level doubles as "how strong is it right now."
 - **Keep it 1–2 per round** so it's a spice, not a stressor — and watch overlap with the
   In-a-Rush clock (don't stack too many live timers at once).
-- **Frost Gem synergy:** let a Frost Gem also **re-freeze** a thawing piece (pause/reset its
-  timer) — a lovely realm-specific combo, and a reason to hold the gem.
-- **Optional skill bonus:** small reward for using a piece at the *exact* stage a need wanted
-  (rewards reading the melt).
+- **Optional skill bonus:** small reward for using a piece at the *exact* strength a need
+  wanted (rewards reading the drain).
 
 **Status:** idea / backlog — not built. Good candidate for the ice realm whenever we get there.
 
