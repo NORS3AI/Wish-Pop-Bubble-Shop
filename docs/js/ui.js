@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v468"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v469"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7646,6 +7646,8 @@ function mixStacks() {
   if (ROUND.villain) return order.map(o => ({ rep: o.inst, idxs: [o.idx] }));  // no piling in villain rounds
   const stacks = [], map = {};
   for (const o of order) {
+    // Rotten (cursed) fruit never piles — each one is its own card (spreading or static).
+    if (o.inst.rotten) { stacks.push({ rep: o.inst, idxs: [o.idx] }); continue; }
     const k = instStackKey(o.inst);
     if (map[k] != null) stacks[map[k]].idxs.push(o.idx);
     else { map[k] = stacks.length; stacks.push({ rep: o.inst, idxs: [o.idx] }); }
@@ -8030,8 +8032,11 @@ function injectRot(round) {
   round.haul.forEach((it, i) => { if (it.kind === "ingredient") idxs.push(i); });
   for (let i = idxs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idxs[i], idxs[j]] = [idxs[j], idxs[i]]; }
   const n = Math.min(curse.count, idxs.length);
+  // A cursed fruit carries THIS round's customer's allergen(s) and nothing else, so
+  // dropping it always taints the brew for whoever you're serving now.
+  const allergens = [round.wish.allergy, round.wish.allergy2].filter(Boolean);
   for (let k = 0; k < n; k++) {
-    round.haul[idxs[k]] = Object.assign({}, round.haul[idxs[k]], { rotten: true, rotQualities: curse.allergies.slice() });
+    round.haul[idxs[k]] = Object.assign({}, round.haul[idxs[k]], { rotten: true, rotQualities: allergens.slice() });
   }
   GAME.gothelCurse = null; save();
 }
