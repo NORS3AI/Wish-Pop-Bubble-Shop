@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v522"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v523"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -419,7 +419,7 @@ function applyHomeBackground() {
   im.src = url;
 }
 // Per-realm scene background for the customer screen (Willow uses the village art).
-const REALM_BG = { willow: "art/shop_interior.jpg" };
+const REALM_BG = { willow: "art/shop_interior.jpg", courtyard: "art/courtyard_interior.jpg" };
 function applyRealmBackground(el) {
   // el lets a caller target a SPECIFIC cust-bg (the result screen has its own with the
   // same id as the arrival screen, so getElementById alone would grab the wrong one).
