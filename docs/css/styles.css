@@ -224,15 +224,14 @@ html, body {
 /* King's Courtyard SECRET: the royal-arch stash as a rare pop backdrop. The dull gems sit
    behind the bubbles (same level as the wood X), so popping always wins a tap first; empty
    taps fall through to a gem's hotspot once the bubbles above it clear. */
-/* NORMAL courtyard pop (no gems): the arch fills the WHOLE SCREEN — it breaks out of the
-   centred game column (width:100vw) and covers it, so it reaches every edge on any device. */
-.pop-stash { position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 100vw;
-  z-index: -2; overflow: hidden; pointer-events: none; background: #453530; }
+/* Fills the game column edge to edge, exactly like the wood wall (the -14px undoes #app's
+   side padding so it reaches the column's left/right). Same mobile framing as every screen. */
+.pop-stash { position: absolute; top: 0; bottom: 0; left: -14px; right: -14px; z-index: -2;
+  overflow: hidden; pointer-events: none; background: #453530; }
+/* NORMAL pop (no gems): COVER the column, top-anchored, so it always fills. */
 .pop-stash .stash-stage { position: absolute; inset: 0; }
 .pop-stash .stash-bg { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
-/* STASH pop (dull gems): stay in the game column (reaching its edges via -14px, which undoes the
-   #app side padding) and fit by WIDTH so all five gems stay on-screen; blend the strip below. */
-.pop-stash.has-gems { left: -14px; right: -14px; width: auto; transform: none; }
+/* STASH pop (dull gems): fit by WIDTH so all five gems stay on-screen; blend the strip below. */
 .pop-stash.has-gems .stash-stage { inset: auto; top: 0; left: 0; width: 100%; height: auto; }
 .pop-stash.has-gems .stash-bg { height: auto; object-fit: initial; }
 .pop-stash.has-gems .stash-stage::after { content: ""; position: absolute; left: 0; right: 0; top: 99%; height: 60vh;
