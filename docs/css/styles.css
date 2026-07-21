@@ -2206,7 +2206,7 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    ABOVE this background (between it and the cauldron) instead of hiding behind it. */
 .mixv2.villain { isolation: isolate; background: url('../art/queen_mix_bg.jpg?v=370') center top / cover no-repeat, #140a24; }
 /* King's Courtyard mixing chamber — same cover fit as the default mix backdrop */
-.mixv2.courtyard { background: url('../art/courtyard_mix_bg.jpg?v=524') center top / cover no-repeat, #160c26; }
+.mixv2.courtyard { background: url('../art/courtyard_mix_bg.jpg?v=525') center top / cover no-repeat, #160c26; }
 /* the "room lit blue" layer — the flash art fades in over the normal chamber (behind the cauldron)
    then fades out, like lightning through the window. JS drives the opacity at random. */
 .mix-lightning { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0;
