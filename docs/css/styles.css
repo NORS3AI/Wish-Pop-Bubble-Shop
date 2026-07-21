@@ -224,9 +224,16 @@ html, body {
 /* King's Courtyard SECRET: the royal-arch stash as a rare pop backdrop. The dull gems sit
    behind the bubbles (same level as the wood X), so popping always wins a tap first; empty
    taps fall through to a gem's hotspot once the bubbles above it clear. */
-.pop-stash { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: -2; overflow: hidden; pointer-events: none; background: #c7b090; }
-.pop-stash .stash-stage { position: absolute; top: 0; left: 0; width: 100%; }
-.pop-stash .stash-bg { display: block; width: 100%; }
+.pop-stash { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: -2; overflow: hidden; pointer-events: none; background: #453530; }
+/* NORMAL courtyard pop (no gems): COVER the whole pop area, top-anchored, so it always fills. */
+.pop-stash .stash-stage { position: absolute; inset: 0; }
+.pop-stash .stash-bg { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+/* STASH pop (dull gems): fit by WIDTH so all five gems stay on-screen and aligned; blend any
+   strip below the arch into its shadowed floor. */
+.pop-stash.has-gems .stash-stage { inset: auto; top: 0; left: 0; width: 100%; height: auto; }
+.pop-stash.has-gems .stash-bg { height: auto; }
+.pop-stash.has-gems .stash-stage::after { content: ""; position: absolute; left: 0; right: 0; top: 99%; height: 60vh;
+  background: linear-gradient(#453530, #3a2c27); }
 .pop-stash .stash-hit { pointer-events: auto; }
 /* hide the top-left pet badge on a stash pop so it doesn't cover the upper-left gem */
 .round-hud.stash-hidepet .petbadge { display: none; }
@@ -2896,8 +2903,10 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 /* ======================================================================= */
 /* KING'S COURTYARD — "Restore the Gems" hidden-stash puzzle                */
 /* ======================================================================= */
-/* the stone-tan bg blends any leftover strip on a very tall screen (art fits by WIDTH) */
-.stash-wrap { position: absolute; inset: 0; overflow: hidden; background: #c7b090; }
+/* the dark-stone bg blends any leftover strip on a very tall screen (art fits by WIDTH) */
+.stash-wrap { position: absolute; inset: 0; overflow: hidden; background: #453530; }
+.stash-wrap .stash-stage::after { content: ""; position: absolute; left: 0; right: 0; top: 99%; height: 60vh;
+  background: linear-gradient(#453530, #3a2c27); }
 /* Fit the art to the GAME COLUMN width (the 520px #app), top flush. Use 100% — NOT
    100vw — or a wide iPad blows the art up to the full viewport width and shows only
    the top slice. Fitting by width keeps all five edge gems on-screen & tappable. */

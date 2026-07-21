@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v519"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v520"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7346,6 +7346,7 @@ function setupPopArch() {
   const host = document.getElementById("pop-stash"); if (!host) return;
   const bg = document.getElementById("pop-bg"); if (bg) { bg.style.backgroundImage = "none"; bg.style.backgroundColor = "#c7b090"; }   // no wood behind the arch
   const v = "?v=" + BUILD, stash = ROUND.popStash;
+  host.classList.toggle("has-gems", !!stash);   // gems present → fit by width (keep them all on-screen); else cover the area
   const gems = stash ? STASH_GEMS.map((g, i) => `<img class="stash-gem" id="pstash-gem${i}" src="art/kc_stash_gem${i + 1}.png${v}" style="left:${g.l}%;top:${g.t}%;width:${g.w}%" alt="" draggable="false">`).join("") : "";
   const hits = stash ? STASH_GEMS.map((g, i) => `<button class="stash-hit" data-i="${i}" style="left:${g.cx}%;top:${g.cy}%" aria-label="gem"></button>`).join("") : "";
   host.innerHTML = `<div class="stash-stage"><img class="stash-bg" src="art/kc_stash_bg.jpg${v}" alt="" draggable="false">${gems}${hits}</div>`;
