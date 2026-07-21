@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v517"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v518"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -2019,6 +2019,7 @@ function renderAdmin() {
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
         <button class="btn secondary" id="ad-courtyard-intro" style="margin-bottom:8px">🃏 Replay Courtyard intro (Jasper + Lady Gothel)</button>
         <button class="btn secondary" id="ad-stash" style="margin-bottom:8px">💎 Restore the Gems (hidden stash)</button>
+        <button class="btn good" id="ad-popstash" style="margin-bottom:8px">💎 Force stash in next Courtyard pop</button>
         <button class="btn" id="ad-copycat" style="margin-bottom:8px">🃏 Copycat Round (repeat test)</button>
         <button class="btn" id="ad-frost" style="margin-bottom:8px">🧊 Frost/Thaw Round (repeat test)</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen (villain)</button>
@@ -2098,6 +2099,7 @@ function renderAdmin() {
   on("#ad-courtyard", "click", () => { GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true; GAME.unlockedRealms.courtyard = true; save(); travelRealm("courtyard"); });
   on("#ad-courtyard-intro", "click", () => { GAME.realm = "courtyard"; save(); applyRealmTheme(); playCourtyardIntro(); });
   on("#ad-stash", "click", () => { GAME.realm = "courtyard"; save(); applyRealmTheme(); renderStashHunt(); });
+  on("#ad-popstash", "click", () => { GAME.forcePopStash = true; save(); toast("💎 Next Courtyard pop phase will hide the stash — play a round!"); });
   on("#ad-copycat", "click", startCopycatRound);
   on("#ad-frost", "click", startFrostRound);
   on("#ad-queen", "click", () => {
@@ -2987,6 +2989,8 @@ function syncRoundHud(phase) {
   if (!hud) { hud = document.createElement("div"); hud.id = "round-hud"; }
   app.appendChild(hud);                       // keep it last so it overlays the active screen
   hud.className = "round-hud phase-" + phase;
+  // the top-left pet badge would sit over a gem on the rare Courtyard stash pop — hide it there
+  if (phase === "pop" && ROUND && ROUND.popStash) hud.classList.add("stash-hidepet");
   const villain = !home && ROUND && ROUND.villain;
   const showPet = !villain;                   // villain events capture the pet → locked slot
   // count on the scroll: HOME shows total treats owned; round screens show treats-left this round
@@ -7279,9 +7283,21 @@ function renderPop() {
     ROUND.popXNeed = 5 + Math.floor(Math.random() * 5);   // taps to break it (5–9)
     ROUND.popXTaps = 0; ROUND.popXBroken = false; ROUND.popTreasure = null; ROUND.popTreasureGot = false;
   }
+  // King's Courtyard SECRET: 4% of pop phases, the wall becomes the jewelled royal arch
+  // with five dull gems hiding behind the bubbles. Pop the bubbles to expose them, then a
+  // sharp eye can tap each to restore its colour — all five reveal a hidden stash. No hints.
+  if (typeof ROUND.popStash !== "boolean") {
+    ROUND.popStash = GAME.realm === "courtyard" && !ROUND.villain && (GAME.forcePopStash || Math.random() < 0.04);
+    if (GAME.forcePopStash) { GAME.forcePopStash = false; save(); }
+  }
+  if (ROUND.popStash) ROUND.popX = false;   // mutually exclusive with the wood-wall X
   const bubbles = ROUND.haul.map((_, i) => bubbleHTML(i)).join("");
+  const stashLayers = ROUND.popStash
+    ? `<div class="pop-stash" id="pop-stash"></div><div class="stash-glow" id="pop-stash-glow"></div><div class="stash-reveal" id="pop-stash-reveal"></div>`
+    : "";
   html("pop", `
     <div class="pop-bg" id="pop-bg"></div>
+    ${stashLayers}
     <div class="pop-sub muted${ROUND.rush ? " timed" : ""}" id="pop-hint">Tap each bubble to pop it — everything inside goes in your bag!</div>
     <div class="bubble-field" id="bubble-field">${bubbles}</div>
     <div id="hand-line" class="muted" style="font-size:13px;text-align:center;min-height:20px"></div>
@@ -7309,6 +7325,8 @@ function renderPop() {
 const POP_HOLE = { cx: 0.372, cy: 0.651, w: 0.203, h: 0.139 };   // hole centre + size as fractions of the bg art
 function setupPopWood() {
   const scr = document.getElementById("screen-pop"); if (scr) scr.classList.add("pop-woodbg");
+  if (ROUND.popStash) { if (scr) scr.classList.add("pop-stashbg"); setupPopStash(); return; }   // the royal-arch secret backdrop
+  if (scr) scr.classList.remove("pop-stashbg");
   const bg = $("#pop-bg"); if (!bg) return;
   const img = ROUND.villain ? "queen_pop_bg" : (ROUND.popXBroken ? "pop_bg_broken" : (ROUND.popX ? "pop_bg_x" : "pop_bg"));
   bg.style.backgroundImage = `url('art/${img}.webp?v=${BUILD}')`;
@@ -7317,6 +7335,47 @@ function setupPopWood() {
     addPopX();
     const pre = new Image(); pre.src = `art/pop_bg_broken.webp?v=${BUILD}`;   // warm the broken art so the smash swaps instantly
   } else if (ROUND.popXBroken && !ROUND.popTreasureGot) showPopTreasure();
+}
+// The royal-arch stash backdrop (a rare Courtyard pop). Reuses STASH_GEMS positions; the
+// dull gems sit BEHIND the bubbles (they get exposed as you pop) and the hit targets pass
+// through the empty bubble field, so popping is never blocked.
+function stashStageHtml() {
+  const v = "?v=" + BUILD;
+  const gems = STASH_GEMS.map((g, i) => `<img class="stash-gem" id="pstash-gem${i}" src="art/kc_stash_gem${i + 1}.png${v}" style="left:${g.l}%;top:${g.t}%;width:${g.w}%" alt="" draggable="false">`).join("");
+  const hits = STASH_GEMS.map((g, i) => `<button class="stash-hit" data-i="${i}" style="left:${g.cx}%;top:${g.cy}%" aria-label="gem"></button>`).join("");
+  return `<div class="stash-stage"><img class="stash-bg" src="art/kc_stash_bg.jpg${v}" alt="" draggable="false">${gems}${hits}</div>`;
+}
+function setupPopStash() {
+  const host = document.getElementById("pop-stash"); if (!host) return;
+  const bg = document.getElementById("pop-bg"); if (bg) { bg.style.backgroundImage = "none"; bg.style.backgroundColor = "#c7b090"; }   // no wood behind the arch
+  host.innerHTML = stashStageHtml();
+  let restored = 0;
+  host.querySelectorAll(".stash-hit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.classList.contains("done")) return;
+      const i = +btn.dataset.i, gem = document.getElementById("pstash-gem" + i);
+      if (gem) gem.classList.add("restored");
+      btn.classList.add("done");
+      restored++;
+      SFX.pop(restored, 0.7); SFX.charm();
+      if (navigator.vibrate) navigator.vibrate(12);
+      if (restored >= 5) setTimeout(popStashReveal, 480);
+    });
+  });
+}
+function popStashReveal() {
+  const glow = document.getElementById("pop-stash-glow"); if (glow) glow.classList.add("on");
+  SFX.lift && SFX.lift();
+  setTimeout(() => {
+    const gold = 250, dust = 25;
+    grantReward({ gold, stardust: dust }); save();
+    const rv = document.getElementById("pop-stash-reveal");
+    if (rv) { rv.innerHTML = `<div class="stash-treasure">💎</div><div class="stash-reward">🪙 ${gold}  ✨ ${dust}</div>`; rv.classList.add("on"); }
+    SFX.perfect(); SFX.bigCoin && SFX.bigCoin(); confettiOver($("#app"));
+    if (navigator.vibrate) navigator.vibrate([20, 40, 20, 40, 30]);
+    // tap the reveal to collect and carry on popping
+    setTimeout(() => { if (rv) rv.addEventListener("click", () => { rv.classList.remove("on"); rv.innerHTML = ""; if (glow) glow.classList.remove("on"); }, { once: true }); }, 400);
+  }, 720);
 }
 // where the hole/X sits on screen, given the cover-fit background
 function popHoleGeom() {
@@ -9524,7 +9583,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopStash, popStashReveal, stashStageHtml, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {

@@ -221,6 +221,15 @@ html, body {
 /* the bubble field lets empty-area taps fall through to the wall behind it */
 .bubble-field { pointer-events: none; }
 .bubble-field .pbubble { pointer-events: auto; }
+/* King's Courtyard SECRET: the royal-arch stash as a rare pop backdrop. The dull gems sit
+   behind the bubbles (same level as the wood X), so popping always wins a tap first; empty
+   taps fall through to a gem's hotspot once the bubbles above it clear. */
+.pop-stash { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: -2; overflow: hidden; pointer-events: none; background: #c7b090; }
+.pop-stash .stash-stage { position: absolute; top: 0; left: 0; width: 100%; }
+.pop-stash .stash-bg { display: block; width: 100%; }
+.pop-stash .stash-hit { pointer-events: auto; }
+/* hide the top-left pet badge on a stash pop so it doesn't cover the upper-left gem */
+.round-hud.stash-hidepet .petbadge { display: none; }
 /* the carved X is an invisible hotspot over the art — no hint (it's an Easter egg) */
 .pop-x-target { position: absolute; transform: translate(-50%,-50%); border: none; background: none; padding: 0; cursor: pointer;
   border-radius: 50%; -webkit-tap-highlight-color: transparent; }
