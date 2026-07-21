@@ -2887,21 +2887,23 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 /* ======================================================================= */
 /* KING'S COURTYARD — "Restore the Gems" hidden-stash puzzle                */
 /* ======================================================================= */
-.stash-wrap { position: absolute; inset: 0; overflow: hidden; background: #241811; }
-/* fit the art to the screen WIDTH, top flush; if it fills less than the height,
-   scale up so it always covers (width = max(100vw, 100vh × art-aspect)). */
-.stash-stage { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: max(100vw, 46.26vh); }
+/* the stone-tan bg blends any leftover strip on a very tall screen (art fits by WIDTH) */
+.stash-wrap { position: absolute; inset: 0; overflow: hidden; background: #c7b090; }
+/* Fit the art to the GAME COLUMN width (the 520px #app), top flush. Use 100% — NOT
+   100vw — or a wide iPad blows the art up to the full viewport width and shows only
+   the top slice. Fitting by width keeps all five edge gems on-screen & tappable. */
+.stash-stage { position: absolute; top: 0; left: 0; width: 100%; }
 .stash-bg { display: block; width: 100%; }
 .stash-gem { position: absolute; z-index: 2; will-change: opacity, transform;
   transition: opacity .55s ease, transform .55s ease, filter .55s ease; }
 .stash-gem.restored { opacity: 0; transform: scale(1.7); filter: brightness(2.2); pointer-events: none; }
 .stash-hit { position: absolute; z-index: 4; transform: translate(-50%, -50%); padding: 0; border: none;
-  width: 13vw; height: 13vw; min-width: 54px; min-height: 54px; background: transparent; border-radius: 50%;
+  width: 58px; height: 58px; background: transparent; border-radius: 50%;
   cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .stash-hit.done { display: none; }   /* no ring, no glow — the dull gems are the only clue */
 /* mid-screen glow + stash reveal (positioned on the SCREEN so it's always centered) */
 .stash-glow { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%) scale(0); z-index: 3;
-  width: 130vw; height: 130vw; border-radius: 50%; pointer-events: none; opacity: 0;
+  width: 720px; height: 720px; border-radius: 50%; pointer-events: none; opacity: 0;
   background: radial-gradient(circle, rgba(255,244,200,.98) 0%, rgba(255,212,96,.62) 26%, rgba(255,190,60,0) 62%); }
 .stash-glow.on { animation: stashGlow 1.3s ease-out forwards; }
 @keyframes stashGlow { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1); opacity: .82; } }
