@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v506"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v507"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1345,7 +1345,7 @@ function storyWishOutro(tag, win) {
 /* ======================================================================= */
 const HUNTS = {
   willow: { realm: "willow", char: "Bo Peep", charEmoji: "👧", charArt: "bopeep_sheephug", item: "sheep", itemEmoji: "🐑",
-    need: 10, chance: 0.42, skin: "toad_lamb",
+    need: 10, chance: 0.25, skin: "toad_lamb",
     items: ["sheep_01", "sheep_02", "sheep_03", "sheep_04", "sheep_05", "sheep_06", "sheep_07", "sheep_08", "sheep_09", "sheep_10"],
     done: "Every last lamb is home safe — Bo Peep hugs you tight!",
     // A short thank-you conversation when the flock is complete. {skin} is filled in.
@@ -1355,7 +1355,7 @@ const HUNTS = {
       { fig: "bopeep_warm", cta: "Aw, thank you!  ▸", text: "Take this, from me and the whole flock — a little <b>{skin}</b> to wear in the shop. Find it any time in 🎨 My Skins. Now off you go — they’re demanding hay!" },
     ] },
   courtyard: { realm: "courtyard", char: "the Stepsister", charEmoji: "💃", item: "bead", itemEmoji: "📿",
-    need: 8, chance: 0.34, skin: "cauldron_pearl",
+    need: 8, chance: 0.25, skin: "cauldron_pearl",
     done: "Every bead recovered — the Stepsister can go to the royal ball after all!" },
 };
 function huntFor(realm) { return HUNTS[realm] || null; }
