@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v515"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v516"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -6913,12 +6913,17 @@ function renderScoop() {
   let skipMode = false;                          // after "Shake for me", the button becomes "Skip"
   let secret = null;                              // the one secret treasure for this scoop phase (decided up front)
   const jackDone = new Array(scoops).fill(false); // which scoops have already handed out their jackpot charm
+  // realm-specific scoop art: the Queen's cursed set on villain rounds, the royal sifter in
+  // King's Courtyard, else the default Willow set. The shared glitter+pearls foreground
+  // (scoop_front / scoop_pearl_*) sits on top and fits every backdrop (same 941×1672 size).
+  const scoopPfx = ROUND.villain ? "queen_scoop" : GAME.realm === "courtyard" ? "courtyard_scoop" : "scoop";
+  const sSpoon = scoopPfx + "_spoon", sGlit = scoopPfx + "_glitter_tip", sBg = scoopPfx + "_bg";
 
   html("scoop", `
     <div class="scoop-bg mg-fullbleed" id="scoop-bg"></div>
     <div class="scoop-stage" id="scoop-stage">
       <div class="scoop-craft" id="scoop-craft">
-        <div class="scoop-bowl" id="scoop-bowl" style="font-size:min(67vw,318px)">${ART.tag(ROUND.villain ? "queen_scoop_spoon" : "scoop_spoon", "🥄")}<img class="art scoop-glitter-tip" id="scoop-glitter-tip" src="${ART.url(ROUND.villain ? "queen_scoop_glitter_tip" : "scoop_glitter_tip")}" alt="" draggable="false"></div>
+        <div class="scoop-bowl" id="scoop-bowl" style="font-size:min(67vw,318px)">${ART.tag(sSpoon, "🥄")}<img class="art scoop-glitter-tip" id="scoop-glitter-tip" src="${ART.url(sGlit)}" alt="" draggable="false"></div>
         <div class="scoop-bubbles" id="scoop-bubbles"></div>
       </div>
       <div class="scoop-front" id="scoop-front"></div>
@@ -6936,7 +6941,7 @@ function renderScoop() {
       </div>
     </div>
   `);
-  { const bgEl = $("#scoop-bg"); if (bgEl) bgEl.style.backgroundImage = `url('art/${ROUND.villain ? "queen_scoop_bg" : "scoop_bg"}.webp?v=${BUILD}')`;
+  { const bgEl = $("#scoop-bg"); if (bgEl) bgEl.style.backgroundImage = `url('art/${sBg}.webp?v=${BUILD}')`;
     const frEl = $("#scoop-front"); if (frEl) frEl.style.backgroundImage = `url('art/scoop_front.webp?v=${BUILD}')`; }
   // warm the pearl images on EVERY scoop entry, so on the rare phase one appears it's already cached
   // (never a late pop-in against the already-loaded background)
