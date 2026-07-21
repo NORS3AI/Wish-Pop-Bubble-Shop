@@ -2846,3 +2846,40 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 #app.mg-full .cake-caption { padding-left: 40px; }
 /* nudge each game's own top-left counter clear of the floating menu button */
 #app.mg-full .bq-hud, #app.mg-full .stack-overlay { padding-left: 46px; }
+
+/* ======================================================================= */
+/* COACH — one-time spotlight tutorial tips + the How-to-Play reference     */
+/* ======================================================================= */
+.coach-ov { position: fixed; inset: 0; z-index: 400; }
+.coach-ov.out { opacity: 0; transition: opacity .19s ease; }
+.coach-mask { position: fixed; background: rgba(8,5,20,.74); }
+.coach-ring { position: fixed; border-radius: 16px; pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(255,222,120,.95), 0 0 22px 6px rgba(255,200,90,.5);
+  animation: coachPulse 1.5s ease-in-out infinite; }
+.coach-ov:not(.interact) .coach-ring { pointer-events: auto; }  /* block premature taps on the highlighted item */
+@keyframes coachPulse {
+  0%,100% { box-shadow: 0 0 0 3px rgba(255,222,120,.9), 0 0 18px 4px rgba(255,200,90,.4); }
+  50%     { box-shadow: 0 0 0 4px rgba(255,238,155,1), 0 0 30px 11px rgba(255,205,95,.72); }
+}
+.coach-bubble { position: fixed; left: 50%; transform: translateX(-50%);
+  width: min(88vw, 380px); background: linear-gradient(#251b40, #191130);
+  color: #fff; border: 1px solid rgba(255,255,255,.15); border-radius: 16px;
+  padding: 14px 16px 15px; box-shadow: 0 14px 34px rgba(0,0,0,.55); text-align: center; }
+.coach-bubble.center { top: 50%; transform: translate(-50%, -50%); }
+.coach-bubble::before { content: ""; position: absolute; left: 50%; transform: translateX(-50%); border: 9px solid transparent; }
+.coach-ov:not(.nohole) .coach-bubble:not(.above)::before { top: -18px; border-bottom-color: #251b40; }
+.coach-ov:not(.nohole) .coach-bubble.above::before { bottom: -18px; border-top-color: #191130; }
+.coach-bubble.center::before { display: none; }
+.coach-head { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; }
+.coach-emoji { font-size: 22px; line-height: 1; }
+.coach-emoji img { width: 26px; height: 26px; vertical-align: middle; }
+.coach-title { font-weight: 800; font-size: 16px; }
+.coach-text { font-size: 14.5px; line-height: 1.42; opacity: .96; }
+.coach-text b { color: #ffe08a; font-weight: 800; }
+.coach-next { margin-top: 13px; }
+
+.help-card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+.help-h { font-weight: 800; font-size: 15.5px; margin-bottom: 5px; }
+.help-b { font-size: 13.5px; line-height: 1.5; opacity: .9; }
+.help-b b { color: #ffe08a; }

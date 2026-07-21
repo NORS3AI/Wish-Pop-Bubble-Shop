@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v505"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v506"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -63,6 +63,7 @@ function normalizeGame(g) {
   if (!g.hunts || typeof g.hunts !== "object") g.hunts = {}; // realmId -> { found, done } collection scavenger hunt
   if (typeof g.huntCelebrate === "undefined") g.huntCelebrate = null; // realmId pending a completion thank-you card
   if (typeof g.wellIntro !== "number") g.wellIntro = 0; // Wishy's wishing well: 0 not introduced · 1 introduced (home button + arrow, tutorial pending) · 2 first wish made (Wishy has left)
+  if (!g.coach || typeof g.coach !== "object") g.coach = {}; // one-time coach/tutorial tips already shown (lessonId -> true)
   if (!g.satchel || typeof g.satchel !== "object") g.satchel = {}; // main inventory: itemId -> count (quest / keepsake items)
   if (!g.custStory || typeof g.custStory !== "object") g.custStory = {}; // customerId -> chapter index (their wishes tell an ongoing arc)
   if (!g.carpetSkin || g.carpetSkin < 1 || g.carpetSkin > 10) g.carpetSkin = 5; // Magic Carpet Dash chosen rug (5 = moon carpet)
@@ -1871,6 +1872,7 @@ function renderAdmin() {
         <div style="font-weight:800;margin-bottom:6px">📖 Little Red's Story</div>
         <p class="muted" style="font-size:12px;margin-bottom:10px">Watch any part of Little Red's tale — in order, they run: the arrival, then Grandma's photos, then the impostor.</p>
         <button class="btn" id="ad-intro" style="margin-bottom:8px">1️⃣ 📖 Arrival + Tutorial (Replay Intro)</button>
+        <button class="btn secondary" id="ad-coach-reset" style="margin-bottom:8px">💡 Reset all how-to-play tips</button>
         <button class="btn" id="ad-red2" style="margin-bottom:8px">2️⃣ 📸 Visit: Grandma's Vacation Photos</button>
         <button class="btn" id="ad-red3" style="margin-bottom:8px">3️⃣ 🐺 Visit: The Impostor Sketch</button>
         <button class="btn" id="ad-bopeep">🐑 Bo Peep (quest → turns on sheep hunt)</button>
@@ -2077,6 +2079,7 @@ function renderAdmin() {
   on("#ad-well-intro", "click", () => { GAME.wellIntro = 0; save(); playWellIntro(); });
   on("#ad-well-open", "click", () => { GAME.wellIntro = 1; save(); renderWell(); });
   on("#ad-well-reset", "click", () => { GAME.wellIntro = 0; save(); toast("Well reset — Wishy will introduce it again"); renderAdmin(); });
+  on("#ad-coach-reset", "click", () => { GAME.coach = {}; save(); toast("How-to-play tips reset — they'll appear again as you play"); renderAdmin(); });
   on("#ad-pearls", "click", () => { GAME.pearls = (GAME.pearls || 0) + 25; save(); toast("+25 pearls"); renderAdmin(); });
   on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
   on("#ad-treats", "click", () => { GAME.treats += 10; save(); toast("+10 treats 🐸"); renderAdmin(); });
@@ -2101,6 +2104,7 @@ function renderMenu() {
         <button class="btn ${canDaily ? "" : "secondary"}" id="daily-btn" ${canDaily ? "" : "disabled"} style="max-width:240px">${canDaily ? "Claim 🪙 " + BALANCE.DAILY_GRANT : "Come back tomorrow!"}</button>
       </div>
       <button class="btn ${anyQuestClaimable() ? "good" : ""}" id="quests-btn" style="margin-bottom:10px">📋 Quests${anyQuestClaimable() ? ` <span class="q-badge">!</span>` : ""}</button>
+      <button class="btn secondary" id="help-btn" style="margin-bottom:10px">❓ How to Play</button>
       ${GAME.wellIntro >= 1 ? `<button class="btn" id="well-btn" style="margin-bottom:10px">🌟 Wishing Well</button>` : ""}
       <div class="row" style="margin-bottom:10px;gap:10px">
         <button class="btn secondary" id="recycle-btn" style="flex:1">🗑️ Recycle <span class="muted" style="font-weight:500;font-size:12px">· ${GAME.trash.length}/${BALANCE.TRASH_BIN_MAX}</span></button>
@@ -2126,6 +2130,7 @@ function renderMenu() {
   on("#tr-buy", "click", () => buyTreats(qty));
   on("#daily-btn", "click", claimDaily);
   on("#quests-btn", "click", renderQuests);
+  on("#help-btn", "click", renderHelp);
   on("#well-btn", "click", renderWell);
   on("#recycle-btn", "click", () => renderRecycle("coins"));
   on("#vault-btn", "click", renderVault);
@@ -7116,6 +7121,7 @@ function renderScoop() {
   setTimeout(diveThenLoad, 620);
   wireFamiliar("scoop");
   show("scoop");
+  coachScoopIntro();     // first-ever scoop: the one-time spotlight tip
   placeSecretHotspot();  // pearl is already painted; now the stage has real dimensions for its tap target
   startRushClock();      // In-a-Rush patience clock ticks from here through serve
 }
@@ -7201,6 +7207,7 @@ function renderPop() {
   on("#pop-continue", "click", () => { if (itemGateBlocks()) return; collectAndContinue(); });
   wireFamiliar("pop");
   show("pop");
+  coachPopIntro();   // first-ever pop: the one-time spotlight tip
   setupPopWood();
 }
 /* ---- The wooden pop-phase wall. Always the wood backdrop; on a rare round a carved X
@@ -7603,7 +7610,10 @@ function renderMix() {
   if (ROUND._mixTimer) clearInterval(ROUND._mixTimer);
   ROUND._mixTimer = setInterval(paintMixTop, 500);
   if (ROUND.frostTest) { if (ROUND._thawTimer) clearInterval(ROUND._thawTimer); ROUND._thawTimer = setInterval(thawTick, 300); }   // real-time ice thaw
-  const afterTriples = () => { if (rawCount > BALANCE.SNEEZE_AT && !ROUND.wish.boss && !ROUND.villain && !ROUND.copycat) setTimeout(sneezeAllergy, 250); }; // bosses/villains/copycat don't sneeze
+  const afterTriples = () => {
+    if (rawCount > BALANCE.SNEEZE_AT && !ROUND.wish.boss && !ROUND.villain && !ROUND.copycat) setTimeout(sneezeAllergy, 250); // bosses/villains/copycat don't sneeze
+    setTimeout(coachAfterMix, 420);   // one-time tips: first-mix walkthrough, new charms, first allergy
+  };
   if (merged.merged.length) showTriple(merged.merged, afterTriples);
   else setTimeout(afterTriples, 350);
 }
@@ -9174,7 +9184,168 @@ function showTriple(mergedIds, cb) {
   ov.innerHTML = `<div class="triple-card"><div style="font-size:46px">✨🫙✨</div><div class="tt">Triple Match!</div>
     <div class="muted">${names.map(n => `3 ${n} → 1 <b>Potent ${n}</b>`).join("<br>")}</div></div>`;
   $("#app").appendChild(ov);
-  setTimeout(() => { ov.remove(); cb(); }, 1500);
+  setTimeout(() => {
+    ov.remove();
+    // First triple ever → a one-time coach explaining potency, then continue.
+    if (!coachSeen("triple")) coachShow([{ seenId: "triple", sel: null, emoji: "✨", title: "Potent!",
+      text: "Three of the same ingredient just merged into one <b>Potent</b> piece — it counts for <b>more than double</b>. Powerful, but it fills a green band fast, so place it with care." }], cb);
+    else cb();
+  }, 1500);
+}
+
+/* ======================================================================= */
+/* COACH — one-time spotlight tutorial tips. Darkens the screen, cuts a     */
+/* glowing hole around one element, points at it, and shows a short         */
+/* instruction. Each lesson shows ONCE (tracked in GAME.coach); the whole   */
+/* set is always replayable from Extras → How to Play.                      */
+/* ======================================================================= */
+let COACH_ACTIVE = false;
+function coachSeen(id) { return !!(GAME.coach && GAME.coach[id]); }
+function markCoachSeen(id) { if (!GAME.coach) GAME.coach = {}; if (id) { GAME.coach[id] = true; save(); } }
+// steps: [{ sel, text, title, emoji, cta, pad, interact, seenId }]
+//   sel: CSS selector | element | fn()->element | null (null = centered card, full dark)
+//   interact: true lets taps reach the real element (and advance when it's used)
+//   seenId: mark this lesson id as seen when the step is passed (put on the LAST step of a lesson)
+function coachShow(steps, onDone) {
+  steps = (steps || []).filter(Boolean);
+  if (COACH_ACTIVE || !steps.length) { if (onDone && !COACH_ACTIVE) onDone(); return; }
+  COACH_ACTIVE = true;
+  const ov = document.createElement("div");
+  ov.className = "coach-ov";
+  ov.innerHTML = `
+    <div class="coach-mask" data-m="t"></div><div class="coach-mask" data-m="b"></div>
+    <div class="coach-mask" data-m="l"></div><div class="coach-mask" data-m="r"></div>
+    <div class="coach-ring"></div>
+    <div class="coach-bubble">
+      <div class="coach-head"></div>
+      <div class="coach-text"></div>
+      <button class="btn good small coach-next"></button>
+    </div>`;
+  $("#app").appendChild(ov);
+  const q = s => ov.querySelector(s);
+  const els = { t: q('[data-m="t"]'), b: q('[data-m="b"]'), l: q('[data-m="l"]'), r: q('[data-m="r"]'),
+    ring: q(".coach-ring"), bubble: q(".coach-bubble"), head: q(".coach-head"), text: q(".coach-text"), next: q(".coach-next") };
+  let i = 0, targetEl = null, onTap = null;
+  const resolve = sel => { try { return !sel ? null : typeof sel === "function" ? sel() : sel.nodeType ? sel : document.querySelector(sel); } catch (e) { return null; } };
+  function place() {
+    const step = steps[i], vw = window.innerWidth, vh = window.innerHeight;
+    if (!targetEl) {
+      ov.classList.add("nohole");
+      els.t.style.cssText = "left:0;top:0;width:100vw;height:100vh";
+      [els.b, els.l, els.r, els.ring].forEach(m => m.style.display = "none");
+      els.bubble.classList.add("center"); els.bubble.style.top = ""; els.bubble.style.bottom = "";
+      return;
+    }
+    ov.classList.remove("nohole"); els.bubble.classList.remove("center");
+    [els.b, els.l, els.r, els.ring].forEach(m => m.style.display = "");
+    const rc = targetEl.getBoundingClientRect(), pad = step.pad != null ? step.pad : 10;
+    const x = Math.max(0, rc.left - pad), y = Math.max(0, rc.top - pad);
+    const w = Math.min(vw, rc.right + pad) - x, h = Math.min(vh, rc.bottom + pad) - y;
+    els.t.style.cssText = `left:0;top:0;width:100vw;height:${y}px`;
+    els.b.style.cssText = `left:0;top:${y + h}px;width:100vw;height:${Math.max(0, vh - (y + h))}px`;
+    els.l.style.cssText = `left:0;top:${y}px;width:${x}px;height:${h}px`;
+    els.r.style.cssText = `left:${x + w}px;top:${y}px;width:${Math.max(0, vw - (x + w))}px;height:${h}px`;
+    els.ring.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
+    const below = (y + h + 158) < vh;
+    els.bubble.classList.toggle("above", !below);
+    els.bubble.style.top = below ? (y + h + 16) + "px" : "";
+    els.bubble.style.bottom = below ? "" : (vh - y + 16) + "px";
+  }
+  function clearTap() { if (targetEl && onTap) targetEl.removeEventListener("click", onTap, true); onTap = null; }
+  function render() {
+    const step = steps[i];
+    targetEl = resolve(step.sel);
+    els.head.innerHTML = (step.emoji ? `<span class="coach-emoji">${step.emoji}</span>` : "") + (step.title ? `<span class="coach-title">${step.title}</span>` : "");
+    els.head.style.display = (step.emoji || step.title) ? "" : "none";
+    els.text.innerHTML = step.text || "";
+    els.next.textContent = step.cta || (i >= steps.length - 1 ? "Got it! ▸" : "Next ▸");
+    clearTap();
+    ov.classList.toggle("interact", !!step.interact && !!targetEl);
+    if (step.interact && targetEl) { onTap = () => setTimeout(advance, 70); targetEl.addEventListener("click", onTap, true); }
+    place();
+  }
+  function advance() {
+    const step = steps[i]; if (step && step.seenId) markCoachSeen(step.seenId);
+    clearTap(); i++;
+    if (i >= steps.length) return finish();
+    render();
+  }
+  function finish() {
+    clearTap(); window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true);
+    ov.classList.add("out"); setTimeout(() => { ov.remove(); COACH_ACTIVE = false; if (onDone) onDone(); }, 190);
+  }
+  els.next.addEventListener("click", advance);
+  window.addEventListener("resize", place); window.addEventListener("scroll", place, true);
+  requestAnimationFrame(() => requestAnimationFrame(render));   // measure once layout has settled
+}
+// Friendly one-liners for each special charm (shown once, the first time you hold it in a mix).
+const CHARM_TIPS = {
+  cleanse:   "Lowers the <b>allergy meter</b>. Tap it when a customer's allergy climbs toward the red.",
+  insight:   "Reveals an ingredient's <b>hidden magics</b>, so you can see everything it adds.",
+  potent:    "Your <b>next</b> ingredient counts <b>double</b> — best on one that lands right in the green.",
+  peek:      "Reveals one <b>hidden need</b> straight away, so you're not mixing blind.",
+  wild:      "Adds a <b>Wild</b> splash of a magic the customer needs — a flexible helper.",
+  knife:     "<b>Cut</b> an ingredient into single-magic <b>essences</b> for precise control.",
+  transmute: "<b>Swap</b> an ingredient into a different one when it's not what you need.",
+  pinch:     "<b>Halves</b> an ingredient's strength — a gentle nudge when a bar is nearly full.",
+};
+// First-ever mix walkthrough (skipped in villain / copycat / frost rounds, which differ).
+function coachMixIntro() {
+  coachShow([
+    { sel: () => document.querySelector("#inv-row .icard"), emoji: "🧪", title: "Add an ingredient",
+      text: "This is an <b>ingredient</b>. Tap it to drop it into your cauldron.", interact: true, pad: 6 },
+    { sel: "#mix-top", emoji: "🎯", title: "Hit the green",
+      text: "Each wish wants its magic in the <b>green band</b> — not too little, not too much. Overfill and the bar <b>curdles</b>! Watch the bars change as you add.", pad: 8 },
+    { seenId: "mix", sel: "#cauldron-tap", emoji: "🫧", title: "Serve it up",
+      text: "Happy with your mix? <b>Double-tap the cauldron</b> to serve. You never have to fill every slot — stopping early is often smarter!", pad: 6 },
+  ]);
+}
+// Called after the mix screen paints: the first-ever walkthrough, then one-time intros for any
+// brand-new charm on the tray and the allergy meter's first appearance.
+function coachAfterMix() {
+  if (COACH_ACTIVE || !ROUND) return;
+  if (!coachSeen("mix") && !ROUND.villain && !ROUND.copycat && !ROUND.frostTest) { coachMixIntro(); return; }
+  const steps = [], seenType = {};
+  (ROUND.charms || []).forEach(id => {
+    if (seenType[id]) return; seenType[id] = true;
+    const lid = "charm_" + id;
+    if (coachSeen(lid) || !CHARM_TIPS[id]) return;
+    steps.push({ seenId: lid, sel: `.cslot[data-charmid="${id}"]`, emoji: charmArt(id),
+      title: (CHARM(id) ? CHARM(id).name : "New") + " charm", text: CHARM_TIPS[id], pad: 6 });
+  });
+  if (ROUND.wish && ROUND.wish.allergy && !coachSeen("allergy") && document.querySelector("#m2-allergs .allerg-chip")) {
+    steps.push({ seenId: "allergy", sel: "#m2-allergs", emoji: "🤧", title: "Mind the allergy",
+      text: "This customer is <b>allergic</b> to a magic. Adding that magic fills this meter — too much and your pay shrinks. Keep it out of the red!", pad: 8 });
+  }
+  if (steps.length) coachShow(steps);
+}
+function coachScoopIntro() {
+  if (COACH_ACTIVE || coachSeen("scoop") || (ROUND && ROUND.villain)) return;
+  coachShow([{ seenId: "scoop", sel: "#scoop-craft", emoji: "🥄", title: "Scoop up wishes",
+    text: "Swipe the spoon <b>side to side</b> to shake sparkles loose — each becomes a <b>wish bubble</b>. Fill it up, then tap <b>Continue</b>.", pad: 4 }]);
+}
+function coachPopIntro() {
+  if (COACH_ACTIVE || coachSeen("pop") || (ROUND && ROUND.villain)) return;
+  coachShow([{ seenId: "pop", sel: "#bubble-field", emoji: "🫧", title: "Pop your bubbles",
+    text: "Tap each bubble to <b>pop</b> it — whatever's inside (ingredients, charms, treats) drops into your bag. Pop them <b>all</b> to continue.", pad: 4 }]);
+}
+// The always-available reference (Extras → How to Play).
+const HELP_TOPICS = [
+  { emoji: "🥄", title: "1. Scoop", body: "Swipe the spoon side to side to shake wish bubbles out of the glitter. More scoops means more bubbles to pop." },
+  { emoji: "🫧", title: "2. Pop", body: "Tap every bubble (or “Pop them all”). Inside you'll find ingredients, the odd charm, gold, or a treat — it all drops into your bag." },
+  { emoji: "🧪", title: "3. Mix", body: "Tap an ingredient to drop it into the cauldron. Each customer's wish wants a magic in its <b>green band</b> — aim for the green, and don't overfill or the bar curdles and its score drops." },
+  { emoji: "🎯", title: "The green band", body: "The band <b>shrinks</b> as you add more ingredients, so a tidy few-ingredient mix is easier than dumping everything. Stopping early is often the smart play." },
+  { emoji: "❓", title: "Hidden needs", body: "Only the first wish shows at the start. Play an ingredient whose <b>main</b> magic matches a hidden need to reveal it — or use a Peek charm." },
+  { emoji: "✨", title: "Triple & Potent", body: "Three of the same ingredient merge into one <b>Potent</b> piece worth more than double. Strong, but it fills a band fast — place it carefully." },
+  { emoji: "🎴", title: "Charms", body: "Popped from bubbles and played in the cauldron:<br>🧹 <b>Cleanse</b> — lower the allergy meter<br>🔍 <b>Insight</b> — reveal hidden magics<br>✨ <b>Potent</b> — next ingredient counts double<br>⏭️ <b>Peek</b> — reveal a hidden need<br>🌈 <b>Wild</b> — add a needed magic<br>🔪 <b>Knife</b> — cut into essences<br>🔀 <b>Transmute</b> — swap an ingredient<br>🤏 <b>Pinch</b> — halve a piece's strength" },
+  { emoji: "🤧", title: "Allergies", body: "Fussier customers are allergic to a magic. Adding it fills the allergy meter — go too far and your pay drops. Cleanse charms push it back down." },
+  { emoji: "🐸", title: "Serve & your pet", body: "Double-tap the cauldron to serve. Once unlocked, your pet frog lets you spend a treat to <b>undo</b> your last ingredient if you overfill." },
+];
+function renderHelp() {
+  const cards = HELP_TOPICS.map(t => `<div class="help-card"><div class="help-h">${t.emoji} ${t.title}</div><div class="help-b">${t.body}</div></div>`).join("");
+  html("menu", `${hud("How to Play")}<div class="grow" style="overflow-y:auto;padding-bottom:8px">${cards}</div><button class="btn secondary" id="help-back">←  Back</button>`);
+  on("#help-back", "click", renderMenu);
+  show("menu");
 }
 function confirmDialog(msg, onYes) {
   const ov = document.createElement("div"); ov.className = "confirm-overlay";
@@ -9260,7 +9431,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {
