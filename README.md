@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- ✨ **The Courtyard cauldron feels alive.** Soft light now filters through the dome windows and a
+  little dust drifts through the air on the King's Courtyard mixing screen — gentle, blurred, and
+  slow, just enough movement to make the room feel real.
+
 - 🃏 **The Copycat (early test).** A mischievous new mechanic in the works: every ingredient you
   drop in is mirrored by the copycat into the opposite slot, doubling it — across a roomy **8-slot**
   cauldron. Each copy also carries a **shifting third quality** that reshuffles every time you place
