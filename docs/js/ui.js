@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v523"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v524"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8058,7 +8058,7 @@ function paintMix() {
   const showPet = !ROUND.villain;
   const banner = (showPet && GAME.unlocked.undo) ? `${mixTreatsLeft()}/${BALANCE.MAX_TREATS_PER_ROUND}` : "";
   html("mix", `
-    <div class="mixv2 ${ROUND.villain ? "villain" : ""} ${ROUND.copycat ? "copycat" : ""}">
+    <div class="mixv2 ${ROUND.villain ? "villain" : ""} ${ROUND.copycat ? "copycat" : ""} ${!ROUND.villain && GAME.realm === "courtyard" ? "courtyard" : ""}">
       ${ROUND.villain ? `<div class="mix-lightning"></div>` : ""}
       <div class="m2-head"><div class="m2-cust"></div></div>
       <div class="m2-stage">
