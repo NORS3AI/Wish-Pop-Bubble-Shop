@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v504"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v505"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -34,6 +34,7 @@ function normalizeGame(g) {
   if (typeof g.nextEventAt !== "number") g.nextEventAt = -1; // -1 = uninitialized (set on first play)
   if (typeof g.rumpelSeen !== "boolean") g.rumpelSeen = false; // offered a junk visitor while bin full?
   if (typeof g.goblinTurn !== "boolean") g.goblinTurn = false; // alternate Rumpelstiltskin <-> the goblin
+  if (typeof g.rumpelIntroduced !== "boolean") g.rumpelIntroduced = false; // has the FIRST junk visitor (always Rumpel) been met yet?
   if (typeof g.danceLessons !== "number") g.danceLessons = 0; // ball dance lessons taught (paces toward Cinderella)
   if (typeof g.seenIntro !== "boolean") g.seenIntro = false; // played the Willow arrival + Little Red tutorial yet?
   if (typeof g.storyStep !== "number") g.storyStep = 0;      // Little Red's story-thread progress (0=none,2=arrival done,3=vacation,4=impostor)
@@ -3301,7 +3302,12 @@ function maybeJunkRound() {
   if (!full) { if (GAME.rumpelSeen) { GAME.rumpelSeen = false; save(); } return false; }
   if (GAME.rumpelSeen) return false;     // already offered while the bin is full — don't nag
   GAME.rumpelSeen = true;
-  const goblin = !!GAME.goblinTurn; GAME.goblinTurn = !GAME.goblinTurn; save(); // swap back and forth
+  // The player ALWAYS meets Rumpelstiltskin first; only after that do the two junk
+  // visitors alternate back and forth.
+  let goblin;
+  if (!GAME.rumpelIntroduced) { goblin = false; GAME.rumpelIntroduced = true; GAME.goblinTurn = true; }
+  else { goblin = !!GAME.goblinTurn; GAME.goblinTurn = !GAME.goblinTurn; }
+  save();
   if (goblin) renderGoblinIntro(); else renderRumpelIntro();
   return true;
 }
