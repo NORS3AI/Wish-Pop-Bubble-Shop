@@ -198,11 +198,15 @@ function generateHaul(wish, count, charmFinder, ingredientSet, excludeCharms) {
   if (!mainSources.length) mainSources = SET.filter(i => i.qualities.includes(needs[0]));
   if (!mainSources.length) mainSources = SET.slice();
   const ingItem = ing => ({ kind: "ingredient", id: ing.id });
+  // Guaranteed need-source items are tagged `keep` so later passes (e.g. the
+  // bonus-frenzy conversion in newRound) never overwrite them — otherwise a
+  // mystery need could lose its only main source and become un-revealable.
+  const keepItem = ing => ({ kind: "ingredient", id: ing.id, keep: true });
   const items = [];
   // guarantee 2 main-need ingredients (attemptable + enough to build the main
   // toward its band).
-  items.push(ingItem(R.pick(mainSources)));
-  items.push(ingItem(R.pick(mainSources)));
+  items.push(keepItem(R.pick(mainSources)));
+  items.push(keepItem(R.pick(mainSources)));
   // Guarantee at least one PRIMARY-quality source for EVERY other need too. Hidden
   // (mystery) needs only reveal when you play an ingredient whose main magic matches
   // them, so without this a mystery need could be impossible to reveal or fill —
@@ -211,7 +215,7 @@ function generateHaul(wish, count, charmFinder, ingredientSet, excludeCharms) {
   for (let k = 1; k < needs.length; k++) {
     let src = SET.filter(i => i.qualities[0] === needs[k]);
     if (!src.length) src = SET.filter(i => i.qualities.includes(needs[k]));
-    if (src.length) { items.push(ingItem(R.pick(src))); items.push(ingItem(R.pick(src))); }  // TWO per need (reveal + fill insurance)
+    if (src.length) items.push(keepItem(R.pick(src)));
   }
   const charmChance = charmFinder ? BALANCE.CHARM_DROP_CHANCE_FINDER : BALANCE.CHARM_DROP_CHANCE;
   while (items.length < count) {
@@ -293,7 +297,9 @@ function newRound(state) {
   if (bonusFrenzy) {
     let seeded = 0;
     for (let i = 0; i < haul.length && seeded < 2; i++) {
-      if (haul[i].kind === "ingredient") { haul[i] = { kind: "bubble" }; seeded++; }
+      // never convert a guaranteed need-source (keep) — that could erase a
+      // mystery need's only main source and leave it impossible to reveal.
+      if (haul[i].kind === "ingredient" && !haul[i].keep) { haul[i] = { kind: "bubble" }; seeded++; }
     }
   }
   return {

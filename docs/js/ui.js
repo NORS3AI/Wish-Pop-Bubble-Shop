@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v502"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v503"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7682,12 +7682,10 @@ function paintMixTop() {
   const el = $("#mix-top"); if (!el) return;
   const w = ROUND.wish;
   const score = scoreMix(ROUND.slots, w, ROUND.allergyOffset);
-  // DISCOVERY: a mystery need reveals when you play an ingredient that touches it by EITHER
-  // quality (main or secondary) — a single guaranteed main source could be missed among your
-  // slots, so any contributor reveals it. (The guaranteed main source is still there to fill it.)
+  // DISCOVERY: a mystery need reveals when you play an ingredient whose MAIN quality matches.
   w.needs.forEach(n => {
     if (n.revealed) return;
-    const found = ROUND.slots.some(inst => (inst.wild || inst.essence || inst.magic) ? inst.magic === n.type : D.INGREDIENT_BY_ID[inst.id].qualities.includes(n.type));
+    const found = ROUND.slots.some(inst => (inst.wild || inst.essence || inst.magic) ? inst.magic === n.type : D.INGREDIENT_BY_ID[inst.id].qualities[0] === n.type);
     if (found) n.revealed = true;
   });
   const req = w.requiredMatch, meets = score.weighted >= req;
