@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v514"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v515"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -806,6 +806,71 @@ function playCourtyardIntro() {
     { name: "Lady Gothel", fig: "gothel_intro1", bg: "courtyard_mid", text: "<i>(Jasper scrambles off, clutching his nose.)</i> <b>Lady Gothel.</b> Do commit it to memory, dear. I'm the important one here — and I intend to be your <b>most frequent, most valued</b> customer." },
     { name: "Lady Gothel", fig: "gothel_intro2", bg: "courtyard_shop", cta: "Get to work  ▸", text: "So do hurry along and get to <b>work</b>. I have ever so many <b>wishes</b> to make… and I simply <i>loathe</i> being kept waiting." },
   ], () => { GAME.seenCourtyardIntro = true; save(); playZoomIn(startRound, "courtyard_shop"); });
+}
+
+/* ======================================================================= */
+/* KING'S COURTYARD — "Restore the Gems" hidden-stash puzzle.               */
+/* Five gems on the royal arch have lost their colour (a grey overlay sits  */
+/* over each). Tap each to peel its overlay away and bring the colour back; */
+/* restore all five and a hidden stash glows into view mid-screen. Gem      */
+/* positions are % of the shared 853×1844 art, so overlays sit exactly.     */
+/* ======================================================================= */
+const STASH_GEMS = [
+  { l: 46.66, t: 9.49,  w: 6.33, cx: 49.77, cy: 11.33 },
+  { l: 26.73, t: 13.50, w: 4.57, cx: 28.96, cy: 14.48 },
+  { l: 68.82, t: 13.56, w: 4.81, cx: 71.16, cy: 14.51 },
+  { l: 6.33,  t: 55.91, w: 4.81, cx: 8.68,  cy: 57.27 },
+  { l: 88.63, t: 55.91, w: 4.81, cx: 90.97, cy: 57.24 },
+];
+function renderStashHunt() {
+  SFX.unlock();
+  const v = "?v=" + BUILD;
+  const gems = STASH_GEMS.map((g, i) => `<img class="stash-gem" id="stash-gem${i}" src="art/kc_stash_gem${i + 1}.png${v}" style="left:${g.l}%;top:${g.t}%;width:${g.w}%" alt="" draggable="false">`).join("");
+  const hits = STASH_GEMS.map((g, i) => `<button class="stash-hit" data-i="${i}" style="left:${g.cx}%;top:${g.cy}%" aria-label="Restore gem"></button>`).join("");
+  html("event", `
+    <div class="stash-wrap mg-fullbleed" id="stash-wrap">
+      <div class="stash-stage" id="stash-stage">
+        <img class="stash-bg" src="art/kc_stash_bg.jpg${v}" alt="" draggable="false">
+        ${gems}
+        ${hits}
+      </div>
+      <div class="stash-glow" id="stash-glow"></div>
+      <div class="stash-reveal" id="stash-reveal">
+        <div class="stash-treasure">💎</div>
+        <div class="stash-reward" id="stash-reward"></div>
+      </div>
+    </div>
+  `);
+  show("event");
+  // No counter, no hint, no rings — it's a secret; only the dull gems give it away.
+  let restored = 0;
+  document.querySelectorAll("#stash-wrap .stash-hit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.classList.contains("done")) return;
+      const i = +btn.dataset.i;
+      const gem = document.getElementById("stash-gem" + i);
+      if (gem) gem.classList.add("restored");
+      btn.classList.add("done");
+      restored++;
+      SFX.pop(restored, 0.7); SFX.charm();            // rising chime per gem
+      if (navigator.vibrate) navigator.vibrate(12);
+      if (restored >= 5) setTimeout(stashReveal, 500);
+    });
+  });
+}
+function stashReveal() {
+  const glow = document.getElementById("stash-glow"); if (glow) glow.classList.add("on");
+  SFX.lift && SFX.lift();
+  setTimeout(() => {
+    const gold = 250, dust = 25;
+    grantReward({ gold, stardust: dust }); save();
+    const rw = document.getElementById("stash-reward"); if (rw) rw.innerHTML = `🪙 ${gold} ✨ ${dust}`;
+    const rv = document.getElementById("stash-reveal"); if (rv) rv.classList.add("on");
+    SFX.perfect(); SFX.bigCoin && SFX.bigCoin(); confettiOver($("#app"));
+    if (navigator.vibrate) navigator.vibrate([20, 40, 20, 40, 30]);
+    // tap anywhere to collect (armed after a short guard so the fifth-gem tap doesn't dismiss it)
+    setTimeout(() => { const w = document.getElementById("stash-wrap"); if (w) w.addEventListener("click", () => { SFX.unlock(); SFX.pop(1); renderStart(); }, { once: true }); }, 450);
+  }, 720);
 }
 /* --- Little Red's later visits (Willow). Each: a chat, a photo/sketch she shows
    us, then a wish we grant. Paced a few customers apart by maybeRedVisit(). --- */
@@ -1953,6 +2018,7 @@ function renderAdmin() {
         <button class="btn" id="ad-carpet" style="margin-bottom:8px">🧞 Magic Carpet Dash (practice)</button>
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
         <button class="btn secondary" id="ad-courtyard-intro" style="margin-bottom:8px">🃏 Replay Courtyard intro (Jasper + Lady Gothel)</button>
+        <button class="btn secondary" id="ad-stash" style="margin-bottom:8px">💎 Restore the Gems (hidden stash)</button>
         <button class="btn" id="ad-copycat" style="margin-bottom:8px">🃏 Copycat Round (repeat test)</button>
         <button class="btn" id="ad-frost" style="margin-bottom:8px">🧊 Frost/Thaw Round (repeat test)</button>
         <button class="btn" id="ad-queen" style="margin-bottom:8px">👑 The Evil Queen (villain)</button>
@@ -2031,6 +2097,7 @@ function renderAdmin() {
   on("#ad-carpet", "click", renderCarpetIntro);
   on("#ad-courtyard", "click", () => { GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true; GAME.unlockedRealms.courtyard = true; save(); travelRealm("courtyard"); });
   on("#ad-courtyard-intro", "click", () => { GAME.realm = "courtyard"; save(); applyRealmTheme(); playCourtyardIntro(); });
+  on("#ad-stash", "click", () => { GAME.realm = "courtyard"; save(); applyRealmTheme(); renderStashHunt(); });
   on("#ad-copycat", "click", startCopycatRound);
   on("#ad-frost", "click", startFrostRound);
   on("#ad-queen", "click", () => {
@@ -9452,7 +9519,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {
