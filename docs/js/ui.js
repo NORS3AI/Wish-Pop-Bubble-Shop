@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v507"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v508"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -944,10 +944,10 @@ function playRedButtons() {
   ["think", "annoyed", "idea", "present"].forEach(p => ART.ensure("red_" + p, () => {}));
   ART.ensure("button_heart", () => {});
   renderStoryBeats([
-    { name: "Little Red", pose: "think", text: "You said the ‘collector’ <i>dropped</i> these? Let me see them… <i>(she turns each one over)</i>" },
+    { name: "Little Red", pose: "think", text: "You said the ‘collector’ <i>dropped</i> these? Hold them out, let me see… <i>(she leans in, turning each one over with a fingertip)</i>" },
     { name: "Little Red", pose: "annoyed", text: "That <b>heart button</b> — I’d know it anywhere. That’s <b>Grandma’s</b>. And this blue one’s Tiny Mouse’s, I’d bet my hood on it. And the gumdrop…" },
     { name: "Little Red", pose: "idea", cta: "Give hers back  ▸", text: "…that’s the Gingerbread Man’s. That ‘collector’ has been pinching from <i>everyone</i>. ‘Notawolf,’ honestly. May I have Grandma’s heart button back?" },
-    { name: "Little Red", pose: "present", give: "button_heart", giveEmoji: "❤️", cta: "Hand it over  ▸", text: "You fish the little <b>heart button</b> out of your satchel and hold it out. <i>(Red cups her hands and takes it, holding it close.)</i> Oh — thank you. Grandma will be so glad." },
+    { name: "Little Red", pose: "present", give: "button_heart", giveEmoji: "❤️", cta: "Hand it over  ▸", text: "You pluck the little <b>heart button</b> from your palm and hold it out. <i>(Red cups her hands and takes it, holding it close.)</i> Oh — thank you. Grandma will be so glad." },
     { name: "Little Red", pose: "idea", cta: "I’m on it  ▸", text: "Right — that’s hers safe and sound. You sort the other two back to their owners, and keep your eyes <b>open</b>. That ‘collector’ won’t get away with it." },
   ], () => { satchelRemove("button_heart"); GAME.buttonStep = 2; GAME.buttonChainAt = -1; save(); toast("❤️ Little Red kept Grandma’s button."); renderStart(); });
 }
