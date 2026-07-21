@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v526"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v527"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -470,6 +470,36 @@ function show(id) {
   // the shared pet/timer/tally/menu overlay only lives on the round screens + home
   if (id === "scoop" || id === "pop" || id === "mix" || id === "start") syncRoundHud(id);
   else removeRoundHud();
+  if (id !== "mix") courtAmbient(false);   // the Courtyard mix ambience only shows on the mixing screen
+}
+// Courtyard mixing screen ambience: a soft, blurred light-through-windows glow +
+// slow-drifting dust motes. Lives ONCE on #app (NOT inside #screen-mix, which is
+// wiped on every ingredient add) so the animation is continuous, never restarting.
+function courtAmbient(on) {
+  const app = document.getElementById("app");
+  if (!app) return;
+  let amb = document.getElementById("court-ambient");
+  if (!on) { if (amb) amb.classList.remove("show"); return; }
+  if (!amb) {
+    amb = document.createElement("div");
+    amb.id = "court-ambient";
+    // three soft light shafts angling down from the dome windows up top
+    let html = '<div class="ca-beam ca-b1"></div><div class="ca-beam ca-b2"></div><div class="ca-beam ca-b3"></div>';
+    // ~16 blurred dust motes, each with its own random lane / size / timing
+    for (let i = 0; i < 16; i++) {
+      const left = Math.round(Math.random() * 100);
+      const size = (2.4 + Math.random() * 4).toFixed(1);
+      const dur = (11 + Math.random() * 12).toFixed(1);
+      const delay = (-Math.random() * 22).toFixed(1);
+      const drift = (Math.random() * 40 - 20).toFixed(0);
+      const op = (0.18 + Math.random() * 0.32).toFixed(2);
+      html += `<span class="ca-mote" style="left:${left}%;width:${size}vw;height:${size}vw;`
+            + `--dur:${dur}s;--delay:${delay}s;--drift:${drift}px;--op:${op}"></span>`;
+    }
+    amb.innerHTML = html;
+    app.appendChild(amb);
+  }
+  amb.classList.add("show");
 }
 function html(id, markup) { screen(id).innerHTML = markup; }
 function on(sel, ev, fn) { const e = $(sel); if (e) e.addEventListener(ev, fn); }
@@ -8105,6 +8135,7 @@ function paintMix() {
   if (ROUND.villain) { if (!mixLightningTimer) startMixLightning(); } else stopMixLightning();   // Queen's chamber lightning
   ROUND.inventory.forEach(inst => { if (inst && inst._glow) delete inst._glow; });
   startRushClock();   // the shared In-a-Rush countdown shows on the mix screen too (same as scoop/pop)
+  courtAmbient(!ROUND.villain && GAME.realm === "courtyard");   // soft window light + dust motes, Courtyard only
 }
 // Two quick taps on the cauldron serves — deliberate, so no accidental serves.
 function wireDoubleTapServe() {

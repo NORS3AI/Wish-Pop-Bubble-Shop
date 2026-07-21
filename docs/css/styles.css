@@ -2207,6 +2207,32 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
 .mixv2.villain { isolation: isolate; background: url('../art/queen_mix_bg.jpg?v=370') center top / cover no-repeat, #140a24; }
 /* King's Courtyard mixing chamber — same cover fit as the default mix backdrop */
 .mixv2.courtyard { background: url('../art/courtyard_mix_bg.jpg?v=526') center top / cover no-repeat, #160c26; }
+/* --- Courtyard ambience: soft window light + drifting dust (lives on #app, JS-toggled) ------
+   Kept blurred and low-opacity so it reads as haze/dust in the air, matching the blurry bg.
+   pointer-events:none so it never blocks taps; only visible when .show is set on the mix screen. */
+#court-ambient { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden;
+  opacity: 0; transition: opacity .6s ease; }
+#court-ambient.show { opacity: 1; }
+/* three faint light shafts angling down from the dome windows; screen-blend so they only lighten */
+.ca-beam { position: absolute; top: -12%; width: 46%; height: 96%; mix-blend-mode: screen;
+  filter: blur(16px); transform-origin: top center; will-change: opacity;
+  background: linear-gradient(178deg, rgba(255,248,214,.42) 0%, rgba(255,244,198,.20) 34%, rgba(255,240,190,0) 72%); }
+.ca-b1 { left: 6%;  transform: rotate(9deg);  animation: caBeam 9s ease-in-out infinite; }
+.ca-b2 { left: 34%; transform: rotate(-4deg); animation: caBeam 11s ease-in-out infinite .8s; opacity: .8; }
+.ca-b3 { left: 60%; transform: rotate(6deg);  animation: caBeam 13s ease-in-out infinite 1.6s; opacity: .7; }
+@keyframes caBeam { 0%,100% { opacity: .30; } 50% { opacity: .68; } }
+/* blurred dust motes: soft round highlights that drift slowly upward, sway, and twinkle */
+.ca-mote { position: absolute; bottom: -8%; border-radius: 50%; filter: blur(1.6px);
+  mix-blend-mode: screen; opacity: 0; will-change: transform, opacity;
+  background: radial-gradient(circle, rgba(255,250,228,.95) 0%, rgba(255,246,210,.5) 45%, rgba(255,244,200,0) 72%);
+  animation: caMote var(--dur) linear infinite; animation-delay: var(--delay); }
+@keyframes caMote {
+  0%   { transform: translate3d(0,0,0); opacity: 0; }
+  10%  { opacity: var(--op); }
+  50%  { transform: translate3d(var(--drift), -55vh, 0); opacity: var(--op); }
+  90%  { opacity: var(--op); }
+  100% { transform: translate3d(0, -108vh, 0); opacity: 0; }
+}
 /* the "room lit blue" layer — the flash art fades in over the normal chamber (behind the cauldron)
    then fades out, like lightning through the window. JS drives the opacity at random. */
 .mix-lightning { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0;
