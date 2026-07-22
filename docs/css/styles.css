@@ -2978,6 +2978,8 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 /* ---- Stepsisters' Bead Restring minigame ---- */
 .beads-stage { position: absolute; inset: 0; overflow: hidden; background: #1c1230; }
 .beads-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center top; background-repeat: no-repeat; }
+/* transparent overlay JS-sized to the cover-placed mannequin image, so arcs+beads always track it */
+.beads-scene { position: absolute; z-index: 2; pointer-events: none; }
 .beads-hudline { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 6; pointer-events: none; }
 .beads-chip { background: rgba(0,0,0,.55); color: #fff; border-radius: 12px; padding: 5px 12px; font-weight: 800; font-size: 14px; }
 /* thin string-line guides drawn along the necklace arcs (behind the beads) */
@@ -3000,13 +3002,15 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 @keyframes beadWrong { 0% { transform: translate(-50%,-50%) rotate(0); } 25% { transform: translate(-53%,-50%) rotate(-12deg); } 75% { transform: translate(-47%,-50%) rotate(12deg); } 100% { transform: translate(-50%,-50%) scale(.2); opacity: 0; } }
 .bead.fade { animation: beadFade .4s ease forwards; }
 @keyframes beadFade { to { opacity: 0; } }
-.beads-corner { position: absolute; bottom: 10px; z-index: 6; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; max-width: 46%; }
-.beads-corner.ls { left: 8px; } .beads-corner.rs { right: 8px; }
-.beads-sister { font-size: 44px; filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)); }
-.beads-shout { position: relative; width: 170px; max-width: 42vw; aspect-ratio: 2.4; opacity: 0; transform: scale(.5); filter: drop-shadow(0 4px 6px rgba(0,0,0,.5)); }
+/* the two shouting sisters, now up at the TOP of the screen (below the count), bigger */
+.beads-tops { position: absolute; top: 46px; left: 0; right: 0; z-index: 6; display: flex; justify-content: space-between; align-items: flex-start; padding: 0 6px; pointer-events: none; }
+.beads-corner { display: flex; flex-direction: column; gap: 1px; }
+.beads-corner.ls { align-items: flex-start; } .beads-corner.rs { align-items: flex-end; }
+.beads-sister { font-size: 30px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); margin: 0 8px; }
+.beads-shout { position: relative; width: 47vw; max-width: 250px; aspect-ratio: 2.4; opacity: 0; transform: scale(.5); filter: drop-shadow(0 4px 6px rgba(0,0,0,.5)); }
 .beads-shout .sb { position: absolute; inset: 0; background-size: contain; background-repeat: no-repeat; background-position: center; }
 .beads-shout .beads-word { position: absolute; left: 6%; right: 6%; top: 39%; transform: translateY(-50%); text-align: center;
-  font-weight: 900; font-size: 25px; letter-spacing: .5px; text-shadow: 0 1px 2px rgba(0,0,0,.45), 0 0 1px rgba(0,0,0,.5); }
+  font-weight: 900; font-size: clamp(22px, 6.6vw, 34px); letter-spacing: .5px; text-shadow: 0 1px 2px rgba(0,0,0,.45), 0 0 1px rgba(0,0,0,.5); }
 .beads-shout.show { animation: beadShout .24s cubic-bezier(.2,1.5,.4,1) forwards; }
 @keyframes beadShout { to { opacity: 1; transform: scale(1); } }
 .beads-stage.beads-shake { animation: beadsShake .3s; }

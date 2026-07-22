@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v543"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v544"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5644,13 +5644,14 @@ const BEAD_CLASH = [["red", "pink"], ["blue", "teal"], ["pink", "orange"], ["blu
 function beadsClash(a, b) { return BEAD_CLASH.some(p => (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a)); }
 // The five necklace arcs draped on the mannequin (fractions of the stage, from the art). Each is a
 // quadratic curve from the left shoulder to the right, dipping to its centre. Beads thread along them.
-const BEAD_ARC_XL = 0.353, BEAD_ARC_XR = 0.646, BEAD_ARC_CX = 0.4995;
-const BEAD_ARCS = [   // yEnd = shoulder height, ctrl = 2*dip - yEnd (curve passes through the dip). Traced from the red-line art.
-  { yEnd: 0.258, ctrl: 0.280 },   // dip ~0.269
-  { yEnd: 0.268, ctrl: 0.310 },   // dip ~0.289
-  { yEnd: 0.279, ctrl: 0.339 },   // dip ~0.309
-  { yEnd: 0.289, ctrl: 0.389 },   // dip ~0.339
-  { yEnd: 0.300, ctrl: 0.474 },   // dip ~0.387
+// Narrower, deeper U-shaped strands that hang DOWN the bust (less horizontal spread).
+const BEAD_ARC_XL = 0.385, BEAD_ARC_XR = 0.615, BEAD_ARC_CX = 0.50;
+const BEAD_ARCS = [   // yEnd = neck attach height, ctrl = 2*dip - yEnd (curve passes through the dip)
+  { yEnd: 0.255, ctrl: 0.365 },   // dip ~0.31
+  { yEnd: 0.255, ctrl: 0.465 },   // dip ~0.36
+  { yEnd: 0.255, ctrl: 0.565 },   // dip ~0.41
+  { yEnd: 0.255, ctrl: 0.675 },   // dip ~0.465
+  { yEnd: 0.255, ctrl: 0.785 },   // dip ~0.52
 ];
 const BEAD_ARC_COUNTS = [5, 7, 9, 11, 13];   // beads per necklace (shortest → longest), graduated like the reference
 const BEAD_ARC_CUM = BEAD_ARC_COUNTS.reduce((a, n) => (a.push((a.length ? a[a.length - 1] : 0) + n), a), []); // [4,9,15,22,30]
@@ -5714,19 +5715,40 @@ function beadsPlay() {
     ${hud("Bead Restring")}
     <div class="beads-stage mg-fullbleed" id="beads-stage">
       <div class="beads-bg" style="background-image:url('art/beads_bg.webp?v=${BUILD}')"></div>
+      <!-- overlay locked to the actual displayed mannequin image (positioned by JS) so strings + beads always track it -->
+      <div class="beads-scene" id="beads-scene">
+        ${beadsStringsSvg()}
+        <div class="beads-drape" id="beads-drape"></div>
+      </div>
+      <div class="beads-fall" id="beads-fall"></div>
       <div class="beads-hudline">
         <div class="beads-chip">📿 Necklaces <b id="beads-necks">${beadsNecklacesDone(BEADS.strung.length)}</b>/5</div>
       </div>
-      ${beadsStringsSvg()}
-      <div class="beads-drape" id="beads-drape"></div>
-      <div class="beads-fall" id="beads-fall"></div>
-      <div class="beads-corner ls"><div class="beads-shout" id="beads-shout-l"></div><div class="beads-sister">💃</div></div>
-      <div class="beads-corner rs"><div class="beads-shout" id="beads-shout-r"></div><div class="beads-sister">💃</div></div>
+      <div class="beads-tops">
+        <div class="beads-corner ls"><div class="beads-sister">💃</div><div class="beads-shout" id="beads-shout-l"></div></div>
+        <div class="beads-corner rs"><div class="beads-sister">💃</div><div class="beads-shout" id="beads-shout-r"></div></div>
+      </div>
     </div>
   `);
   show("event");
+  beadsLayoutScene();
   beadsPaintNecklace();
 }
+// Position the (transparent) bead overlay exactly where CSS `cover` placed the mannequin image,
+// so string arcs + beads line up with the mannequin on any screen shape.
+function beadsLayoutScene() {
+  const stage = document.getElementById("beads-stage"), scene = document.getElementById("beads-scene");
+  if (!stage || !scene) return;
+  const W = stage.clientWidth, H = stage.clientHeight; if (!W || !H) return;
+  const IW = 852, IH = 1846;
+  const scale = Math.max(W / IW, H / IH);      // cover
+  const dW = IW * scale, dH = IH * scale;
+  scene.style.left = ((W - dW) / 2) + "px";    // background-position: center top
+  scene.style.top = "0px";
+  scene.style.width = dW + "px";
+  scene.style.height = dH + "px";
+}
+window.addEventListener("resize", () => { if (document.getElementById("beads-scene")) beadsLayoutScene(); });
 function beadsNextRound() {
   if (!BEADS || BEADS.phase === "over") return;
   BEADS.level++;
@@ -5756,6 +5778,8 @@ function beadsNextRound() {
 }
 function beadsDrop() {
   const fall = $("#beads-fall"); if (!fall) return;
+  const sl = $("#beads-shout-l"), sr = $("#beads-shout-r");   // read time's up — fade the shouts so they don't clash with falling beads
+  if (sl) sl.classList.remove("show"); if (sr) sr.classList.remove("show");
   const answer = BEADS.answer;
   // 5 beads: the answer + decoys, with NO clashing pair anywhere in the set (retry to reach five)
   let set = [answer];
