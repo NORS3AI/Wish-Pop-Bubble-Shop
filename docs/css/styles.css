@@ -2211,7 +2211,10 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
    Kept blurred and low-opacity so it reads as haze/dust in the air, matching the blurry bg.
    pointer-events:none so it never blocks taps; only visible when .show is set on the mix screen. */
 #court-ambient { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden;
-  opacity: 0; transition: opacity .6s ease; }
+  opacity: 0; transition: opacity .6s ease;
+  /* fade the whole layer out toward the bottom so motes don't distract from the needs bars + tray */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 40%, rgba(0,0,0,.20) 70%, transparent 90%);
+          mask-image: linear-gradient(to bottom, #000 0%, #000 40%, rgba(0,0,0,.20) 70%, transparent 90%); }
 #court-ambient.show { opacity: 1; }
 /* three faint light shafts angling down from the dome windows; screen-blend so they only lighten */
 .ca-beam { position: absolute; top: -12%; width: 46%; height: 96%; mix-blend-mode: screen;
