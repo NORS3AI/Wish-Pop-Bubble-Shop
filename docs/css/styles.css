@@ -2980,6 +2980,11 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 .beads-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center top; background-repeat: no-repeat; }
 /* transparent overlay JS-sized to the cover-placed mannequin image, so arcs+beads always track it */
 .beads-scene { position: absolute; z-index: 2; pointer-events: none; }
+/* end-screen keepsake photo: a framed crop of the mannequin wearing the finished necklaces */
+.beads-photo { position: relative; overflow: hidden; width: 58vw; max-width: 236px; aspect-ratio: 0.9;
+  border-radius: 12px; border: 4px solid #d9b25a; box-shadow: 0 6px 18px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.15); background: #1c1230; }
+.beads-photo-scene { position: absolute; }
+.beads-photo-scene .beads-strings, .beads-photo-scene .beads-drape { position: absolute; inset: 0; }
 .beads-hudline { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 6; pointer-events: none; }
 .beads-chip { background: rgba(0,0,0,.55); color: #fff; border-radius: 12px; padding: 5px 12px; font-weight: 800; font-size: 14px; }
 /* thin string-line guides drawn along the necklace arcs (behind the beads) */

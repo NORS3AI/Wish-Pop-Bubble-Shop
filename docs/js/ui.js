@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v545"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v546"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5704,7 +5704,7 @@ function beadsStart() {
   if (BEADS && BEADS.tickTimer) clearInterval(BEADS.tickTimer);   // never leave a prior loop running
   const strung = [];
   for (let i = 0; i < BEADS_START_LEN; i++) strung.push(R.pick(BEAD_PALETTE).id);
-  BEADS = { strung, best: strung.length, bestNecks: beadsNecklacesDone(strung.length), level: 0, uid: 0, beads: [], answer: null,
+  BEADS = { strung, bestStrung: strung.slice(), best: strung.length, bestNecks: beadsNecklacesDone(strung.length), level: 0, uid: 0, beads: [], answer: null,
     phase: "read", roundResolved: false, elapsed: 0, readUntil: 0, gapUntil: 0, tickTimer: null };
   beadsPlay();
   BEADS.tickTimer = setInterval(beadsTick, BEAD_TICK);
@@ -5749,7 +5749,7 @@ function beadsLayoutScene() {
   scene.style.width = dW + "px";
   scene.style.height = dH + "px";
 }
-window.addEventListener("resize", () => { if (document.getElementById("beads-scene")) beadsLayoutScene(); });
+window.addEventListener("resize", () => { if (document.getElementById("beads-scene")) beadsLayoutScene(); if (document.getElementById("beads-photo")) beadsPhotoLayout(); });
 function beadsNextRound() {
   if (!BEADS || BEADS.phase === "over") return;
   BEADS.level++;
@@ -5839,6 +5839,7 @@ function beadsThread(colorId) {
   const before = beadsNecklacesDone(BEADS.strung.length);
   BEADS.strung.push(colorId);
   BEADS.best = Math.max(BEADS.best, BEADS.strung.length);
+  if (BEADS.strung.length > BEADS.bestStrung.length) BEADS.bestStrung = BEADS.strung.slice();   // remember the fullest necklace for the end photo
   const after = beadsNecklacesDone(BEADS.strung.length);
   if (after > before) {   // a whole necklace just completed
     BEADS.bestNecks = Math.max(BEADS.bestNecks, after);
@@ -5898,26 +5899,29 @@ function beadArcEven(arc, count) {
   }
   return out;
 }
-// Drape the strung beads across the five mannequin arcs (arc 1 fills first, then arc 2, …).
-// A necklace that's fully strung dims (it's "done"); if you regress below it, its colour returns.
-function beadsPaintNecklace(bump) {
-  const wrap = $("#beads-drape"); if (!wrap) return;
-  const L = Math.min(BEADS.strung.length, BEADS_TOTAL);
+// Build the drape HTML: strung beads across the five mannequin arcs (arc 1 fills first, then 2, …).
+// applyDim=true dims fully-strung strings (live play); false = every bead full colour (the end photo).
+function beadsDrapeHtml(applyDim, strungArr) {
+  const strung = strungArr || BEADS.strung;
+  const L = Math.min(strung.length, BEADS_TOTAL);
   let html = "";
   for (let a = 0; a < BEAD_ARCS.length; a++) {
     const start = a ? BEAD_ARC_CUM[a - 1] : 0, quota = BEAD_ARC_COUNTS[a];
     const onArc = Math.max(0, Math.min(quota, L - start));
     if (!onArc) continue;
     const pts = beadArcEven(BEAD_ARCS[a], quota);
-    const done = L >= BEAD_ARC_CUM[a];   // this whole string is complete → dim it
+    const done = applyDim && L >= BEAD_ARC_CUM[a];   // this whole string is complete → dim it
     for (let j = 0; j < onArc; j++) {
-      const p = pts[j];
-      const id = BEADS.strung[start + j];
-      const last = (start + j === L - 1);
-      html += `<span class="dbead${done ? " dbead-done" : ""}${bump && last ? " dbead-in" : ""}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;background-image:url('art/bead_${id}.webp?v=${BUILD}')"></span>`;
+      const p = pts[j], id = strung[start + j];
+      html += `<span class="dbead${done ? " dbead-done" : ""}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;background-image:url('art/bead_${id}.webp?v=${BUILD}')"></span>`;
     }
   }
-  wrap.innerHTML = html;
+  return html;
+}
+function beadsPaintNecklace(bump) {
+  const wrap = $("#beads-drape"); if (!wrap) return;
+  wrap.innerHTML = beadsDrapeHtml(true);
+  if (bump && wrap.lastElementChild) wrap.lastElementChild.classList.add("dbead-in");   // pop the newest bead
 }
 function beadsFinish(won) {
   if (!BEADS || BEADS.phase === "over") return;
@@ -5927,14 +5931,24 @@ function beadsFinish(won) {
   GAME.beadsBest = Math.max(GAME.beadsBest || 0, necks); save();
   if (won) { SFX.fanfare && SFX.fanfare(); SFX.perfect && SFX.perfect(); confettiOver($("#app")); }
   else { SFX.clang && SFX.clang(); SFX.sneeze && SFX.sneeze(); }
+  // a keepsake "photo" of the mannequin wearing the necklaces you just strung (full colour)
+  const photo = `
+    <div class="beads-photo" id="beads-photo">
+      <div class="beads-photo-scene" id="beads-photo-scene">
+        <div class="beads-bg" style="background-image:url('art/beads_bg.webp?v=${BUILD}')"></div>
+        ${beadsStringsSvg()}
+        <div class="beads-drape">${beadsDrapeHtml(false, BEADS.bestStrung)}</div>
+      </div>
+    </div>`;
   html("event", `
     ${hud("Bead Restring")}
-    <div class="grow center" style="gap:14px">
-      <div style="font-size:46px">${won ? "👑📿" : "📿💥"}</div>
-      <div style="font-weight:800;font-size:22px">${won ? "A full set — all five!" : "The string snapped!"}</div>
-      <div class="card center" style="gap:4px;max-width:300px">
+    <div class="grow center" style="gap:10px;overflow-y:auto;padding:8px 0">
+      <div style="font-weight:800;font-size:21px">${won ? "👑 A full set — all five!" : "The string snapped!"}</div>
+      <div class="muted" style="font-size:12px;margin-top:-4px">Your handiwork:</div>
+      ${photo}
+      <div class="card center" style="gap:2px;max-width:300px">
         <div class="muted">Necklaces completed</div>
-        <div style="font-size:36px;font-weight:900">${necks} <span style="font-size:22px">/ 5</span></div>
+        <div style="font-size:34px;font-weight:900">${necks} <span style="font-size:20px">/ 5</span></div>
         <div class="muted">Best ever: ${GAME.beadsBest} / 5</div>
       </div>
       <button class="btn good" id="beads-again" style="width:100%;max-width:320px">Play again ▸</button>
@@ -5944,6 +5958,18 @@ function beadsFinish(won) {
   on("#beads-again", "click", beadsStart);
   on("#beads-done", "click", () => { const d = beadsDone; beadsDone = null; BEADS = null; (d || renderStart)(); });
   show("event");
+  beadsPhotoLayout();
+}
+// Frame the end-screen photo on the mannequin's bust (head → below the waist).
+function beadsPhotoLayout() {
+  const win = document.getElementById("beads-photo"), scene = document.getElementById("beads-photo-scene");
+  if (!win || !scene) return;
+  const Wp = win.clientWidth; if (!Wp) return;
+  const sceneH = Wp * (1846 / 852);
+  scene.style.width = Wp + "px";
+  scene.style.height = sceneH + "px";
+  scene.style.left = "0px";
+  scene.style.top = (-0.11 * sceneH) + "px";   // start the crop at image y≈0.11 (just above the neck)
 }
 
 /* ======================================================================= */
