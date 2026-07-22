@@ -177,6 +177,8 @@ html, body {
 .pop-sub { position: absolute; left: 10px; right: 10px; top: calc(var(--safe-t) + 118px);
   text-align: center; font-size: 13px; margin: 0; z-index: 0; pointer-events: none; }
 .pop-sub.timed { top: calc(var(--safe-t) + 150px); }
+/* Courtyard stash pop: drop the hint into the clear band below the moved pet, above the mid gems */
+.pop-sub.hint-lo { top: calc(var(--safe-t) + 372px); }
 /* the bubbles are absolutely placed inside this big field (see layoutBubbleField) */
 .bubble-field { position: relative; z-index: 1; flex: 1; min-height: 0; overflow: hidden; --bub: 68px; --amp: 16px; }
 .pbubble { position: absolute; width: var(--bub,68px); height: var(--bub,68px); border: none; padding: 0; cursor: pointer;
@@ -243,7 +245,7 @@ html, body {
   background: linear-gradient(#453530, #3a2c27); }
 .pop-stash .stash-hit { pointer-events: auto; }
 /* hide the top-left pet badge on a stash pop so it doesn't cover the upper-left gem */
-.round-hud.stash-hidepet .petbadge { display: none; }
+#round-hud.stash-movepet .petbadge { top: calc(var(--safe-t) + 208px); left: 8px; }
 /* the carved X is an invisible hotspot over the art — no hint (it's an Easter egg) */
 .pop-x-target { position: absolute; transform: translate(-50%,-50%); border: none; background: none; padding: 0; cursor: pointer;
   border-radius: 50%; -webkit-tap-highlight-color: transparent; }
