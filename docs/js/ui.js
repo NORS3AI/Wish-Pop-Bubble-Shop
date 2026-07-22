@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v542"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v543"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5645,14 +5645,14 @@ function beadsClash(a, b) { return BEAD_CLASH.some(p => (p[0] === a && p[1] === 
 // The five necklace arcs draped on the mannequin (fractions of the stage, from the art). Each is a
 // quadratic curve from the left shoulder to the right, dipping to its centre. Beads thread along them.
 const BEAD_ARC_XL = 0.353, BEAD_ARC_XR = 0.646, BEAD_ARC_CX = 0.4995;
-const BEAD_ARCS = [   // yEnd = shoulder height, ctrl = 2*dip - yEnd (so the curve passes through the dip); dips spread for clear strands
-  { yEnd: 0.260, ctrl: 0.296 },   // dip ~0.278
-  { yEnd: 0.268, ctrl: 0.356 },   // dip ~0.312
-  { yEnd: 0.276, ctrl: 0.416 },   // dip ~0.346
-  { yEnd: 0.284, ctrl: 0.480 },   // dip ~0.382
-  { yEnd: 0.292, ctrl: 0.544 },   // dip ~0.418
+const BEAD_ARCS = [   // yEnd = shoulder height, ctrl = 2*dip - yEnd (curve passes through the dip). Traced from the red-line art.
+  { yEnd: 0.258, ctrl: 0.280 },   // dip ~0.269
+  { yEnd: 0.268, ctrl: 0.310 },   // dip ~0.289
+  { yEnd: 0.279, ctrl: 0.339 },   // dip ~0.309
+  { yEnd: 0.289, ctrl: 0.389 },   // dip ~0.339
+  { yEnd: 0.300, ctrl: 0.474 },   // dip ~0.387
 ];
-const BEAD_ARC_COUNTS = [4, 5, 6, 7, 8];   // beads per necklace (shortest → longest)
+const BEAD_ARC_COUNTS = [5, 7, 9, 11, 13];   // beads per necklace (shortest → longest), graduated like the reference
 const BEAD_ARC_CUM = BEAD_ARC_COUNTS.reduce((a, n) => (a.push((a.length ? a[a.length - 1] : 0) + n), a), []); // [4,9,15,22,30]
 const BEADS_TOTAL = BEAD_ARC_CUM[BEAD_ARC_CUM.length - 1];   // 30 = all five necklaces
 function beadArcPoint(arc, t) {   // -> {x,y} as fractions of the stage
@@ -5661,6 +5661,15 @@ function beadArcPoint(arc, t) {   // -> {x,y} as fractions of the stage
            y: mt * mt * arc.yEnd + 2 * mt * t * arc.ctrl + t * t * arc.yEnd };
 }
 function beadsNecklacesDone(len) { let n = 0; for (const c of BEAD_ARC_CUM) if (len >= c) n++; return n; }
+// Thin string-line guides drawn along each necklace arc (a soft cream thread the player fills).
+function beadsStringsSvg() {
+  const XL = BEAD_ARC_XL * 100, XR = BEAD_ARC_XR * 100, CX = BEAD_ARC_CX * 100;
+  const paths = BEAD_ARCS.map(a => `M${XL.toFixed(1)},${(a.yEnd * 100).toFixed(1)} Q${CX.toFixed(1)},${(a.ctrl * 100).toFixed(1)} ${XR.toFixed(1)},${(a.yEnd * 100).toFixed(1)}`).join(" ");
+  return `<svg class="beads-strings" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${paths}" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="1.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <path d="${paths}" fill="none" stroke="rgba(255,244,214,.75)" stroke-width="1" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
 function beadsReadMs() { return Math.max(560, 1450 - (BEADS.level || 0) * 40); }   // read window shrinks as you go
 function beadsFallDur() { return Math.max(1250, 3000 - (BEADS.level || 0) * 65); } // beads fall faster as you go
 
@@ -5708,6 +5717,7 @@ function beadsPlay() {
       <div class="beads-hudline">
         <div class="beads-chip">📿 Necklaces <b id="beads-necks">${beadsNecklacesDone(BEADS.strung.length)}</b>/5</div>
       </div>
+      ${beadsStringsSvg()}
       <div class="beads-drape" id="beads-drape"></div>
       <div class="beads-fall" id="beads-fall"></div>
       <div class="beads-corner ls"><div class="beads-shout" id="beads-shout-l"></div><div class="beads-sister">💃</div></div>
@@ -5845,7 +5855,7 @@ function beadsPaintNecklace(bump) {
     const start = a ? BEAD_ARC_CUM[a - 1] : 0, quota = BEAD_ARC_COUNTS[a];
     const onArc = Math.max(0, Math.min(quota, L - start));
     for (let j = 0; j < onArc; j++) {
-      const p = beadArcPoint(BEAD_ARCS[a], 0.14 + 0.72 * ((j + 0.5) / quota));   // keep beads in the central drape, off the shoulders
+      const p = beadArcPoint(BEAD_ARCS[a], 0.06 + 0.88 * ((j + 0.5) / quota));   // spread beads along the whole string
       const id = BEADS.strung[start + j];
       const last = (start + j === L - 1);
       html += `<span class="dbead${bump && last ? " dbead-in" : ""}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;background-image:url('art/bead_${id}.webp?v=${BUILD}')"></span>`;

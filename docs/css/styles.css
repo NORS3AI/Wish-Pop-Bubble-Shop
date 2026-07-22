@@ -2980,9 +2980,11 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 .beads-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center top; background-repeat: no-repeat; }
 .beads-hudline { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 6; pointer-events: none; }
 .beads-chip { background: rgba(0,0,0,.55); color: #fff; border-radius: 12px; padding: 5px 12px; font-weight: 800; font-size: 14px; }
+/* thin string-line guides drawn along the necklace arcs (behind the beads) */
+.beads-strings { position: absolute; inset: 0; z-index: 2; pointer-events: none; width: 100%; height: 100%; }
 /* strung beads draped along the mannequin's necklace arcs (positioned in %) */
 .beads-drape { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
-.dbead { position: absolute; width: 3.6%; aspect-ratio: 1; transform: translate(-50%,-50%);
+.dbead { position: absolute; width: 2.7%; aspect-ratio: 1; transform: translate(-50%,-50%);
   background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.5)); }
 .dbead-in { animation: dbeadIn .3s ease; }
 @keyframes dbeadIn { 0% { transform: translate(-50%,-50%) scale(0); } 60% { transform: translate(-50%,-50%) scale(1.4); } 100% { transform: translate(-50%,-50%) scale(1); } }
