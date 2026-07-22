@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v538"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v539"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -2043,11 +2043,13 @@ function renderAdmin() {
         <button class="btn" id="ad-feast-finale" style="margin-bottom:8px">🔑 Courtyard Finale (Realm Key)</button>
         <button class="btn" id="ad-stack" style="margin-bottom:8px">🪙 Sky-High Savings (practice)</button>
         <button class="btn" id="ad-stack-finale" style="margin-bottom:8px">🔑 Beanstalk Finale (Realm Key)</button>
+        <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Royal Ball dance (practice)</button>
         <button class="btn" id="ad-wine" style="margin-bottom:8px">🍷 Spilled Wish-Wine (practice)</button>
         <button class="btn" id="ad-boutique" style="margin-bottom:8px">🐭 Mouse Boutique (practice)</button>
         <button class="btn" id="ad-carpet" style="margin-bottom:8px">🧞 Magic Carpet Dash (practice)</button>
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
         <button class="btn secondary" id="ad-courtyard-intro" style="margin-bottom:8px">🃏 Replay Courtyard intro (Jasper + Lady Gothel)</button>
+        <button class="btn good" id="ad-courtyard-reset" style="margin-bottom:8px">↺ Reset Courtyard events + beads (replay all)</button>
         <button class="btn secondary" id="ad-stash" style="margin-bottom:8px">💎 Restore the Gems (hidden stash)</button>
         <button class="btn good" id="ad-popstash" style="margin-bottom:8px">💎 Force stash in next Courtyard pop</button>
         <button class="btn" id="ad-copycat" style="margin-bottom:8px">🃏 Copycat Round (repeat test)</button>
@@ -2199,6 +2201,20 @@ function renderAdmin() {
   on("#ad-well-intro", "click", () => { GAME.wellIntro = 0; save(); playWellIntro(); });
   on("#ad-well-open", "click", () => { GAME.wellIntro = 1; save(); renderWell(); });
   on("#ad-well-reset", "click", () => { GAME.wellIntro = 0; save(); toast("Well reset — Wishy will introduce it again"); renderAdmin(); });
+  on("#ad-dance", "click", () => renderDanceIntro("cinderella"));
+  on("#ad-courtyard-reset", "click", () => {
+    // Replay the Courtyard's story events (the 3 balls/dances, the house event, Stepmother,
+    // Spilled Wine, Mouse Boutique) and the bead hunt — WITHOUT re-locking the realm: we keep
+    // finaleWon so the Realm Key stays earned and the finale doesn't force-replay (it has its
+    // own button). Events resume at normal pacing as you serve customers in the Courtyard.
+    GAME.realmEvents = GAME.realmEvents || {}; GAME.realmEvents.courtyard = 0;
+    GAME.hunts = GAME.hunts || {}; GAME.hunts.courtyard = { found: 0, done: false, seen: [] };
+    GAME.huntCelebrate = null;
+    GAME.nextEventAt = -1;
+    save();
+    toast("↺ Courtyard events + beads reset — play in the Courtyard and they'll pop up again");
+    renderAdmin();
+  });
   on("#ad-coach-reset", "click", () => { GAME.coach = {}; save(); toast("How-to-play tips reset — they'll appear again as you play"); renderAdmin(); });
   on("#ad-pearls", "click", () => { GAME.pearls = (GAME.pearls || 0) + 25; save(); toast("+25 pearls"); renderAdmin(); });
   on("#ad-dust", "click", () => { GAME.stardust += 100; save(); toast("+100 Stardust ✨"); renderAdmin(); });
