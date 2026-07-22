@@ -2974,3 +2974,34 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 .stash-treasure { font-size: 96px; filter: drop-shadow(0 0 24px rgba(255,215,110,.95)); animation: stashFloat 2.2s ease-in-out infinite; }
 @keyframes stashFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 .stash-reward { font-size: 24px; font-weight: 800; color: #ffe08a; text-shadow: 0 2px 6px rgba(0,0,0,.7), 0 0 14px rgba(255,210,90,.5); }
+
+/* ---- Stepsisters' Bead Restring minigame ---- */
+.beads-stage { position: absolute; inset: 0; overflow: hidden;
+  background: radial-gradient(circle at 50% 18%, #4a2a6e 0%, #34205a 55%, #1c1230 100%); }
+.beads-hudline { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 6; pointer-events: none; }
+.beads-chip { background: rgba(0,0,0,.5); color: #fff; border-radius: 12px; padding: 5px 12px; font-weight: 800; font-size: 14px; }
+.beads-necklace { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; z-index: 5; max-width: 92%; }
+.beads-necklace .nbead { width: 15px; height: 15px; border-radius: 50%; box-shadow: inset -2px -2px 3px rgba(0,0,0,.35), inset 2px 2px 3px rgba(255,255,255,.4); }
+.beads-necklace .nbead-in { animation: nbeadIn .3s ease; }
+@keyframes nbeadIn { 0% { transform: scale(0) translateY(-8px); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.beads-fall { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.bead { position: absolute; width: 54px; height: 54px; padding: 0; border: none; border-radius: 50%; transform: translate(-50%,-50%);
+  pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  box-shadow: inset -6px -8px 12px rgba(0,0,0,.35), inset 6px 6px 10px rgba(255,255,255,.35), 0 4px 10px rgba(0,0,0,.4); }
+.bead.caught { animation: beadCaught .3s ease forwards; }
+@keyframes beadCaught { to { transform: translate(-50%,-50%) scale(1.5); opacity: 0; } }
+.bead.wrong { animation: beadWrong .32s ease forwards; }
+@keyframes beadWrong { 0% { transform: translate(-50%,-50%) rotate(0); } 25% { transform: translate(-53%,-50%) rotate(-12deg); } 75% { transform: translate(-47%,-50%) rotate(12deg); } 100% { transform: translate(-50%,-50%) scale(.2); opacity: 0; } }
+.bead.fade { animation: beadFade .4s ease forwards; }
+@keyframes beadFade { to { opacity: 0; } }
+.beads-corner { position: absolute; bottom: 10px; z-index: 6; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; max-width: 46%; }
+.beads-corner.ls { left: 8px; } .beads-corner.rs { right: 8px; }
+.beads-sister { font-size: 44px; filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)); }
+.beads-shout { min-height: 44px; }
+.beads-shout .beads-word { display: inline-block; background: #fff; border-radius: 14px 14px 14px 4px; padding: 7px 15px; font-weight: 900; font-size: 25px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.45); opacity: 0; transform: scale(.5); text-shadow: 0 1px 0 rgba(0,0,0,.12); }
+.beads-corner.rs .beads-shout .beads-word { border-radius: 14px 14px 4px 14px; }
+.beads-shout.show .beads-word { animation: beadShout .24s cubic-bezier(.2,1.5,.4,1) forwards; }
+@keyframes beadShout { to { opacity: 1; transform: scale(1); } }
+.beads-stage.beads-shake { animation: beadsShake .3s; }
+@keyframes beadsShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }

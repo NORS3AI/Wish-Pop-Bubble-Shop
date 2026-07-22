@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v539"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v540"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -612,6 +612,7 @@ function stopEventTimers() {
   if (typeof WINE !== "undefined") WINE = null;
   if (typeof BOUTIQUE !== "undefined") BOUTIQUE = null;
   if (typeof CARPET !== "undefined") CARPET = null;
+  if (typeof BEADS !== "undefined") { if (BEADS && BEADS.tickTimer) clearInterval(BEADS.tickTimer); BEADS = null; }
   if (typeof DANCE !== "undefined") DANCE = null;
   if (typeof CAKE !== "undefined") CAKE = null;
   if (typeof DUEL !== "undefined") DUEL = null;
@@ -1701,6 +1702,20 @@ function maybeShowHuntCelebrate() {
   const realm = GAME.huntCelebrate;
   const h = huntFor(realm); GAME.huntCelebrate = null; save();
   if (!h) return;
+  // King's Courtyard: the Stepsisters pull you into the bead-restringing minigame as the
+  // thank-you. When it's done we still present the gifted skin(s), then head home.
+  if (realm === "courtyard") {
+    const gifts = allSkins().filter(c => c.hunt === realm).map(c => c.id);
+    if (!gifts.includes(h.skin)) gifts.unshift(h.skin);
+    SFX.fanfare && SFX.fanfare(); confettiOver($("#app"));
+    renderBeadsIntro(() => {
+      (function showNext(i) {
+        if (i >= gifts.length) { renderStart(); return; }
+        showSkinReward(gifts[i], `Gift from the Stepsisters!`, () => showNext(i + 1));
+      })(0);
+    });
+    return;
+  }
   const skin = D.COSMETIC_BY_ID[h.skin];
   const skinLabel = skin ? `${skin.chip} ${skin.name}` : "new skin";
   // Bespoke conversation if the hunt defines one; otherwise a warm generic two-beat.
@@ -2046,6 +2061,7 @@ function renderAdmin() {
         <button class="btn" id="ad-dance" style="margin-bottom:8px">💃 Royal Ball dance (practice)</button>
         <button class="btn" id="ad-wine" style="margin-bottom:8px">🍷 Spilled Wish-Wine (practice)</button>
         <button class="btn" id="ad-boutique" style="margin-bottom:8px">🐭 Mouse Boutique (practice)</button>
+        <button class="btn" id="ad-beads" style="margin-bottom:8px">📿 Bead Restring (practice)</button>
         <button class="btn" id="ad-carpet" style="margin-bottom:8px">🧞 Magic Carpet Dash (practice)</button>
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
         <button class="btn secondary" id="ad-courtyard-intro" style="margin-bottom:8px">🃏 Replay Courtyard intro (Jasper + Lady Gothel)</button>
@@ -2202,6 +2218,7 @@ function renderAdmin() {
   on("#ad-well-open", "click", () => { GAME.wellIntro = 1; save(); renderWell(); });
   on("#ad-well-reset", "click", () => { GAME.wellIntro = 0; save(); toast("Well reset — Wishy will introduce it again"); renderAdmin(); });
   on("#ad-dance", "click", () => renderDanceIntro("cinderella"));
+  on("#ad-beads", "click", () => renderBeadsIntro(renderStart));
   on("#ad-courtyard-reset", "click", () => {
     // Replay the Courtyard's story events (the 3 balls/dances, the house event, Stepmother,
     // Spilled Wine, Mouse Boutique) and the bead hunt — WITHOUT re-locking the realm: we keep
@@ -5597,6 +5614,213 @@ function boutiqueFinish(win) {
 /*   Act 2 (The Ball): the SAME routine, no hints — lead it from memory.     */
 /* Learn the rhythm, then recall it. Teach enough steps right and your       */
 /* student dances beautifully and rewards you. Early students (a clumsy      */
+/* ======================================================================= */
+/* STEPSISTERS' BEAD RESTRING — the King's Courtyard bead-hunt reward game.   */
+/* Two stepsisters shout a color each, but one always fibs: the honest one's  */
+/* word is written in the color it NAMES (a Stroop trick). Trust her, then    */
+/* grab that colored bead as five fall. A wrong grab (or letting the right    */
+/* bead fall past) slips a bead off your string; run out and it snaps.        */
+/* Endless + ramping — string as long a necklace as you can.                  */
+/* ======================================================================= */
+let BEADS = null;
+let beadsDone = null;   // where to go when the player finishes/quits (home, or the hunt reward)
+const BEAD_TICK = 40;
+const BEADS_START_LEN = 5;   // head-start beads already on the string
+const BEAD_PALETTE = [
+  { id: "pink",   name: "PINK",   css: "#ff5fa6" },
+  { id: "blue",   name: "BLUE",   css: "#3f8cff" },
+  { id: "green",  name: "GREEN",  css: "#37c26a" },
+  { id: "gold",   name: "GOLD",   css: "#f0bd2e" },
+  { id: "purple", name: "PURPLE", css: "#a86bff" },
+  { id: "red",    name: "RED",    css: "#ff5a4d" },
+  { id: "teal",   name: "TEAL",   css: "#22c9be" },
+  { id: "orange", name: "ORANGE", css: "#ff9a3d" },
+];
+function beadColor(id) { return BEAD_PALETTE.find(c => c.id === id) || BEAD_PALETTE[0]; }
+function beadsReadMs() { return Math.max(560, 1450 - (BEADS.level || 0) * 40); }   // read window shrinks as you go
+function beadsFallDur() { return Math.max(1250, 3000 - (BEADS.level || 0) * 65); } // beads fall faster as you go
+
+function renderBeadsIntro(done) {
+  beadsDone = (typeof done === "function") ? done : (beadsDone || null);
+  BEADS = null;
+  SFX.unlock(); SFX.fanfare && SFX.fanfare();
+  html("event", `
+    ${hud("Bead Restring")}
+    <div class="grow center" style="gap:12px">
+      <div style="font-size:38px;letter-spacing:2px">💃 📿 💃</div>
+      <div style="font-weight:800;font-size:20px">Re-string the Beads!</div>
+      <div class="card" style="width:100%;max-width:340px;text-align:left">
+        <div class="stat-line"><span>Both stepsisters shout a color…</span></div>
+        <div class="stat-line"><span>…but <b>one always fibs!</b></span></div>
+        <div class="stat-line"><span>Trust the word written in its <b>own</b> color</span></div>
+        <div class="stat-line"><span>Grab that colored bead 📿</span><span>to thread it</span></div>
+        <div class="stat-line"><span>Wrong grab (or a miss)</span><span style="color:var(--bad)">a bead slips off!</span></div>
+      </div>
+      <div class="muted" style="max-width:320px">Like this: <b style="color:#37c26a">PINK</b> vs <b style="color:#3f8cff">BLUE</b> → the honest one is <b style="color:#3f8cff">BLUE</b> (its word is inked in blue). Grab the blue bead! It speeds up — string as long a necklace as you can.${(GAME.beadsBest ? `<br>Best necklace: <b>${GAME.beadsBest} 📿</b>` : "")}</div>
+    </div>
+    <button class="btn good" id="beads-start" style="width:100%;max-width:340px">Start stringing ▸</button>
+    <div style="height:8px"></div>
+    <button class="btn secondary" id="beads-skip">Not now</button>
+  `);
+  on("#beads-start", "click", beadsStart);
+  on("#beads-skip", "click", () => { const d = beadsDone; beadsDone = null; BEADS = null; (d || renderStart)(); });
+  show("event");
+}
+function beadsStart() {
+  if (BEADS && BEADS.tickTimer) clearInterval(BEADS.tickTimer);   // never leave a prior loop running
+  const strung = [];
+  for (let i = 0; i < BEADS_START_LEN; i++) strung.push(R.pick(BEAD_PALETTE).id);
+  BEADS = { strung, best: strung.length, level: 0, uid: 0, beads: [], answer: null,
+    phase: "read", roundResolved: false, elapsed: 0, readUntil: 0, gapUntil: 0, tickTimer: null };
+  beadsPlay();
+  BEADS.tickTimer = setInterval(beadsTick, BEAD_TICK);
+  beadsNextRound();
+}
+function beadsPlay() {
+  html("event", `
+    ${hud("Bead Restring")}
+    <div class="beads-stage mg-fullbleed" id="beads-stage">
+      <div class="beads-hudline">
+        <div class="beads-chip">📿 <b id="beads-len">${BEADS.strung.length}</b></div>
+        <div class="beads-chip">Best <b id="beads-best">${BEADS.best}</b></div>
+      </div>
+      <div class="beads-necklace" id="beads-necklace"></div>
+      <div class="beads-fall" id="beads-fall"></div>
+      <div class="beads-corner ls"><div class="beads-shout" id="beads-shout-l"></div><div class="beads-sister">💃</div></div>
+      <div class="beads-corner rs"><div class="beads-shout" id="beads-shout-r"></div><div class="beads-sister">💃</div></div>
+    </div>
+  `);
+  show("event");
+  beadsPaintNecklace();
+}
+function beadsNextRound() {
+  if (!BEADS || BEADS.phase === "over") return;
+  BEADS.level++;
+  BEADS.roundResolved = false;
+  const answer = R.pick(BEAD_PALETTE);
+  BEADS.answer = answer;
+  const trickWord = R.pick(BEAD_PALETTE.filter(c => c.id !== answer.id));
+  const trickFont = R.pick(BEAD_PALETTE.filter(c => c.id !== trickWord.id && c.id !== answer.id));
+  const honestLeft = Math.random() < 0.5;
+  const honest = { w: answer.name, c: answer.css };       // word inked in its OWN color — the truth
+  const trick = { w: trickWord.name, c: trickFont.css };  // word inked in a clashing color — the fib
+  const L = honestLeft ? honest : trick, RT = honestLeft ? trick : honest;
+  const sl = $("#beads-shout-l"), sr = $("#beads-shout-r");
+  if (sl) { sl.innerHTML = `<span class="beads-word" style="color:${L.c}">${L.w}!</span>`; sl.classList.add("show"); }
+  if (sr) { sr.innerHTML = `<span class="beads-word" style="color:${RT.c}">${RT.w}!</span>`; sr.classList.add("show"); }
+  SFX.pop && SFX.pop();
+  BEADS.phase = "read";
+  BEADS.readUntil = BEADS.elapsed + beadsReadMs();
+}
+function beadsDrop() {
+  const fall = $("#beads-fall"); if (!fall) return;
+  const answer = BEADS.answer;
+  const decoys = R.shuffle(BEAD_PALETTE.filter(c => c.id !== answer.id)).slice(0, 4);
+  const set = R.shuffle([answer].concat(decoys));
+  const lanes = R.shuffle([16, 33, 50, 67, 84]);
+  BEADS.beads = [];
+  set.forEach((color, i) => {
+    const b = { uid: ++BEADS.uid, color: color.id, isAnswer: color.id === answer.id,
+      x: lanes[i], y: -8 - Math.random() * 22, el: null, caught: false };
+    const el = document.createElement("button");
+    el.className = "bead"; el.style.left = b.x + "%"; el.style.top = b.y + "%";
+    el.style.background = `radial-gradient(circle at 34% 28%, #fff9, ${color.css} 46%, ${color.css})`;
+    el.addEventListener("pointerdown", ev => { ev.preventDefault(); beadsGrab(b); });
+    fall.appendChild(el); b.el = el;
+    BEADS.beads.push(b);
+  });
+  BEADS.phase = "fall";
+}
+function beadsGrab(b) {
+  if (!BEADS || b.caught || BEADS.phase !== "fall") return;
+  b.caught = true;
+  if (b.isAnswer) {
+    SFX.coin && SFX.coin();
+    if (b.el) b.el.classList.add("caught");
+    beadsThread(b.color);
+    beadsResolveRound();
+  } else {
+    SFX.clang && SFX.clang();
+    if (b.el) b.el.classList.add("wrong");
+    beadsSlip();
+  }
+}
+function beadsThread(colorId) {
+  BEADS.strung.push(colorId);
+  BEADS.best = Math.max(BEADS.best, BEADS.strung.length);
+  beadsPaint(); beadsPaintNecklace(true);
+}
+function beadsSlip() {
+  BEADS.strung.pop();
+  const st = $("#beads-stage"); if (st) { st.classList.remove("beads-shake"); void st.offsetWidth; st.classList.add("beads-shake"); }
+  beadsPaint(); beadsPaintNecklace();
+  if (BEADS.strung.length <= 0) beadsFinish();
+}
+function beadsResolveRound() {
+  if (!BEADS || BEADS.roundResolved || BEADS.phase === "over") return;
+  BEADS.roundResolved = true;
+  const sl = $("#beads-shout-l"), sr = $("#beads-shout-r");
+  if (sl) sl.classList.remove("show"); if (sr) sr.classList.remove("show");
+  BEADS.phase = "gap";
+  BEADS.gapUntil = BEADS.elapsed + 480;
+  setTimeout(() => { if (BEADS) { BEADS.beads.forEach(b => { if (b.el && !b.caught) b.el.classList.add("fade"); }); } }, 40);
+}
+function beadsTick() {
+  if (!BEADS || BEADS.phase === "over") return;
+  if (!document.getElementById("beads-stage")) { clearInterval(BEADS.tickTimer); return; }   // navigated away
+  BEADS.elapsed += BEAD_TICK;
+  if (BEADS.phase === "read") { if (BEADS.elapsed >= BEADS.readUntil) beadsDrop(); return; }
+  if (BEADS.phase === "gap") { if (BEADS.elapsed >= BEADS.gapUntil) { const f = $("#beads-fall"); if (f) f.innerHTML = ""; BEADS.beads = []; beadsNextRound(); } return; }
+  // phase === "fall": move the beads down
+  const step = 118 / (beadsFallDur() / BEAD_TICK);
+  BEADS.beads.forEach(b => {
+    if (b.caught) return;
+    b.y += step;
+    if (b.el) b.el.style.top = b.y + "%";
+    if (b.y >= 110) {
+      b.caught = true; if (b.el) b.el.remove();
+      if (b.isAnswer && !BEADS.roundResolved) { beadsSlip(); beadsResolveRound(); }   // let the right bead fall = a miss
+    }
+  });
+}
+function beadsPaint() {
+  const l = $("#beads-len"); if (l) l.textContent = BEADS.strung.length;
+  const bst = $("#beads-best"); if (bst) bst.textContent = BEADS.best;
+}
+function beadsPaintNecklace(bump) {
+  const wrap = $("#beads-necklace"); if (!wrap) return;
+  const show = BEADS.strung.slice(-18);
+  wrap.innerHTML = show.map(id => `<span class="nbead" style="background:${beadColor(id).css}"></span>`).join("");
+  if (bump && wrap.lastElementChild) wrap.lastElementChild.classList.add("nbead-in");
+}
+function beadsFinish() {
+  if (!BEADS || BEADS.phase === "over") return;
+  BEADS.phase = "over";
+  if (BEADS.tickTimer) { clearInterval(BEADS.tickTimer); BEADS.tickTimer = null; }
+  const best = BEADS.best;
+  GAME.beadsBest = Math.max(GAME.beadsBest || 0, best); save();
+  SFX.clang && SFX.clang(); SFX.sneeze && SFX.sneeze();
+  html("event", `
+    ${hud("Bead Restring")}
+    <div class="grow center" style="gap:14px">
+      <div style="font-size:46px">📿💥</div>
+      <div style="font-weight:800;font-size:22px">The string snapped!</div>
+      <div class="card center" style="gap:4px;max-width:300px">
+        <div class="muted">Longest necklace</div>
+        <div style="font-size:36px;font-weight:900">${best} <span style="font-size:24px">📿</span></div>
+        <div class="muted">Best ever: ${GAME.beadsBest} 📿</div>
+      </div>
+      <button class="btn good" id="beads-again" style="width:100%;max-width:320px">Try again ▸</button>
+      <button class="btn secondary" id="beads-done" style="width:100%;max-width:320px">I'm done</button>
+    </div>
+  `);
+  on("#beads-again", "click", beadsStart);
+  on("#beads-done", "click", () => { const d = beadsDone; beadsDone = null; BEADS = null; (d || renderStart)(); });
+  show("event");
+}
+
+/* ======================================================================= */
+/* THE COURTLY BALL — a rhythm dance minigame. A few partners (a visiting    */
 /* knight, then a prince) give generic prizes like keys; Cinderella is the   */
 /* finale of the realm and gives a rare skin. (This build: the knight.)      */
 /* ======================================================================= */
@@ -9709,7 +9933,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {

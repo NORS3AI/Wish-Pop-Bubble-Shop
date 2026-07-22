@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 📿 **New minigame: the Stepsisters' Bead Restring.** Find all the King's Courtyard beads and the
+  two stepsisters pull you in to re-string them — but one of them always fibs! Trust the sister
+  whose color word is written in its *own* color, then grab that bead as five fall. Wrong grabs
+  slip a bead off your string; it speeds up, so string as long a necklace as you can. (Placeholder
+  art for now.)
+
 - 🐛 **Fixed a cursed-fruit bug.** When Lady Gothel rotted one of your *infused* ingredients, it
   was secretly still filling one of your needs instead of the allergy it showed on the card. Now
   a rotted ingredient behaves like the curse it is — it feeds the allergy, never a need.
