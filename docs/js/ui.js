@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v534"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v535"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -6185,8 +6185,14 @@ function ingInst(id, extra) {
   const inst = { id, potent: false, poison: !!(ROUND && ROUND.villain) && R.chance(QUEEN_POISON_CHANCE) };
   if (extra) Object.assign(inst, extra);
   const ing = D.INGREDIENT_BY_ID[id];
-  // flex infused ingredients get a RANDOM magic from this round's needs — always useful
-  if (ing && ing.flex && ROUND && ROUND.wish && ROUND.wish.needs.length) inst.magic = R.pick(ROUND.wish.needs.map(n => n.type));
+  // flex infused ingredients get a single assigned magic: usually (INFUSED_NEED_BIAS) one of
+  // this round's needs, but sometimes an OFF-TARGET magic instead — so they're a gamble, not a
+  // sure thing, and their shown magic can't be used to reliably read a hidden need.
+  if (ing && ing.flex && ROUND && ROUND.wish && ROUND.wish.needs.length) {
+    const needs = ROUND.wish.needs.map(n => n.type);
+    if (R.chance(BALANCE.INFUSED_NEED_BIAS)) inst.magic = R.pick(needs);
+    else { const off = (currentRealm().magics || []).filter(m => !needs.includes(m)); inst.magic = off.length ? R.pick(off) : R.pick(needs); }
+  }
   return inst;
 }
 const QUEEN_PACKAGES = [

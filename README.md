@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 💠 **Infused ingredients are a gamble now.** They used to always match one of the customer's
+  needs — which made them a free peek at hidden needs and an easy fill. Now they only land
+  on-target about two-thirds of the time; the rest go off-target, so you can't fully trust them.
+
 - ✨ **The Courtyard cauldron feels alive.** Soft light now filters through the dome windows and a
   little dust drifts through the air on the King's Courtyard mixing screen — gentle, blurred, and
   slow, just enough movement to make the room feel real.
