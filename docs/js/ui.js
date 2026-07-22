@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v531"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v532"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7304,32 +7304,67 @@ function bubbleHTML(i, golden) {
     `--ax:${rnd()};--ay:${rnd()};--bx:${rnd()};--by:${rnd()};` +
     `--cx:${rnd()};--cy:${rnd()}"><span class="sheen"></span><span class="bglyph">🫧</span></button>`;
 }
-// Scale the bubbles (and their drift) so the whole set — original haul plus any bonus
-// spawns — always fits inside the visible field. Nothing overflows the box, so nothing is
-// ever clipped or hidden behind the counter/buttons, and every bubble stays tappable.
-function fitBubbleField() {
+// Lay the bubbles out across the WHOLE field (a big area filling the wall, dodging the
+// top-corner HUD), keeping them a nice comfortable size. We fill an even grid first; only
+// when there are more bubbles than grid cells do we LAYER the extras on top (rather than
+// shrinking everything). Bubbles are absolutely placed, so a full drop is never clipped and
+// every bubble stays tappable. Pass reset=true to re-scatter all (first paint / resize);
+// reset=false only positions freshly-spawned bonus bubbles, leaving the rest where they are.
+function layoutBubbleField(reset) {
   const field = document.getElementById("bubble-field");
   if (!field) return;
-  const n = field.getElementsByClassName("pbubble").length;
-  if (!n) return;
-  const cs = getComputedStyle(field);
-  const W = field.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  const H = field.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-  if (W <= 0 || H <= 0) return;   // field not laid out yet
-  const MAXB = 62, MINB = 32, GAP = 10;
-  let best = MINB;
-  for (let s = MAXB; s >= MINB; s--) {
-    const amp = Math.min(Math.max(s * 0.42, 8), 22);
-    const cell = s + GAP;
-    const perRow = Math.max(1, Math.floor((W + GAP) / cell));
-    const rows = Math.ceil(n / perRow);
-    // reserve a full amp of drift on each side so a floating edge bubble never leaves the box
-    const needW = Math.min(perRow, n) * cell - GAP + amp * 2;
-    const needH = rows * cell - GAP + amp * 2;
-    if (needW <= W && needH <= H) { best = s; break; }
+  const all = Array.from(field.getElementsByClassName("pbubble"));
+  if (!all.length) return;
+  const FW = field.clientWidth, FH = field.clientHeight;
+  if (FW <= 0 || FH <= 0) return;   // field not laid out yet
+  if (reset) all.forEach(b => { b.removeAttribute("data-placed"); b.removeAttribute("data-cell"); });
+
+  // Keep-out boxes: the pet badge, count bubble, menu + gold buttons, rush timer — the HUD
+  // overlay sits ABOVE the bubbles, so we never place a bubble under one (it'd be untappable).
+  const fr = field.getBoundingClientRect(), kos = [];
+  ["#round-hud .petbadge", "#round-hud .round-menu", "#round-hud .hud-gold", ".phase-count", "#round-hud .rush-badge"]
+    .forEach(sel => { const e = document.querySelector(sel); if (!e) return; const r = e.getBoundingClientRect();
+      if (r.width) kos.push({ x: r.left - fr.left, y: r.top - fr.top, w: r.width, h: r.height }); });
+
+  const n = all.length, GAP = 8, MAXB = 68, MINB = 48;
+  // On the first scatter, pick the biggest comfortable size; only shrink if even 3 layers deep
+  // wouldn't hold them. On spawn re-fits, keep the size we already chose (don't resize the set).
+  let TS = parseFloat(field.style.getPropertyValue("--bub")) || 0;
+  const cellsAt = s => {
+    const amp = Math.round(s * 0.24), m = amp + 4, cell = s + GAP;
+    const cols = Math.max(1, Math.floor((FW - 2 * m + GAP) / cell));
+    const rows = Math.max(1, Math.floor((FH - 2 * m + GAP) / cell));
+    return { amp, m, cell, cols, rows, count: cols * rows };
+  };
+  if (reset || !TS) { TS = MINB; for (let s = MAXB; s >= MINB; s -= 2) { if (n <= cellsAt(s).count * 3 || s === MINB) { TS = s; break; } } }
+  const g = cellsAt(TS), amp = g.amp;
+  const gridW = g.cols * g.cell - GAP, gridH = g.rows * g.cell - GAP;
+  const ox = g.m + (FW - 2 * g.m - gridW) / 2 + TS / 2;
+  const oy = g.m + (FH - 2 * g.m - gridH) / 2 + TS / 2;
+  const centers = [];
+  for (let j = 0; j < g.rows; j++) for (let i = 0; i < g.cols; i++) {
+    const cx = ox + i * g.cell, cy = oy + j * g.cell;
+    const bad = kos.some(k => cx + TS / 2 > k.x - 4 && cx - TS / 2 < k.x + k.w + 4 && cy + TS / 2 > k.y - 4 && cy - TS / 2 < k.y + k.h + 4);
+    if (!bad) centers.push({ cx, cy, key: i + "_" + j });
   }
-  const amp = Math.min(Math.max(best * 0.42, 8), 22);
-  field.style.setProperty("--bub", best + "px");
+  // cells already taken by still-visible placed bubbles (popped ones free their cell for reuse)
+  const used = new Set(all.filter(b => b.dataset.cell && b.dataset.cell !== "layer" && !b.classList.contains("popped")).map(b => b.dataset.cell));
+  const free = centers.filter(c => !used.has(c.key));
+  for (let i = free.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = free[i]; free[i] = free[j]; free[j] = t; }
+  const place = (b, cx, cy, key) => { b.style.left = (cx - TS / 2) + "px"; b.style.top = (cy - TS / 2) + "px"; b.dataset.placed = "1"; b.dataset.cell = key; };
+  const inKO = (cx, cy) => kos.some(k => cx + TS / 2 > k.x - 4 && cx - TS / 2 < k.x + k.w + 4 && cy + TS / 2 > k.y - 4 && cy - TS / 2 < k.y + k.h + 4);
+  all.filter(b => !b.dataset.placed).forEach(b => {
+    if (free.length) { const c = free.pop(); place(b, c.cx, c.cy, c.key); return; }
+    // no free cell — LAYER on top at a random spot, but never under the HUD (it'd be untappable)
+    let cx, cy;
+    for (let t = 0; t < 24; t++) {
+      cx = g.m + TS / 2 + Math.random() * (FW - 2 * g.m - TS);
+      cy = g.m + TS / 2 + Math.random() * (FH - 2 * g.m - TS);
+      if (!inKO(cx, cy)) break;
+    }
+    place(b, cx, cy, "layer");
+  });
+  field.style.setProperty("--bub", TS + "px");
   field.style.setProperty("--amp", amp + "px");
 }
 
@@ -7378,12 +7413,12 @@ function renderPop() {
   on("#pop-continue", "click", () => { if (itemGateBlocks()) return; collectAndContinue(); });
   wireFamiliar("pop");
   show("pop");
-  fitBubbleField();   // size the bubbles so the whole haul fits the field (nothing clipped/hidden)
+  layoutBubbleField(true);   // scatter the bubbles across the whole field (nothing clipped/hidden)
   coachPopIntro();   // first-ever pop: the one-time spotlight tip
   setupPopWood();
 }
-// keep the bubbles fitted if the window/orientation changes while the pop screen is open
-window.addEventListener("resize", () => { if (screen("pop").classList.contains("active")) fitBubbleField(); });
+// re-scatter the bubbles if the window/orientation changes while the pop screen is open
+window.addEventListener("resize", () => { if (screen("pop").classList.contains("active")) layoutBubbleField(true); });
 /* ---- The wooden pop-phase wall. Always the wood backdrop; on a rare round a carved X
    appears — tap it 5–10× to smash a hole, then a glowing treasure floats in the cavity
    (black shows through the real transparent hole in the art). Tap it to grab it. ---- */
@@ -7624,7 +7659,7 @@ function spawnBonusBubbles(cx, cy) {
     field.appendChild(nb);
     setTimeout(() => nb.classList.remove("spawning"), 480);
   });
-  fitBubbleField();   // re-fit so the new bubbles stay inside the field instead of overflowing the bottom
+  layoutBubbleField(false);   // place just the new bubbles (fill a free cell, else layer on top)
   refreshPop();
 }
 
