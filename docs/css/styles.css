@@ -847,6 +847,9 @@ html, body {
   background: rgba(0,0,0,.8); color: #fff; padding: 10px 16px; border-radius: 12px; font-weight: 700;
   font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s; white-space: nowrap; z-index: 20; }
 #toast.show { opacity: 1; }
+/* On the mixing screen the ingredient tray sits at the bottom, so float charm/infused
+   toasts UP near the top (above the cauldron) instead of over the ingredients. */
+#screen-mix.active ~ #toast { top: calc(var(--safe-t) + 150px); bottom: auto; }
 
 /* Familiar corner token */
 .familiar { position: absolute; right: 14px; bottom: calc(78px + var(--safe-b)); z-index: 15;
