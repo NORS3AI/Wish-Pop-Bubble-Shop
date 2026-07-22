@@ -176,8 +176,9 @@ html, body {
 .pop-sub { text-align: center; font-size: 13px; margin: calc(var(--safe-t) + 212px) 10px 0; }
 .pop-sub.timed { margin-top: calc(var(--safe-t) + 292px); }
 .bubble-field { flex: 1; min-height: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center;
-  gap: 10px 12px; padding: 10px 8px; overflow: hidden; }
-.pbubble { position: relative; width: 62px; height: 62px; border: none; padding: 0; cursor: pointer; font-size: 26px;
+  gap: 10px; padding: 10px 8px; overflow: hidden; --bub: 62px; --amp: 24px; }
+.pbubble { position: relative; width: var(--bub,62px); height: var(--bub,62px); border: none; padding: 0; cursor: pointer;
+  font-size: calc(var(--bub,62px) * 0.42);
   border-radius: 50%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.9);
   background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.95), rgba(170,150,255,.42) 52%, rgba(120,80,180,.30) 100%);
   border: 1.5px solid rgba(255,255,255,.4); box-shadow: 0 6px 16px rgba(0,0,0,.28), inset 0 -6px 10px rgba(90,50,140,.35);
@@ -190,9 +191,9 @@ html, body {
 /* gentle wander around a wider area so you chase them a little */
 @keyframes bfloat {
   0%,100% { transform: translate(0, 0); }
-  25% { transform: translate(var(--ax,0), var(--ay,0)); }
-  50% { transform: translate(var(--bx,0), var(--by,0)); }
-  75% { transform: translate(var(--cx,0), var(--cy,0)); }
+  25% { transform: translate(calc(var(--ax,0) * var(--amp,24px)), calc(var(--ay,0) * var(--amp,24px))); }
+  50% { transform: translate(calc(var(--bx,0) * var(--amp,24px)), calc(var(--by,0) * var(--amp,24px))); }
+  75% { transform: translate(calc(var(--cx,0) * var(--amp,24px)), calc(var(--cy,0) * var(--amp,24px))); }
 }
 @keyframes bpop {
   0% { transform: scale(1); }

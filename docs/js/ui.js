@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v530"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v531"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7293,14 +7293,44 @@ function wireBubble(el) {
 // Original bubbles all look the same (their contents are a surprise). Only the extra
 // bubbles that a bonus SPAWNS are golden — pass golden=true for those.
 function bubbleHTML(i, golden) {
-  const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
+  // wander offsets are UNITLESS fractions (-1..1); the field's --amp var turns them into pixels,
+  // so we can shrink the drift (and the bubbles) to keep everything inside the tappable field.
+  const rnd = () => (Math.random() * 2 - 1).toFixed(2);
   const dur = (5.5 + Math.random() * 3).toFixed(1), del = (Math.random() * 4).toFixed(1);
   // Rotten (Gothel-cursed) ingredients pop & collect exactly like any other bubble —
   // no special badge or styling here (their rot is revealed later, in the cauldron).
   const cls = golden ? "pbubble bonus" : "pbubble";
   return `<button class="${cls}" data-i="${i}" style="--dur:${dur}s;--del:-${del}s;` +
-    `--ax:${rnd(-46, 46)}px;--ay:${rnd(-34, 34)}px;--bx:${rnd(-46, 46)}px;--by:${rnd(-30, 34)}px;` +
-    `--cx:${rnd(-40, 40)}px;--cy:${rnd(-30, 30)}px"><span class="sheen"></span><span class="bglyph">🫧</span></button>`;
+    `--ax:${rnd()};--ay:${rnd()};--bx:${rnd()};--by:${rnd()};` +
+    `--cx:${rnd()};--cy:${rnd()}"><span class="sheen"></span><span class="bglyph">🫧</span></button>`;
+}
+// Scale the bubbles (and their drift) so the whole set — original haul plus any bonus
+// spawns — always fits inside the visible field. Nothing overflows the box, so nothing is
+// ever clipped or hidden behind the counter/buttons, and every bubble stays tappable.
+function fitBubbleField() {
+  const field = document.getElementById("bubble-field");
+  if (!field) return;
+  const n = field.getElementsByClassName("pbubble").length;
+  if (!n) return;
+  const cs = getComputedStyle(field);
+  const W = field.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const H = field.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  if (W <= 0 || H <= 0) return;   // field not laid out yet
+  const MAXB = 62, MINB = 32, GAP = 10;
+  let best = MINB;
+  for (let s = MAXB; s >= MINB; s--) {
+    const amp = Math.min(Math.max(s * 0.42, 8), 22);
+    const cell = s + GAP;
+    const perRow = Math.max(1, Math.floor((W + GAP) / cell));
+    const rows = Math.ceil(n / perRow);
+    // reserve a full amp of drift on each side so a floating edge bubble never leaves the box
+    const needW = Math.min(perRow, n) * cell - GAP + amp * 2;
+    const needH = rows * cell - GAP + amp * 2;
+    if (needW <= W && needH <= H) { best = s; break; }
+  }
+  const amp = Math.min(Math.max(best * 0.42, 8), 22);
+  field.style.setProperty("--bub", best + "px");
+  field.style.setProperty("--amp", amp + "px");
 }
 
 function renderPop() {
@@ -7348,9 +7378,12 @@ function renderPop() {
   on("#pop-continue", "click", () => { if (itemGateBlocks()) return; collectAndContinue(); });
   wireFamiliar("pop");
   show("pop");
+  fitBubbleField();   // size the bubbles so the whole haul fits the field (nothing clipped/hidden)
   coachPopIntro();   // first-ever pop: the one-time spotlight tip
   setupPopWood();
 }
+// keep the bubbles fitted if the window/orientation changes while the pop screen is open
+window.addEventListener("resize", () => { if (screen("pop").classList.contains("active")) fitBubbleField(); });
 /* ---- The wooden pop-phase wall. Always the wood backdrop; on a rare round a carved X
    appears — tap it 5–10× to smash a hole, then a glowing treasure floats in the cavity
    (black shows through the real transparent hole in the art). Tap it to grab it. ---- */
@@ -7591,6 +7624,7 @@ function spawnBonusBubbles(cx, cy) {
     field.appendChild(nb);
     setTimeout(() => nb.classList.remove("spawning"), 480);
   });
+  fitBubbleField();   // re-fit so the new bubbles stay inside the field instead of overflowing the bottom
   refreshPop();
 }
 
