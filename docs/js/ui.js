@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v540"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v541"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -84,6 +84,7 @@ function normalizeGame(g) {
   if (!g.favs || typeof g.favs !== "object") g.favs = {};              // skinId -> true (favorite skins, starred in the shop)
   if (!g.cycleFav || typeof g.cycleFav !== "object") g.cycleFav = {};  // kind -> true (rotate through favorites each customer)
   if (!g.favIdx || typeof g.favIdx !== "object") g.favIdx = { cauldron: 0, familiar: 0 }; // rotation position per kind
+  if (typeof g.beadsBest !== "number" || g.beadsBest > 5) g.beadsBest = 0;   // best is now necklaces (0–5), not bead count
   if (typeof g.gothelCurse      === "undefined") g.gothelCurse      = null;
   if (typeof g.gothelSteal      === "undefined") g.gothelSteal      = false;
   if (typeof g.lastCustomerId   === "undefined") g.lastCustomerId   = null;  // prevents back-to-back Gothel
@@ -5625,18 +5626,37 @@ function boutiqueFinish(win) {
 let BEADS = null;
 let beadsDone = null;   // where to go when the player finishes/quits (home, or the hunt reward)
 const BEAD_TICK = 40;
-const BEADS_START_LEN = 5;   // head-start beads already on the string
+const BEADS_START_LEN = 3;   // head-start beads already on the string (cushion before a snap)
 const BEAD_PALETTE = [
-  { id: "pink",   name: "PINK",   css: "#ff5fa6" },
+  { id: "pink",   name: "PINK",   css: "#ff4fb4" },   // magenta-pink (distinct from orange)
   { id: "blue",   name: "BLUE",   css: "#3f8cff" },
-  { id: "green",  name: "GREEN",  css: "#37c26a" },
-  { id: "gold",   name: "GOLD",   css: "#f0bd2e" },
+  { id: "green",  name: "GREEN",  css: "#2fbf5a" },
+  { id: "yellow", name: "YELLOW", css: "#ffd23c" },
   { id: "purple", name: "PURPLE", css: "#a86bff" },
-  { id: "red",    name: "RED",    css: "#ff5a4d" },
-  { id: "teal",   name: "TEAL",   css: "#22c9be" },
-  { id: "orange", name: "ORANGE", css: "#ff9a3d" },
+  { id: "red",    name: "RED",    css: "#ff3b30" },   // pure red (distinct from pink/orange)
+  { id: "teal",   name: "TEAL",   css: "#12c6c6" },
+  { id: "orange", name: "ORANGE", css: "#ff7a1a" },   // clear orange (between red and yellow)
 ];
 function beadColor(id) { return BEAD_PALETTE.find(c => c.id === id) || BEAD_PALETTE[0]; }
+// The five necklace arcs draped on the mannequin (fractions of the stage, from the art). Each is a
+// quadratic curve from the left shoulder to the right, dipping to its centre. Beads thread along them.
+const BEAD_ARC_XL = 0.353, BEAD_ARC_XR = 0.646, BEAD_ARC_CX = 0.4995;
+const BEAD_ARCS = [   // yEnd = shoulder height, ctrl = 2*dip - yEnd (so the curve passes through the dip); dips spread for clear strands
+  { yEnd: 0.260, ctrl: 0.296 },   // dip ~0.278
+  { yEnd: 0.268, ctrl: 0.356 },   // dip ~0.312
+  { yEnd: 0.276, ctrl: 0.416 },   // dip ~0.346
+  { yEnd: 0.284, ctrl: 0.480 },   // dip ~0.382
+  { yEnd: 0.292, ctrl: 0.544 },   // dip ~0.418
+];
+const BEAD_ARC_COUNTS = [4, 5, 6, 7, 8];   // beads per necklace (shortest → longest)
+const BEAD_ARC_CUM = BEAD_ARC_COUNTS.reduce((a, n) => (a.push((a.length ? a[a.length - 1] : 0) + n), a), []); // [4,9,15,22,30]
+const BEADS_TOTAL = BEAD_ARC_CUM[BEAD_ARC_CUM.length - 1];   // 30 = all five necklaces
+function beadArcPoint(arc, t) {   // -> {x,y} as fractions of the stage
+  const mt = 1 - t;
+  return { x: mt * mt * BEAD_ARC_XL + 2 * mt * t * BEAD_ARC_CX + t * t * BEAD_ARC_XR,
+           y: mt * mt * arc.yEnd + 2 * mt * t * arc.ctrl + t * t * arc.yEnd };
+}
+function beadsNecklacesDone(len) { let n = 0; for (const c of BEAD_ARC_CUM) if (len >= c) n++; return n; }
 function beadsReadMs() { return Math.max(560, 1450 - (BEADS.level || 0) * 40); }   // read window shrinks as you go
 function beadsFallDur() { return Math.max(1250, 3000 - (BEADS.level || 0) * 65); } // beads fall faster as you go
 
@@ -5656,7 +5676,7 @@ function renderBeadsIntro(done) {
         <div class="stat-line"><span>Grab that colored bead 📿</span><span>to thread it</span></div>
         <div class="stat-line"><span>Wrong grab (or a miss)</span><span style="color:var(--bad)">a bead slips off!</span></div>
       </div>
-      <div class="muted" style="max-width:320px">Like this: <b style="color:#37c26a">PINK</b> vs <b style="color:#3f8cff">BLUE</b> → the honest one is <b style="color:#3f8cff">BLUE</b> (its word is inked in blue). Grab the blue bead! It speeds up — string as long a necklace as you can.${(GAME.beadsBest ? `<br>Best necklace: <b>${GAME.beadsBest} 📿</b>` : "")}</div>
+      <div class="muted" style="max-width:320px">Like this: <b style="color:#2fbf5a">PINK</b> vs <b style="color:#3f8cff">BLUE</b> → the honest one is <b style="color:#3f8cff">BLUE</b> (its word is inked in blue). Grab the blue bead! It speeds up — complete as many necklaces on the mannequin as you can.${(GAME.beadsBest ? `<br>Best set: <b>${GAME.beadsBest}/5 necklaces</b>` : "")}</div>
     </div>
     <button class="btn good" id="beads-start" style="width:100%;max-width:340px">Start stringing ▸</button>
     <div style="height:8px"></div>
@@ -5670,7 +5690,7 @@ function beadsStart() {
   if (BEADS && BEADS.tickTimer) clearInterval(BEADS.tickTimer);   // never leave a prior loop running
   const strung = [];
   for (let i = 0; i < BEADS_START_LEN; i++) strung.push(R.pick(BEAD_PALETTE).id);
-  BEADS = { strung, best: strung.length, level: 0, uid: 0, beads: [], answer: null,
+  BEADS = { strung, best: strung.length, bestNecks: beadsNecklacesDone(strung.length), level: 0, uid: 0, beads: [], answer: null,
     phase: "read", roundResolved: false, elapsed: 0, readUntil: 0, gapUntil: 0, tickTimer: null };
   beadsPlay();
   BEADS.tickTimer = setInterval(beadsTick, BEAD_TICK);
@@ -5680,11 +5700,11 @@ function beadsPlay() {
   html("event", `
     ${hud("Bead Restring")}
     <div class="beads-stage mg-fullbleed" id="beads-stage">
+      <div class="beads-bg" style="background-image:url('art/beads_bg.webp?v=${BUILD}')"></div>
       <div class="beads-hudline">
-        <div class="beads-chip">📿 <b id="beads-len">${BEADS.strung.length}</b></div>
-        <div class="beads-chip">Best <b id="beads-best">${BEADS.best}</b></div>
+        <div class="beads-chip">📿 Necklaces <b id="beads-necks">${beadsNecklacesDone(BEADS.strung.length)}</b>/5</div>
       </div>
-      <div class="beads-necklace" id="beads-necklace"></div>
+      <div class="beads-drape" id="beads-drape"></div>
       <div class="beads-fall" id="beads-fall"></div>
       <div class="beads-corner ls"><div class="beads-shout" id="beads-shout-l"></div><div class="beads-sister">💃</div></div>
       <div class="beads-corner rs"><div class="beads-shout" id="beads-shout-r"></div><div class="beads-sister">💃</div></div>
@@ -5746,15 +5766,23 @@ function beadsGrab(b) {
   }
 }
 function beadsThread(colorId) {
+  const before = beadsNecklacesDone(BEADS.strung.length);
   BEADS.strung.push(colorId);
   BEADS.best = Math.max(BEADS.best, BEADS.strung.length);
+  const after = beadsNecklacesDone(BEADS.strung.length);
+  if (after > before) {   // a whole necklace just completed
+    BEADS.bestNecks = Math.max(BEADS.bestNecks, after);
+    SFX.perfect && SFX.perfect(); SFX.charm && SFX.charm();
+    const st = $("#beads-stage"); if (st) { st.classList.remove("beads-flash"); void st.offsetWidth; st.classList.add("beads-flash"); }
+    if (after >= 5) { beadsPaint(); beadsPaintNecklace(true); beadsFinish(true); return; }   // strung all five!
+  }
   beadsPaint(); beadsPaintNecklace(true);
 }
 function beadsSlip() {
   BEADS.strung.pop();
   const st = $("#beads-stage"); if (st) { st.classList.remove("beads-shake"); void st.offsetWidth; st.classList.add("beads-shake"); }
   beadsPaint(); beadsPaintNecklace();
-  if (BEADS.strung.length <= 0) beadsFinish();
+  if (BEADS.strung.length <= 0) beadsFinish(false);
 }
 function beadsResolveRound() {
   if (!BEADS || BEADS.roundResolved || BEADS.phase === "over") return;
@@ -5784,33 +5812,44 @@ function beadsTick() {
   });
 }
 function beadsPaint() {
-  const l = $("#beads-len"); if (l) l.textContent = BEADS.strung.length;
-  const bst = $("#beads-best"); if (bst) bst.textContent = BEADS.best;
+  const n = $("#beads-necks"); if (n) n.textContent = beadsNecklacesDone(BEADS.strung.length);
 }
+// Drape the strung beads across the five mannequin arcs (arc 1 fills first, then arc 2, …).
 function beadsPaintNecklace(bump) {
-  const wrap = $("#beads-necklace"); if (!wrap) return;
-  const show = BEADS.strung.slice(-18);
-  wrap.innerHTML = show.map(id => `<span class="nbead" style="background:${beadColor(id).css}"></span>`).join("");
-  if (bump && wrap.lastElementChild) wrap.lastElementChild.classList.add("nbead-in");
+  const wrap = $("#beads-drape"); if (!wrap) return;
+  const L = Math.min(BEADS.strung.length, BEADS_TOTAL);
+  let html = "";
+  for (let a = 0; a < BEAD_ARCS.length; a++) {
+    const start = a ? BEAD_ARC_CUM[a - 1] : 0, quota = BEAD_ARC_COUNTS[a];
+    const onArc = Math.max(0, Math.min(quota, L - start));
+    for (let j = 0; j < onArc; j++) {
+      const p = beadArcPoint(BEAD_ARCS[a], 0.14 + 0.72 * ((j + 0.5) / quota));   // keep beads in the central drape, off the shoulders
+      const id = BEADS.strung[start + j];
+      const last = (start + j === L - 1);
+      html += `<span class="dbead${bump && last ? " dbead-in" : ""}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;background:radial-gradient(circle at 34% 30%, #fff9, ${beadColor(id).css} 55%, ${beadColor(id).css})"></span>`;
+    }
+  }
+  wrap.innerHTML = html;
 }
-function beadsFinish() {
+function beadsFinish(won) {
   if (!BEADS || BEADS.phase === "over") return;
   BEADS.phase = "over";
   if (BEADS.tickTimer) { clearInterval(BEADS.tickTimer); BEADS.tickTimer = null; }
-  const best = BEADS.best;
-  GAME.beadsBest = Math.max(GAME.beadsBest || 0, best); save();
-  SFX.clang && SFX.clang(); SFX.sneeze && SFX.sneeze();
+  const necks = BEADS.bestNecks;
+  GAME.beadsBest = Math.max(GAME.beadsBest || 0, necks); save();
+  if (won) { SFX.fanfare && SFX.fanfare(); SFX.perfect && SFX.perfect(); confettiOver($("#app")); }
+  else { SFX.clang && SFX.clang(); SFX.sneeze && SFX.sneeze(); }
   html("event", `
     ${hud("Bead Restring")}
     <div class="grow center" style="gap:14px">
-      <div style="font-size:46px">📿💥</div>
-      <div style="font-weight:800;font-size:22px">The string snapped!</div>
+      <div style="font-size:46px">${won ? "👑📿" : "📿💥"}</div>
+      <div style="font-weight:800;font-size:22px">${won ? "A full set — all five!" : "The string snapped!"}</div>
       <div class="card center" style="gap:4px;max-width:300px">
-        <div class="muted">Longest necklace</div>
-        <div style="font-size:36px;font-weight:900">${best} <span style="font-size:24px">📿</span></div>
-        <div class="muted">Best ever: ${GAME.beadsBest} 📿</div>
+        <div class="muted">Necklaces completed</div>
+        <div style="font-size:36px;font-weight:900">${necks} <span style="font-size:22px">/ 5</span></div>
+        <div class="muted">Best ever: ${GAME.beadsBest} / 5</div>
       </div>
-      <button class="btn good" id="beads-again" style="width:100%;max-width:320px">Try again ▸</button>
+      <button class="btn good" id="beads-again" style="width:100%;max-width:320px">Play again ▸</button>
       <button class="btn secondary" id="beads-done" style="width:100%;max-width:320px">I'm done</button>
     </div>
   `);
