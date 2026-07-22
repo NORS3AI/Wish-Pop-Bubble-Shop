@@ -2987,14 +2987,15 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 /* strung beads draped along the mannequin's necklace arcs (positioned in %) */
 .beads-drape { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .dbead { position: absolute; width: 2.7%; aspect-ratio: 1; transform: translate(-50%,-50%);
-  background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.5)); }
+  background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.5)); transition: filter .35s ease; }
+.dbead-done { filter: saturate(.28) brightness(.6) drop-shadow(0 1px 1.5px rgba(0,0,0,.5)); }   /* finished necklace — dimmed */
 .dbead-in { animation: dbeadIn .3s ease; }
 @keyframes dbeadIn { 0% { transform: translate(-50%,-50%) scale(0); } 60% { transform: translate(-50%,-50%) scale(1.4); } 100% { transform: translate(-50%,-50%) scale(1); } }
 .beads-stage.beads-flash::after { content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(circle at 50% 34%, rgba(255,240,180,.55), rgba(255,240,180,0) 55%); animation: beadsFlash .5s ease forwards; }
 @keyframes beadsFlash { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
-.beads-fall { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.beads-fall { position: absolute; inset: 0; pointer-events: auto; z-index: 4; }
 .bead { position: absolute; width: 58px; height: 58px; padding: 0; border: none; background: none; transform: translate(-50%,-50%);
-  pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  pointer-events: none; -webkit-tap-highlight-color: transparent;
   background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 3px 5px rgba(0,0,0,.45)); }
 .bead.caught { animation: beadCaught .3s ease forwards; }
 @keyframes beadCaught { to { transform: translate(-50%,-50%) scale(1.5); opacity: 0; } }

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v544"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v545"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5731,6 +5731,7 @@ function beadsPlay() {
     </div>
   `);
   show("event");
+  const fall = $("#beads-fall"); if (fall) fall.addEventListener("pointerdown", beadsFallTap);
   beadsLayoutScene();
   beadsPaintNecklace();
 }
@@ -5798,14 +5799,27 @@ function beadsDrop() {
   order.forEach((color, i) => {
     const b = { uid: ++BEADS.uid, color: color.id, isAnswer: color.id === answer.id,
       x: lanes[i], y: -8 - Math.random() * 22, el: null, caught: false };
-    const el = document.createElement("button");
+    const el = document.createElement("span");
     el.className = "bead"; el.style.left = b.x + "%"; el.style.top = b.y + "%";
     el.style.backgroundImage = `url('art/bead_${color.id}.webp?v=${BUILD}')`;
-    el.addEventListener("pointerdown", ev => { ev.preventDefault(); beadsGrab(b); });
     fall.appendChild(el); b.el = el;
     BEADS.beads.push(b);
   });
   BEADS.phase = "fall";
+}
+// Generous catch: a tap grabs the NEAREST un-caught bead within a grace radius (not pixel-perfect),
+// so a bead is catchable as it travels — no need to click exactly on it.
+function beadsFallTap(e) {
+  if (!BEADS || BEADS.phase !== "fall") return;
+  const x = e.clientX, y = e.clientY;
+  let best = null, bestD = 1e9, bestR = 0;
+  BEADS.beads.forEach(b => {
+    if (b.caught || !b.el) return;
+    const r = b.el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const d = Math.hypot(x - cx, y - cy);
+    if (d < bestD) { bestD = d; best = b; bestR = r.width / 2; }
+  });
+  if (best && bestD <= bestR + 40) { e.preventDefault(); beadsGrab(best); }   // 40px of grace beyond the bead
 }
 function beadsGrab(b) {
   if (!BEADS || b.caught || BEADS.phase !== "fall") return;
@@ -5870,7 +5884,22 @@ function beadsTick() {
 function beadsPaint() {
   const n = $("#beads-necks"); if (n) n.textContent = beadsNecklacesDone(BEADS.strung.length);
 }
+// Evenly spaced points along an arc BY ARC LENGTH (not curve parameter), so beads sit an equal
+// distance apart even on the deep U's. Returns `count` points spanning the middle ~88% of the string.
+function beadArcEven(arc, count) {
+  const N = 140, pts = [], cum = [0];
+  for (let i = 0; i <= N; i++) { pts.push(beadArcPoint(arc, i / N)); if (i) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)); }
+  const total = cum[N] || 1e-6, inset = total * 0.06, usable = total - 2 * inset, out = [];
+  for (let j = 0; j < count; j++) {
+    const target = inset + (count === 1 ? 0.5 : (j + 0.5) / count) * usable;
+    let k = 1; while (k < N && cum[k] < target) k++;
+    const seg = cum[k] - cum[k - 1] || 1e-6, f = (target - cum[k - 1]) / seg;
+    out.push({ x: pts[k - 1].x + (pts[k].x - pts[k - 1].x) * f, y: pts[k - 1].y + (pts[k].y - pts[k - 1].y) * f });
+  }
+  return out;
+}
 // Drape the strung beads across the five mannequin arcs (arc 1 fills first, then arc 2, …).
+// A necklace that's fully strung dims (it's "done"); if you regress below it, its colour returns.
 function beadsPaintNecklace(bump) {
   const wrap = $("#beads-drape"); if (!wrap) return;
   const L = Math.min(BEADS.strung.length, BEADS_TOTAL);
@@ -5878,11 +5907,14 @@ function beadsPaintNecklace(bump) {
   for (let a = 0; a < BEAD_ARCS.length; a++) {
     const start = a ? BEAD_ARC_CUM[a - 1] : 0, quota = BEAD_ARC_COUNTS[a];
     const onArc = Math.max(0, Math.min(quota, L - start));
+    if (!onArc) continue;
+    const pts = beadArcEven(BEAD_ARCS[a], quota);
+    const done = L >= BEAD_ARC_CUM[a];   // this whole string is complete → dim it
     for (let j = 0; j < onArc; j++) {
-      const p = beadArcPoint(BEAD_ARCS[a], 0.06 + 0.88 * ((j + 0.5) / quota));   // spread beads along the whole string
+      const p = pts[j];
       const id = BEADS.strung[start + j];
       const last = (start + j === L - 1);
-      html += `<span class="dbead${bump && last ? " dbead-in" : ""}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;background-image:url('art/bead_${id}.webp?v=${BUILD}')"></span>`;
+      html += `<span class="dbead${done ? " dbead-done" : ""}${bump && last ? " dbead-in" : ""}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;background-image:url('art/bead_${id}.webp?v=${BUILD}')"></span>`;
     }
   }
   wrap.innerHTML = html;
