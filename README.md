@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐛 **Fixed a cursed-fruit bug.** When Lady Gothel rotted one of your *infused* ingredients, it
+  was secretly still filling one of your needs instead of the allergy it showed on the card. Now
+  a rotted ingredient behaves like the curse it is — it feeds the allergy, never a need.
+
 - 🧙‍♀️ **Lady Gothel's tantrums moved to the Courtyard.** Her allergy meltdowns and failed-potion
   scenes now play out in the King's Courtyard (not the old village shop), and her artwork got a
   fresh trim to clear up the stray white edges.

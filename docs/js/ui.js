@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v536"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v537"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -6188,7 +6188,9 @@ function ingInst(id, extra) {
   // flex infused ingredients get a single assigned magic: usually (INFUSED_NEED_BIAS) one of
   // this round's needs, but sometimes an OFF-TARGET magic instead — so they're a gamble, not a
   // sure thing, and their shown magic can't be used to reliably read a hidden need.
-  if (ing && ing.flex && ROUND && ROUND.wish && ROUND.wish.needs.length) {
+  // (A ROTTEN infused ingredient is cursed, not helpful — it keeps NO flex magic, so it scores
+  //  purely as a rotten fruit: it feeds the allergy via its rot qualities, never a need.)
+  if (ing && ing.flex && !inst.rotten && ROUND && ROUND.wish && ROUND.wish.needs.length) {
     const needs = ROUND.wish.needs.map(n => n.type);
     if (R.chance(BALANCE.INFUSED_NEED_BIAS)) inst.magic = R.pick(needs);
     else { const off = (currentRealm().magics || []).filter(m => !needs.includes(m)); inst.magic = off.length ? R.pick(off) : R.pick(needs); }
@@ -8467,6 +8469,7 @@ function pickFreezeNeed(ing, inst) {
 function applyInfusedEffect(inst) {
   const ing = inst && inst.id ? D.INGREDIENT_BY_ID[inst.id] : null;
   if (!ing || !ing.infused) return;
+  if (inst.rotten) return;   // a rotted infused is cursed — its helpful effect doesn't fire
   if (ing.infused === "potentNext") {
     ROUND.potentNext = true; SFX.unlock(); SFX.charm();
     toast(`${ing.emoji} ${ing.name} — your next ingredient will be Potent! ✨`);
