@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v533"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v534"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -3019,9 +3019,7 @@ function syncRoundHud(phase) {
   if (!hud) { hud = document.createElement("div"); hud.id = "round-hud"; }
   app.appendChild(hud);                       // keep it last so it overlays the active screen
   hud.className = "round-hud phase-" + phase;
-  // the top-left pet badge would sit over a gem on the rare Courtyard stash pop — slide it down
-  // to a clear stretch of wall (between the top gems and the mid gems) instead of hiding it
-  if (phase === "pop" && ROUND && ROUND.popStash) hud.classList.add("stash-movepet");
+  // (the pet badge always stays in its fixed home spot across scoop/pop/mix — never moved)
   const villain = !home && ROUND && ROUND.villain;
   const showPet = !villain;                   // villain events capture the pet → locked slot
   // count on the scroll: HOME shows total treats owned; round screens show treats-left this round
