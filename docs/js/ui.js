@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v541"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v542"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5638,6 +5638,10 @@ const BEAD_PALETTE = [
   { id: "orange", name: "ORANGE", css: "#ff7a1a" },   // clear orange (between red and yellow)
 ];
 function beadColor(id) { return BEAD_PALETTE.find(c => c.id === id) || BEAD_PALETTE[0]; }
+// Colour pairs too easily confused — never shown together (as the two shout words OR among the
+// five falling beads). Also blocks an incongruent trick word from using two look-alike colours.
+const BEAD_CLASH = [["red", "pink"], ["blue", "teal"], ["pink", "orange"], ["blue", "purple"]];
+function beadsClash(a, b) { return BEAD_CLASH.some(p => (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a)); }
 // The five necklace arcs draped on the mannequin (fractions of the stage, from the art). Each is a
 // quadratic curve from the left shoulder to the right, dipping to its centre. Beads thread along them.
 const BEAD_ARC_XL = 0.353, BEAD_ARC_XR = 0.646, BEAD_ARC_CX = 0.4995;
@@ -5719,15 +5723,23 @@ function beadsNextRound() {
   BEADS.roundResolved = false;
   const answer = R.pick(BEAD_PALETTE);
   BEADS.answer = answer;
-  const trickWord = R.pick(BEAD_PALETTE.filter(c => c.id !== answer.id));
-  const trickFont = R.pick(BEAD_PALETTE.filter(c => c.id !== trickWord.id && c.id !== answer.id));
+  // trick word: not the answer, and never a colour that clashes with the answer
+  const trickWord = R.pick(BEAD_PALETTE.filter(c => c.id !== answer.id && !beadsClash(c.id, answer.id)));
+  // trick font: incongruent (≠ trickWord) and clashes with neither the answer nor the trick word
+  // (so a look-alike pairing can't make the fib read as if it were honest)
+  let fontPool = BEAD_PALETTE.filter(c => c.id !== trickWord.id && c.id !== answer.id && !beadsClash(c.id, answer.id) && !beadsClash(c.id, trickWord.id));
+  if (!fontPool.length) fontPool = BEAD_PALETTE.filter(c => c.id !== trickWord.id && c.id !== answer.id);
+  const trickFont = R.pick(fontPool);
+  const pair = (BEADS.level - 1) % 4 + 1;   // cycle the four matched bubble styles; both sisters share it
   const honestLeft = Math.random() < 0.5;
   const honest = { w: answer.name, c: answer.css };       // word inked in its OWN color — the truth
   const trick = { w: trickWord.name, c: trickFont.css };  // word inked in a clashing color — the fib
   const L = honestLeft ? honest : trick, RT = honestLeft ? trick : honest;
-  const sl = $("#beads-shout-l"), sr = $("#beads-shout-r");
-  if (sl) { sl.innerHTML = `<span class="beads-word" style="color:${L.c}">${L.w}!</span>`; sl.classList.add("show"); }
-  if (sr) { sr.innerHTML = `<span class="beads-word" style="color:${RT.c}">${RT.w}!</span>`; sr.classList.add("show"); }
+  const paint = (el, side, dat) => { if (!el) return;
+    el.innerHTML = `<div class="sb" style="background-image:url('art/sbubble_${pair}${side}.webp?v=${BUILD}')"></div><span class="beads-word" style="color:${dat.c}">${dat.w}!</span>`;
+    el.classList.add("show"); };
+  paint($("#beads-shout-l"), "l", L);
+  paint($("#beads-shout-r"), "r", RT);
   SFX.pop && SFX.pop();
   BEADS.phase = "read";
   BEADS.readUntil = BEADS.elapsed + beadsReadMs();
@@ -5735,16 +5747,26 @@ function beadsNextRound() {
 function beadsDrop() {
   const fall = $("#beads-fall"); if (!fall) return;
   const answer = BEADS.answer;
-  const decoys = R.shuffle(BEAD_PALETTE.filter(c => c.id !== answer.id)).slice(0, 4);
-  const set = R.shuffle([answer].concat(decoys));
-  const lanes = R.shuffle([16, 33, 50, 67, 84]);
+  // 5 beads: the answer + decoys, with NO clashing pair anywhere in the set (retry to reach five)
+  let set = [answer];
+  for (let t = 0; t < 16 && set.length < 5; t++) {
+    const s = [answer];
+    for (const c of R.shuffle(BEAD_PALETTE.filter(x => x.id !== answer.id))) {
+      if (s.length >= 5) break;
+      if (s.some(o => beadsClash(o.id, c.id))) continue;
+      s.push(c);
+    }
+    if (s.length > set.length) set = s;
+  }
+  const order = R.shuffle(set.slice());
+  const lanes = R.shuffle([16, 33, 50, 67, 84]).slice(0, order.length);
   BEADS.beads = [];
-  set.forEach((color, i) => {
+  order.forEach((color, i) => {
     const b = { uid: ++BEADS.uid, color: color.id, isAnswer: color.id === answer.id,
       x: lanes[i], y: -8 - Math.random() * 22, el: null, caught: false };
     const el = document.createElement("button");
     el.className = "bead"; el.style.left = b.x + "%"; el.style.top = b.y + "%";
-    el.style.background = `radial-gradient(circle at 34% 28%, #fff9, ${color.css} 46%, ${color.css})`;
+    el.style.backgroundImage = `url('art/bead_${color.id}.webp?v=${BUILD}')`;
     el.addEventListener("pointerdown", ev => { ev.preventDefault(); beadsGrab(b); });
     fall.appendChild(el); b.el = el;
     BEADS.beads.push(b);
@@ -5826,7 +5848,7 @@ function beadsPaintNecklace(bump) {
       const p = beadArcPoint(BEAD_ARCS[a], 0.14 + 0.72 * ((j + 0.5) / quota));   // keep beads in the central drape, off the shoulders
       const id = BEADS.strung[start + j];
       const last = (start + j === L - 1);
-      html += `<span class="dbead${bump && last ? " dbead-in" : ""}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;background:radial-gradient(circle at 34% 30%, #fff9, ${beadColor(id).css} 55%, ${beadColor(id).css})"></span>`;
+      html += `<span class="dbead${bump && last ? " dbead-in" : ""}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;background-image:url('art/bead_${id}.webp?v=${BUILD}')"></span>`;
     }
   }
   wrap.innerHTML = html;
