@@ -19,6 +19,10 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🧙‍♀️ **Lady Gothel's tantrums moved to the Courtyard.** Her allergy meltdowns and failed-potion
+  scenes now play out in the King's Courtyard (not the old village shop), and her artwork got a
+  fresh trim to clear up the stray white edges.
+
 - 💠 **Infused ingredients are a gamble now.** They used to always match one of the customer's
   needs — which made them a free peek at hidden needs and an easy fill. Now they only land
   on-target about two-thirds of the time; the rest go off-target, so you can't fully trust them.

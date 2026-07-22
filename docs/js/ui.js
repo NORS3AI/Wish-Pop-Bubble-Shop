@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v535"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v536"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -8939,15 +8939,15 @@ function playGothelScene(res, done) {
       // RED allergy: a violent reaction — her hair falls out. Angrier, harsher curse.
       ["customer_gothel_allergic_red","gothel_bald_1","gothel_bald_2","gothel_bald_3"].forEach(k => ART.ensure(k, () => {}));
       beats.push(
-        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_bald_1", bg: "shop_interior",
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_bald_1", bg: "courtyard_interior",
           text: "My HAIR—! My beautiful, glorious hair… GONE! You've made me BALD, you wretched little brewer!",
           cta: "I— I didn't mean to— ▸" },
-        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_bald_2", bg: "shop_interior",
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_bald_2", bg: "courtyard_interior",
           text: n === 2
             ? "UNFORGIVABLE. Two of your finest ingredients will rot to the very core next round — a mercy, considering what you've done to me."
             : "UNFORGIVABLE. One of your ingredients will rot to the very core next round — a mercy, considering what you've done to me.",
           cta: "That's not fair— ▸" },
-        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_bald_3", bg: "shop_interior",
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_bald_3", bg: "courtyard_interior",
           text: "Fix this humiliation before I return, or you'll wish you had. I do NOT forget. *storms off*",
           cta: "She's gone... ▸" }
       );
@@ -8955,15 +8955,15 @@ function playGothelScene(res, done) {
       // YELLOW allergy: a milder (but mortifying) reaction — she sprouts a beard.
       ["gothel_beard_1","gothel_beard_2","gothel_beard_3"].forEach(k => ART.ensure(k, () => {}));
       beats.push(
-        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_beard_1", bg: "shop_interior",
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_beard_1", bg: "courtyard_interior",
           text: "A BEARD?! You've given me a BEARD! The utter indignity — do you know WHO I AM?",
           cta: "I— it slipped— ▸" },
-        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_beard_2", bg: "shop_interior",
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_beard_2", bg: "courtyard_interior",
           text: n === 2
             ? "Have you ANY idea how long this takes to charm away? Two of your ingredients will wake up rotten next round. Consider us even."
             : "Have you ANY idea how long this takes to charm away? One of your ingredients will wake up rotten next round. Consider us even.",
           cta: "Enjoy your little curse... ▸" },
-        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_beard_3", bg: "shop_interior",
+        { name: "Lady Gothel 🧙‍♀️", fig: "gothel_beard_3", bg: "courtyard_interior",
           text: "I'll take my leave before anyone SEES. Do better next time, darling — or the next curse won't be so kind. *storms off*",
           cta: "She's gone... ▸" }
       );
@@ -8972,13 +8972,13 @@ function playGothelScene(res, done) {
   if (res.gothelSteal) {
     ["gothel_confident","gothel_sly","gothel_laugh"].forEach(k => ART.ensure(k, () => {}));
     beats.push(
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_confident", bg: "shop_interior",
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_confident", bg: "courtyard_interior",
         text: "You failed me. I came for a proper enchantment and left with nothing. That simply will not do.",
         cta: "I'm sorry— ▸" },
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_sly", bg: "shop_interior",
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_sly", bg: "courtyard_interior",
         text: "Next time I'm in your shop, I'll be helping myself to something from your cauldron while you brew. Call it a lesson in quality.",
         cta: "She wouldn't dare ▸" },
-      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_laugh", bg: "shop_interior",
+      { name: "Lady Gothel 🧙‍♀️", fig: "gothel_laugh", bg: "courtyard_interior",
         text: "Oh, but I would. I already did. *laughs* Do better next time, darling.",
         cta: "She's gone... ▸" }
     );
