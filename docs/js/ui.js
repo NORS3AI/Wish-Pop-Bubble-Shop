@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v564"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v565"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1732,12 +1732,21 @@ function maybeShowHuntCelebrate() {
     const gifts = allSkins().filter(c => c.hunt === realm).map(c => c.id);
     if (!gifts.includes(h.skin)) gifts.unshift(h.skin);
     SFX.fanfare && SFX.fanfare(); confettiOver($("#app"));
-    renderBeadsIntro(() => {
+    ["stepsisters_fight", "stepsisters_spill"].forEach(f => ART.ensure(f, () => {}));
+    const intoBeads = () => renderBeadsIntro(() => {
       (function showNext(i) {
         if (i >= gifts.length) { renderStart(); return; }
         showSkinReward(gifts[i], `Gift from the Stepsisters!`, () => showNext(i + 1));
       })(0);
     });
+    // First: the sisters snatch the recovered beads and fight over them until the string snaps —
+    // which is exactly why they need you to re-string it (the minigame).
+    renderStoryBeats([
+      { name: "The Stepsisters", fig: "stepsisters_fight", figClass: "ss-duo-big", bg: "courtyard_mid",
+        text: "<b>Prunella:</b> You found all my beads! Hand them over!<br><b>Griselda:</b> <i>Your</i> beads? Ha! Those are <b>mine</b>.<br><b>Prunella:</b> Give it <b>back</b>!<br><b>Griselda:</b> <b>Never!</b> <i>(They each grab an end and pull…)</i>" },
+      { name: "The Stepsisters", fig: "stepsisters_spill", figClass: "ss-duo-big", bg: "courtyard_mid", cta: "Re-string them  ▸",
+        text: "<b>SNAP!</b> The string bursts and beads bounce everywhere. <i>(A long pause.)</i><br><b>Both:</b> …uh oh.<br><b>Prunella:</b> Now who’s going to <b>re-string</b> our necklace?!" },
+    ], intoBeads);
     return;
   }
   const skin = D.COSMETIC_BY_ID[h.skin];
