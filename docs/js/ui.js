@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v549"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v550"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5671,8 +5671,8 @@ function beadsStringsSvg() {
     <path d="${paths}" fill="none" stroke="rgba(255,244,214,.75)" stroke-width="1" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
   </svg>`;
 }
-function beadsReadMs() { return Math.max(560, 1450 - (BEADS.level || 0) * 40); }   // read window shrinks as you go
-function beadsFallDur() { return Math.max(1250, 3000 - (BEADS.level || 0) * 65); } // beads fall faster as you go
+function beadsReadMs() { return Math.max(430, 1350 - (BEADS.level || 0) * 72); }    // read window shrinks fast, to a tight floor
+function beadsFallDur() { return Math.max(940, 2750 - (BEADS.level || 0) * 115); }  // beads speed up fast, to a quick floor
 
 function renderBeadsIntro(done) {
   beadsDone = (typeof done === "function") ? done : (beadsDone || null);
