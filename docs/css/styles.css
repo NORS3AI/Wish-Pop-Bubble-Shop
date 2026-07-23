@@ -2751,6 +2751,9 @@ body.realm-courtyard .realm-here { background: linear-gradient(90deg, rgba(255,2
   display: flex; align-items: flex-end; justify-content: center; height: 84vh; animation: storyFigIn .5s ease-out; }
 /* keeps her horizontally centred the whole time (a clean slide up, no sideways jump) */
 @keyframes storyFigIn { from { opacity: 0; transform: translateX(-50%) translateY(30px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+/* Same rise-and-fade for the full-width shove containers (no translateX, so they come up from the
+   bottom like every other figure instead of sliding in from the side). */
+@keyframes storyFigInFlat { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 img.story-face { height: 100%; width: auto; max-width: 96vw; object-fit: contain; object-position: bottom; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
 /* two-character (duo) art is wide — show it in the upper area, sized to fit the width with
    margin, so both pigs are fully visible above the dialogue (not squeezed edge-to-edge). */
@@ -2761,7 +2764,8 @@ img.story-face { height: 100%; width: auto; max-width: 96vw; object-fit: contain
    is intact, we just frame it in the slide.) The container spans the whole game column and clips at
    its edges; the nudge uses `left` in % of the COLUMN (NOT vw) so it's identical on phone and iPad. */
 .story-figure.ss-shove-r, .story-figure.ss-shove-l { left: 0; right: 0; width: 100%; transform: none;
-  height: 90vh; bottom: 0; top: auto; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+  height: 90vh; bottom: 0; top: auto; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  animation: storyFigInFlat .5s ease-out; }
 .story-figure.ss-shove-r img.story-face, .story-figure.ss-shove-l img.story-face { position: relative; height: 100%; width: auto; max-width: none; object-position: bottom; }
 .story-figure.ss-shove-r img.story-face { left: 24%; }    /* centres Prunella; Griselda (right) slides off-screen, arm remains */
 .story-figure.ss-shove-l img.story-face { left: -11%; }   /* centres Griselda; Prunella (left) slides off-screen, arm remains */
