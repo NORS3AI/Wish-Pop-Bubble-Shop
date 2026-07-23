@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v547"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v548"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5653,7 +5653,7 @@ const BEAD_ARCS = [   // yEnd = neck attach height, ctrl = 2*dip - yEnd (curve p
   { yEnd: 0.255, ctrl: 0.675 },   // dip ~0.465
   { yEnd: 0.255, ctrl: 0.785 },   // dip ~0.52
 ];
-const BEAD_ARC_COUNTS = [5, 7, 9, 11, 13];   // beads per necklace (shortest → longest), graduated like the reference
+const BEAD_ARC_COUNTS = [4, 5, 6, 7, 8];   // beads per necklace (shortest → longest); tight centred clusters
 const BEAD_ARC_CUM = BEAD_ARC_COUNTS.reduce((a, n) => (a.push((a.length ? a[a.length - 1] : 0) + n), a), []); // [4,9,15,22,30]
 const BEADS_TOTAL = BEAD_ARC_CUM[BEAD_ARC_CUM.length - 1];   // 30 = all five necklaces
 function beadArcPoint(arc, t) {   // -> {x,y} as fractions of the stage
@@ -5887,12 +5887,18 @@ function beadsPaint() {
 }
 // Evenly spaced points along an arc BY ARC LENGTH (not curve parameter), so beads sit an equal
 // distance apart even on the deep U's. Returns `count` points spanning the middle ~88% of the string.
-function beadArcEven(arc, count) {
-  const N = 140, pts = [], cum = [0];
-  for (let i = 0; i <= N; i++) { pts.push(beadArcPoint(arc, i / N)); if (i) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)); }
-  const total = cum[N] || 1e-6, inset = total * 0.06, usable = total - 2 * inset, out = [];
+const BEAD_IMG_AR = 1846 / 852;   // scene height/width ratio — corrects x vs y so distances are true
+const BEAD_DIA = 0.036;           // bead diameter as a fraction of scene width (matches the .dbead CSS)
+// `count` beads placed TOUCHING (no gaps), centred on the DEEPEST point of the U — a symmetric cluster.
+function beadArcCluster(arc, count) {
+  const N = 240, pts = [], cum = [0];
+  for (let i = 0; i <= N; i++) {
+    pts.push(beadArcPoint(arc, i / N));
+    if (i) { const dx = pts[i].x - pts[i - 1].x, dy = (pts[i].y - pts[i - 1].y) * BEAD_IMG_AR; cum.push(cum[i - 1] + Math.hypot(dx, dy)); }
+  }
+  const total = cum[N] || 1e-6, mid = total / 2, step = BEAD_DIA * 0.9, out = [];
   for (let j = 0; j < count; j++) {
-    const target = inset + (count === 1 ? 0.5 : (j + 0.5) / count) * usable;
+    const target = Math.max(0, Math.min(total, mid + (j - (count - 1) / 2) * step));
     let k = 1; while (k < N && cum[k] < target) k++;
     const seg = cum[k] - cum[k - 1] || 1e-6, f = (target - cum[k - 1]) / seg;
     out.push({ x: pts[k - 1].x + (pts[k].x - pts[k - 1].x) * f, y: pts[k - 1].y + (pts[k].y - pts[k - 1].y) * f });
@@ -5909,7 +5915,7 @@ function beadsDrapeHtml(applyDim, strungArr) {
     const start = a ? BEAD_ARC_CUM[a - 1] : 0, quota = BEAD_ARC_COUNTS[a];
     const onArc = Math.max(0, Math.min(quota, L - start));
     if (!onArc) continue;
-    const pts = beadArcEven(BEAD_ARCS[a], quota);
+    const pts = beadArcCluster(BEAD_ARCS[a], onArc);   // beads touch, centred on the dip (grows symmetrically)
     const done = applyDim && L >= BEAD_ARC_CUM[a];   // this whole string is complete → dim it
     for (let j = 0; j < onArc; j++) {
       const p = pts[j], id = strung[start + j];

@@ -2991,7 +2991,7 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 .beads-strings { position: absolute; inset: 0; z-index: 2; pointer-events: none; width: 100%; height: 100%; }
 /* strung beads draped along the mannequin's necklace arcs (positioned in %) */
 .beads-drape { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
-.dbead { position: absolute; width: 2.7%; aspect-ratio: 1; transform: translate(-50%,-50%);
+.dbead { position: absolute; width: 3.6%; aspect-ratio: 1; transform: translate(-50%,-50%);
   background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.5)); transition: filter .35s ease; }
 .dbead-done { filter: saturate(.28) brightness(.6) drop-shadow(0 1px 1.5px rgba(0,0,0,.5)); }   /* finished necklace — dimmed */
 .dbead-in { animation: dbeadIn .3s ease; }
