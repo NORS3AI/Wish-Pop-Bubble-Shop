@@ -2837,10 +2837,6 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
    gowns, so we can drop the "Name:" prefixes. Also overrides the default <b>/<i> colours inside. */
 .story-speech .speak-p, .story-speech .speak-p b, .story-speech .speak-p i { color: #7d2ea6; font-weight: 700; }
 .story-speech .speak-g, .story-speech .speak-g b, .story-speech .speak-g i { color: #0e7d42; font-weight: 700; }
-/* Jester result image on the Spilled Wish-Wine outcome screen */
-.wine-jester { display: flex; justify-content: center; align-items: flex-end; }
-.wine-jester img.wine-jester-img { height: 36vh; max-height: 330px; width: auto; max-width: 80vw; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
-.wine-jester .art-emoji.wine-jester-img { font-size: 20vh; line-height: 1; }
 /* Goldilocks' three-bears delivery — a tray of tappable teddy bears */
 .story-card.goldi-deliver { padding-bottom: calc(26px + var(--safe-b)); }
 /* SHORT characters (kids etc.) — a taller figure so they fill the upper/middle
