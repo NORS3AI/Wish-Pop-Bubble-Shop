@@ -19,11 +19,16 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 👯 **Meet the Stepsisters, Prunella & Griselda.** The two sisters now arrive as customers in the
+  King's Courtyard — each begging for a gown-charm grander than the other's — and they kick off the
+  bead hunt with a squabbling little story: one insists the beads were pink and red, the other swears
+  they were green and teal, they shove each other aside, and finally give up and just ask you to find
+  them all.
+
 - 📿 **New minigame: the Stepsisters' Bead Restring.** Find all the King's Courtyard beads and the
   two stepsisters pull you in to re-string them — but one of them always fibs! Trust the sister
   whose color word is written in its *own* color, then grab that bead as five fall. Wrong grabs
-  slip a bead off your string; it speeds up, so string as long a necklace as you can. (Placeholder
-  art for now.)
+  slip a bead off your string; it speeds up, so string as long a necklace as you can.
 
 - 🐛 **Fixed a cursed-fruit bug.** When Lady Gothel rotted one of your *infused* ingredients, it
   was secretly still filling one of your needs instead of the allergy it showed on the card. Now
