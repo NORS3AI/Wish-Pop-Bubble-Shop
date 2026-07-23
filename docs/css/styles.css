@@ -2756,6 +2756,16 @@ img.story-face { height: 100%; width: auto; max-width: 96vw; object-fit: contain
    margin, so both pigs are fully visible above the dialogue (not squeezed edge-to-edge). */
 .story-figure.wide { height: auto; bottom: auto; top: 20%; align-items: center; }
 .story-figure.wide img.story-face { height: auto; width: auto; max-height: 52vh; max-width: 82vw; object-position: center; }
+/* Stepsisters' shove beats: show the FULL two-figure art big and bottom-anchored, then slide it
+   sideways so the shover sits mostly off-screen — all you see of her is the arm reaching in.
+   (No cropping: the art is intact, we just frame it in the slide.) */
+.story-figure.ss-shove-r, .story-figure.ss-shove-l { height: 94vh; bottom: 0; top: auto; align-items: flex-end; }
+.story-figure.ss-shove-r img.story-face, .story-figure.ss-shove-l img.story-face { height: 100%; width: auto; max-width: none; object-position: bottom; }
+.story-figure.ss-shove-r img.story-face { transform: translateX(19vw); }   /* Griselda (right) slides off-screen; Prunella + the shoving arm remain */
+.story-figure.ss-shove-l img.story-face { transform: translateX(-19vw); }  /* Prunella (left) slides off-screen; Griselda + the shoving arm remain */
+/* Both sisters, sulking: like a duo (wide) but noticeably bigger. */
+.story-figure.ss-duo-big { height: auto; bottom: auto; top: 8%; align-items: center; }
+.story-figure.ss-duo-big img.story-face { height: auto; width: auto; max-height: 78vh; max-width: 96vw; object-position: center; }
 /* Wishy the Fish sits in a round water-bubble — bottom-anchored at full height he's huge and
    clipped, so show him small and centred in the upper area with the whole bubble visible. */
 .story-figure.round { height: auto; bottom: auto; top: 10%; align-items: center; }

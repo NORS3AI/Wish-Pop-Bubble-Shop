@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v558"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v559"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -762,7 +762,7 @@ function storyPaint() {
   if (b.vista) { cls = "vista"; }
   else if (b.gallery) { cls = "gallery-beat"; GALLERY = b.gallery; GALLERY_I = 0; top = galleryHtml(); }
   else if (b.scene) { top = `<div class="story-figure scene"><div class="story-scene">${b.scene}</div></div>`; }
-  else if (b.fig) { const fc = ((/duo|_tossed|stepsisters_/.test(b.fig)) ? " wide" : /^autograph/.test(b.fig) ? " poster" : isRoundFig(b.fig) ? " round" : (isShortFig(b.fig) ? " tall" : "")) + (/^wolf/.test(b.fig) ? " wolf" : ""); top = `<div class="story-figure${fc}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // duo art smaller to fit width (two-figure stepsisters too); a poster shows centred; a bubble-character (Wishy) shows small & centred; short characters (kids) get the taller boost
+  else if (b.fig) { const fc = ((/duo|_tossed/.test(b.fig)) ? " wide" : /^autograph/.test(b.fig) ? " poster" : isRoundFig(b.fig) ? " round" : (isShortFig(b.fig) ? " tall" : "")) + (/^wolf/.test(b.fig) ? " wolf" : "") + (b.figClass ? " " + b.figClass : ""); top = `<div class="story-figure${fc}">${ART.tag(b.fig, "🐺", "story-face")}</div>`; }  // duo art smaller to fit width; a poster shows centred; a bubble-character (Wishy) shows small & centred; short characters (kids) get the taller boost; a beat can add its own figClass for a bespoke framing
   else if (b.figEmoji) { top = `<div class="story-figure emoji"><span class="story-face">${b.figEmoji}</span></div>`; }  // a character without art yet (emoji placeholder)
   else { top = `<div class="story-figure">${redPose(b.pose)}</div>`; }
   // an item being handed over this beat (e.g. giving Red the heart button) — shown as a
@@ -1025,11 +1025,11 @@ function playStepsisters() {
   GAME.stepsistersMet = true; save();   // met them + took the quest → beads start turning up as you play
   renderStoryBeats([
     { name: "Prunella", fig: "stepsister_purple_worried", bg: "courtyard_mid", text: "Oh, thank goodness — you simply <i>must</i> help me! My necklace snapped and the beads went every-which-where. There was pink, and purple, and red, I think, and—" },
-    { name: "Griselda", fig: "stepsisters_shove", bg: "courtyard_mid", text: "<i>(A green-gloved hand shoves Prunella clean out of the way.)</i> Out of the <b>way</b>. You haven’t the faintest idea what you’re babbling about." },
+    { name: "Griselda", fig: "stepsisters_shove", figClass: "ss-shove-r", bg: "courtyard_mid", text: "<i>(A green-gloved hand shoves Prunella clean out of the way.)</i> Out of the <b>way</b>. You haven’t the faintest idea what you’re babbling about." },
     { name: "Griselda", fig: "stepsister_green_happy", bg: "courtyard_mid", text: "Hello there! <b>Griselda.</b> Do ignore my sister Prunella — hopeless, that one. The beads were <b>green</b>, and <b>blue</b>, and <b>teal</b>, and—" },
     { name: "Griselda", fig: "stepsister_green_worried", bg: "courtyard_mid", text: "…oh. Oh, wait just a moment. Are those the right colors? Hmm. Perhaps there was <i>yellow</i>. And — some orange? I was so <i>certain</i> a breath ago…" },
-    { name: "Prunella", fig: "stepsisters_shove2", bg: "courtyard_mid", text: "<i>(Prunella barges back in with a shove of her own.)</i> <b>Hah!</b> You see? She hasn’t a clue either. Don’t listen to a single <i>word</i> she says." },
-    { name: "The Stepsisters", fig: "stepsisters_sulk", bg: "courtyard_mid", cta: "Find their beads  ▸", text: "<i>(They fold their arms in a huff, noses in the air.)</i> Oh, what does it even <b>matter</b>! Pink, teal, orange, whatever — just find <b>every last bead</b> for us, will you?" },
+    { name: "Prunella", fig: "stepsisters_shove2", figClass: "ss-shove-l", bg: "courtyard_mid", text: "<i>(Prunella barges back in with a shove of her own.)</i> <b>Hah!</b> You see? She hasn’t a clue either. Don’t listen to a single <i>word</i> she says." },
+    { name: "The Stepsisters", fig: "stepsisters_sulk", figClass: "ss-duo-big", bg: "courtyard_mid", cta: "Find their beads  ▸", text: "<i>(They fold their arms in a huff, noses in the air.)</i> Oh, what does it even <b>matter</b>! Pink, teal, orange, whatever — just find <b>every last bead</b> for us, will you?" },
   ], () => { GAME.stepsistersMet = true; save(); toast("📿 Quest: find the Stepsisters’ lost beads!"); renderStart(); });
 }
 // The Stepsisters drop by once, early in the Courtyard, to give their bead quest.
