@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v567"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v568"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1024,11 +1024,11 @@ function playStepsisters() {
   ["stepsister_purple_worried", "stepsisters_shove", "stepsister_green_happy", "stepsister_green_worried", "stepsisters_shove2", "stepsisters_sulk"].forEach(f => ART.ensure(f, () => {}));
   GAME.stepsistersMet = true; save();   // met them + took the quest → beads start turning up as you play
   renderStoryBeats([
-    { name: "Prunella", fig: "stepsister_purple_worried", bg: "courtyard_mid", text: "Oh, thank goodness — you simply <i>must</i> help me! My necklace snapped and the beads went every-which-where. There was pink, and purple, and red, I think, and—" },
-    { name: "Griselda", fig: "stepsisters_shove", figClass: "ss-shove-r", bg: "courtyard_mid", text: "<i>(A green-gloved hand shoves Prunella clean out of the way.)</i> Out of the <b>way</b>. You haven’t the faintest idea what you’re babbling about." },
-    { name: "Griselda", fig: "stepsister_green_happy", bg: "courtyard_mid", text: "Hello there! <b>Griselda.</b> Do ignore my sister Prunella — hopeless, that one. The beads were <b>green</b>, and <b>blue</b>, and <b>teal</b>, and—" },
-    { name: "Griselda", fig: "stepsister_green_worried", bg: "courtyard_mid", text: "…oh. Oh, wait just a moment. Are those the right colors? Hmm. Perhaps there was <i>yellow</i>. And — some orange? I was so <i>certain</i> a breath ago…" },
-    { name: "Prunella", fig: "stepsisters_shove2", figClass: "ss-shove-l", bg: "courtyard_mid", text: "<i>(Prunella barges back in with a shove of her own.)</i> <b>Hah!</b> You see? She hasn’t a clue either. Don’t listen to a single <i>word</i> she says." },
+    { name: "Prunella", fig: "stepsister_purple_worried", bg: "courtyard_mid", text: "<span class='speak-p'>Oh, thank goodness — you simply <i>must</i> help me! My necklace snapped and the beads went every-which-where. There was pink, and purple, and red, I think, and—</span>" },
+    { name: "Griselda", fig: "stepsisters_shove", figClass: "ss-shove-r", bg: "courtyard_mid", text: "<i>(A green-gloved hand shoves Prunella clean out of the way.)</i> <span class='speak-g'>Out of the way. You haven’t the faintest idea what you’re babbling about.</span>" },
+    { name: "Griselda", fig: "stepsister_green_happy", bg: "courtyard_mid", text: "<span class='speak-g'>Hello there! Griselda. Do ignore my sister Prunella — hopeless, that one. The beads were green, and blue, and teal, and—</span>" },
+    { name: "Griselda", fig: "stepsister_green_worried", bg: "courtyard_mid", text: "<span class='speak-g'>…oh. Oh, wait just a moment. Are those the right colors? Hmm. Perhaps there was <i>yellow</i>. And — some orange? I was so <i>certain</i> a breath ago…</span>" },
+    { name: "Prunella", fig: "stepsisters_shove2", figClass: "ss-shove-l", bg: "courtyard_mid", text: "<i>(Prunella barges back in with a shove of her own.)</i> <span class='speak-p'>Hah! You see? She hasn’t a clue either. Don’t listen to a single word she says.</span>" },
     { name: "The Stepsisters", fig: "stepsisters_sulk", figClass: "ss-duo-big", bg: "courtyard_mid", cta: "Find their beads  ▸", text: "<i>(They fold their arms in a huff, noses in the air.)</i> Oh, what does it even <b>matter</b>! Pink, teal, orange, whatever — just find <b>every last bead</b> for us, will you?" },
   ], () => { GAME.stepsistersMet = true; save(); toast("📿 Quest: find the Stepsisters’ lost beads!"); renderStart(); });
 }
