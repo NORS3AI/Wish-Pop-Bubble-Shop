@@ -30,6 +30,8 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
   beads scatter, so now you have to re-string it. In the game one sister always fibs! Trust the
   sister whose color word is written in its *own* color, then grab that bead as five fall. Wrong
   grabs slip a bead off your string; it speeds up, so string as long a necklace as you can.
+  **Complete a full set of five to win the sisters' jewelled Beaded Cauldron** — miss and they'll
+  huff and tell you to try again.
 
 - 🐛 **Fixed a cursed-fruit bug.** When Lady Gothel rotted one of your *infused* ingredients, it
   was secretly still filling one of your needs instead of the allergy it showed on the card. Now

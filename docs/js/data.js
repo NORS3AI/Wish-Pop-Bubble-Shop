@@ -437,7 +437,7 @@ const COSMETICS = {
     // ball-only: earned by dazzling Cinderella at the Royal Ball (not buyable / not in the Well)
     { id: "cauldron_glass",    name: "Glass Slipper",    chip: "👠", ball: true },
     // hunt-only: earned by finding all the Stepsister's beads in King's Courtyard
-    { id: "cauldron_pearl",    name: "Pearl Necklace",   chip: "📿", hunt: "courtyard" },
+    { id: "cauldron_pearl",    name: "Beaded Cauldron",  chip: "📿", art: true, hunt: "courtyard" },
     // pearl-only: bought with the rare pearls Wishy the Fish pays (never with gold/Stardust)
     { id: "cauldron_pearlshell", name: "Pearl Shell",    chip: "🐚", pearl: 6 },
     { id: "cauldron_tide",     name: "Deep Tide",        chip: "🌊", pearl: 12 },
