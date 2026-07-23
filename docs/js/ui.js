@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v550"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v551"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1470,6 +1470,7 @@ const HUNTS = {
     ] },
   courtyard: { realm: "courtyard", char: "the Stepsister", charEmoji: "💃", item: "bead", itemEmoji: "📿",
     need: 8, chance: 0.25, skin: "cauldron_pearl",
+    items: ["bead_red", "bead_orange", "bead_yellow", "bead_green", "bead_teal", "bead_blue", "bead_purple", "bead_pink"],
     done: "Every bead recovered — the Stepsister can go to the royal ball after all!" },
 };
 function huntFor(realm) { return HUNTS[realm] || null; }
@@ -1480,6 +1481,7 @@ function huntState(realm) {
   if (!GAME.hunts[realm]) GAME.hunts[realm] = { found: 0, done: false, seen: [] };
   const st = GAME.hunts[realm], h = HUNTS[realm];
   if (!Array.isArray(st.seen)) st.seen = (h && h.items) ? h.items.slice(0, st.found || 0) : []; // migrate count-only saves
+  else if (h && h.items && st.seen.length < (st.found || 0)) st.seen = h.items.slice(0, st.found); // items added later (Courtyard beads) — backfill
   // a hunt finished before the sheep set grew (old 5-sheep save) counts as fully collected
   if (st.done && h && h.items && st.seen.length < h.items.length) { st.seen = h.items.slice(); st.found = h.items.length; }
   return st;
