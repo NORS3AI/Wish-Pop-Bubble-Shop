@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v569"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v570"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5683,6 +5683,8 @@ const BEAD_ARCS = [   // yEnd = neck attach height, ctrl = 2*dip - yEnd (curve p
 const BEAD_ARC_COUNTS = [6, 7, 8, 9, 10];   // beads per necklace (shortest → longest); tight centred clusters
 const BEAD_ARC_CUM = BEAD_ARC_COUNTS.reduce((a, n) => (a.push((a.length ? a[a.length - 1] : 0) + n), a), []); // [4,9,15,22,30]
 const BEADS_TOTAL = BEAD_ARC_CUM[BEAD_ARC_CUM.length - 1];   // 30 = all five necklaces
+const BEADS_MAX_DROPS = 5;   // drop 5 beads (wrong grabs / misses) and the game is over
+const BEADS_WIN_NECKS = 2;   // the sisters count it a win at 2 finished necklaces (game keeps going up to all 5)
 function beadArcPoint(arc, t) {   // -> {x,y} as fractions of the stage
   const mt = 1 - t;
   return { x: mt * mt * BEAD_ARC_XL + 2 * mt * t * BEAD_ARC_CX + t * t * BEAD_ARC_XR,
@@ -5728,8 +5730,10 @@ function renderBeadsIntro(done) {
         <div class="stat-line"><span>Trust the word written in its <b>own</b> color</span></div>
         <div class="stat-line"><span>Grab that colored bead 📿</span><span>to thread it</span></div>
         <div class="stat-line"><span>Wrong grab (or a miss)</span><span style="color:var(--bad)">a bead slips off!</span></div>
+        <div class="stat-line"><span>Finish <b>${BEADS_WIN_NECKS} necklaces</b> to win 🎁</span><span>keep going for all 5</span></div>
+        <div class="stat-line"><span>Drop <b>${BEADS_MAX_DROPS} beads</b></span><span style="color:var(--bad)">and it's over!</span></div>
       </div>
-      <div class="muted" style="max-width:320px">Like this: <b style="color:#2fbf5a">PINK</b> vs <b style="color:#3f8cff">BLUE</b> → the honest one is <b style="color:#3f8cff">BLUE</b> (its word is inked in blue). Grab the blue bead! It speeds up — complete as many necklaces on the mannequin as you can.${(GAME.beadsBest ? `<br>Best set: <b>${GAME.beadsBest}/5 necklaces</b>` : "")}</div>
+      <div class="muted" style="max-width:320px">Like this: <b style="color:#2fbf5a">PINK</b> vs <b style="color:#3f8cff">BLUE</b> → the honest one is <b style="color:#3f8cff">BLUE</b> (its word is inked in blue). Grab the blue bead! It speeds up as you go.${(GAME.beadsBest ? `<br>Best set: <b>${GAME.beadsBest}/5 necklaces</b>` : "")}</div>
     </div>
     <button class="btn good" id="beads-start" style="width:100%;max-width:340px">Start stringing ▸</button>
     <div style="height:8px"></div>
@@ -5743,7 +5747,7 @@ function beadsStart() {
   if (BEADS && BEADS.tickTimer) clearInterval(BEADS.tickTimer);   // never leave a prior loop running
   const strung = [];
   for (let i = 0; i < BEADS_START_LEN; i++) strung.push(R.pick(BEAD_PALETTE).id);
-  BEADS = { strung, bestStrung: strung.slice(), best: strung.length, bestNecks: beadsNecklacesDone(strung.length), level: 0, uid: 0, beads: [], answer: null,
+  BEADS = { strung, bestStrung: strung.slice(), best: strung.length, bestNecks: beadsNecklacesDone(strung.length), drops: 0, level: 0, uid: 0, beads: [], answer: null,
     phase: "read", roundResolved: false, elapsed: 0, readUntil: 0, gapUntil: 0, tickTimer: null };
   beadsPlay();
   BEADS.tickTimer = setInterval(beadsTick, BEAD_TICK);
@@ -5762,6 +5766,7 @@ function beadsPlay() {
       <div class="beads-fall" id="beads-fall"></div>
       <div class="beads-hudline">
         <div class="beads-chip">📿 Necklaces <b id="beads-necks">${beadsNecklacesDone(BEADS.strung.length)}</b>/5</div>
+        <div class="beads-chip">💧 Dropped <b id="beads-drops">${BEADS.drops}</b>/${BEADS_MAX_DROPS}</div>
       </div>
       <div class="beads-tops">
         <div class="beads-corner ls"><div class="beads-sister">💃</div><div class="beads-shout" id="beads-shout-l"></div></div>
@@ -5889,10 +5894,11 @@ function beadsThread(colorId) {
   beadsPaint(); beadsPaintNecklace(true);
 }
 function beadsSlip() {
-  BEADS.strung.pop();
+  if (BEADS.strung.length > 0) BEADS.strung.pop();   // a bead slips off the string…
+  BEADS.drops = (BEADS.drops || 0) + 1;              // …and counts toward the 5-drop limit
   const st = $("#beads-stage"); if (st) { st.classList.remove("beads-shake"); void st.offsetWidth; st.classList.add("beads-shake"); }
   beadsPaint(); beadsPaintNecklace();
-  if (BEADS.strung.length <= 0) beadsFinish(false);
+  if (BEADS.drops >= BEADS_MAX_DROPS) beadsFinish(BEADS.bestNecks >= BEADS_WIN_NECKS);   // 5 dropped → over; a win if ≥2 necklaces were finished
 }
 function beadsResolveRound() {
   if (!BEADS || BEADS.roundResolved || BEADS.phase === "over") return;
@@ -5923,6 +5929,7 @@ function beadsTick() {
 }
 function beadsPaint() {
   const n = $("#beads-necks"); if (n) n.textContent = beadsNecklacesDone(BEADS.strung.length);
+  const d = $("#beads-drops"); if (d) d.textContent = BEADS.drops || 0;
 }
 // Evenly spaced points along an arc BY ARC LENGTH (not curve parameter), so beads sit an equal
 // distance apart even on the deep U's. Returns `count` points spanning the middle ~88% of the string.
@@ -5989,8 +5996,8 @@ function beadsFinish(won) {
   html("event", `
     ${hud("Bead Restring")}
     <div class="grow center" style="gap:10px;overflow-y:auto;padding:8px 0">
-      <div style="font-weight:800;font-size:21px">${won ? "👑 A full set — all five!" : "The string snapped!"}</div>
-      <div class="muted" style="font-size:12px;margin-top:-4px">Your handiwork:</div>
+      <div style="font-weight:800;font-size:21px">${necks >= 5 ? "👑 A full set — all five!" : won ? `✨ ${necks} necklaces — the sisters are pleased!` : "Too many beads dropped!"}</div>
+      <div class="muted" style="font-size:12px;margin-top:-4px">${won ? "Your handiwork:" : `Just ${BEADS_WIN_NECKS} finished necklaces wins their prize — try again!`}</div>
       ${photo}
       <div class="card center" style="gap:2px;max-width:300px">
         <div class="muted">Necklaces completed</div>
