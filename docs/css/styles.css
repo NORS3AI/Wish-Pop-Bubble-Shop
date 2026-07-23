@@ -2764,7 +2764,7 @@ img.story-face { height: 100%; width: auto; max-width: 96vw; object-fit: contain
   height: 90vh; bottom: 0; top: auto; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
 .story-figure.ss-shove-r img.story-face, .story-figure.ss-shove-l img.story-face { position: relative; height: 100%; width: auto; max-width: none; object-position: bottom; }
 .story-figure.ss-shove-r img.story-face { left: 24%; }    /* centres Prunella; Griselda (right) slides off-screen, arm remains */
-.story-figure.ss-shove-l img.story-face { left: -20%; }   /* centres Griselda; Prunella (left) slides off-screen, arm remains */
+.story-figure.ss-shove-l img.story-face { left: -11%; }   /* centres Griselda; Prunella (left) slides off-screen, arm remains */
 /* Both sisters, sulking: like a duo (wide) but a bit bigger. */
 .story-figure.ss-duo-big { height: auto; bottom: auto; top: 7%; align-items: center; }
 .story-figure.ss-duo-big img.story-face { height: auto; width: auto; max-height: 84vh; max-width: 96vw; object-position: center; }
