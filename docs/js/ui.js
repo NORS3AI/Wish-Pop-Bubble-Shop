@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v548"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v549"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5653,7 +5653,7 @@ const BEAD_ARCS = [   // yEnd = neck attach height, ctrl = 2*dip - yEnd (curve p
   { yEnd: 0.255, ctrl: 0.675 },   // dip ~0.465
   { yEnd: 0.255, ctrl: 0.785 },   // dip ~0.52
 ];
-const BEAD_ARC_COUNTS = [4, 5, 6, 7, 8];   // beads per necklace (shortest → longest); tight centred clusters
+const BEAD_ARC_COUNTS = [6, 7, 8, 9, 10];   // beads per necklace (shortest → longest); tight centred clusters
 const BEAD_ARC_CUM = BEAD_ARC_COUNTS.reduce((a, n) => (a.push((a.length ? a[a.length - 1] : 0) + n), a), []); // [4,9,15,22,30]
 const BEADS_TOTAL = BEAD_ARC_CUM[BEAD_ARC_CUM.length - 1];   // 30 = all five necklaces
 function beadArcPoint(arc, t) {   // -> {x,y} as fractions of the stage
