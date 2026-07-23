@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v566"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v567"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -5708,9 +5708,9 @@ function playBeadCutscene(done) {
   ["stepsisters_fight", "stepsisters_spill"].forEach(f => ART.ensure(f, () => {}));
   renderStoryBeats([
     { name: "The Stepsisters", fig: "stepsisters_fight", figClass: "ss-duo-big", bg: "courtyard_mid",
-      text: "<b>Prunella:</b> You found all my beads! Hand them over!<br><b>Griselda:</b> <i>Your</i> beads? Ha! Those are <b>mine</b>.<br><b>Prunella:</b> Give it <b>back</b>!<br><b>Griselda:</b> <b>Never!</b> <i>(They each grab an end and pull…)</i>" },
+      text: "<span class='speak-p'>You found all my beads! Hand them over!</span><br><span class='speak-g'>Your beads? Ha! Those are mine.</span><br><span class='speak-p'>Give it back!</span><br><span class='speak-g'>Never!</span> <i>(They each grab an end and pull…)</i>" },
     { name: "The Stepsisters", fig: "stepsisters_spill", figClass: "ss-duo-big", bg: "courtyard_mid", cta: "Re-string them  ▸",
-      text: "<b>SNAP!</b> The string bursts and beads bounce everywhere. <i>(A long pause.)</i><br><b>Both:</b> …uh oh.<br><b>Prunella:</b> Now who’s going to <b>re-string</b> our necklace?!" },
+      text: "<b>SNAP!</b> The string bursts and beads bounce everywhere. <i>(A long pause.)</i><br>Both: …uh oh.<br><span class='speak-p'>Now who’s going to re-string our necklace?!</span>" },
   ], () => renderBeadsIntro(done));
 }
 function renderBeadsIntro(done) {

@@ -2833,6 +2833,10 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
   background: linear-gradient(180deg, #fff8ea, #f6ead2); border-radius: 18px; padding: 16px 18px;
   box-shadow: 0 6px 18px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.7); animation: storyIn .4s ease-out; }
 .story-speech b { color: #a23c6e; } .story-speech i { color: #6a4a2c; }
+/* Speaker-coloured dialogue (Stepsisters): Prunella deep purple, Griselda emerald — matches their
+   gowns, so we can drop the "Name:" prefixes. Also overrides the default <b>/<i> colours inside. */
+.story-speech .speak-p, .story-speech .speak-p b, .story-speech .speak-p i { color: #7d2ea6; font-weight: 700; }
+.story-speech .speak-g, .story-speech .speak-g b, .story-speech .speak-g i { color: #0e7d42; font-weight: 700; }
 /* Goldilocks' three-bears delivery — a tray of tappable teddy bears */
 .story-card.goldi-deliver { padding-bottom: calc(26px + var(--safe-b)); }
 /* SHORT characters (kids etc.) — a taller figure so they fill the upper/middle
