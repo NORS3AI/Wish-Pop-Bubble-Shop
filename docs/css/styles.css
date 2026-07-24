@@ -1648,33 +1648,65 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .sw-spin  { z-index: 1; transform-origin: 41.68% 35.90%; will-change: transform; }
 .sw-arrow { z-index: 2; }
 .sw-color { overflow: visible; filter: drop-shadow(0 0 5px rgba(255,205,80,.85)); }
-/* Gribble the Goblin — feed-the-junk timing game */
-.gob-top { display: flex; align-items: center; gap: 12px; padding: 6px 2px 2px; }
-.gob-face { font-size: 54px; line-height: 1; flex: 0 0 auto; }
-.gob-bubble { position: relative; flex: 1; background: var(--card2); border: 1px solid var(--line);
-  border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-weight: 800; }
-.gob-bubble::before { content: ""; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
-  border: 8px solid transparent; border-right-color: var(--card2); }
-.gob-bubble img.art.gob-want { height: 40px; width: auto; }
-.gob-bubble .art-emoji { font-size: 34px; line-height: 1; }
-.gob-timer { height: 8px; border-radius: 5px; background: rgba(255,255,255,.08); overflow: hidden; margin: 8px 2px; }
+/* Gribble the Goblin — mouth-open junk-muncher: tap the trash he calls for and
+   it flies up and shrinks into his gob. */
+.gob-stage { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; padding: 6px 10px 10px; }
+.gob-bg { position: absolute; inset: 0; z-index: 0; background: center/cover no-repeat; }
+.gob-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(18,10,6,.34) 0%, rgba(18,10,6,.04) 28%, rgba(18,10,6,.12) 60%, rgba(18,10,6,.6) 100%); }
+.gob-stage > *:not(.gob-bg) { position: relative; z-index: 1; }
+.gob-hud { display: flex; gap: 8px; width: 100%; justify-content: center; }
+.gob-chip { display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 999px; font-weight: 800; font-size: 15px;
+  background: rgba(18,10,28,.55); border: 1px solid rgba(255,255,255,.22); color: #fff; }
+.gob-chip b { color: #ffe08a; }
+.gob-chip.danger { background: rgba(120,20,20,.62); border-color: #ff6a6a; }
+.gob-chip.danger b { color: #ffb0b0; }
+.gob-goblin { position: relative; flex: 0 0 auto; height: 32vh; display: flex; justify-content: center; }
+.gob-goblin.cd { flex: 1; align-items: center; }
+.gob-goblin-img { height: 100%; max-height: 40vh; width: auto; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,.55)); }
+.gob-mouth { position: absolute; left: 50%; top: 40%; width: 1px; height: 1px; }   /* fly-to-mouth target */
+.gob-want-box { display: flex; justify-content: center; margin-top: -6px; }
+.gob-want-frame { width: 92px; height: 92px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,213,120,.16); border: 2px solid rgba(255,213,120,.8); box-shadow: 0 0 16px rgba(255,213,120,.4);
+  animation: gobWant 1s ease-in-out infinite; }
+@keyframes gobWant { 0%,100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+.gob-want-frame img.art { height: 70px; width: auto; max-width: 84px; }
+.gob-want-frame .art-emoji { font-size: 54px; line-height: 1; }
+.gob-timer { height: 9px; width: 92%; max-width: 420px; border-radius: 5px; background: rgba(10,4,24,.5); overflow: hidden; border: 1px solid rgba(255,255,255,.2); }
 .gob-timer > i { display: block; height: 100%; width: 100%; border-radius: 5px; background: linear-gradient(90deg,#ffe58a,#f6c945); }
-.gob-status { padding: 0 2px 4px; text-align: center; }
-.gob-happy { position: relative; height: 12px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 6px; }
-.gob-happy > i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg,#7ee08a,#4fd1c5); transition: width .2s ease; }
-.gob-happy-mark { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1.5px; background: var(--gold); border-radius: 2px; box-shadow: 0 0 6px var(--gold); overflow: visible; }
-.gob-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-content: flex-start; padding: 6px 0; }
-.gob-tile { position: relative; width: 88px; padding: 12px 6px; border-radius: 14px; cursor: pointer;
-  background: var(--card2); border: 1px solid var(--line); color: var(--ink);
-  display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 700; }
-.gob-tile img.art { height: 40px; width: auto; }
-.gob-tile .art-emoji { font-size: 34px; line-height: 1; }
-.gob-tile:active { transform: scale(.92); }
-.gob-count { font-size: 13px; color: var(--ink-dim); }
-.gob-count-big { font-size: 96px; font-weight: 900; line-height: 1; color: var(--gold);
-  text-shadow: 0 0 24px rgba(255,216,107,.6); animation: gobcd .8s ease; }
-.gob-count-big.go { color: var(--good); }
-@keyframes gobcd { 0% { transform: scale(1.6); opacity: 0; } 40% { transform: scale(1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.gob-fb { font-family: var(--ff-display); font-size: 18px; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,.85); min-height: 22px; text-align: center; }
+.gob-fb .good { color: var(--good); } .gob-fb .bad { color: #ff8a7a; }
+.gob-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; width: 100%; max-width: 440px; overflow-y: auto; padding: 2px; }
+.gob-tile { position: relative; padding: 8px 4px 6px; border-radius: 14px; cursor: pointer; border: 1px solid rgba(255,255,255,.18);
+  background: rgba(18,10,28,.52); display: flex; flex-direction: column; align-items: center; gap: 2px;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.gob-tile.wanted { border-color: rgba(255,213,120,.95); box-shadow: 0 0 12px rgba(255,213,120,.55); background: rgba(255,213,120,.15); }
+.gob-tile-img { height: 46px; display: flex; align-items: center; justify-content: center; }
+.gob-tile-img img.art { height: 46px; width: auto; max-width: 62px; }
+.gob-tile-img .art-emoji { font-size: 34px; line-height: 1; }
+.gob-tile:active { transform: scale(.9); }
+.gob-count { font-size: 13px; font-weight: 800; color: #ffe08a; }
+.gob-nope { width: auto; max-width: 92%; margin-top: 2px; padding: 11px 24px; }
+/* the tapped piece flying into his mouth */
+.gob-fly { position: fixed; z-index: 200; pointer-events: none; transform: translate(-50%,-50%); }
+.gob-fly img.art { height: 56px; width: auto; filter: drop-shadow(0 3px 7px rgba(0,0,0,.6)); }
+/* countdown number over the stage */
+.gob-count-big { position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%); z-index: 2;
+  font-size: 104px; font-weight: 900; line-height: 1; color: var(--gold);
+  text-shadow: 0 0 24px rgba(255,216,107,.6); animation: gobcd .75s ease; }
+.gob-count-big.go { color: var(--good); font-size: 72px; }
+@keyframes gobcd { 0% { transform: translate(-50%,-50%) scale(1.6); opacity: 0; } 40% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
+/* intro + result screens (goblin over a dimmed den) */
+.gob-intro, .gob-end { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px; overflow: hidden; border-radius: 14px; }
+.gob-intro-bg, .gob-end-bg { position: absolute; inset: 0; z-index: 0; background: center/cover no-repeat; filter: brightness(.5); }
+.gob-intro > *:not(.gob-intro-bg), .gob-end > *:not(.gob-end-bg) { position: relative; z-index: 1; }
+.gob-intro-fig, .gob-end-fig { display: flex; justify-content: center; }
+.gob-intro-fig img.art { height: 24vh; width: auto; max-width: 70vw; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
+.gob-intro-fig .art-emoji { font-size: 90px; }
+.gob-end-fig img.art { height: 30vh; width: auto; max-width: 80vw; filter: drop-shadow(0 8px 16px rgba(0,0,0,.55)); animation: danceIn .3s ease; }
+.gob-end-fig .art-emoji { font-size: 110px; }
+.gob-intro-card { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; padding: 0 4px; }
 /* Feed the Wolf — keep Patience out of the red until the huntsman arrives */
 .wolf-top { display: flex; align-items: center; gap: 12px; padding: 4px 2px 8px; }
 .wolf-face { font-size: 52px; line-height: 1; flex: 0 0 auto; }

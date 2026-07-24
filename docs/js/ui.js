@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v593"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v594"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -2167,15 +2167,7 @@ function renderAdmin() {
   on("#ad-duel", "click", renderDuelIntro);
   on("#ad-fairy", "click", renderFairyIntro);
   on("#ad-rumpel", "click", renderRumpelIntro);
-  on("#ad-goblin", "click", () => {
-    // make sure there's junk to feed when testing
-    if (GAME.trash.filter(id => !isBag(id)).length < 10) {
-      const ids = D.TRASH.map(t => t.id);
-      while (GAME.trash.length < BALANCE.TRASH_BIN_MAX) GAME.trash.push(R.pick(ids));
-      save();
-    }
-    renderGoblinIntro();
-  });
+  on("#ad-goblin", "click", renderGoblinIntro);   // self-contained now — brings its own ~30-piece bin
   on("#ad-wolf", "click", renderWolfIntro);
   on("#ad-wolf-finale", "click", renderWolfFinale);
   on("#ad-feast", "click", renderFeastIntro);
@@ -3642,56 +3634,67 @@ function renderRumpelTally() {
 }
 
 /* ======================================================================= */
-/* GRIBBLE THE GOBLIN — the other junk visitor. He barks out a piece of junk */
-/* he wants (a new one every couple seconds); feed him the matching junk from */
-/* your bin. Sometimes he asks for something you don't have — say so! Keep him */
-/* happy enough by the end and he pays out (eating the junk you fed him).     */
+/* GRIBBLE THE GOBLIN — a mouth-open junk-muncher. He barks out a piece of   */
+/* trash he wants; tap the matching bit from your bin and it flies up and     */
+/* shrinks into his mouth. You start with ~30 pieces; keep going until you    */
+/* miss 10 of his wants or run out of junk. Feed him 15 and he's happy (more  */
+/* = more gold); fall short and he still tosses you a few coins, grumbling.   */
 /* ======================================================================= */
 let GOBLIN = null;
-const GOB_REQUESTS = 12;     // how many things he demands
-const GOB_MS = 2200;         // time per demand
-const GOB_FAKE = 0.30;       // chance he asks for something you DON'T have
-const GOB_TARGET = 55;       // happiness needed for a happy, paying goblin
-const GOB_D = { correct: 14, goodpass: 10, miss: -6, wrong: -12, badpass: -12 };
-const GOB_LINES = [
-  "Grubs and grimeys! I'm STARVING. Feed me your junk — but only what I ask for, in order!",
-  "Gribble hungry! Give me the exact bit I point at. Quick quick, before I get grumpy!",
-  "Ooh, a full bin! Feed me piece by piece — get it right and I'll pay you in shinies!"
+const GOB_ITEMS = [
+  { id: "core",      name: "Apple Core",     emoji: "🍎" },
+  { id: "banana",    name: "Banana Peel",    emoji: "🍌" },
+  { id: "boot",      name: "Old Boot",       emoji: "🥾" },
+  { id: "fishbones", name: "Fish Bones",     emoji: "🐟" },
+  { id: "bottle",    name: "Broken Bottle",  emoji: "🍾" },
+  { id: "scrap",     name: "Paper Scrap",    emoji: "📄" },
+  { id: "can",       name: "Rusty Can",      emoji: "🥫" },
+  { id: "bone",      name: "Old Bone",       emoji: "🦴" },
+  { id: "pot",       name: "Cracked Pot",    emoji: "🏺" },
+  { id: "cup",       name: "Squished Cup",   emoji: "🥤" },
+  { id: "egg",       name: "Rotten Egg",     emoji: "🥚" },
 ];
-function goblinHaveTypes() {
-  const set = {}; GAME.trash.forEach(id => { if (!isBag(id)) set[id] = true; });
-  return Object.keys(set);
+const GOB_BY_ID = {}; GOB_ITEMS.forEach(it => GOB_BY_ID[it.id] = it);
+const GOB_START = 30;        // pieces of trash you begin with
+const GOB_WIN = 15;          // correct feeds for a happy, well-paying goblin
+const GOB_MAX_MISS = 10;     // misses that end the feast
+const GOB_FAKE = 0.16;       // chance he demands something you've run out of
+function gobArt(id, cls) { const it = GOB_BY_ID[id]; return ART.tag("trash_" + id, it ? it.emoji : "🗑️", cls || ""); }
+function gobBinTotal() { return GOB_ITEMS.reduce((s, it) => s + (GOBLIN.bin[it.id] || 0), 0); }
+function gobMs() { return Math.max(1450, 2100 - GOBLIN.fed * 22); }   // the demands quicken as he's fed
+function gobMakeBin() {
+  const bin = {}; GOB_ITEMS.forEach(it => bin[it.id] = 1);            // one of each to start
+  for (let left = GOB_START - GOB_ITEMS.length; left > 0; left--) bin[R.pick(GOB_ITEMS).id]++;
+  return bin;
 }
-function goblinPickWant() {
-  const have = goblinHaveTypes();
-  const missing = D.TRASH.map(t => t.id).filter(id => !have.includes(id));
-  if (missing.length && Math.random() < GOB_FAKE) return R.pick(missing); // a fake-out he knows you lack
-  if (have.length) return R.pick(have);
-  return null; // nothing left to eat
-}
-function goblinConsume(id) { const i = GAME.trash.indexOf(id); if (i >= 0) { GAME.trash.splice(i, 1); save(); } }
 function renderGoblinIntro() {
   SFX.unlock(); SFX.fanfare();
-  const line = R.pick(GOB_LINES);
+  ["gribble_point", "gribble_hold", "gribble_think", "gribble_eat", "gribble_win", "gribble_angry"].forEach(k => ART.ensure(k, () => {}));
   html("event", `
     ${hud("A Hungry Goblin!")}
-    <div class="grow center" style="gap:14px">
-      <div class="ph big">🧌</div>
-      <div style="font-weight:800;font-size:20px">Gribble the Goblin</div>
-      <div class="speech">“${line}”</div>
-      <div class="card" style="width:100%;max-width:320px">
-        <div class="stat-line"><span>He'll ask for</span><span>${GOB_REQUESTS} bits of junk</span></div>
-        <div class="stat-line"><span>Feed the right one</span><span class="gold">keep him happy 😋</span></div>
-        <div class="stat-line"><span>Wrong one / no answer</span><span style="color:var(--bad)">he sulks 😠</span></div>
-        <div class="stat-line"><span>Happy at the end</span><span class="gold">🪙 payout!</span></div>
+    <div class="gob-intro">
+      <div class="gob-intro-bg" style="background-image:url('art/gribble_bg.webp?v=${BUILD}')"></div>
+      <div class="gob-intro-fig">${ART.tag("gribble_point", "🧌", "gob-intro-img")}</div>
+      <div class="gob-intro-card">
+        <div style="font-weight:800;font-size:20px">Gribble the Goblin</div>
+        <div class="speech">“Grubs and grimeys, I'm <b>STARVIN'</b>! Toss me the junk I call for — quick, right in me gob — and I'll pay ya in shinies!”</div>
+        <div class="card" style="width:100%;max-width:330px">
+          <div class="stat-line"><span>Your bin</span><span>${GOB_START} bits of junk 🗑️</span></div>
+          <div class="stat-line"><span>Feed what he wants</span><span class="gold">15 = a happy goblin 😋</span></div>
+          <div class="stat-line"><span>More than 15</span><span class="gold">= more 🪙</span></div>
+          <div class="stat-line"><span>Miss 10 (or run dry)</span><span style="color:var(--bad)">he stops 😠</span></div>
+        </div>
+        <div class="muted" style="max-width:320px">He calls for a piece of trash — <b>tap the match</b> fast and it flies into his mouth. If you're out of what he wants, tap <b>“Don't have it!”</b></div>
       </div>
-      <div class="muted" style="max-width:300px">He points at a piece of junk every couple seconds. Tap the <b>matching junk</b> in your bin — or tap <b>“I don't have it!”</b> when he asks for something you're missing.</div>
     </div>
     <button class="btn good" id="gob-play">😋 Feed him!</button>
     <div style="height:8px"></div>
     <button class="btn secondary" id="gob-skip">Not now</button>
   `);
-  on("#gob-play", "click", () => { GOBLIN = { happy: 0, correct: 0, done: 0, want: null, answered: true, timer: null, cdTimer: null, feedback: null }; goblinCountdown(); });
+  on("#gob-play", "click", () => {
+    GOBLIN = { bin: gobMakeBin(), want: null, fake: false, fed: 0, miss: 0, answered: true, timer: null, cdTimer: null, feedback: null };
+    goblinCountdown();
+  });
   on("#gob-skip", "click", startRound);
   show("event");
 }
@@ -3701,98 +3704,149 @@ function goblinCountdown() {
     if (!GOBLIN) return;
     html("event", `
       ${hud("Get Ready!")}
-      <div class="grow center" style="gap:18px">
-        <div class="gob-face" style="font-size:76px">🧌</div>
-        <div style="font-weight:800;font-size:18px">Gribble is getting hungry…</div>
-        <div class="gob-count-big ${n === 0 ? "go" : ""}">${n > 0 ? n : "Go!"}</div>
+      <div class="gob-stage mg-fullbleed">
+        <div class="gob-bg" style="background-image:url('art/gribble_bg.webp?v=${BUILD}')"></div>
+        <div class="gob-goblin cd"><img class="gob-goblin-img" src="art/gribble_eat.webp?v=${BUILD}" alt="Gribble" draggable="false"></div>
+        <div class="gob-count-big ${n === 0 ? "go" : ""}">${n > 0 ? n : "Feed!"}</div>
       </div>
     `);
     show("event");
     SFX.pop(n > 0 ? 1 : 3);
-    if (n > 0) { n--; GOBLIN.cdTimer = setTimeout(tick, 800); }
-    else { GOBLIN.cdTimer = setTimeout(() => { if (GOBLIN) goblinRequest(); }, 450); }
+    if (n > 0) { n--; GOBLIN.cdTimer = setTimeout(tick, 750); }
+    else { GOBLIN.cdTimer = setTimeout(() => { if (GOBLIN) goblinRequest(); }, 420); }
   };
   tick();
 }
 function goblinRequest() {
-  const want = goblinPickWant();
-  if (!want) { goblinFinish(); return; }   // bin's out of edible junk
-  GOBLIN.want = want; GOBLIN.answered = false;
+  if (!GOBLIN) return;
+  if (gobBinTotal() <= 0) { goblinFinish("empty"); return; }
+  const have = GOB_ITEMS.map(i => i.id).filter(id => GOBLIN.bin[id] > 0);
+  const out = GOB_ITEMS.map(i => i.id).filter(id => GOBLIN.bin[id] === 0);
+  let want, fake = false;
+  if (out.length && have.length && Math.random() < GOB_FAKE) { want = R.pick(out); fake = true; }
+  else want = R.pick(have);
+  GOBLIN.want = want; GOBLIN.fake = fake; GOBLIN.answered = false;
   renderGoblin();
-  GOBLIN.timer = setTimeout(() => { if (GOBLIN && !GOBLIN.answered) goblinResolve("miss"); }, GOB_MS);
+  const ms = gobMs();
+  GOBLIN.timer = setTimeout(() => { if (GOBLIN && !GOBLIN.answered) goblinScore(fake ? "goodpass" : "miss"); }, ms);
 }
-function goblinResolve(kind) {
-  if (!GOBLIN || GOBLIN.answered) return;
-  GOBLIN.answered = true;
+// Score the current demand and roll on. "correct" feeds him (−1 from the bin, +1 fed);
+// "wrong"/"miss"/"badpass" cost a miss; "goodpass" (rightly saying you're out) is free.
+function goblinScore(kind) {
+  if (!GOBLIN) return;
   if (GOBLIN.timer) { clearTimeout(GOBLIN.timer); GOBLIN.timer = null; }
-  if (kind === "correct") { GOBLIN.correct++; goblinConsume(GOBLIN.want); }
-  GOBLIN.happy = Math.max(0, Math.min(100, GOBLIN.happy + (GOB_D[kind] || 0)));
-  GOBLIN.done++;
-  GOBLIN.feedback = { kind, delta: GOB_D[kind] || 0 };
+  GOBLIN.answered = true;
+  if (kind === "correct") { GOBLIN.fed++; GOBLIN.bin[GOBLIN.want] = Math.max(0, GOBLIN.bin[GOBLIN.want] - 1); }
+  else if (kind === "wrong" || kind === "miss" || kind === "badpass") GOBLIN.miss++;
+  GOBLIN.feedback = { kind };
   SFX[kind === "correct" ? "coin" : kind === "goodpass" ? "charm" : "sneeze"]();
-  if (GOBLIN.done >= GOB_REQUESTS) goblinFinish(); else goblinRequest();
+  const advance = () => {
+    if (!GOBLIN) return;
+    if (GOBLIN.miss >= GOB_MAX_MISS) goblinFinish("misses");
+    else if (gobBinTotal() <= 0) goblinFinish("empty");
+    else goblinRequest();
+  };
+  setTimeout(advance, kind === "correct" ? 300 : 140);   // let the gulp animation read
 }
-function goblinFeed(id) { if (!GOBLIN || GOBLIN.answered) return; goblinResolve(id === GOBLIN.want ? "correct" : "wrong"); }
-function goblinPass() { if (!GOBLIN || GOBLIN.answered) return; goblinResolve(GAME.trash.indexOf(GOBLIN.want) >= 0 ? "badpass" : "goodpass"); }
+function goblinFeed(id, tileEl) {
+  if (!GOBLIN || GOBLIN.answered) return;
+  if (!GOBLIN.bin[id]) return;                 // grid only shows what you have, but guard anyway
+  GOBLIN.answered = true;                       // lock further taps this beat
+  if (id === GOBLIN.want) { gobFlyToMouth(id, tileEl); goblinScore("correct"); }
+  else goblinScore("wrong");
+}
+function goblinNope() {
+  if (!GOBLIN || GOBLIN.answered) return;
+  goblinScore(GOBLIN.fake ? "goodpass" : "badpass");   // right if you're truly out; a miss if you actually had it
+}
+// A tapped piece flies from the bin up into Gribble's open mouth, shrinking as it goes.
+// The clone lives on <body> so the next render doesn't cut the animation short.
+function gobFlyToMouth(id, tileEl) {
+  const mouth = document.getElementById("gob-mouth-target");
+  if (!tileEl || !mouth) return;
+  const t = tileEl.getBoundingClientRect(), m = mouth.getBoundingClientRect();
+  const fly = document.createElement("div");
+  fly.className = "gob-fly";
+  fly.style.left = (t.left + t.width / 2) + "px";
+  fly.style.top = (t.top + t.height / 2) + "px";
+  fly.innerHTML = gobArt(id, "gob-fly-img");
+  document.body.appendChild(fly);
+  const dx = m.left + m.width / 2, dy = m.top + m.height / 2;
+  requestAnimationFrame(() => {
+    fly.style.transition = "left .36s cubic-bezier(.35,0,.6,1), top .36s cubic-bezier(.3,-.35,.7,1), transform .36s ease-in, opacity .36s ease-in .06s";
+    fly.style.left = dx + "px"; fly.style.top = dy + "px";
+    fly.style.transform = "translate(-50%,-50%) rotate(140deg) scale(.12)";
+    fly.style.opacity = "0";
+  });
+  setTimeout(() => fly.remove(), 440);
+}
 function renderGoblin() {
-  const wantT = D.TRASH_BY_ID[GOBLIN.want];
-  const counts = {}; GAME.trash.forEach(id => { if (!isBag(id)) counts[id] = (counts[id] || 0) + 1; });
-  const tiles = Object.keys(counts).map(id =>
-    `<button class="gob-tile" data-id="${id}">${trashArt(id, "trash-face")}<span class="gob-count">×${counts[id]}</span></button>`).join("");
+  const want = GOBLIN.want, wantIt = GOB_BY_ID[want];
+  const tiles = GOB_ITEMS.filter(it => GOBLIN.bin[it.id] > 0).map(it =>
+    `<button class="gob-tile${it.id === want ? " wanted" : ""}" data-id="${it.id}">
+       <span class="gob-tile-img">${gobArt(it.id, "")}</span><span class="gob-count">×${GOBLIN.bin[it.id]}</span>
+     </button>`).join("");
   const fb = GOBLIN.feedback;
-  const fbTxt = !fb ? "Feed him what he points at!"
-    : fb.kind === "correct" ? `<span style="color:var(--good)">Yum! +${fb.delta}</span>`
-    : fb.kind === "goodpass" ? `<span style="color:var(--good)">Good call! +${fb.delta}</span>`
-    : fb.kind === "miss" ? `<span style="color:var(--bad)">Too slow! ${fb.delta}</span>`
-    : `<span style="color:var(--bad)">Nope! ${fb.delta}</span>`;
+  const fbTxt = !fb ? `Tap the <b>${wantIt.name}</b>!`
+    : fb.kind === "correct" ? `<span class="good">Yum! 😋</span>`
+    : fb.kind === "goodpass" ? `<span class="good">Right — you're out! 👍</span>`
+    : fb.kind === "miss" ? `<span class="bad">Too slow! 😠</span>`
+    : fb.kind === "badpass" ? `<span class="bad">You had it! 😠</span>`
+    : `<span class="bad">Not that one! 😠</span>`;
+  const missClose = GOBLIN.miss >= GOB_MAX_MISS - 2;
   html("event", `
-    ${hud("Feed the Goblin!")}
-    <div class="gob-top">
-      <div class="gob-face">🧌</div>
-      <div class="gob-bubble">${trashArt(GOBLIN.want, "gob-want")}<span>“${wantT.name}!”</span></div>
+    ${hud("Feed Gribble!")}
+    <div class="gob-stage mg-fullbleed" id="gob-stage">
+      <div class="gob-bg" style="background-image:url('art/gribble_bg.webp?v=${BUILD}')"></div>
+      <div class="gob-hud">
+        <div class="gob-chip">😋 <b id="gob-fed">${GOBLIN.fed}</b>/${GOB_WIN}</div>
+        <div class="gob-chip${missClose ? " danger" : ""}">❌ <b>${GOBLIN.miss}</b>/${GOB_MAX_MISS}</div>
+        <div class="gob-chip">🗑️ <b>${gobBinTotal()}</b></div>
+      </div>
+      <div class="gob-goblin">
+        <img class="gob-goblin-img" src="art/gribble_eat.webp?v=${BUILD}" alt="Gribble" draggable="false">
+        <div class="gob-mouth" id="gob-mouth-target"></div>
+      </div>
+      <div class="gob-want-box"><div class="gob-want-frame">${gobArt(want, "gob-want-img")}</div></div>
+      <div class="gob-timer"><i id="gob-timerbar"></i></div>
+      <div class="gob-fb" id="gob-fb">${fbTxt}</div>
+      <div class="gob-grid" id="gob-grid">${tiles}</div>
+      <button class="btn secondary gob-nope" id="gob-nope">🚫 Don't have it!</button>
     </div>
-    <div class="gob-timer"><i id="gob-timerbar"></i></div>
-    <div class="gob-status">
-      <div class="rumpel-stat sub">Fed ${GOBLIN.done}/${GOB_REQUESTS} · ${fbTxt}</div>
-      <div class="gob-happy"><i style="width:${GOBLIN.happy}%"></i><span class="gob-happy-mark" style="left:${GOB_TARGET}%"></span></div>
-    </div>
-    <div class="grow" style="overflow-y:auto">
-      <div class="gob-grid">${tiles || `<div class="muted center" style="padding:20px">Nothing left to feed!</div>`}</div>
-    </div>
-    <button class="btn secondary" id="gob-pass">🚫 I don't have it!</button>
   `);
-  $("#screen-event").querySelectorAll(".gob-tile").forEach(b => b.addEventListener("click", () => goblinFeed(b.dataset.id)));
-  on("#gob-pass", "click", goblinPass);
+  $("#screen-event").querySelectorAll(".gob-tile").forEach(b => b.addEventListener("pointerdown", e => { e.preventDefault(); goblinFeed(b.dataset.id, b); }));
+  on("#gob-nope", "click", goblinNope);
   show("event");
   const tb = $("#gob-timerbar");
-  if (tb) { tb.style.transition = "none"; tb.style.width = "100%";
-    requestAnimationFrame(() => { if (tb.isConnected) { tb.style.transition = "width " + GOB_MS + "ms linear"; tb.style.width = "0%"; } }); }
+  if (tb) { const ms = gobMs(); tb.style.transition = "none"; tb.style.width = "100%";
+    requestAnimationFrame(() => { if (tb.isConnected) { tb.style.transition = "width " + ms + "ms linear"; tb.style.width = "0%"; } }); }
 }
-function goblinFinish() {
+function goblinFinish(why) {
   if (GOBLIN.timer) { clearTimeout(GOBLIN.timer); GOBLIN.timer = null; }
-  const win = GOBLIN.happy >= GOB_TARGET, correct = GOBLIN.correct;
+  const fed = GOBLIN.fed, win = fed >= GOB_WIN;
   let outcome;
   if (win) {
-    const gold = 40 + correct * 16, dust = 6;
+    const gold = 60 + Math.max(0, fed - GOB_WIN) * 7, dust = fed >= 22 ? 8 : 5;
     grantReward({ gold, stardust: dust }); save();
     SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
-    outcome = { emoji: "😋", title: "Stuffed &amp; happy!", cls: "win",
-      lines: [`<div class="stat-line"><span>Junk he gobbled</span><span>${correct} bits</span></div>`,
+    outcome = { fig: "gribble_win", title: "Stuffed &amp; happy!", cls: "win",
+      lines: [`<div class="stat-line"><span>Junk he gobbled</span><span>${fed} bits</span></div>`,
               `<div class="stat-line"><span>He pays you</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`],
-      note: "“Burp! Deee-licious. Here's your shinies!” 🪙" };
+      note: fed >= 22 ? "“BUUURP! Best feast in a hundred years! Take extra shinies, ya lovely thing!” 🪙" : "“Burp! Deee-licious. Here's yer shinies!” 🪙" };
   } else {
-    save();
-    SFX.sneeze();
-    outcome = { emoji: "😠", title: "Still hungry!", cls: "lose",
-      lines: [`<div class="stat-line"><span>Junk he gobbled</span><span>${correct} bits</span></div>`,
-              `<div class="stat-line"><span>Payout</span><span class="muted">none — too grumpy</span></div>`],
-      note: "“Bleh! You fed me all wrong.” He waddles off unsatisfied — no shinies this time." };
+    const gold = 10 + fed * 2;
+    grantReward({ gold }); save(); SFX.sneeze();
+    outcome = { fig: "gribble_angry", title: "Still hungry!", cls: "lose",
+      lines: [`<div class="stat-line"><span>Junk he gobbled</span><span>${fed} bits</span></div>`,
+              `<div class="stat-line"><span>He grumbles &amp; pays</span><span class="gold">🪙 +${gold}</span></div>`],
+      note: why === "empty" ? "“That's ALL the junk?! Bah… here's a few coins, don't spend 'em all.” 😒" : "“Too slow, too sloppy! Fine, fine — take yer measly coins and shoo.” 😠" };
   }
   GOBLIN = null;
   html("event", `
     ${hud("Gribble the Goblin")}
-    <div class="grow center" style="gap:14px">
-      <div class="ph big">${outcome.emoji}</div>
+    <div class="gob-end">
+      <div class="gob-end-bg" style="background-image:url('art/gribble_bg.webp?v=${BUILD}')"></div>
+      <div class="gob-end-fig">${ART.tag(outcome.fig, outcome.cls === "win" ? "😋" : "😠", "gob-end-img")}</div>
       <div class="result-title ${outcome.cls}">${outcome.title}</div>
       <div class="card" style="width:100%;max-width:320px">${outcome.lines.join("")}</div>
       <p class="muted" style="max-width:300px">${outcome.note}</p>
@@ -10372,7 +10426,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, playDanceStory, danceWarmup, danceButtonsHtml, danceCountdown, danceStep, danceRehearsalDone, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinCountdown, goblinRequest, goblinFeed, goblinNope, goblinScore, renderGoblin, goblinFinish, GOB_ITEMS, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, playDanceStory, danceWarmup, danceButtonsHtml, danceCountdown, danceStep, danceRehearsalDone, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {
