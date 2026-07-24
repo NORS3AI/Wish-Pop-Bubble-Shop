@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v598"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v599"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -317,7 +317,7 @@ const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 6, stepmother: 
 const CHAR_OFFX = {};
 // per-mood scale overrides ("<id>_<mood>") for the results portrait only, when one
 // pose frames differently than the rest (e.g. the sponge sword's tall allergic pose).
-const CHAR_MOOD_SCALE = { sword_allergic: 0.88 };
+const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82 };   // wolf's puffed-up allergic pose is wide — shrink so it fits the frame
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
