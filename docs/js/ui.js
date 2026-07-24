@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v602"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v603"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -317,7 +317,7 @@ const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 6, stepmother: 
 const CHAR_OFFX = {};
 // per-mood scale overrides ("<id>_<mood>") for the results portrait only, when one
 // pose frames differently than the rest (e.g. the sponge sword's tall allergic pose).
-const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82, wolf_tourist_allergic: 0.66, wolf_bowler_allergic: 0.95, wolf_tophat_allergic: 0.92 };   // wolf's puffed-up allergic poses are wide — shrink so they fit the frame
+const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82, wolf_tourist_allergic: 0.66, wolf_bowler_allergic: 0.95, wolf_tophat_allergic: 0.92, wolf_sherlock_allergic: 0.88 };   // wolf's puffed-up allergic poses are wide — shrink so they fit the frame
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1162,7 +1162,7 @@ const WOLF_VISITS = [
       { fig: "wolf_sherlock_ponder", text: "Suspects? None. Leads? None. Motive? Extreme deliciousness. …I’ll require sustenance for the investigation. Something hearty. For clue-related reasons.", cta: "Case closed  ▸" },
     ],
     wish: "A detective’s ration, piping hot — purely to fuel my brilliant deductions, which are ongoing and unrelated to pie.",
-    outroFigWin: "wolf_sherlock_aha", outroFigLose: "wolf_sherlock_arms",
+    outroFigWin: "wolf_sherlock_aha", outroFigLose: "wolf_sherlock_arms", allergicFig: "wolf_sherlock_allergic",
     outroWin: "Aha! The case remains open, but I am no longer peckish. Elementary. Toodle-oo!" },
   { costume: "wolf_bowler", custArt: "wolf_bowler_plead", name: "“Baron von Nothungry”",
     intro: [
