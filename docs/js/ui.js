@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v591"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v593"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -4615,15 +4615,13 @@ function stackPlay() {
     const r = sky.getBoundingClientRect(); if (!r.width) return;
     STACK.targetX = Math.max(8, Math.min(92, (clientX - r.left) / r.width * 100));   // swipe sets where the tower leans toward
   };
-  // iOS Safari decides at TOUCH-START whether a drag is a scroll/selection, so we must
-  // preventDefault there (not just on move) or the tower stays frozen — which is what
-  // happened on iPad. Touch events are the primary path for finger input; pointer
-  // events cover mouse and Apple Pencil (pen), skipping touch to avoid double-handling.
-  const fromTouch = e => { const t = e.touches[0] || e.changedTouches[0]; if (t) move(t.clientX); };
+  // Handle both touch and pointer input; preventDefault on touchstart/move keeps iOS
+  // Safari from hijacking the swipe as a scroll/selection gesture.
+  const fromTouch = e => { const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]); if (t) move(t.clientX); };
   sky.addEventListener("touchstart", e => { fromTouch(e); e.preventDefault(); }, { passive: false });
   sky.addEventListener("touchmove",  e => { fromTouch(e); e.preventDefault(); }, { passive: false });
-  sky.addEventListener("pointerdown", e => { if (e.pointerType !== "touch") { e.preventDefault(); move(e.clientX); } });
-  sky.addEventListener("pointermove", e => { if (e.pointerType !== "touch") move(e.clientX); });
+  sky.addEventListener("pointerdown", e => { e.preventDefault(); move(e.clientX); });
+  sky.addEventListener("pointermove", e => move(e.clientX));
   show("event");
   stackPaint();
 }
