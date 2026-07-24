@@ -1796,7 +1796,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes feastGood { 0% { transform: scale(1); box-shadow: 0 0 0 rgba(126,224,138,0); } 45% { transform: scale(1.12); box-shadow: 0 0 16px rgba(126,224,138,.9); border-color: #7ee08a; } 100% { transform: scale(1); } }
 @keyframes feastMeh { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-5px); } 60% { transform: translateX(5px); } }
 /* Sky-High Savings — swipe to sway an ever-growing coin tower (Beanstalk finale) */
-.stack-sky { touch-action: none; cursor: grab; background: #170f2e; }
+.stack-sky { touch-action: none; cursor: grab; background: #170f2e; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .stack-sky:active { cursor: grabbing; }
 .stack-sky.bump { animation: stackBump .32s ease-out; }
 @keyframes stackBump { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-6px,3px); } 45% { transform: translate(5px,-2px); } 70% { transform: translate(-3px,2px); } }

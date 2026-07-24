@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v589"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v590"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -4615,9 +4615,12 @@ function stackPlay() {
     const r = sky.getBoundingClientRect(); if (!r.width) return;
     STACK.targetX = Math.max(8, Math.min(92, (clientX - r.left) / r.width * 100));   // swipe sets where the tower leans toward
   };
+  // preventDefault on pointerdown stops iOS Safari from grabbing the swipe as a scroll
+  // or text-selection gesture — without it the tower stayed frozen on iPad (finger,
+  // Pencil and taps all did nothing). Mirrors the carpet game, which worked there.
+  sky.addEventListener("pointerdown", e => { e.preventDefault(); move(e.clientX); });
   sky.addEventListener("pointermove", e => move(e.clientX));
-  sky.addEventListener("pointerdown", e => move(e.clientX));
-  sky.addEventListener("touchmove", e => { if (e.touches[0]) move(e.touches[0].clientX); }, { passive: true });
+  sky.addEventListener("touchmove", e => { if (e.touches[0]) { move(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
   show("event");
   stackPaint();
 }
