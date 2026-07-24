@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v577"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v578"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -4348,7 +4348,7 @@ function feastPlace(homeId) {
   FEAST.held.splice(idx, 1);
   FEAST.delight += correct ? FEAST_CORRECT : FEAST_WRONG;
   if (correct) FEAST.placed++;
-  const sfx = correct ? "coin" : "whoosh"; SFX[sfx] && SFX[sfx]();
+  if (correct) { SFX.coin && SFX.coin(); } else { SFX.clang && SFX.clang(); }   // clear good / bad cue
   const st = document.querySelector(`.feast-station[data-home="${homeId}"]`);
   if (st) { const cls = correct ? "good-pop" : "meh-pop"; st.classList.remove(cls); void st.offsetWidth; st.classList.add(cls); }
   feastPaintHands(); feastPaintHud();

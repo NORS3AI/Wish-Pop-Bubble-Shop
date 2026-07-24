@@ -1759,10 +1759,10 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 /* falling items */
 .feast-fall { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .feast-faller { position: absolute; transform: translate(-50%, -50%); border: none; background: none; padding: 0; cursor: pointer; pointer-events: auto; z-index: 2; }
-.feast-faller img.feast-faller-img { height: 8vh; width: auto; max-width: none; display: block; filter: drop-shadow(0 5px 9px rgba(0,0,0,.55)); pointer-events: none; }
+.feast-faller img.feast-faller-img { height: 8vh; width: auto; max-width: none; display: block; filter: drop-shadow(0 3px 13px rgba(0,0,0,.45)); pointer-events: none; }
 .feast-faller:active img { transform: scale(.86); }
 .feast-faller.nope img.feast-faller-img { animation: feastNope .5s ease; }
-@keyframes feastNope { 0%,100% { filter: drop-shadow(0 5px 9px rgba(0,0,0,.55)); } 30%,70% { filter: drop-shadow(0 0 3px #ff4a4a) drop-shadow(0 0 12px rgba(255,60,60,.95)); } }
+@keyframes feastNope { 0%,100% { filter: drop-shadow(0 3px 13px rgba(0,0,0,.45)); } 30%,70% { filter: drop-shadow(0 0 3px #ff4a4a) drop-shadow(0 0 12px rgba(255,60,60,.95)); } }
 .feast-splash { position: absolute; transform: translate(-50%,-50%); font-size: 46px; z-index: 3; pointer-events: none; animation: feastSplash .5s ease-out forwards; }
 @keyframes feastSplash { 0% { transform: translate(-50%,-50%) scale(.4); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-50%,-32%) scale(1.2); opacity: 0; } }
 /* score chips + timer */
@@ -1775,19 +1775,19 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .feast-stations { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; gap: 6px; z-index: 3; padding: 0 12px; }
 /* generous tap target: the big top padding extends the hit box up into the fall path */
 .feast-station { position: relative; flex: 1 1 0; min-width: 0; max-width: 104px; border: none; background: none; padding: 28px 4px 8px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; border-radius: 16px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-.feast-station:active { background: rgba(255,214,110,.14); }
 .feast-station img.feast-station-img { width: 100%; height: auto; max-width: none; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); pointer-events: none; }
 .feast-station:active { transform: scale(.94); }
 /* correct placement: a green glow around the station's picture (not the tap box) */
 .feast-station.good-pop img.feast-station-img { animation: feastStGood .55s ease; }
 .feast-station.meh-pop img.feast-station-img { animation: feastStMeh .4s ease; }
 @keyframes feastStGood { 0%,100% { filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); transform: scale(1); } 40% { filter: drop-shadow(0 0 7px #7ee08a) drop-shadow(0 0 18px rgba(126,224,138,.95)); transform: scale(1.08); } }
-@keyframes feastStMeh { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-5px); } 60% { transform: translateX(5px); } }
+/* wrong placement: a RED glow around the station picture (plus a small shake) */
+@keyframes feastStMeh { 0%,100% { filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); transform: translateX(0); } 25% { filter: drop-shadow(0 0 7px #ff5a5a) drop-shadow(0 0 18px rgba(255,70,70,.95)); transform: translateX(-4px); } 60% { filter: drop-shadow(0 0 7px #ff5a5a) drop-shadow(0 0 18px rgba(255,70,70,.95)); transform: translateX(4px); } }
 .feast-hands { position: absolute; left: 0; right: 0; bottom: 144px; display: flex; justify-content: center; gap: 14px; z-index: 4; }
 .feast-hands.full { animation: feastShake .3s ease; }
-.feast-hold { width: 62px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(255,214,110,.5); background: rgba(20,14,40,.5); }
+.feast-hold { width: 84px; height: 78px; border-radius: 16px; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(255,214,110,.5); background: rgba(20,14,40,.5); }
 .feast-hold.has { border-style: solid; border-color: rgba(255,214,110,.85); background: rgba(255,214,110,.16); }
-.feast-hold img.feast-hold-img { height: 44px; width: auto; max-width: 56px; display: block; }
+.feast-hold img.feast-hold-img { height: 62px; width: auto; max-width: 78px; display: block; }
 .feast-stage.feast-shake { animation: feastShake .3s ease; }
 @keyframes feastShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 @keyframes feastGood { 0% { transform: scale(1); box-shadow: 0 0 0 rgba(126,224,138,0); } 45% { transform: scale(1.12); box-shadow: 0 0 16px rgba(126,224,138,.9); border-color: #7ee08a; } 100% { transform: scale(1); } }
