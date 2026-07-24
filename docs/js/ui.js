@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v574"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v575"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -4122,7 +4122,6 @@ const FEAST_KINDS = {
   ham:    { name: "Ham",        art: "feast_ham",        home: "ham" },
   bread:  { name: "Bread",      art: "feast_bread",      home: "bread" },
   cake:   { name: "Cake",       art: "feast_cake",       home: "cake" },
-  candle: { name: "Candelabra", art: "feast_candelabra", home: "candle" },
 };
 // The stations along the bottom — each caught item goes onto its matching one.
 const FEAST_HOMES = {
@@ -4130,14 +4129,13 @@ const FEAST_HOMES = {
   ham:    { name: "Platter", art: "feast_home_ham" },
   bread:  { name: "Bread",   art: "feast_home_bread" },
   cake:   { name: "Cake",    art: "feast_home_cake" },
-  candle: { name: "Candles", art: "feast_home_candle" },
 };
 // Difficulty. hold = items your hands carry at once (2 on Easy → 1). kinds = which items fall.
 // maxDrops = dropped items that end the game. spin = wheel degrees/sec. fall = %screen/sec.
 const FEAST_MODES = {
-  easy:   { label: "Easy",   hold: 2, kinds: ["grapes","ham","bread","cake"],          maxDrops: 6, spin: 8,  fall: 30, spawnEvery: 1500, dur: 34000, goal: 130 },
-  medium: { label: "Medium", hold: 1, kinds: ["grapes","ham","bread","cake","candle"], maxDrops: 5, spin: 11, fall: 36, spawnEvery: 1250, dur: 40000, goal: 165 },
-  hard:   { label: "Hard",   hold: 1, kinds: ["grapes","ham","bread","cake","candle"], maxDrops: 4, spin: 14, fall: 42, spawnEvery: 1050, dur: 46000, goal: 205 },
+  easy:   { label: "Easy",   hold: 2, kinds: ["grapes","ham","bread","cake"], maxDrops: 6, spin: 8,  fall: 28, spawnEvery: 1500, dur: 34000, goal: 130 },
+  medium: { label: "Medium", hold: 1, kinds: ["grapes","ham","bread","cake"], maxDrops: 5, spin: 11, fall: 33, spawnEvery: 1250, dur: 40000, goal: 165 },
+  hard:   { label: "Hard",   hold: 1, kinds: ["grapes","ham","bread","cake"], maxDrops: 4, spin: 14, fall: 39, spawnEvery: 1050, dur: 46000, goal: 205 },
 };
 // 21 plate slots on the wheel: [x, y, size] as fractions of the wheel image.
 const FEAST_PLATES = [
@@ -4218,15 +4216,19 @@ function renderFeastIntro() {
 function feastStart(mode) {
   mode = FEAST_MODES[mode] ? mode : "easy";
   const m = FEAST_MODES[mode];
-  const foodKinds = m.kinds.filter(k => k !== "candle");
-  const plateKind = FEAST_PLATES.map(() => R.pick(foodKinds));   // each plate carries a food type
-  const gaps = m.kinds.includes("candle") ? feastGapSlots() : [];
+  // Spread the kinds EVENLY around the wheel (with cake rarer — it reads oddly upside-down) so no
+  // single food dominates the drops the way pure-random plate assignment did.
+  const wt = { grapes: 2, ham: 2, bread: 2, cake: 1 };
+  const bag = [];
+  while (bag.length < FEAST_PLATES.length) m.kinds.forEach(k => { for (let j = 0; j < (wt[k] || 1); j++) bag.push(k); });
+  for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = bag[i]; bag[i] = bag[j]; bag[j] = t; }
+  const plateKind = FEAST_PLATES.map((_, i) => bag[i]);
   FEAST = { mode, homes: feastHomesFor(mode), items: [], held: [], uid: 0,
     elapsed: 0, nextSpawnAt: 700, delight: 0, drops: 0, placed: 0,
-    wheelAng: 0, plateKind, gaps, wheelW: 0, wheelCx: 0, wheelCy: 0, stageW: 0, stageH: 0,
+    wheelAng: 0, plateKind, gaps: [], wheelW: 0, wheelCx: 0, wheelCy: 0, stageW: 0, stageH: 0,
     over: false, tickTimer: null };
-  ["feast_wheel", "feast_bg", "feast_grapes", "feast_ham", "feast_bread", "feast_cake", "feast_candelabra",
-   "feast_home_grapes", "feast_home_ham", "feast_home_bread", "feast_home_cake", "feast_home_candle"].forEach(k => ART.ensure(k, () => {}));
+  ["feast_wheel", "feast_bg", "feast_grapes", "feast_ham", "feast_bread", "feast_cake",
+   "feast_home_grapes", "feast_home_ham", "feast_home_bread", "feast_home_cake"].forEach(k => ART.ensure(k, () => {}));
   feastPlay();
   feastLayoutWheel();
   feastPaintOnWheel();
@@ -4282,16 +4284,13 @@ function feastLayoutWheel() {
   FEAST.stageW = sr.width || 1;
   FEAST.stageH = sr.height || 1;
 }
-// Place the decorative food on each plate + candelabras in the gaps (rotates with the wheel).
+// Place the decorative food on each plate (rotates with the wheel; sized a touch under the plate).
 function feastPaintOnWheel() {
   const wrap = $("#feast-onwheel"); if (!wrap) return;
   let html = "";
   FEAST_PLATES.forEach((p, i) => {
     const k = FEAST_KINDS[FEAST.plateKind[i]];
-    html += `<div class="feast-wfood" style="left:${(p[0] * 100).toFixed(2)}%;top:${(p[1] * 100).toFixed(2)}%;width:${(p[2] * 108).toFixed(2)}%">${ART.tag(k.art, "", "feast-wfood-img")}</div>`;
-  });
-  FEAST.gaps.forEach(g => {
-    html += `<div class="feast-wfood cand" style="left:${(g[0] * 100).toFixed(2)}%;top:${(g[1] * 100).toFixed(2)}%;width:${(g[2] * 100).toFixed(2)}%">${ART.tag("feast_candelabra", "", "feast-wfood-img")}</div>`;
+    html += `<div class="feast-wfood" style="left:${(p[0] * 100).toFixed(2)}%;top:${(p[1] * 100).toFixed(2)}%;width:${(p[2] * 92).toFixed(2)}%">${ART.tag(k.art, "", "feast-wfood-img")}</div>`;
   });
   wrap.innerHTML = html;
 }
@@ -4302,19 +4301,19 @@ function feastAddFaller(kind, xPct, yPct) {
   const layer = $("#feast-fall");
   if (layer) {
     const el = document.createElement("button");
-    el.className = "feast-faller" + (kind === "candle" ? " cand" : "");
+    el.className = "feast-faller";
     el.style.left = xPct.toFixed(2) + "%"; el.style.top = yPct.toFixed(2) + "%";
     el.innerHTML = ART.tag(k.art, "🍽️", "feast-faller-img");
     el.addEventListener("click", () => feastCatch(it.uid));
     layer.appendChild(el); it.el = el;
   }
 }
-// Spawn a falling item from a plate/candelabra currently in the lower visible arc of the wheel.
+// Spawn a falling item from a plate currently in the lower visible arc of the wheel.
 function feastSpawnFromWheel() {
   if (!FEAST.wheelW) feastLayoutWheel();
   const W = FEAST.wheelW, cx = FEAST.wheelCx, cy = FEAST.wheelCy, sw = FEAST.stageW, sh = FEAST.stageH;
   const ang = FEAST.wheelAng * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang);
-  const slots = FEAST_PLATES.map((p, i) => ({ p, kind: FEAST.plateKind[i] })).concat(FEAST.gaps.map(g => ({ p: g, kind: "candle" })));
+  const slots = FEAST_PLATES.map((p, i) => ({ p, kind: FEAST.plateKind[i] }));
   const cands = [];
   slots.forEach(s => {
     const dx = (s.p[0] - 0.5) * W, dy = (s.p[1] - 0.5) * W;
@@ -4329,7 +4328,12 @@ function feastSpawnFromWheel() {
 function feastCatch(uid) {
   if (!FEAST || FEAST.over) return;
   const m = feastMode();
-  if (FEAST.held.length >= m.hold) { const h = $("#feast-hands"); if (h) { h.classList.remove("full"); void h.offsetWidth; h.classList.add("full"); } SFX.whoosh && SFX.whoosh(); toast("✋ Hands full — place one first!"); return; }
+  if (FEAST.held.length >= m.hold) {
+    const h = $("#feast-hands"); if (h) { h.classList.remove("full"); void h.offsetWidth; h.classList.add("full"); }
+    const it = FEAST.items.find(x => x.uid === uid);   // flash the tapped item red — hands are full
+    if (it && it.el) { it.el.classList.remove("nope"); void it.el.offsetWidth; it.el.classList.add("nope"); }
+    SFX.whoosh && SFX.whoosh(); return;
+  }
   const idx = FEAST.items.findIndex(x => x.uid === uid); if (idx < 0) return;
   const it = FEAST.items[idx]; FEAST.items.splice(idx, 1); if (it.el) it.el.remove();
   FEAST.held.push(it.kind); SFX.pop && SFX.pop();
