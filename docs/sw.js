@@ -5,7 +5,7 @@
 
    NOTE: this worker has NO push/notification code, on purpose. Installing the
    game to your home screen will never send you notifications. */
-const CACHE = "wishpop-cache-v1";
+const CACHE = "wishpop-cache-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 
