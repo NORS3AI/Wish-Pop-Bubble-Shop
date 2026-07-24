@@ -1654,7 +1654,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   align-items: center; gap: 6px; padding: 6px 10px 10px; }
 .gob-bg { position: absolute; inset: 0; z-index: 0; background: center/cover no-repeat; }
 .gob-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(18,10,6,.34) 0%, rgba(18,10,6,.04) 28%, rgba(18,10,6,.12) 60%, rgba(18,10,6,.6) 100%); }
-.gob-stage > *:not(.gob-bg) { position: relative; z-index: 1; }
+.gob-stage > *:not(.gob-bg):not(.gob-count-big) { position: relative; z-index: 1; }
 .gob-hud { display: flex; gap: 8px; width: 100%; justify-content: center; }
 .gob-chip { display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 999px; font-weight: 800; font-size: 15px;
   background: rgba(18,10,28,.55); border: 1px solid rgba(255,255,255,.22); color: #fff; }
@@ -1681,17 +1681,19 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   background: rgba(18,10,28,.52); display: flex; flex-direction: column; align-items: center; gap: 2px;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .gob-tile.wanted { border-color: rgba(255,213,120,.95); box-shadow: 0 0 12px rgba(255,213,120,.55); background: rgba(255,213,120,.15); }
-.gob-tile-img { height: 46px; display: flex; align-items: center; justify-content: center; }
-.gob-tile-img img.art { height: 46px; width: auto; max-width: 62px; }
-.gob-tile-img .art-emoji { font-size: 34px; line-height: 1; }
+.gob-tile-img { height: 60px; display: flex; align-items: center; justify-content: center; }
+.gob-tile-img img.art { height: 60px; width: auto; max-width: 78px; }
+.gob-tile-img .art-emoji { font-size: 44px; line-height: 1; }
 .gob-tile:active { transform: scale(.9); }
 .gob-count { font-size: 13px; font-weight: 800; color: #ffe08a; }
 .gob-nope { width: auto; max-width: 92%; margin-top: 2px; padding: 11px 24px; }
-/* the tapped piece flying into his mouth */
+.gob-nope[disabled] { opacity: .4; pointer-events: none; }
+.gob-want-q { font-size: 54px; font-weight: 900; color: rgba(255,255,255,.55); }
+/* the tapped piece popping up and flying into his mouth */
 .gob-fly { position: fixed; z-index: 200; pointer-events: none; transform: translate(-50%,-50%); }
-.gob-fly img.art { height: 56px; width: auto; filter: drop-shadow(0 3px 7px rgba(0,0,0,.6)); }
+.gob-fly img.art { height: 66px; width: auto; filter: drop-shadow(0 4px 9px rgba(0,0,0,.6)); }
 /* countdown number over the stage */
-.gob-count-big { position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%); z-index: 2;
+.gob-count-big { position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%); z-index: 5;
   font-size: 104px; font-weight: 900; line-height: 1; color: var(--gold);
   text-shadow: 0 0 24px rgba(255,216,107,.6); animation: gobcd .75s ease; }
 .gob-count-big.go { color: var(--good); font-size: 72px; }

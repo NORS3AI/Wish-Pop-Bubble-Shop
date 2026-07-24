@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v594"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v595"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -3659,6 +3659,7 @@ const GOB_START = 30;        // pieces of trash you begin with
 const GOB_WIN = 15;          // correct feeds for a happy, well-paying goblin
 const GOB_MAX_MISS = 10;     // misses that end the feast
 const GOB_FAKE = 0.16;       // chance he demands something you've run out of
+const GOB_HINT = false;      // outline the matching bin tile? off for now (may switch back on later)
 function gobArt(id, cls) { const it = GOB_BY_ID[id]; return ART.tag("trash_" + id, it ? it.emoji : "🗑️", cls || ""); }
 function gobBinTotal() { return GOB_ITEMS.reduce((s, it) => s + (GOBLIN.bin[it.id] || 0), 0); }
 function gobMs() { return Math.max(1450, 2100 - GOBLIN.fed * 22); }   // the demands quicken as he's fed
@@ -3670,50 +3671,50 @@ function gobMakeBin() {
 function renderGoblinIntro() {
   SFX.unlock(); SFX.fanfare();
   ["gribble_point", "gribble_hold", "gribble_think", "gribble_eat", "gribble_win", "gribble_angry"].forEach(k => ART.ensure(k, () => {}));
+  GOB_STORY_I = 0;
+  goblinStoryBeat();
+}
+// A little story-mode arrival — Gribble sizes you up, whines about his empty
+// belly, then strikes the feed-me-junk deal. Poses cycle through his talkers.
+const GOB_STORY = [
+  { fig: "gribble_hold", text: "“Oi! Down 'ere, in the muck! Name's <b>Gribble</b> — royal rubbish-gobbler, finest in the kingdom. Ooh… is that a <b>whole bin</b> of lovely junk yer haulin'?”" },
+  { fig: "gribble_think", text: "“I ain't ate in <i>days</i>. Been dreamin' o' banana peels an' soggy boots an' crunchy fish bones… me belly's growlin' louder'n a troll with a toothache.”" },
+  { fig: "gribble_point", cta: "😋 Feed him!", text: "“'Ere's the deal: I <b>call out</b> the junk I fancy, you <b>toss the match in me gob</b> — quick now! Stuff me full an' I'll pay ya in shinies. Miss too many an' I'm off. Deal?”" },
+];
+let GOB_STORY_I = 0;
+function goblinStoryBeat() {
+  const b = GOB_STORY[GOB_STORY_I];
   html("event", `
     ${hud("A Hungry Goblin!")}
     <div class="gob-intro">
       <div class="gob-intro-bg" style="background-image:url('art/gribble_bg.webp?v=${BUILD}')"></div>
-      <div class="gob-intro-fig">${ART.tag("gribble_point", "🧌", "gob-intro-img")}</div>
+      <div class="gob-intro-fig">${ART.tag(b.fig, "🧌", "gob-intro-img")}</div>
       <div class="gob-intro-card">
         <div style="font-weight:800;font-size:20px">Gribble the Goblin</div>
-        <div class="speech">“Grubs and grimeys, I'm <b>STARVIN'</b>! Toss me the junk I call for — quick, right in me gob — and I'll pay ya in shinies!”</div>
-        <div class="card" style="width:100%;max-width:330px">
-          <div class="stat-line"><span>Your bin</span><span>${GOB_START} bits of junk 🗑️</span></div>
-          <div class="stat-line"><span>Feed what he wants</span><span class="gold">15 = a happy goblin 😋</span></div>
-          <div class="stat-line"><span>More than 15</span><span class="gold">= more 🪙</span></div>
-          <div class="stat-line"><span>Miss 10 (or run dry)</span><span style="color:var(--bad)">he stops 😠</span></div>
-        </div>
-        <div class="muted" style="max-width:320px">He calls for a piece of trash — <b>tap the match</b> fast and it flies into his mouth. If you're out of what he wants, tap <b>“Don't have it!”</b></div>
+        <div class="speech">${b.text}</div>
+        <button class="btn good" id="gob-next">${b.cta || "Continue  ▸"}</button>
+        ${GOB_STORY_I === 0 ? `<button class="btn secondary" id="gob-skip" style="margin-top:8px">Not now</button>` : ""}
       </div>
     </div>
-    <button class="btn good" id="gob-play">😋 Feed him!</button>
-    <div style="height:8px"></div>
-    <button class="btn secondary" id="gob-skip">Not now</button>
   `);
-  on("#gob-play", "click", () => {
-    GOBLIN = { bin: gobMakeBin(), want: null, fake: false, fed: 0, miss: 0, answered: true, timer: null, cdTimer: null, feedback: null };
-    goblinCountdown();
-  });
+  on("#gob-next", "click", () => { GOB_STORY_I++; if (GOB_STORY_I < GOB_STORY.length) goblinStoryBeat(); else goblinBegin(); });
   on("#gob-skip", "click", startRound);
   show("event");
 }
+function goblinBegin() {
+  GOBLIN = { bin: gobMakeBin(), want: null, fake: false, fed: 0, miss: 0, answered: true, timer: null, cdTimer: null, feedback: null, countdown: null };
+  goblinCountdown();
+}
+// 3-2-1 drawn right over the live game UI so you see the board before it starts.
 function goblinCountdown() {
   let n = 3;
   const tick = () => {
     if (!GOBLIN) return;
-    html("event", `
-      ${hud("Get Ready!")}
-      <div class="gob-stage mg-fullbleed">
-        <div class="gob-bg" style="background-image:url('art/gribble_bg.webp?v=${BUILD}')"></div>
-        <div class="gob-goblin cd"><img class="gob-goblin-img" src="art/gribble_eat.webp?v=${BUILD}" alt="Gribble" draggable="false"></div>
-        <div class="gob-count-big ${n === 0 ? "go" : ""}">${n > 0 ? n : "Feed!"}</div>
-      </div>
-    `);
-    show("event");
+    GOBLIN.countdown = n;
+    renderGoblin();
     SFX.pop(n > 0 ? 1 : 3);
     if (n > 0) { n--; GOBLIN.cdTimer = setTimeout(tick, 750); }
-    else { GOBLIN.cdTimer = setTimeout(() => { if (GOBLIN) goblinRequest(); }, 420); }
+    else { GOBLIN.cdTimer = setTimeout(() => { if (GOBLIN) { GOBLIN.countdown = null; goblinRequest(); } }, 420); }
   };
   tick();
 }
@@ -3769,31 +3770,42 @@ function gobFlyToMouth(id, tileEl) {
   fly.className = "gob-fly";
   fly.style.left = (t.left + t.width / 2) + "px";
   fly.style.top = (t.top + t.height / 2) + "px";
+  fly.style.transform = "translate(-50%,-50%) scale(1)";
   fly.innerHTML = gobArt(id, "gob-fly-img");
   document.body.appendChild(fly);
   const dx = m.left + m.width / 2, dy = m.top + m.height / 2;
+  // 1) pop up in place, then 2) arc up into his gob, shrinking away to nothing
   requestAnimationFrame(() => {
-    fly.style.transition = "left .36s cubic-bezier(.35,0,.6,1), top .36s cubic-bezier(.3,-.35,.7,1), transform .36s ease-in, opacity .36s ease-in .06s";
-    fly.style.left = dx + "px"; fly.style.top = dy + "px";
-    fly.style.transform = "translate(-50%,-50%) rotate(140deg) scale(.12)";
-    fly.style.opacity = "0";
+    fly.style.transition = "transform .15s cubic-bezier(.3,1.6,.5,1)";
+    fly.style.transform = "translate(-50%,-50%) scale(1.55)";
   });
-  setTimeout(() => fly.remove(), 440);
+  setTimeout(() => {
+    fly.style.transition = "left .42s cubic-bezier(.4,0,.7,1), top .42s cubic-bezier(.25,-.5,.7,1), transform .42s ease-in, opacity .42s ease-in .12s";
+    fly.style.left = dx + "px"; fly.style.top = dy + "px";
+    fly.style.transform = "translate(-50%,-50%) rotate(165deg) scale(.08)";
+    fly.style.opacity = "0";
+  }, 165);
+  setTimeout(() => fly.remove(), 640);
 }
 function renderGoblin() {
-  const want = GOBLIN.want, wantIt = GOB_BY_ID[want];
+  const counting = GOBLIN.countdown != null;
+  const want = GOBLIN.want, wantIt = want ? GOB_BY_ID[want] : null;
+  // GOB_HINT off: the tiles are NOT outlined, so you have to spot the match yourself.
   const tiles = GOB_ITEMS.filter(it => GOBLIN.bin[it.id] > 0).map(it =>
-    `<button class="gob-tile${it.id === want ? " wanted" : ""}" data-id="${it.id}">
+    `<button class="gob-tile${(GOB_HINT && !counting && it.id === want) ? " wanted" : ""}" data-id="${it.id}">
        <span class="gob-tile-img">${gobArt(it.id, "")}</span><span class="gob-count">×${GOBLIN.bin[it.id]}</span>
      </button>`).join("");
   const fb = GOBLIN.feedback;
-  const fbTxt = !fb ? `Tap the <b>${wantIt.name}</b>!`
+  const fbTxt = counting ? "Get ready…"
+    : !fb ? `He wants: <b>${wantIt.name}</b>!`
     : fb.kind === "correct" ? `<span class="good">Yum! 😋</span>`
     : fb.kind === "goodpass" ? `<span class="good">Right — you're out! 👍</span>`
     : fb.kind === "miss" ? `<span class="bad">Too slow! 😠</span>`
     : fb.kind === "badpass" ? `<span class="bad">You had it! 😠</span>`
     : `<span class="bad">Not that one! 😠</span>`;
   const missClose = GOBLIN.miss >= GOB_MAX_MISS - 2;
+  const wantInner = counting || !want ? `<span class="gob-want-q">?</span>` : gobArt(want, "gob-want-img");
+  const overlay = counting ? `<div class="gob-count-big ${GOBLIN.countdown === 0 ? "go" : ""}">${GOBLIN.countdown > 0 ? GOBLIN.countdown : "Feed!"}</div>` : "";
   html("event", `
     ${hud("Feed Gribble!")}
     <div class="gob-stage mg-fullbleed" id="gob-stage">
@@ -3807,19 +3819,23 @@ function renderGoblin() {
         <img class="gob-goblin-img" src="art/gribble_eat.webp?v=${BUILD}" alt="Gribble" draggable="false">
         <div class="gob-mouth" id="gob-mouth-target"></div>
       </div>
-      <div class="gob-want-box"><div class="gob-want-frame">${gobArt(want, "gob-want-img")}</div></div>
+      <div class="gob-want-box"><div class="gob-want-frame">${wantInner}</div></div>
       <div class="gob-timer"><i id="gob-timerbar"></i></div>
       <div class="gob-fb" id="gob-fb">${fbTxt}</div>
       <div class="gob-grid" id="gob-grid">${tiles}</div>
-      <button class="btn secondary gob-nope" id="gob-nope">🚫 Don't have it!</button>
+      <button class="btn secondary gob-nope" id="gob-nope"${counting ? " disabled" : ""}>🚫 Don't have it!</button>
+      ${overlay}
     </div>
   `);
-  $("#screen-event").querySelectorAll(".gob-tile").forEach(b => b.addEventListener("pointerdown", e => { e.preventDefault(); goblinFeed(b.dataset.id, b); }));
-  on("#gob-nope", "click", goblinNope);
+  if (!counting) {
+    $("#screen-event").querySelectorAll(".gob-tile").forEach(b => b.addEventListener("pointerdown", e => { e.preventDefault(); goblinFeed(b.dataset.id, b); }));
+    on("#gob-nope", "click", goblinNope);
+  }
   show("event");
   const tb = $("#gob-timerbar");
-  if (tb) { const ms = gobMs(); tb.style.transition = "none"; tb.style.width = "100%";
+  if (tb && !counting) { const ms = gobMs(); tb.style.transition = "none"; tb.style.width = "100%";
     requestAnimationFrame(() => { if (tb.isConnected) { tb.style.transition = "width " + ms + "ms linear"; tb.style.width = "0%"; } }); }
+  else if (tb) { tb.style.transition = "none"; tb.style.width = "100%"; }
 }
 function goblinFinish(why) {
   if (GOBLIN.timer) { clearTimeout(GOBLIN.timer); GOBLIN.timer = null; }
@@ -10426,7 +10442,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinCountdown, goblinRequest, goblinFeed, goblinNope, goblinScore, renderGoblin, goblinFinish, GOB_ITEMS, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, playDanceStory, danceWarmup, danceButtonsHtml, danceCountdown, danceStep, danceRehearsalDone, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinStoryBeat, goblinBegin, goblinCountdown, goblinRequest, goblinFeed, goblinNope, goblinScore, renderGoblin, goblinFinish, GOB_ITEMS, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, playDanceStory, danceWarmup, danceButtonsHtml, danceCountdown, danceStep, danceRehearsalDone, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {
