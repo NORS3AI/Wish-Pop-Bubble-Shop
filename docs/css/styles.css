@@ -1745,65 +1745,46 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .wolf-cd > i { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(255,214,110,.28); transition: width .1s linear; }
 .wolf-cd > span { position: relative; font-size: 12px; font-weight: 800; color: #fff; z-index: 2; }
 /* Rescue the Feast — catch tumbling dishes, set each in its home (Courtyard finale) */
-.feast-hud { display: flex; align-items: center; gap: 10px; padding: 4px 2px 2px; }
-.feast-king-wrap { flex: 0 0 auto; }
-.feast-king-wrap > span { font-size: 34px; line-height: 1; display: inline-block; transition: transform .15s ease; }
-.feast-meters { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.feast-mrow { display: flex; flex-direction: column; gap: 2px; }
-.feast-mlbl { font-size: 11px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); display: flex; justify-content: space-between; }
-.feast-mlbl b { color: #ffd76a; }
-.feast-track { position: relative; height: 12px; border-radius: 7px; overflow: hidden;
-  background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.16); }
-.feast-track > i { display: block; height: 100%; width: 0%; border-radius: 7px; transition: width .12s linear; }
-.feast-dfill { background: linear-gradient(90deg, #7ee08a, #b6ff9e); box-shadow: 0 0 8px rgba(126,224,138,.6); }
-.feast-tfill.ok { background: linear-gradient(90deg, #6fd08a, #a7e88a); }
-.feast-tfill.amber { background: linear-gradient(90deg, #ffcf6a, #ffb14a); }
-.feast-tfill.danger { background: linear-gradient(90deg, #ff8a5a, #ff5a5a); box-shadow: 0 0 10px rgba(255,80,80,.7); }
-.feast-timerbar { position: relative; height: 6px; border-radius: 4px; overflow: hidden; margin: 4px 2px 2px;
-  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.12); }
-.feast-timerbar > i { display: block; height: 100%; width: 0%; border-radius: 4px;
-  background: linear-gradient(90deg, #c58bff, #ffd76a); transition: width .12s linear; }
-/* The sky: falling dishes live here, absolutely positioned by top% */
-.feast-sky { position: relative; flex: 1; min-height: 0; margin: 4px 2px; border-radius: 14px; overflow: hidden;
-  background: linear-gradient(180deg, rgba(30,14,60,.35), rgba(60,30,20,.22));
-  border: 1px solid rgba(255,255,255,.1);
-  box-shadow: inset 0 -14px 22px rgba(120,70,20,.28); }
-.feast-item { position: absolute; transform: translateX(-50%); top: 0; padding: 10px 14px; border: none; background: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; will-change: top; z-index: 2; }
-.feast-item .feast-emoji { font-size: 62px; line-height: 1; filter: drop-shadow(0 5px 8px rgba(0,0,0,.55)); pointer-events: none;
-  animation: feastSpin 2.4s linear infinite; }
-.feast-item.hazard .feast-emoji { animation: feastSpin 2.4s linear infinite, feastHazGlow 1s ease-in-out infinite; border-radius: 50%; }
-.feast-item:active .feast-emoji { transform: scale(.8); }
-@keyframes feastSpin { 0% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } 100% { transform: rotate(-8deg); } }
-@keyframes feastHazGlow { 0%,100% { filter: drop-shadow(0 4px 6px rgba(0,0,0,.5)); } 50% { filter: drop-shadow(0 0 10px rgba(255,120,60,.95)); } }
-.feast-splash { position: absolute; transform: translate(-50%,-50%); font-size: 52px; z-index: 3; pointer-events: none;
-  animation: feastSplash .3s ease forwards; }
-@keyframes feastSplash { 0% { transform: translate(-50%,-50%) scale(.4); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1.5); opacity: 0; } }
-.feast-toast { position: absolute; left: 0; right: 0; top: 8px; text-align: center; z-index: 4; pointer-events: none;
-  font-family: var(--ff-display); font-size: 15px; font-weight: 800; color: #ffe08a; text-shadow: 0 2px 6px rgba(0,0,0,.9);
-  opacity: 0; transform: translateY(-6px); transition: opacity .2s ease, transform .2s ease; }
-.feast-toast.show { opacity: 1; transform: none; animation: feastToastPulse 1s ease-in-out infinite; }
-@keyframes feastToastPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-/* Your hands: the held dishes waiting to be placed */
-.feast-hands { display: flex; justify-content: center; gap: 12px; padding: 6px 2px; min-height: 64px; }
+/* ===== Rescue the Feast — the spinning banquet wheel ===== */
+.feast-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #1a1330; }
+.feast-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; pointer-events: none; }
+/* the wheel lives in a band across the top; its centre sits above the screen so only the lower arc shows */
+.feast-wheelwrap { position: absolute; top: 0; left: 0; right: 0; height: 46%; overflow: hidden; z-index: 1; pointer-events: none; }
+.feast-wheel { position: absolute; left: 50%; top: 0; width: 168%; aspect-ratio: 1 / 1; transform: translate(-50%, -64%); }
+.feast-wheel-rot { position: absolute; inset: 0; will-change: transform; }
+.feast-wheel-img { width: 100%; height: 100%; display: block; filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
+.feast-onwheel { position: absolute; inset: 0; }
+.feast-wfood { position: absolute; transform: translate(-50%, -50%); display: flex; justify-content: center; }
+.feast-wfood img.feast-wfood-img { width: 100%; height: auto; max-width: none; display: block; filter: drop-shadow(0 3px 5px rgba(0,0,0,.45)); }
+.feast-wfood.cand img.feast-wfood-img { transform: translateY(-16%); }
+/* falling items */
+.feast-fall { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.feast-faller { position: absolute; transform: translate(-50%, -50%); border: none; background: none; padding: 0; cursor: pointer; pointer-events: auto; z-index: 2; }
+.feast-faller img.feast-faller-img { height: 11vh; width: auto; max-width: 26vw; display: block; filter: drop-shadow(0 5px 9px rgba(0,0,0,.55)); pointer-events: none; }
+.feast-faller.cand img.feast-faller-img { height: 14vh; max-width: 22vw; }
+.feast-faller:active img { transform: scale(.86); }
+.feast-splash { position: absolute; transform: translate(-50%,-50%); font-size: 46px; z-index: 3; pointer-events: none; animation: feastSplash .5s ease-out forwards; }
+@keyframes feastSplash { 0% { transform: translate(-50%,-50%) scale(.4); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-50%,-32%) scale(1.2); opacity: 0; } }
+/* score chips + timer */
+.feast-hudline { position: absolute; top: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; z-index: 4; pointer-events: none; }
+.feast-chip { font-size: 12.5px; font-weight: 800; color: #fff; background: rgba(20,14,40,.6); border: 1px solid rgba(255,214,110,.4); border-radius: 999px; padding: 4px 11px; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.feast-chip b { color: #ffd76a; }
+.feast-timerbar { position: absolute; top: 38px; left: 8%; right: 8%; height: 5px; border-radius: 4px; overflow: hidden; z-index: 4; background: rgba(0,0,0,.35); }
+.feast-timerbar > i { display: block; height: 100%; width: 0%; border-radius: 4px; background: linear-gradient(90deg,#ffd76a,#ff9e4a); transition: width .12s linear; }
+/* stations row + hand slots pinned to the bottom */
+.feast-stations { position: absolute; left: 0; right: 0; bottom: 76px; display: flex; justify-content: center; align-items: flex-end; gap: 3px; z-index: 3; padding: 0 4px; }
+.feast-station { position: relative; flex: 1 1 0; min-width: 0; max-width: 92px; border: none; background: none; padding: 0; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; }
+.feast-station img.feast-station-img { width: 100%; height: auto; max-width: none; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+.feast-station:active { transform: scale(.94); }
+.feast-station.good-pop { animation: feastGood .35s ease; }
+.feast-station.meh-pop { animation: feastMeh .35s ease; }
+.feast-hands { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 14px; z-index: 4; }
 .feast-hands.full { animation: feastShake .3s ease; }
-@keyframes feastShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
-.feast-hold { min-width: 82px; height: 58px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 6px;
-  border: 1px dashed rgba(255,255,255,.28); background: rgba(0,0,0,.22); font-size: 22px; color: #cfc2ec; }
-.feast-hold.has { border-style: solid; border-color: rgba(255,214,110,.75); background: rgba(255,214,110,.14); }
-.feast-hold .feast-hemj { font-size: 40px; line-height: 1; }
-.feast-hold .feast-harrow { font-size: 26px; font-weight: 800; color: #ffe08a; }
-/* The table homes: tap one to set the held dish down */
-.feast-homes { display: flex; gap: 5px; padding: 2px 2px 6px; justify-content: center; }
-.feast-home { position: relative; flex: 1 1 0; min-width: 0; max-width: 110px; padding: 10px 2px 7px; border-radius: 14px; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
-  border: 1px solid rgba(255,255,255,.24); }
-.feast-home .feast-hemoji { font-size: 46px; line-height: 1; }
-.feast-home .feast-hname { font-size: 11px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
-.feast-home:active { transform: scale(.94); }
-.feast-home.good-pop { animation: feastGood .35s ease; }
-.feast-home.meh-pop { animation: feastMeh .35s ease; }
+.feast-hold { width: 62px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(255,214,110,.5); background: rgba(20,14,40,.5); }
+.feast-hold.has { border-style: solid; border-color: rgba(255,214,110,.85); background: rgba(255,214,110,.16); }
+.feast-hold img.feast-hold-img { height: 44px; width: auto; max-width: 56px; display: block; }
+.feast-stage.feast-shake { animation: feastShake .3s ease; }
+@keyframes feastShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 @keyframes feastGood { 0% { transform: scale(1); box-shadow: 0 0 0 rgba(126,224,138,0); } 45% { transform: scale(1.12); box-shadow: 0 0 16px rgba(126,224,138,.9); border-color: #7ee08a; } 100% { transform: scale(1); } }
 @keyframes feastMeh { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-5px); } 60% { transform: translateX(5px); } }
 /* Sky-High Savings — swipe to sway an ever-growing coin tower (Beanstalk finale) */
@@ -2918,7 +2899,7 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 /* hide the bottom hint line and let the play area go edge-to-edge */
 #app.mg-full .stack-hint { display: none; }
 #app.mg-full .carpet-sky, #app.mg-full .stack-sky, #app.mg-full .bq-shop,
-#app.mg-full .wine-cloak, #app.mg-full .feast-sky, #app.mg-full .dance-stage, #app.mg-full .cake-stage2 { margin: 0; border-radius: 0; }
+#app.mg-full .wine-cloak, #app.mg-full .feast-stage, #app.mg-full .dance-stage, #app.mg-full .cake-stage2 { margin: 0; border-radius: 0; }
 /* meter panels / top rows shift right so the floating ☰ menu doesn't cover them */
 #app.mg-full .feast-hud, #app.mg-full .wolf-top { padding-left: 46px; }
 #app.mg-full .cake-caption { padding-left: 40px; }

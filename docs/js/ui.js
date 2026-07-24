@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v573"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v574"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -4113,48 +4113,55 @@ function wolfFinish(result) {
 let FEAST = null;
 let FEAST_FINALE = false;           // true when this run is the Courtyard Realm-Key finale
 const FEAST_TICK = 55;              // ms per simulation tick
-const FEAST_FLOOR = 90;            // y% at which an uncaught dish smashes on the floor
-const FEAST_COLS = 5;              // spawn columns across the sky
-const FEAST_SURGE_LEN = 5000;      // ms a "toast" speed-surge lasts
-const FEAST_CORRECT = 9;           // Delight for a dish set in its RIGHT home
-const FEAST_WRONG = 3;             // Delight for a dish set in the WRONG home (still tidier than the floor)
-// Each falling dish and the home it belongs in. hazard = costs extra Temper if it smashes.
+const FEAST_FLOOR = 86;             // y% at which an uncaught item is dropped
+const FEAST_CORRECT = 9;            // Delight for an item set on its RIGHT station
+const FEAST_WRONG = 3;              // Delight for the WRONG station (still saved from the floor)
+// The falling items and where each belongs (its station).
 const FEAST_KINDS = {
-  roast:  { name: "Roast",  emoji: "🍗", home: "plate" },
-  apple:  { name: "Apple",  emoji: "🍎", home: "bowl" },
-  bread:  { name: "Bread",  emoji: "🥖", home: "basket" },
-  cake:   { name: "Cake",   emoji: "🍰", home: "stand" },
-  candle: { name: "Candle", emoji: "🕯️", home: "holder", hazard: true },
-  wine:   { name: "Wine",   emoji: "🍷", home: "goblet", hazard: true },
+  grapes: { name: "Grapes",     art: "feast_grapes",     home: "grapes" },
+  ham:    { name: "Ham",        art: "feast_ham",        home: "ham" },
+  bread:  { name: "Bread",      art: "feast_bread",      home: "bread" },
+  cake:   { name: "Cake",       art: "feast_cake",       home: "cake" },
+  candle: { name: "Candelabra", art: "feast_candelabra", home: "candle" },
 };
+// The stations along the bottom — each caught item goes onto its matching one.
 const FEAST_HOMES = {
-  plate:  { name: "Plate",  emoji: "🍽️" },
-  bowl:   { name: "Bowl",   emoji: "🥣" },
-  basket: { name: "Basket", emoji: "🧺" },
-  stand:  { name: "Stand",  emoji: "🎂" },
-  holder: { name: "Holder", emoji: "🪔" },
-  goblet: { name: "Goblet", emoji: "🥂" },
+  grapes: { name: "Grapes",  art: "feast_home_grapes" },
+  ham:    { name: "Platter", art: "feast_home_ham" },
+  bread:  { name: "Bread",   art: "feast_home_bread" },
+  cake:   { name: "Cake",    art: "feast_home_cake" },
+  candle: { name: "Candles", art: "feast_home_candle" },
 };
-// Difficulty. hold = dishes your hands carry at once. kinds = which dishes fall (and which
-// homes appear). fall = %screen per second. spawnEvery = ms between drops. dur = round length.
-// surges = # of toast speed-spikes. temperHit / hazardHit = Temper added by a smashed dish.
-// goal = Delight target used only for the star rating. Verified winnable by the test bot.
+// Difficulty. hold = items your hands carry at once (2 on Easy → 1). kinds = which items fall.
+// maxDrops = dropped items that end the game. spin = wheel degrees/sec. fall = %screen/sec.
 const FEAST_MODES = {
-  easy:   { label: "Easy",   hold: 2, kinds: ["roast", "apple", "bread", "cake"],
-            fall: 15, spawnEvery: 1600, dur: 30000, surges: 1, temperHit: 12, hazardHit: 12, goal: 130 },
-  medium: { label: "Medium", hold: 1, kinds: ["roast", "apple", "bread", "cake", "candle"],
-            fall: 18, spawnEvery: 1300, dur: 36000, surges: 1, temperHit: 12, hazardHit: 18, goal: 165 },
-  hard:   { label: "Hard",   hold: 1, kinds: ["roast", "apple", "bread", "cake", "candle", "wine"],
-            fall: 22, spawnEvery: 1080, dur: 42000, surges: 2, temperHit: 12, hazardHit: 20, goal: 205 },
+  easy:   { label: "Easy",   hold: 2, kinds: ["grapes","ham","bread","cake"],          maxDrops: 6, spin: 8,  fall: 30, spawnEvery: 1500, dur: 34000, goal: 130 },
+  medium: { label: "Medium", hold: 1, kinds: ["grapes","ham","bread","cake","candle"], maxDrops: 5, spin: 11, fall: 36, spawnEvery: 1250, dur: 40000, goal: 165 },
+  hard:   { label: "Hard",   hold: 1, kinds: ["grapes","ham","bread","cake","candle"], maxDrops: 4, spin: 14, fall: 42, spawnEvery: 1050, dur: 46000, goal: 205 },
 };
+// 21 plate slots on the wheel: [x, y, size] as fractions of the wheel image.
+const FEAST_PLATES = [
+  [0.841,0.614,0.199],[0.791,0.76,0.077],[0.719,0.718,0.081],[0.611,0.824,0.141],[0.455,0.813,0.121],
+  [0.317,0.852,0.118],[0.329,0.755,0.073],[0.189,0.713,0.209],[0.095,0.565,0.104],[0.185,0.528,0.093],
+  [0.145,0.394,0.181],[0.202,0.23,0.124],[0.305,0.248,0.073],[0.364,0.14,0.177],[0.512,0.154,0.074],
+  [0.578,0.095,0.098],[0.689,0.189,0.204],[0.746,0.314,0.07],[0.85,0.316,0.114],[0.811,0.443,0.124],[0.909,0.452,0.102]
+];
 function feastMode() { return FEAST_MODES[FEAST.mode]; }
-// The homes shown for a mode = the distinct homes its dishes belong to, in dish order.
+// The stations shown for a mode = the distinct homes of its items, in item order.
 function feastHomesFor(mode) {
   const seen = []; FEAST_MODES[mode].kinds.forEach(k => { const h = FEAST_KINDS[k].home; if (!seen.includes(h)) seen.push(h); }); return seen;
 }
-function feastSurging() { return !!(FEAST && FEAST.surgeWindows.some(at => FEAST.elapsed >= at && FEAST.elapsed < at + FEAST_SURGE_LEN)); }
-// King's Courtyard FINALE — the must-win Realm-Key encounter. Forces Easy (finales stay
-// accessible), and winning grants the Realm Key for the next realm. Freely retryable.
+// Candelabras ride the BARE table between plates: midpoints of the wider angular gaps.
+function feastGapSlots() {
+  const pts = FEAST_PLATES.map(p => Math.atan2(p[1] - 0.5, p[0] - 0.5)).sort((a, b) => a - b);
+  const gaps = [];
+  for (let i = 0; i < pts.length; i++) {
+    let a = pts[i], b = pts[(i + 1) % pts.length]; if (b <= a) b += Math.PI * 2;
+    if (b - a > 0.42) { const mid = (a + b) / 2; gaps.push([0.5 + 0.72 * Math.cos(mid), 0.5 + 0.72 * Math.sin(mid), 0.1]); }
+  }
+  return gaps;
+}
+// King's Courtyard FINALE — the must-win Realm-Key encounter. Forces Easy, freely retryable.
 function renderFeastFinale() {
   FEAST_FINALE = true;
   SFX.unlock(); SFX.fanfare();
@@ -4163,12 +4170,12 @@ function renderFeastFinale() {
     <div class="grow center" style="gap:14px">
       <div class="ph big">🃏</div>
       <div class="result-title" style="color:var(--gold)">Courtyard Finale</div>
-      <div class="speech">“Oh no no no — I only bumped the table a <i>little!</i> Quick, put it all back before the King turns 'round, or it's the dungeon for me!”</div>
+      <div class="speech">“Oh no no no — I gave the banquet wheel a <i>little</i> spin and now it won't stop! Quick, catch the dishes and set them right before the King turns 'round!”</div>
       <div class="card" style="width:100%;max-width:320px">
-        <div class="stat-line"><span>Catch each dish</span><span>set it in its home 🍽️</span></div>
+        <div class="stat-line"><span>Catch a falling dish</span><span>set it on its station</span></div>
         <div class="stat-line"><span>Win to earn</span><span class="gold">🗝️ a Realm Key!</span></div>
       </div>
-      <div class="muted" style="max-width:300px">Beat this to earn the <b>Realm Key</b> for the next realm. Save the feast — and the poor Jester — before the King's Temper boils over. You can retry as many times as it takes.</div>
+      <div class="muted" style="max-width:300px">Beat this to earn the <b>Realm Key</b> for the next realm. Don't let too many dishes hit the floor. You can retry as many times as it takes.</div>
     </div>
     <button class="btn good" id="feast-finale-go">🍗 Save the Feast!</button>
     <div style="height:8px"></div>
@@ -4184,20 +4191,20 @@ function renderFeastIntro() {
   html("event", `
     ${hud("The King's Feast")}
     <div class="grow center" style="gap:14px">
-      <div class="ph big">🏰</div>
+      <div class="ph big">🍗</div>
       <div style="font-weight:800;font-size:20px">Rescue the Feast!</div>
-      <div class="speech">“The clumsy jester's tipped the banquet — catch the dishes before they hit the floor!”</div>
+      <div class="speech">“The jester spun the banquet wheel and it won't stop — catch the dishes as they fly off and set each on its stand!”</div>
       <div class="card" style="width:100%;max-width:320px">
-        <div class="stat-line"><span>Tap a falling dish</span><span>then tap its home</span></div>
-        <div class="stat-line"><span>Right home</span><span style="color:var(--good)">delights the King ✨</span></div>
-        <div class="stat-line"><span>Dish hits the floor</span><span style="color:var(--bad)">Temper rises 😠</span></div>
+        <div class="stat-line"><span>Tap a falling dish</span><span>then tap its stand</span></div>
+        <div class="stat-line"><span>Right stand</span><span style="color:var(--good)">delights the King ✨</span></div>
+        <div class="stat-line"><span>Dish hits the floor</span><span style="color:var(--bad)">that's a drop 💥</span></div>
       </div>
-      <div class="muted" style="max-width:300px"><b>Easy</b> lets you hold two dishes at once; <b>Medium</b> & <b>Hard</b> just one — place fast! Keep the King's Temper from boiling over or the Jester's in trouble.</div>
+      <div class="muted" style="max-width:300px"><b>Easy</b> lets you hold two dishes at once; <b>Medium</b> & <b>Hard</b> just one. Drop too many and the feast is ruined!</div>
     </div>
     <div class="wolf-modes">
       <button class="btn good" id="feast-easy">🟢 Easy · hold 2</button>
       <button class="btn" id="feast-medium">🟡 Medium · hold 1</button>
-      <button class="btn" id="feast-hard">🔴 Hard · hold 1 + wine</button>
+      <button class="btn" id="feast-hard">🔴 Hard · hold 1</button>
     </div>
     <div style="height:8px"></div>
     <button class="btn secondary" id="feast-skip">Not now</button>
@@ -4211,132 +4218,166 @@ function renderFeastIntro() {
 function feastStart(mode) {
   mode = FEAST_MODES[mode] ? mode : "easy";
   const m = FEAST_MODES[mode];
-  const surgeWindows = m.surges === 2 ? [Math.round(0.36 * m.dur), Math.round(0.68 * m.dur)] : [Math.round(0.52 * m.dur)];
+  const foodKinds = m.kinds.filter(k => k !== "candle");
+  const plateKind = FEAST_PLATES.map(() => R.pick(foodKinds));   // each plate carries a food type
+  const gaps = m.kinds.includes("candle") ? feastGapSlots() : [];
   FEAST = { mode, homes: feastHomesFor(mode), items: [], held: [], uid: 0,
-    elapsed: 0, nextSpawnAt: 500, delight: 0, temper: 0, placed: 0, smashed: 0,
-    surgeWindows, surgeOn: false, over: false, tickTimer: null };
+    elapsed: 0, nextSpawnAt: 700, delight: 0, drops: 0, placed: 0,
+    wheelAng: 0, plateKind, gaps, wheelW: 0, wheelCx: 0, wheelCy: 0, stageW: 0, stageH: 0,
+    over: false, tickTimer: null };
+  ["feast_wheel", "feast_bg", "feast_grapes", "feast_ham", "feast_bread", "feast_cake", "feast_candelabra",
+   "feast_home_grapes", "feast_home_ham", "feast_home_bread", "feast_home_cake", "feast_home_candle"].forEach(k => ART.ensure(k, () => {}));
   feastPlay();
+  feastLayoutWheel();
+  feastPaintOnWheel();
   FEAST.tickTimer = setInterval(feastTick, FEAST_TICK);
 }
 function feastHandsHtml() {
   const m = feastMode(), slots = [];
   for (let i = 0; i < m.hold; i++) {
     const kind = FEAST.held[i];
-    if (kind) { const k = FEAST_KINDS[kind]; slots.push(`<div class="feast-hold has"><span class="feast-hemj">${k.emoji}</span><span class="feast-harrow">→ ${FEAST_HOMES[k.home].emoji}</span></div>`); }
-    else slots.push(`<div class="feast-hold empty">✋</div>`);
+    if (kind) slots.push(`<div class="feast-hold has">${ART.tag(FEAST_KINDS[kind].art, "🍽️", "feast-hold-img")}</div>`);
+    else slots.push(`<div class="feast-hold empty"></div>`);
   }
   return slots.join("");
 }
-function feastHomesHtml() {
-  return FEAST.homes.map(h => {
-    const home = FEAST_HOMES[h];
-    return `<button class="feast-home" data-home="${h}"><span class="feast-hemoji">${home.emoji}</span><span class="feast-hname">${home.name}</span></button>`;
-  }).join("");
+function feastStationsHtml() {
+  return FEAST.homes.map(h => `<button class="feast-station" data-home="${h}">${ART.tag(FEAST_HOMES[h].art, "🍽️", "feast-station-img")}</button>`).join("");
 }
 function feastPlay() {
   const m = feastMode();
   html("event", `
     ${hud("Rescue the Feast!")}
-    <div class="feast-hud">
-      <div class="feast-king-wrap"><span id="feast-king">🙂</span></div>
-      <div class="feast-meters">
-        <div class="feast-mrow"><span class="feast-mlbl">✨ King's Delight</span><div class="feast-track"><i class="feast-dfill" id="feast-delight"></i></div></div>
-        <div class="feast-mrow"><span class="feast-mlbl">😠 King's Temper <b id="feast-tnum">0%</b></span><div class="feast-track"><i class="feast-tfill ok" id="feast-temper"></i></div></div>
+    <div class="feast-stage mg-fullbleed" id="feast-stage">
+      <div class="feast-bg" style="background-image:url('art/feast_bg.webp?v=${BUILD}')"></div>
+      <div class="feast-wheelwrap" id="feast-wheelwrap">
+        <div class="feast-wheel" id="feast-wheel">
+          <div class="feast-wheel-rot" id="feast-wheel-rot">
+            <img class="feast-wheel-img" src="art/feast_wheel.webp?v=${BUILD}" alt="" draggable="false">
+            <div class="feast-onwheel" id="feast-onwheel"></div>
+          </div>
+        </div>
       </div>
+      <div class="feast-fall" id="feast-fall"></div>
+      <div class="feast-hudline">
+        <div class="feast-chip">🍽️ Served <b id="feast-served">0</b></div>
+        <div class="feast-chip">💥 Dropped <b id="feast-drops">0</b>/${m.maxDrops}</div>
+      </div>
+      <div class="feast-timerbar"><i id="feast-timer"></i></div>
+      <div class="feast-stations" id="feast-stations">${feastStationsHtml()}</div>
+      <div class="feast-hands" id="feast-hands">${feastHandsHtml()}</div>
     </div>
-    <div class="feast-timerbar"><i id="feast-timer"></i></div>
-    <div class="feast-sky mg-fullbleed" id="feast-sky"><div class="feast-toast" id="feast-toast">👑 The King rises — the toast! Dishes fly!</div></div>
-    <div class="feast-hands" id="feast-hands">${feastHandsHtml()}</div>
-    <div class="feast-homes" id="feast-homes">${feastHomesHtml()}</div>
   `);
-  $("#screen-event").querySelectorAll(".feast-home").forEach(b => b.addEventListener("click", () => feastPlace(b.dataset.home)));
+  $("#screen-event").querySelectorAll(".feast-station").forEach(b => b.addEventListener("click", () => feastPlace(b.dataset.home)));
   show("event");
-  feastPaintMeters();
+  feastPaintHud();
 }
-function feastSpawn() {
-  const m = feastMode(), kind = R.pick(m.kinds), k = FEAST_KINDS[kind];
-  const col = Math.floor(Math.random() * FEAST_COLS), surging = feastSurging();
-  const it = { uid: ++FEAST.uid, kind, col, spawnAt: FEAST.elapsed, y: 0,
-    fall: m.fall * (surging ? 1.4 : 1) * (0.9 + Math.random() * 0.2), el: null };
+function feastLayoutWheel() {
+  const stage = $("#feast-stage"), wheel = $("#feast-wheel");
+  if (!stage || !wheel) return;
+  const wr = wheel.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+  FEAST.wheelW = wheel.offsetWidth || 1;
+  FEAST.wheelCx = wr.left + wr.width / 2 - sr.left;
+  FEAST.wheelCy = wr.top + wr.height / 2 - sr.top;
+  FEAST.stageW = sr.width || 1;
+  FEAST.stageH = sr.height || 1;
+}
+// Place the decorative food on each plate + candelabras in the gaps (rotates with the wheel).
+function feastPaintOnWheel() {
+  const wrap = $("#feast-onwheel"); if (!wrap) return;
+  let html = "";
+  FEAST_PLATES.forEach((p, i) => {
+    const k = FEAST_KINDS[FEAST.plateKind[i]];
+    html += `<div class="feast-wfood" style="left:${(p[0] * 100).toFixed(2)}%;top:${(p[1] * 100).toFixed(2)}%;width:${(p[2] * 108).toFixed(2)}%">${ART.tag(k.art, "", "feast-wfood-img")}</div>`;
+  });
+  FEAST.gaps.forEach(g => {
+    html += `<div class="feast-wfood cand" style="left:${(g[0] * 100).toFixed(2)}%;top:${(g[1] * 100).toFixed(2)}%;width:${(g[2] * 100).toFixed(2)}%">${ART.tag("feast_candelabra", "", "feast-wfood-img")}</div>`;
+  });
+  wrap.innerHTML = html;
+}
+function feastAddFaller(kind, xPct, yPct) {
+  const k = FEAST_KINDS[kind];
+  const it = { uid: ++FEAST.uid, kind, y: yPct, el: null };
   FEAST.items.push(it);
-  const sky = $("#feast-sky");
-  if (sky) {
+  const layer = $("#feast-fall");
+  if (layer) {
     const el = document.createElement("button");
-    el.className = "feast-item" + (k.hazard ? " hazard" : "");
-    el.dataset.uid = it.uid;
-    el.style.left = (13 + it.col * (74 / (FEAST_COLS - 1))) + "%";
-    el.style.top = "0%";
-    el.innerHTML = `<span class="feast-emoji">${k.emoji}</span>`;
+    el.className = "feast-faller" + (kind === "candle" ? " cand" : "");
+    el.style.left = xPct.toFixed(2) + "%"; el.style.top = yPct.toFixed(2) + "%";
+    el.innerHTML = ART.tag(k.art, "🍽️", "feast-faller-img");
     el.addEventListener("click", () => feastCatch(it.uid));
-    sky.appendChild(el);
-    it.el = el;
+    layer.appendChild(el); it.el = el;
   }
 }
-function feastSmash(it) {
-  const m = feastMode(), k = FEAST_KINDS[it.kind];
-  if (it.el) {
-    const el = it.el, sky = el.parentNode; el.remove();
-    if (sky) { const s = document.createElement("div"); s.className = "feast-splash"; s.style.left = el.style.left; s.style.top = FEAST_FLOOR + "%"; s.textContent = "💥"; s.addEventListener("animationend", () => s.remove()); sky.appendChild(s); }
-  }
-  FEAST.temper = Math.min(100, FEAST.temper + (k.hazard ? m.hazardHit : m.temperHit));
-  FEAST.smashed++;
-  SFX.chop();
+// Spawn a falling item from a plate/candelabra currently in the lower visible arc of the wheel.
+function feastSpawnFromWheel() {
+  if (!FEAST.wheelW) feastLayoutWheel();
+  const W = FEAST.wheelW, cx = FEAST.wheelCx, cy = FEAST.wheelCy, sw = FEAST.stageW, sh = FEAST.stageH;
+  const ang = FEAST.wheelAng * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang);
+  const slots = FEAST_PLATES.map((p, i) => ({ p, kind: FEAST.plateKind[i] })).concat(FEAST.gaps.map(g => ({ p: g, kind: "candle" })));
+  const cands = [];
+  slots.forEach(s => {
+    const dx = (s.p[0] - 0.5) * W, dy = (s.p[1] - 0.5) * W;
+    const rx = dx * ca - dy * sa, ry = dx * sa + dy * ca;
+    const sx = cx + rx, sy = cy + ry;
+    if (ry > W * 0.16 && sy > sh * 0.02 && sy < sh * 0.40 && sx > sw * 0.06 && sx < sw * 0.94) cands.push({ kind: s.kind, x: sx / sw * 100, y: sy / sh * 100 });
+  });
+  if (!cands.length) return;
+  const pick = R.pick(cands);
+  feastAddFaller(pick.kind, pick.x, pick.y);
 }
 function feastCatch(uid) {
   if (!FEAST || FEAST.over) return;
   const m = feastMode();
-  if (FEAST.held.length >= m.hold) { const h = $("#feast-hands"); if (h) { h.classList.remove("full"); void h.offsetWidth; h.classList.add("full"); } SFX.whoosh(); toast("✋ Hands full — place one first!"); return; }
+  if (FEAST.held.length >= m.hold) { const h = $("#feast-hands"); if (h) { h.classList.remove("full"); void h.offsetWidth; h.classList.add("full"); } SFX.whoosh && SFX.whoosh(); toast("✋ Hands full — place one first!"); return; }
   const idx = FEAST.items.findIndex(x => x.uid === uid); if (idx < 0) return;
-  const it = FEAST.items[idx];
-  FEAST.items.splice(idx, 1);
-  if (it.el) it.el.remove();
-  FEAST.held.push(it.kind);
-  SFX.pop();
+  const it = FEAST.items[idx]; FEAST.items.splice(idx, 1); if (it.el) it.el.remove();
+  FEAST.held.push(it.kind); SFX.pop && SFX.pop();
   feastPaintHands();
 }
 function feastPlace(homeId) {
   if (!FEAST || FEAST.over) return;
   if (!FEAST.held.length) { toast("🍽️ Catch a dish first!"); return; }
-  // place the held dish that BELONGS here if we're holding one; else the front dish goes here (wrong home)
   let idx = FEAST.held.findIndex(kd => FEAST_KINDS[kd].home === homeId);
   const correct = idx >= 0; if (!correct) idx = 0;
   FEAST.held.splice(idx, 1);
   FEAST.delight += correct ? FEAST_CORRECT : FEAST_WRONG;
-  FEAST.placed++;
-  SFX[correct ? "coin" : "whoosh"]();
-  const home = $(`.feast-home[data-home="${homeId}"]`);
-  if (home) { const cls = correct ? "good-pop" : "meh-pop"; home.classList.remove(cls); void home.offsetWidth; home.classList.add(cls); }
-  feastPaintHands(); feastPaintMeters();
+  if (correct) FEAST.placed++;
+  const sfx = correct ? "coin" : "whoosh"; SFX[sfx] && SFX[sfx]();
+  const st = document.querySelector(`.feast-station[data-home="${homeId}"]`);
+  if (st) { const cls = correct ? "good-pop" : "meh-pop"; st.classList.remove(cls); void st.offsetWidth; st.classList.add(cls); }
+  feastPaintHands(); feastPaintHud();
+}
+function feastDrop(it) {
+  if (it.el) {
+    const el = it.el, layer = el.parentNode; el.remove();
+    if (layer) { const s = document.createElement("div"); s.className = "feast-splash"; s.style.left = el.style.left; s.style.top = FEAST_FLOOR + "%"; s.textContent = "💥"; s.addEventListener("animationend", () => s.remove()); layer.appendChild(s); }
+  }
+  FEAST.drops++; SFX.chop && SFX.chop();
+  const st = $("#feast-stage"); if (st) { st.classList.remove("feast-shake"); void st.offsetWidth; st.classList.add("feast-shake"); }
 }
 function feastPaintHands() { const h = $("#feast-hands"); if (h) h.innerHTML = feastHandsHtml(); }
-function feastPaintMeters() {
-  if (!FEAST) return;
-  const m = feastMode();
+function feastPaintHud() {
+  if (!FEAST) return; const m = feastMode();
+  const sv = $("#feast-served"); if (sv) sv.textContent = FEAST.placed;
+  const dr = $("#feast-drops"); if (dr) dr.textContent = FEAST.drops;
   const t = $("#feast-timer"); if (t) t.style.width = Math.min(100, FEAST.elapsed / m.dur * 100) + "%";
-  const d = $("#feast-delight"); if (d) d.style.width = Math.min(100, FEAST.delight / m.goal * 100) + "%";
-  const tp = $("#feast-temper"); if (tp) { tp.style.width = FEAST.temper + "%"; tp.className = "feast-tfill " + (FEAST.temper >= 75 ? "danger" : FEAST.temper >= 45 ? "amber" : "ok"); }
-  const king = $("#feast-king"); if (king) king.textContent = FEAST.temper >= 75 ? "😡" : FEAST.temper >= 45 ? "😠" : "🙂";
-  const tn = $("#feast-tnum"); if (tn) tn.textContent = Math.round(FEAST.temper) + "%";
 }
 function feastTick() {
   if (!FEAST || FEAST.over) return;
-  const m = feastMode();
+  const m = feastMode(), dt = FEAST_TICK / 1000;
   FEAST.elapsed += FEAST_TICK;
-  const surging = feastSurging();
-  if (surging && !FEAST.surgeOn) { FEAST.surgeOn = true; toast("👑 The King rises — the toast! Dishes fly!"); SFX.fanfare(); }
-  else if (!surging && FEAST.surgeOn) FEAST.surgeOn = false;
-  const banner = $("#feast-toast"); if (banner) banner.classList.toggle("show", surging);
-  // spawn on schedule (faster during a toast surge)
-  if (FEAST.elapsed >= FEAST.nextSpawnAt) { feastSpawn(); FEAST.nextSpawnAt = FEAST.elapsed + (surging ? m.spawnEvery * 0.6 : m.spawnEvery); }
-  // move dishes; smash any that reach the floor uncaught
+  FEAST.wheelAng = (FEAST.wheelAng + m.spin * dt) % 360;
+  const rot = $("#feast-wheel-rot"); if (rot) rot.style.transform = `rotate(${FEAST.wheelAng.toFixed(2)}deg)`;
+  if (FEAST.elapsed >= FEAST.nextSpawnAt) { feastSpawnFromWheel(); FEAST.nextSpawnAt = FEAST.elapsed + m.spawnEvery; }
   for (let i = FEAST.items.length - 1; i >= 0; i--) {
     const it = FEAST.items[i];
-    it.y = (FEAST.elapsed - it.spawnAt) / 1000 * it.fall;
-    if (it.y >= FEAST_FLOOR) { FEAST.items.splice(i, 1); feastSmash(it); continue; }
-    if (it.el) it.el.style.top = it.y + "%";
+    it.y += m.fall * dt;
+    if (it.y >= FEAST_FLOOR) { FEAST.items.splice(i, 1); feastDrop(it); continue; }
+    if (it.el) it.el.style.top = it.y.toFixed(2) + "%";
   }
-  feastPaintMeters();
-  if (FEAST.temper >= 100) return feastFinish(false);
+  feastPaintHud();
+  if (FEAST.drops >= m.maxDrops) return feastFinish(false);
   if (FEAST.elapsed >= m.dur) return feastFinish(true);
 }
 function feastFinish(win) {
@@ -4345,27 +4386,27 @@ function feastFinish(win) {
   const finale = FEAST_FINALE; FEAST_FINALE = false;
   FEAST.over = true;
   if (FEAST.tickTimer) { clearInterval(FEAST.tickTimer); FEAST.tickTimer = null; }
-  const placed = FEAST.placed, smashed = FEAST.smashed, delight = FEAST.delight;
-  const stars = win ? Math.max(1, Math.min(3, Math.floor(delight / (m.goal * 0.5)))) : 0;
+  const placed = FEAST.placed, drops = FEAST.drops;
+  const stars = win ? Math.max(1, 3 - Math.min(2, drops)) : 0;   // fewer drops → more stars
   let outcome;
   if (win) {
     const gold = 60 + stars * 10, dust = 6 + stars * 2;
     grantReward({ gold, stardust: dust });
-    if (finale) markRealmFinaleWon();   // grant the Realm Key + complete the realm story
-    save();
-    SFX.perfect(); SFX.bigCoin(); confettiOver($("#app"));
+    if (finale) markRealmFinaleWon();
+    save(); SFX.perfect && SFX.perfect(); SFX.bigCoin && SFX.bigCoin(); confettiOver($("#app"));
     const keyLine = finale ? `<div class="stat-line"><span>🗝️ Realm Key</span><span style="color:var(--gold)">earned — next realm unlocked to buy!</span></div>` : "";
     outcome = { emoji: finale ? "🗝️" : "👑", title: finale ? "The feast is saved!" : "The King is delighted!", cls: "win",
-      lines: [`<div class="stat-line"><span>Dishes rescued</span><span>${placed} · ${"⭐".repeat(stars)}</span></div>`,
+      lines: [`<div class="stat-line"><span>Dishes served</span><span>${placed} · ${"⭐".repeat(stars)}</span></div>`,
+              `<div class="stat-line"><span>Dropped</span><span>${drops}/${m.maxDrops}</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="gold">🪙 +${gold} · ✨ +${dust}</span></div>`, keyLine],
       note: finale ? "You put the whole feast back before the King turned 'round — the Jester's forgiven, and you've earned the 🗝️ Realm Key! Head to the map to open the next realm." : "The King never noticed a thing — and the Jester keeps his head. Well played!" };
   } else {
-    save(); SFX.sneeze();
-    outcome = { emoji: "😡", title: "The King's had enough!", cls: "lose",
+    save(); SFX.sneeze && SFX.sneeze();
+    outcome = { emoji: "😡", title: "Too many dishes dropped!", cls: "lose",
       lines: [`<div class="stat-line"><span>You lasted</span><span>${secs}s · ${m.label}</span></div>`,
-              `<div class="stat-line"><span>Dishes smashed</span><span style="color:var(--bad)">${smashed}</span></div>`,
+              `<div class="stat-line"><span>Dropped</span><span style="color:var(--bad)">${drops}/${m.maxDrops}</span></div>`,
               `<div class="stat-line"><span>Reward</span><span class="muted">${finale ? "no key yet — retry!" : "none — try again!"}</span></div>`],
-      note: (finale ? "The finale is freely retryable — give it another go for the Realm Key. " : "") + "Too many dishes hit the floor and the King's Temper boiled over — catch the ones closest to the floor first, and keep a hand free to grab the next!" };
+      note: (finale ? "The finale is freely retryable — give it another go for the Realm Key. " : "") + "Catch the dish closest to the floor first, and keep a hand free to grab the next!" };
   }
   FEAST = null;
   const retry = finale && !win;
@@ -10201,7 +10242,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, feastSurging, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, goblinRequest, goblinFeed, goblinPass, goblinResolve, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, danceStep, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {
