@@ -2970,6 +2970,9 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
   color: #fff; border: 1px solid rgba(255,255,255,.15); border-radius: 16px;
   padding: 14px 16px 15px; box-shadow: 0 14px 34px rgba(0,0,0,.55); text-align: center; }
 .coach-bubble.center { top: 50%; transform: translate(-50%, -50%); }
+/* Highlighted spot too tall to sit outside of: pin the bubble to the bottom, in thumb reach. */
+.coach-bubble.pinned { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
+.coach-bubble.pinned::before { display: none; }
 .coach-bubble::before { content: ""; position: absolute; left: 50%; transform: translateX(-50%); border: 9px solid transparent; }
 .coach-ov:not(.nohole) .coach-bubble:not(.above)::before { top: -18px; border-bottom-color: #251b40; }
 .coach-ov:not(.nohole) .coach-bubble.above::before { bottom: -18px; border-top-color: #191130; }

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v605"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v606"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -10259,10 +10259,23 @@ function coachShow(steps, onDone) {
     els.l.style.cssText = `left:0;top:${y}px;width:${x}px;height:${h}px`;
     els.r.style.cssText = `left:${x + w}px;top:${y}px;width:${Math.max(0, vw - (x + w))}px;height:${h}px`;
     els.ring.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
-    const below = (y + h + 158) < vh;
-    els.bubble.classList.toggle("above", !below);
-    els.bubble.style.top = below ? (y + h + 16) + "px" : "";
-    els.bubble.style.bottom = below ? "" : (vh - y + 16) + "px";
+    // Keep the bubble fully on-screen. Measure its real height, then place it just
+    // below the highlighted spot, just above it, or — when the spot is too tall to
+    // sit outside of (e.g. the whole bubble field on a small phone) — pinned to the
+    // bottom of the screen, in easy thumb reach. Prevents the Continue button from
+    // sliding off the top/bottom edge on shorter screens.
+    const bh = els.bubble.offsetHeight || 150, gap = 16, margin = 10;
+    const spaceBelow = vh - (y + h), spaceAbove = y;
+    els.bubble.classList.remove("above", "pinned");
+    if (spaceBelow >= bh + gap + margin) {
+      els.bubble.style.top = (y + h + gap) + "px"; els.bubble.style.bottom = "";
+    } else if (spaceAbove >= bh + gap + margin) {
+      els.bubble.classList.add("above");
+      els.bubble.style.top = ""; els.bubble.style.bottom = (vh - y + gap) + "px";
+    } else {
+      els.bubble.classList.add("pinned");
+      els.bubble.style.top = ""; els.bubble.style.bottom = "";
+    }
   }
   function clearTap() { if (targetEl && onTap) targetEl.removeEventListener("click", onTap, true); onTap = null; }
   function render() {
