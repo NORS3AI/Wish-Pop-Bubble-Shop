@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v580"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v581"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -4301,7 +4301,7 @@ function feastAddFaller(kind, xPct, yPct) {
   const layer = $("#feast-fall");
   if (layer) {
     const el = document.createElement("button");
-    el.className = "feast-faller";
+    el.className = "feast-faller feast-k-" + kind;
     el.style.left = xPct.toFixed(2) + "%"; el.style.top = yPct.toFixed(2) + "%";
     el.innerHTML = ART.tag(k.art, "🍽️", "feast-faller-img");
     el.addEventListener("click", () => feastCatch(it.uid));
