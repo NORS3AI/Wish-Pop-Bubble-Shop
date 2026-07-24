@@ -1698,17 +1698,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   text-shadow: 0 0 24px rgba(255,216,107,.6); animation: gobcd .75s ease; }
 .gob-count-big.go { color: var(--good); font-size: 72px; }
 @keyframes gobcd { 0% { transform: translate(-50%,-50%) scale(1.6); opacity: 0; } 40% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
-/* intro + result screens (goblin over a dimmed den) */
-.gob-intro, .gob-end { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 12px; overflow: hidden; border-radius: 14px; }
-.gob-intro-bg, .gob-end-bg { position: absolute; inset: 0; z-index: 0; background: center/cover no-repeat; filter: brightness(.5); }
-.gob-intro > *:not(.gob-intro-bg), .gob-end > *:not(.gob-end-bg) { position: relative; z-index: 1; }
-.gob-intro-fig, .gob-end-fig { display: flex; justify-content: center; }
-.gob-intro-fig img.art { height: 24vh; width: auto; max-width: 70vw; filter: drop-shadow(0 8px 16px rgba(0,0,0,.5)); }
-.gob-intro-fig .art-emoji { font-size: 90px; }
-.gob-end-fig img.art { height: 30vh; width: auto; max-width: 80vw; filter: drop-shadow(0 8px 16px rgba(0,0,0,.55)); animation: danceIn .3s ease; }
-.gob-end-fig .art-emoji { font-size: 110px; }
-.gob-intro-card { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; padding: 0 4px; }
+/* (Gribble's intro & win/lose slides use the shared .story-card layout, like Rumpel.) */
 /* Feed the Wolf — keep Patience out of the red until the huntsman arrives */
 .wolf-top { display: flex; align-items: center; gap: 12px; padding: 4px 2px 8px; }
 .wolf-face { font-size: 52px; line-height: 1; flex: 0 0 auto; }
