@@ -1772,9 +1772,11 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .feast-timerbar { position: absolute; top: 38px; left: 8%; right: 8%; height: 5px; border-radius: 4px; overflow: hidden; z-index: 4; background: rgba(0,0,0,.35); }
 .feast-timerbar > i { display: block; height: 100%; width: 0%; border-radius: 4px; background: linear-gradient(90deg,#ffd76a,#ff9e4a); transition: width .12s linear; }
 /* stations row + hand slots pinned to the bottom */
-.feast-stations { position: absolute; left: 0; right: 0; bottom: 76px; display: flex; justify-content: center; align-items: flex-end; gap: 3px; z-index: 3; padding: 0 4px; }
-.feast-station { position: relative; flex: 1 1 0; min-width: 0; max-width: 92px; border: none; background: none; padding: 0; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; }
-.feast-station img.feast-station-img { width: 100%; height: auto; max-width: none; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+.feast-stations { position: absolute; left: 0; right: 0; bottom: 74px; display: flex; justify-content: space-between; align-items: flex-end; gap: 6px; z-index: 3; padding: 0 12px; }
+/* generous tap target: the big top padding extends the hit box up into the fall path */
+.feast-station { position: relative; flex: 1 1 0; min-width: 0; max-width: 104px; border: none; background: none; padding: 28px 4px 8px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; border-radius: 16px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.feast-station:active { background: rgba(255,214,110,.14); }
+.feast-station img.feast-station-img { width: 100%; height: auto; max-width: none; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); pointer-events: none; }
 .feast-station:active { transform: scale(.94); }
 .feast-station.good-pop { animation: feastGood .35s ease; }
 .feast-station.meh-pop { animation: feastMeh .35s ease; }
