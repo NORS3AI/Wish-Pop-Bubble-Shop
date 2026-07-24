@@ -19,6 +19,14 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 💃 **The royal dance lessons got a proper opening act.** Jasper the Jester now bursts in before
+  each ball to announce he's signed the shop up as the King's royal dance tutors, then introduces
+  the pupil — the clanking knight, the nervous prince, and the glass-slippered lady in turn. When
+  you press play you land right on the dance floor for a **free-play warm-up**: tap the four move
+  buttons to get the hang of them, then hit the **Start** button above the dancer's head. A
+  "3… 2… 1… memorize!" countdown kicks off the rehearsal, and a "3… 2… 1… dance!" countdown starts
+  the same routine again — this time from memory.
+
 - 👯 **Meet the Stepsisters, Prunella & Griselda.** The two sisters now arrive as customers in the
   King's Courtyard — each begging for a gown-charm grander than the other's — and they kick off the
   bead hunt with a squabbling little story: one insists the beads were pink and red, the other swears
