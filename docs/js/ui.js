@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v601"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v602"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -317,7 +317,7 @@ const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 6, stepmother: 
 const CHAR_OFFX = {};
 // per-mood scale overrides ("<id>_<mood>") for the results portrait only, when one
 // pose frames differently than the rest (e.g. the sponge sword's tall allergic pose).
-const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82, wolf_tourist_allergic: 0.66, wolf_bowler_allergic: 0.95 };   // wolf's puffed-up allergic poses are wide — shrink so they fit the frame
+const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82, wolf_tourist_allergic: 0.66, wolf_bowler_allergic: 0.95, wolf_tophat_allergic: 0.92 };   // wolf's puffed-up allergic poses are wide — shrink so they fit the frame
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1087,11 +1087,12 @@ function maybePigsMoving() {
 function wolfCust(name) { return { id: "wolf", name: name || "“Sir Reginald Notawolf”", emoji: "🐺", wishType: "PrettyPotion", location: "Willow-Wish Village", line: "" }; }
 function playWolfButtons() {
   SFX.unlock();
-  ["wolf_tophat_buttons", "wolf_tophat_proud"].forEach(f => ART.ensure(f, () => {}));
+  ["wolf_tophat_buttons", "wolf_tophat_proud", "wolf_tophat_arms", "wolf_tophat_allergic"].forEach(f => ART.ensure(f, () => {}));
+  const moodArt = { happy: "wolf_tophat_proud", angry: "wolf_tophat_arms", allergic: "wolf_tophat_allergic" };
   renderStoryBeats([
     { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat_buttons", text: "Good day! Sir Reginald Notawolf — gentleman, connoisseur, <b>no</b> relation to any wolf. <i>(He flips open a velvet case of gleaming buttons.)</i> Behold! The finest button collection the realm has ever seen." },
     { name: "“Sir Reginald Notawolf”", fig: "wolf_tophat_proud", cta: "Riiight…  ▸", text: "Every last one acquired <i>honestly</i>, I assure you — I’d <b>never</b> know a thing about buttons going missing all over town. Preposterous! Now, a small wish, if you’d be so kind: make my collection positively <b>gleam</b>." },
-  ], () => startStoryWish(Object.assign(wolfCust(), { art: "wolf_tophat_proud" }), "wolf-buttons", "A dab of your finest button-polish, my good friend — for my perfectly-legitimate, not-at-all-stolen collection."));
+  ], () => startStoryWish(Object.assign(wolfCust(), { art: "wolf_tophat_proud", moodArt }), "wolf-buttons", "A dab of your finest button-polish, my good friend — for my perfectly-legitimate, not-at-all-stolen collection."));
 }
 function playRedButtons() {
   SFX.unlock();
