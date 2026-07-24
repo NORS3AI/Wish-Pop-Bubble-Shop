@@ -1691,7 +1691,7 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .gob-want-q { font-size: 54px; font-weight: 900; color: rgba(255,255,255,.55); }
 /* the tapped piece popping up and flying into his mouth */
 .gob-fly { position: fixed; z-index: 200; pointer-events: none; transform: translate(-50%,-50%); }
-.gob-fly img.art { height: 66px; width: auto; filter: drop-shadow(0 4px 9px rgba(0,0,0,.6)); }
+.gob-fly img.art { height: 66px; width: auto; max-width: none; filter: drop-shadow(0 4px 9px rgba(0,0,0,.6)); }
 /* countdown number over the stage */
 .gob-count-big { position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%); z-index: 5;
   font-size: 104px; font-weight: 900; line-height: 1; color: var(--gold);
