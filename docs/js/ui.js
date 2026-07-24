@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v599"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v600"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -317,7 +317,7 @@ const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 6, stepmother: 
 const CHAR_OFFX = {};
 // per-mood scale overrides ("<id>_<mood>") for the results portrait only, when one
 // pose frames differently than the rest (e.g. the sponge sword's tall allergic pose).
-const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82 };   // wolf's puffed-up allergic pose is wide — shrink so it fits the frame
+const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82, wolf_tourist_allergic: 0.66 };   // wolf's puffed-up allergic poses are wide — shrink so they fit the frame
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -359,7 +359,10 @@ function pacing(key, dflt) { const p = REALM_PACING[GAME.realm]; return p && p[k
 // happy / angry / allergic are customer_<id>_<mood>.png. If that art isn't there,
 // it falls back to the given emoji (the emotion face we've always shown).
 function custMoodArt(c, mood, fallbackEmoji, cls) {
-  const key = mood && mood !== "normal" ? "customer_" + c.id + "_" + mood : "customer_" + c.id;
+  // A costumed customer (e.g. the wolf in his tourist get-up) can override its per-mood
+  // art so the reaction stays in the same outfit as the rest of the round.
+  const override = c.moodArt && c.moodArt[mood];
+  const key = override || (mood && mood !== "normal" ? "customer_" + c.id + "_" + mood : "customer_" + c.id);
   return ART.tag(key, fallbackEmoji || c.emoji, cls || "cust-art");
 }
 // Customers whose portrait should hover (shown whole + gently floating). The
@@ -1142,7 +1145,7 @@ const WOLF_VISITS = [
       { fig: "wolf_tourist_hungry", text: "Say, between us… I’m hungry <i>all</i> the time. Concerning amounts. Whip me up something to take the edge off? Asking for a friend. The friend is me.", cta: "Sure, ‘Hank’  ▸" },
     ],
     wish: "Something to quiet a rumbling tummy, if you’d be so kind — I’ve a very full itinerary. Of snacking.",
-    outroFigWin: "wolf_tourist_cheers", outroFigLose: "wolf_tourist_arms",
+    outroFigWin: "wolf_tourist_cheers", outroFigLose: "wolf_tourist_arms", allergicFig: "wolf_tourist_allergic",
     outroWin: "Mwah — <i>delicious</i>. I mean… adequate. For a tourist. Ahem. I’ll just be… touristing. Elsewhere. Ta!" },
   { costume: "wolf_delivery", custArt: "wolf_delivery_angry", name: "“Wally, W. Wolf Deliveries”",
     intro: [
@@ -1176,9 +1179,12 @@ function playWolfVisit() {
   const i = GAME.wolfArcStep || 0; if (i >= WOLF_VISITS.length) return;
   const v = WOLF_VISITS[i];
   SFX.unlock();
-  [v.costume, v.custArt, v.outroFigWin, v.outroFigLose].concat(v.intro.map(b => b.fig)).forEach(f => { if (f) ART.ensure(f, () => {}); });   // pre-warm every expression this visit uses
+  [v.costume, v.custArt, v.outroFigWin, v.outroFigLose, v.allergicFig].concat(v.intro.map(b => b.fig)).forEach(f => { if (f) ART.ensure(f, () => {}); });   // pre-warm every expression this visit uses
   const beats = v.intro.map((b, idx) => ({ name: v.name, fig: b.fig || v.costume, text: b.text, cta: b.cta || (idx === v.intro.length - 1 ? "Make his wish  ▸" : undefined) }));
-  renderStoryBeats(beats, () => startStoryWish(Object.assign(wolfCust(v.name), { art: v.custArt || v.costume }), "wolf-arc", v.wish));
+  // moodArt keeps his ALLERGIC reaction in THIS visit's costume (e.g. the swollen tourist)
+  // instead of flipping to his default look. happy/angry still use the base face for now.
+  const moodArt = v.allergicFig ? { allergic: v.allergicFig } : null;
+  renderStoryBeats(beats, () => startStoryWish(Object.assign(wolfCust(v.name), { art: v.custArt || v.costume, moodArt }), "wolf-arc", v.wish));
 }
 // A wolf visit comes due every few customers (Willow, after the tutorial). Can precede Red's warning.
 function maybeWolfArc() {
@@ -9903,7 +9909,7 @@ function renderResult(res) {
       <div class="cust-banner res-banner"><img src="art/ui/${bannerImg}.png" alt="${bannerAlt}" draggable="false"></div>
       <div class="cust-portrait res-portrait">
         <button class="res-results" id="recap-btn" aria-label="Round recap"><img src="art/ui/res_results.png" alt="Results" draggable="false"></button>
-        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}${custFx}${custFloatClass(c)}" style="--char-scale:${CHAR_MOOD_SCALE[c.id + "_" + mood] || CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
+        <div class="cust-char ${isPerfect ? "boss-emoji" : ""}${custFx}${custFloatClass(c)}" style="--char-scale:${CHAR_MOOD_SCALE[(c.moodArt && c.moodArt[mood]) || (c.id + "_" + mood)] || CHAR_MOOD_SCALE[c.id + "_" + mood] || CHAR_SCALE[c.id] || 1};--char-y:${CHAR_OFFY[c.id] || 0}%;--char-x:${CHAR_OFFX[c.id] || 0}%">${custMoodArt(c, mood, emoji, "cust-char-art")}</div>
       </div>
       <div class="res-panel">
         ${earnedLine}
