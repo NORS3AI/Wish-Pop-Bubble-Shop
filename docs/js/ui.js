@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v584"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v585"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -6216,18 +6216,18 @@ function pickDancePartner() {
 // Cinderella) before the lesson proper.
 const DANCE_STORY = {
   knight: [
-    { name: "Jasper the Jester", fig: "jester_talk", bg: "courtyard_mid", text: "Marvelous news — I've volunteered our shop as the King's <b>royal dance tutors</b>! The grand ball is nigh, and oh, the whole court is <i>hopeless</i> on its feet." },
-    { name: "Jasper the Jester", fig: "jester_scared", bg: "courtyard_mid", cta: "Meet the pupil  ▸", text: "First through the door: a knight in full armor who dances like a <i>falling cupboard</i>. Quick — teach him some grace before he clanks into the Queen!" },
+    { name: "Jasper the Jester", fig: "jester_announce", bg: "courtyard_mid", text: "Marvelous news — I've volunteered our shop as the King's <b>royal dance tutors</b>! The grand ball is nigh, and oh, the whole court is <i>hopeless</i> on its feet." },
+    { name: "Jasper the Jester", fig: "jester_worried", bg: "courtyard_mid", cta: "Meet the pupil  ▸", text: "First through the door: a knight in full armor who dances like a <i>falling cupboard</i>. Quick — teach him some grace before he clanks into the Queen!" },
   ],
   prince: [
-    { name: "Jasper the Jester", fig: "jester_talk", bg: "courtyard_mid", cta: "Meet the pupil  ▸", text: "Word of your lessons has swept the palace! Our next pupil is a <b>prince</b> — and he must lead the very first dance at his <i>own</i> ball tonight. No pressure, hm?" },
+    { name: "Jasper the Jester", fig: "jester_excited", bg: "courtyard_mid", cta: "Meet the pupil  ▸", text: "Word of your lessons has swept the palace! Our next pupil is a <b>prince</b> — and he must lead the very first dance at his <i>own</i> ball tonight. No pressure, hm?" },
   ],
   cinderella: [
-    { name: "Jasper the Jester", fig: "jester_talk", bg: "courtyard_mid", cta: "Meet the pupil  ▸", text: "One last pupil, and a special one — a young lady bound for the ball in slippers of <b>glass</b>, with a terrible flutter of nerves. Help her <i>float</i> across the floor!" },
+    { name: "Jasper the Jester", fig: "jester_smile", bg: "courtyard_mid", cta: "Meet the pupil  ▸", text: "One last pupil, and a special one — a young lady bound for the ball in slippers of <b>glass</b>, with a terrible flutter of nerves. Help her <i>float</i> across the floor!" },
   ],
 };
 function playDanceStory(partnerId) {
-  ["jester_talk", "jester_scared"].forEach(k => ART.ensure(k, () => {}));
+  ["jester_announce", "jester_worried", "jester_excited", "jester_smile"].forEach(k => ART.ensure(k, () => {}));
   renderStoryBeats(DANCE_STORY[partnerId] || DANCE_STORY.knight, () => renderDanceIntro(partnerId));
 }
 function danceButtonsHtml() {
