@@ -1914,8 +1914,11 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 @keyframes danceHop { 0%,100% { transform: translateY(0) rotate(0); } 40% { transform: translateY(-12px) rotate(-4deg); } 70% { transform: translateY(0) rotate(3deg); } }
 @keyframes danceWob { 0%,100% { transform: rotate(0); } 25% { transform: translateX(-8px) rotate(-6deg); } 55% { transform: translateX(7px) rotate(5deg); } 80% { transform: translateX(-3px) rotate(-2deg); } }
 .dance-announce { text-align: center; font-family: var(--ff-display); color: #fff; }
-.dance-announce .dance-cue { display: inline-flex; align-items: center; gap: 6px; font-size: 24px; line-height: 1.1; text-shadow: 0 2px 5px rgba(0,0,0,.85); }
+.dance-announce .dance-cue { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 54px; font-size: 24px; line-height: 1.1; text-shadow: 0 2px 5px rgba(0,0,0,.85); }
 .dance-announce .dance-cue-ic { font-size: 24px; }
+/* the "what's next" cue is now just the gold arrow icon (pops in each step) */
+.dance-announce .dance-cue-arrow { height: 50px; width: auto; max-width: 96px; display: block; filter: drop-shadow(0 2px 6px rgba(0,0,0,.7)); animation: danceCueArrow .5s cubic-bezier(.2,1.5,.4,1); }
+@keyframes danceCueArrow { 0% { transform: scale(.5); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
 .dance-announce .dance-sub { font-size: 12.5px; color: #ffe6b0; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
 .dance-fb { font-weight: 800; }
 /* The beat track: a marker slides left→right, hitting the green line on the beat */

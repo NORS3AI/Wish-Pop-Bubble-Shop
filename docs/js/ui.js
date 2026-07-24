@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v581"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v582"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -6140,11 +6140,14 @@ let DANCE = null;
 // The four dance moves — the shared "alphabet" every routine is built from.
 // pose = which dancer frame plays this move (frame 1 is the idle/start pose);
 // btn  = the baked move-button art in art/ui/.
+// The four dance moves, in the button order shown at the bottom: up, right, down, left.
+// btn = the ornate move button; ind = the gold arrow shown as the "what's next" cue.
+// pose = which dancer frame plays (1 = idle): up→leap/toe(4), right→twirl(3), down→curtsey(5), left→twirl(2).
 const DANCE_MOVES = [
-  { id: "left",    icon: "↩️", name: "Twirl Left",  pose: 2, btn: "dance_move_1" },
-  { id: "right",   icon: "↪️", name: "Twirl Right", pose: 3, btn: "dance_move_2" },
-  { id: "toe",     icon: "🩰", name: "Tiptoes",     pose: 4, btn: "dance_move_3" },
-  { id: "curtsey", icon: "💃", name: "Curtsey",     pose: 5, btn: "dance_move_4" },
+  { id: "up",    name: "Up",    pose: 4, btn: "dance_btn_up",    ind: "dance_ar_up" },
+  { id: "right", name: "Right", pose: 3, btn: "dance_btn_right", ind: "dance_ar_right" },
+  { id: "down",  name: "Down",  pose: 5, btn: "dance_btn_down",  ind: "dance_ar_down" },
+  { id: "left",  name: "Left",  pose: 2, btn: "dance_btn_left",  ind: "dance_ar_left" },
 ];
 const DANCE_MOVE_BY_ID = {}; DANCE_MOVES.forEach(m => DANCE_MOVE_BY_ID[m.id] = m);
 // Dance students you teach. The knight is first; the prince and Cinderella
@@ -6349,6 +6352,7 @@ function dancePreload(p) {
   const warm = src => { const im = new Image(); im.src = src; };
   for (let i = 1; i <= 5; i++) warm(`art/${p.poses}_${i}.webp?v=${BUILD}`);
   if (p.worried) for (let i = 1; i <= 4; i++) warm(`art/${p.worried}_${i}.webp?v=${BUILD}`);
+  DANCE_MOVES.forEach(m => { warm(`art/${m.btn}.webp?v=${BUILD}`); warm(`art/${m.ind}.webp?v=${BUILD}`); });   // move buttons + cue arrows
 }
 // Quick fade-out / fade-in when the dancer changes pose (on a button press).
 // The pose is remembered so the dancer HOLDS it until the next button is pressed.
@@ -6374,12 +6378,12 @@ function renderDance() {
   const announce = counting
     ? `<b>Take your positions…</b>`
     : rehearse
-    ? `<span class="dance-cue-ic">${mv.icon}</span> <b>${mv.name}!</b>`
+    ? `<img class="dance-cue-arrow" src="art/${mv.ind}.webp?v=${BUILD}" alt="${mv.name}" draggable="false">`
     : `<span class="dance-cue-ic">❓</span> <b>What comes next?</b>`;
   const subTxt = counting ? "Get ready to dance!"
     : `${rehearse ? "Act 1" : "Act 2"} · Step ${Math.min(D0.idx + 1, p.steps)}/${p.steps} · <span id="dance-fb" class="dance-fb">${fbTxt}</span>`;
   const buttons = DANCE_MOVES.map(m =>
-    `<button class="dance-btn" data-id="${m.id}"><img src="art/ui/${m.btn}.png" alt="${m.name}" draggable="false"><span class="dance-btn-nm">${m.name}</span></button>`).join("");
+    `<button class="dance-btn" data-id="${m.id}"><img src="art/${m.btn}.webp?v=${BUILD}" alt="${m.name}" draggable="false"></button>`).join("");
   const overlay = counting
     ? `<div class="dance-countdown"><div class="cd-num ${D0.countdown === 0 ? "go" : ""}">${D0.countdown > 0 ? D0.countdown : "Dance!"}</div></div>`
     : "";
