@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v603"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v604"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -317,7 +317,7 @@ const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 6, stepmother: 
 const CHAR_OFFX = {};
 // per-mood scale overrides ("<id>_<mood>") for the results portrait only, when one
 // pose frames differently than the rest (e.g. the sponge sword's tall allergic pose).
-const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82, wolf_tourist_allergic: 0.66, wolf_bowler_allergic: 0.95, wolf_tophat_allergic: 0.92, wolf_sherlock_allergic: 0.88 };   // wolf's puffed-up allergic poses are wide — shrink so they fit the frame
+const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82, wolf_tourist_allergic: 0.66, wolf_bowler_allergic: 0.95, wolf_tophat_allergic: 0.92, wolf_sherlock_allergic: 0.88, wolf_grandma_allergic: 0.85 };   // wolf's puffed-up allergic poses are wide — shrink so they fit the frame
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1001,7 +1001,7 @@ function startStoryWish(cust, tag, line, opts) {
 }
 function startRedWish(tag, line, opts) { startStoryWish(redCust(), tag || "red-arrival", line, opts); }
 // tags that route the result screen's Next button into a story-mode goodbye
-function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag.indexOf("band-") === 0 || tag === "bo-peep" || tag === "pigs-moving" || tag === "wolf-buttons" || tag === "wolf-arc"); }
+function isStoryWish(tag) { return !!tag && (tag.indexOf("red-") === 0 || tag.indexOf("band-") === 0 || tag === "bo-peep" || tag === "pigs-moving" || tag === "wolf-buttons" || tag === "wolf-arc" || tag === "grandma-wolf"); }
 // Bo Peep — a story-mode shepherd (like Red). Meeting her turns ON the sheep hunt.
 function boPeepCust() { return { id: "bo_peep", name: "Bo Peep", emoji: "👧", wishType: "SafeSpell", location: "Willow-Wish Village", line: "" }; }
 function playBoPeep() {
@@ -1457,6 +1457,19 @@ function storyWishOutro(tag, win) {
     const beats = [{ name: v.name, fig: outroFig, cta: "Off he skulks  ▸", text: win ? v.outroWin : "Bah! Barely took the edge off. I’ll be BACK. Hungrier. You’ll see." }];
     // "play all back-to-back" mode: roll straight into his next disguise instead of going home
     renderStoryBeats(beats, () => { save(); if (WOLF_DEMO && (GAME.wolfArcStep || 0) < WOLF_VISITS.length) playWolfVisit(); else { WOLF_DEMO = false; renderStart(); } });
+    return;
+  }
+  if (tag === "grandma-wolf") {
+    GAME.grandmaWolfSeen = true; save();
+    ART.ensure("wolf_grandma_sneak", () => {});
+    const beats = [
+      { name: "A little old granny?", fig: "wolf_grandma_sneak", bg: "village_door", cta: "Something’s off…  ▸", text: win
+        ? "“Ohh, how <i>kind</i>. I’ll just be toddling home to my perfectly-normal-grandmother cottage now. Ta-ta!” <i>(It scurries out — rather too quickly, on rather too many paws.)</i>"
+        : "“Hmph. No matter. I’ll be off to my perfectly-normal-grandmother cottage regardless. Ta-ta!” <i>(It scurries out — rather too quickly, on rather too many paws.)</i>" },
+      { name: "Wait a moment…", figEmoji: "🧐", bg: "village_mid", cta: "The sketch!  ▸", text: "The bonnet. The teeth. Those <b>paws</b>. That was no granny at all — and it matched a face we were <b>told</b> to watch for. We’d best tell <b>Little Red</b>. Right now." },
+      { name: "Little Red", gallery: ["grandma_sketch"], cta: "Go — hurry!  ▸", text: "You saw them?! <i>Here?!</i> <i>(She holds up her sketch — it’s the very same face.)</i> That’s the impostor. That’s who’s at Grandma’s. There’s no time — I’ll fetch the huntsman. <b>GO!</b>" },
+    ];
+    renderStoryBeats(beats, () => renderWolfFinale());
     return;
   }
   if (tag === "wolf-buttons") {
@@ -3942,13 +3955,11 @@ function wolfBuildStock(mode) {
 // art exists; the sketch beat shows Red's real grandma_sketch.
 function playGrandmaWolf() {
   SFX.unlock();
-  ["wolf_sneaky", "wolf_grin", "grandma_sketch"].forEach(k => ART.ensure(k, () => {}));
+  ["wolf_grandma", "wolf_grandma_sweet", "wolf_grandma_happy", "wolf_grandma_angry", "wolf_grandma_allergic", "wolf_grandma_sneak", "grandma_sketch"].forEach(k => ART.ensure(k, () => {}));
   renderStoryBeats([
-    { name: "A little old granny?", fig: "wolf_sneaky", bg: "village_door", text: "A stooped figure shuffles in — bonnet pulled low, a shawl up over the snout. “Ohh, good evening, dearie. Just a sweet… old… granny. You wouldn’t have a little something for, ahem, <i>terribly big teeth</i>? Asking for a friend. The friend is a granny.”" },
-    { name: "A little old granny?", fig: "wolf_grin", bg: "village_door", cta: "Something’s off…  ▸", text: "“Lovely shop. I’ll just be toddling back to my perfectly-normal-grandmother cottage now. Nothing suspicious about it! Ta-ta!” <i>(It scurries out — rather too quickly, on rather too many paws.)</i>" },
-    { name: "Wait a moment…", figEmoji: "🧐", bg: "village_mid", cta: "The sketch!  ▸", text: "The bonnet. The teeth. Those paws. That wasn’t a granny at all — and it matched a face we were <b>told</b> to watch for. We’d better tell <b>Little Red</b>. Right now." },
-    { name: "Little Red", gallery: ["grandma_sketch"], cta: "Go — hurry!  ▸", text: "You saw them?! <i>Here?!</i> <i>(She holds up her sketch — it’s the very same face.)</i> That’s the impostor. That’s who’s at Grandma’s. There’s no time — keep him talking, I’ll fetch the huntsman. <b>GO!</b>" },
-  ], () => renderWolfFinale());
+    { name: "A little old granny?", fig: "wolf_grandma", bg: "village_door", text: "A stooped little figure shuffles in — bonnet pulled low, shawl tugged up over the chin. “Ohh, good evening, dearie. Just a sweet… old… granny. Pay me no mind.”" },
+    { name: "A little old granny?", fig: "wolf_grandma_sweet", bg: "village_door", cta: "Take her ‘wish’  ▸", text: "“Now — you wouldn’t have a little charm for a poor old woman, would you? Something dainty. Something <i>pretty</i>. Never mind these, ahem, <i>terribly big teeth</i>.”" },
+  ], () => startStoryWish(Object.assign(wolfCust("A little old granny?"), { art: "wolf_grandma", moodArt: { happy: "wolf_grandma_happy", angry: "wolf_grandma_angry", allergic: "wolf_grandma_allergic" } }), "grandma-wolf", "Just a gentle little charm for a sweet old granny, hm?"));
 }
 // Willow-Wish Village FINALE — the must-win Realm-Key encounter. Forces Easy (finales stay
 // accessible), and winning grants the Realm Key that opens King's Courtyard. Freely retryable.
