@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v600"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v601"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -317,7 +317,7 @@ const CHAR_OFFY = { fish: 9, bo_peep: 2, gingerbread: 5, gothel: 6, stepmother: 
 const CHAR_OFFX = {};
 // per-mood scale overrides ("<id>_<mood>") for the results portrait only, when one
 // pose frames differently than the rest (e.g. the sponge sword's tall allergic pose).
-const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82, wolf_tourist_allergic: 0.66 };   // wolf's puffed-up allergic poses are wide — shrink so they fit the frame
+const CHAR_MOOD_SCALE = { sword_allergic: 0.88, wolf_allergic: 0.82, wolf_tourist_allergic: 0.66, wolf_bowler_allergic: 0.95 };   // wolf's puffed-up allergic poses are wide — shrink so they fit the frame
 const PEARL = '<span class="pearl-ic" aria-label="pearl"></span>';   // a glossy CSS pearl (nicer than any emoji)
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1147,13 +1147,13 @@ const WOLF_VISITS = [
     wish: "Something to quiet a rumbling tummy, if you’d be so kind — I’ve a very full itinerary. Of snacking.",
     outroFigWin: "wolf_tourist_cheers", outroFigLose: "wolf_tourist_arms", allergicFig: "wolf_tourist_allergic",
     outroWin: "Mwah — <i>delicious</i>. I mean… adequate. For a tourist. Ahem. I’ll just be… touristing. Elsewhere. Ta!" },
-  { costume: "wolf_delivery", custArt: "wolf_delivery_angry", name: "“Wally, W. Wolf Deliveries”",
+  { costume: "customer_wolf", custArt: "customer_wolf_angry", name: "“Wally, W. Wolf Deliveries”",
     intro: [
-      { fig: "wolf_delivery_announce", text: "Delivery for— oh. No package. Just me: <i>Wally</i>. W. Wolf Deliveries. Completely unrelated surname, don’t read into it." },
-      { fig: "wolf_delivery_angry", text: "That last charm? DIDN’T WORK. I could eat a whole <b>sheep</b> right now. A WHOLE one. You owe me a freebie — that’s just good business.", cta: "Riiight  ▸" },
+      { fig: "wolf_mail_wave", text: "Delivery for— oh. No package. Just me: <i>Wally</i>. W. Wolf Deliveries. Completely unrelated surname, don’t read into it." },
+      { fig: "customer_wolf_angry", text: "That last charm? DIDN’T WORK. I could eat a whole <b>sheep</b> right now. A WHOLE one. You owe me a freebie — that’s just good business.", cta: "Riiight  ▸" },
     ],
     wish: "A free re-do, on the house — extra filling this time. I’ve deliveries to… deliver. Not eat. Deliver!",
-    outroFigWin: "wolf_delivery_thumbsup", outroFigLose: "wolf_delivery_sheepish",
+    outroFigWin: "customer_wolf_happy", outroFigLose: "wolf_mail_worried", allergicFig: "customer_wolf_allergic",
     outroWin: "Now THAT’S service. Package received — by my stomach. Wally, signing off! <i>(scurries)</i>" },
   { costume: "wolf_sherlock", custArt: "wolf_sherlock_pie", name: "“Detective Sherwood Woolf”",
     intro: [
@@ -1170,7 +1170,7 @@ const WOLF_VISITS = [
       { fig: "wolf_bowler_plead", text: "…Okay. Off the record? It’s getting embarrassing. Everyone <i>knows</i>. Just — one more wish. A big one. Make the hunger <b>stop</b>. Please?", cta: "Oh, Wolf…  ▸" },
     ],
     wish: "One proper feast-in-a-bottle. No tricks this time — I mean it. A wolf can only skulk about hungry for so long.",
-    outroFigWin: "wolf_bowler_hungry", outroFigLose: "wolf_bowler_fist",
+    outroFigWin: "wolf_bowler_hungry", outroFigLose: "wolf_bowler_fist", allergicFig: "wolf_bowler_allergic",
     outroWin: "…Thank you. Truly. For a moment there, I forgot I was hungry. <i>(quietly)</i> …It’s back now. But — thank you." },
 ];
 let WOLF_DEMO = false;   // admin: play all his visits back-to-back (no customers between)
@@ -1181,9 +1181,9 @@ function playWolfVisit() {
   SFX.unlock();
   [v.costume, v.custArt, v.outroFigWin, v.outroFigLose, v.allergicFig].concat(v.intro.map(b => b.fig)).forEach(f => { if (f) ART.ensure(f, () => {}); });   // pre-warm every expression this visit uses
   const beats = v.intro.map((b, idx) => ({ name: v.name, fig: b.fig || v.costume, text: b.text, cta: b.cta || (idx === v.intro.length - 1 ? "Make his wish  ▸" : undefined) }));
-  // moodArt keeps his ALLERGIC reaction in THIS visit's costume (e.g. the swollen tourist)
-  // instead of flipping to his default look. happy/angry still use the base face for now.
-  const moodArt = v.allergicFig ? { allergic: v.allergicFig } : null;
+  // moodArt keeps his whole result reaction (happy / angry / allergic) in THIS visit's
+  // costume, so the customer UI never flips back to his default look mid-round.
+  const moodArt = { happy: v.outroFigWin, angry: v.outroFigLose, allergic: v.allergicFig };
   renderStoryBeats(beats, () => startStoryWish(Object.assign(wolfCust(v.name), { art: v.custArt || v.costume, moodArt }), "wolf-arc", v.wish));
 }
 // A wolf visit comes due every few customers (Willow, after the tutorial). Can precede Red's warning.
