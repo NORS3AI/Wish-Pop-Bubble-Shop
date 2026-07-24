@@ -197,7 +197,7 @@ const SPECIAL_CHARM_IDS = Object.keys(SPECIAL_CHARMS).filter(id => !SPECIAL_CHAR
  * its own cast (and later its own ingredients/art/audio). Willow-Wish Village is the
  * starter (uses the default CUSTOMERS). King's Courtyard is the first unlockable. --- */
 const COURTYARD_CUSTOMERS = [
-  { id: "jester",   name: "Jasper the Jester", emoji: "🃏", location: "King's Courtyard", wishType: "c_Jest", art: "jester_smile",
+  { id: "jester",   name: "Jasper the Jester", emoji: "🃏", location: "King's Courtyard", wishType: "c_Jest", art: "jester_think",
     line: "A wish for mischief — the court could use a laugh!",
     lines: ["A wish for mischief — the court could use a laugh!",
       "Brew me something silly — the King hasn't cracked a smile in weeks.",
