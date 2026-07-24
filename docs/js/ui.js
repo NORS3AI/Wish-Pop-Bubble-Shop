@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v597"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v598"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -3671,9 +3671,9 @@ function gobMakeBin() {
 // Story-mode arrival — the SAME illustrated slides everyone else gets (big
 // bottom-anchored Gribble, dialogue along the bottom, cross-fading den behind).
 const GOB_STORY = [
-  { name: "Gribble the Goblin", fig: "gribble_hold", bg: "gribble_den", text: "“Oi! Down 'ere, in the muck! Name's <b>Gribble</b> — royal rubbish-gobbler, finest in the kingdom. Ooh… is that a <b>whole bin</b> of lovely junk yer haulin'?”" },
-  { name: "Gribble the Goblin", fig: "gribble_think", bg: "gribble_den", text: "“I ain't ate in <i>days</i>. Been dreamin' o' banana peels an' soggy boots an' crunchy fish bones… me belly's growlin' louder'n a troll with a toothache.”" },
-  { name: "Gribble the Goblin", fig: "gribble_point", bg: "gribble_den", cta: "😋 Feed him!", text: "“'Ere's the deal: I <b>call out</b> the junk I fancy, you <b>toss the match in me gob</b> — quick now! Stuff me full an' I'll pay ya in shinies. Miss too many an' I'm off. Deal?”" },
+  { name: "Gribble the Goblin", fig: "gribble_hold", figClass: "gribble", bg: "gribble_den", text: "“Oi! Down 'ere, in the muck! Name's <b>Gribble</b> — royal rubbish-gobbler, finest in the kingdom. Ooh… is that a <b>whole bin</b> of lovely junk yer haulin'?”" },
+  { name: "Gribble the Goblin", fig: "gribble_think", figClass: "gribble-think", bg: "gribble_den", text: "“I ain't ate in <i>days</i>. Been dreamin' o' banana peels an' soggy boots an' crunchy fish bones… me belly's growlin' louder'n a troll with a toothache.”" },
+  { name: "Gribble the Goblin", fig: "gribble_point", figClass: "gribble", bg: "gribble_den", cta: "😋 Feed him!", text: "“'Ere's the deal: I <b>call out</b> the junk I fancy, you <b>toss the match in me gob</b> — quick now! Stuff me full an' I'll pay ya in shinies. Miss too many an' I'm off. Deal?”" },
 ];
 function renderGoblinIntro() {
   SFX.unlock(); SFX.fanfare();
@@ -3687,7 +3687,7 @@ function gribbleCard(fig, speech, terms, buttons) {
     <div class="story-card mg-fullbleed">
       <div class="story-bg" style="background-image:url('art/gribble_den.jpg${v}');background-position:center bottom"></div>
       <div class="story-scrim"></div>
-      <div class="story-figure"><img class="story-face" src="art/${fig}.webp${v}" alt="Gribble the Goblin" draggable="false"></div>
+      <div class="story-figure gribble"><img class="story-face" src="art/${fig}.webp${v}" alt="Gribble the Goblin" draggable="false"></div>
       <div class="story-below">
         <div class="story-name">Gribble the Goblin</div>
         <div class="story-speech">${speech}</div>

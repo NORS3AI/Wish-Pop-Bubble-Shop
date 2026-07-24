@@ -1698,7 +1698,11 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
   text-shadow: 0 0 24px rgba(255,216,107,.6); animation: gobcd .75s ease; }
 .gob-count-big.go { color: var(--good); font-size: 72px; }
 @keyframes gobcd { 0% { transform: translate(-50%,-50%) scale(1.6); opacity: 0; } 40% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
-/* (Gribble's intro & win/lose slides use the shared .story-card layout, like Rumpel.) */
+/* Gribble's intro & win/lose slides use the shared .story-card layout, like Rumpel.
+   His figures render a touch smaller than the default, except the thought-bubble
+   pose (the bubble eats image height, so it needs to sit taller to read big). */
+.story-figure.gribble { height: 74vh; }
+.story-figure.gribble-think { height: 93vh; }
 /* Feed the Wolf — keep Patience out of the red until the huntsman arrives */
 .wolf-top { display: flex; align-items: center; gap: 12px; padding: 4px 2px 8px; }
 .wolf-face { font-size: 52px; line-height: 1; flex: 0 0 auto; }
