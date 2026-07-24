@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v606"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v607"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -7510,6 +7510,12 @@ function startRound() {
   if (!isBossRound && alwaysBossPool.length && Math.random() < specialChance) {
     roster = [R.pick(alwaysBossPool)];
     forceSpecialBoss = true;
+  }
+  // Never send in the same face two rounds running (as long as someone else is
+  // free to come in). Keeps the rotation — the courtyard especially — feeling varied.
+  if (!forceSpecialBoss && GAME.lastCustomerId) {
+    const varied = roster.filter(c => c.id !== GAME.lastCustomerId);
+    if (varied.length) roster = varied;
   }
   ROUND = newRound({ servedTotal, betterScoop: !!GAME.unlocked.scoop, charmFinder: !!GAME.unlocked.charm, forceBoss: forceSpecialBoss, customers: roster, ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
   // Wish-line variety: if this customer has a pool of lines, pick one for this
