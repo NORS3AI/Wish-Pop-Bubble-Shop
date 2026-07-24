@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v579"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v580"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -4113,7 +4113,7 @@ function wolfFinish(result) {
 let FEAST = null;
 let FEAST_FINALE = false;           // true when this run is the Courtyard Realm-Key finale
 const FEAST_TICK = 55;              // ms per simulation tick
-const FEAST_FLOOR = 78;             // y% at which an uncaught item is dropped (just above the hand slots)
+const FEAST_FLOOR = 74;             // y% at which an uncaught item is dropped (kept above the hand slots so taps land)
 const FEAST_CORRECT = 9;            // Delight for an item set on its RIGHT station
 const FEAST_WRONG = 3;              // Delight for the WRONG station (still saved from the floor)
 // The falling items and where each belongs (its station).

@@ -1757,12 +1757,12 @@ img.art.cust-big { max-width: none; width: auto; }               /* big characte
 .feast-wfood { position: absolute; transform: translate(-50%, -50%); display: flex; justify-content: center; }
 .feast-wfood img.feast-wfood-img { width: 100%; height: auto; max-width: none; display: block; filter: drop-shadow(0 3px 5px rgba(0,0,0,.45)); }
 /* falling items */
-.feast-fall { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.feast-fall { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 .feast-faller { position: absolute; transform: translate(-50%, -50%); border: none; background: none; padding: 0; cursor: pointer; pointer-events: auto; z-index: 2; }
-.feast-faller img.feast-faller-img { height: 8vh; width: auto; max-width: none; display: block; filter: drop-shadow(0 3px 13px rgba(0,0,0,.45)); pointer-events: none; }
+.feast-faller img.feast-faller-img { height: 8vh; width: auto; max-width: none; display: block; filter: drop-shadow(0 2px 6px rgba(0,0,0,.3)); pointer-events: none; }
 .feast-faller:active img { transform: scale(.86); }
 .feast-faller.nope img.feast-faller-img { animation: feastNope .5s ease; }
-@keyframes feastNope { 0%,100% { filter: drop-shadow(0 3px 13px rgba(0,0,0,.45)); } 30%,70% { filter: drop-shadow(0 0 3px #ff4a4a) drop-shadow(0 0 12px rgba(255,60,60,.95)); } }
+@keyframes feastNope { 0%,100% { filter: drop-shadow(0 2px 6px rgba(0,0,0,.3)); } 30%,70% { filter: drop-shadow(0 0 3px #ff4a4a) drop-shadow(0 0 12px rgba(255,60,60,.95)); } }
 .feast-splash { position: absolute; transform: translate(-50%,-50%); font-size: 46px; z-index: 3; pointer-events: none; animation: feastSplash .5s ease-out forwards; }
 @keyframes feastSplash { 0% { transform: translate(-50%,-50%) scale(.4); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-50%,-32%) scale(1.2); opacity: 0; } }
 /* score chips + timer */
