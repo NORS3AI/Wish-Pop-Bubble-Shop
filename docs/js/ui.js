@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v585"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v586"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -6323,7 +6323,9 @@ function danceStep() {
   DANCE.answered = false;
   DANCE.armTime = Date.now();
   DANCE.beatTime = DANCE.armTime + DANCE.p.approach; // the moment the marker hits the line
-  renderDance();
+  // First step of a phase builds the live stage; later steps repaint in place so the
+  // dancer's tap animation isn't cut short when the beat rolls over.
+  if (DANCE.live) danceStepPaint(); else renderDance();
   DANCE.timer = setTimeout(danceAdvance, DANCE.p.beatMs);
 }
 // End of Act 1: the player has been through the whole routine once. Let them
@@ -6485,8 +6487,8 @@ function renderDance() {
         <img class="dance-dancer-img" id="dance-dancer" src="${danceDancerSrc(p, D0.pose || 1, D0.poseWorried)}" alt="${p.name}" draggable="false">
       </div>
       <div class="dance-announce">
-        <div class="dance-cue">${announce}</div>
-        <div class="dance-sub">${subTxt}</div>
+        <div class="dance-cue" id="dance-cue">${announce}</div>
+        <div class="dance-sub" id="dance-sub">${subTxt}</div>
       </div>
       <div class="beat-track">
         <span class="beat-zone" style="left:${zonePct - 8}%;width:16%"></span>
@@ -6500,13 +6502,33 @@ function renderDance() {
   $("#screen-event").querySelectorAll(".dance-btn").forEach(b =>
     b.addEventListener("click", () => danceTap(b.dataset.id)));
   show("event");
+  DANCE.live = !counting;   // the live stage is built (so later steps can repaint in place, not rebuild)
   // Slide the marker across the track, reaching the beat line exactly on the beat
   // and the far end when the metronome rolls to the next step. (Not during the countdown.)
-  if (!counting) {
-    const mk = $("#beat-marker");
-    if (mk) { mk.style.transition = "none"; mk.style.left = "0%";
-      requestAnimationFrame(() => { if (mk.isConnected) { mk.style.transition = "left " + p.beatMs + "ms linear"; mk.style.left = "100%"; } }); }
-  }
+  if (!counting) danceRestartMarker();
+}
+// Restart the beat marker's left→right slide over one beat.
+function danceRestartMarker() {
+  const mk = $("#beat-marker"); if (!mk || !DANCE) return;
+  mk.style.transition = "none"; mk.style.left = "0%";
+  requestAnimationFrame(() => { if (mk.isConnected) { mk.style.transition = "left " + DANCE.p.beatMs + "ms linear"; mk.style.left = "100%"; } });
+}
+// Lightweight per-step update: swap the cue arrow, step text and beat marker WITHOUT
+// rebuilding the stage — so the dancer element (and any glow/wiggle from a just-tapped
+// move) is left alone instead of snapping static when the beat rolls over.
+function danceStepPaint() {
+  const sc = screen("event"); if (!sc) return renderDance();
+  const D0 = DANCE, p = D0.p, rehearse = D0.phase === 1, mv = DANCE_MOVE_BY_ID[D0.routine[D0.idx]];
+  const fb = D0.feedback;
+  const fbTxt = fb ? (DANCE_FB[fb.tier] || "")
+    : (rehearse ? "Tap the move on the beat!" : "Lead it from memory — on the beat!");
+  const cue = sc.querySelector("#dance-cue");
+  if (cue) cue.innerHTML = rehearse
+    ? `<img class="dance-cue-arrow" src="art/${mv.ind}.webp?v=${BUILD}" alt="${mv.name}" draggable="false">`
+    : `<span class="dance-cue-ic">❓</span> <b>What comes next?</b>`;
+  const sub = sc.querySelector("#dance-sub");
+  if (sub) sub.innerHTML = `${rehearse ? "Act 1" : "Act 2"} · Step ${Math.min(D0.idx + 1, p.steps)}/${p.steps} · <span id="dance-fb" class="dance-fb">${fbTxt}</span>`;
+  danceRestartMarker();
 }
 // Reward scales with how well they danced: gold is proportional to the rhythm
 // score, and the premium prizes (🗝️ key, ✨ stardust) need a genuinely good show —
