@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v586"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v587"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -4270,7 +4270,7 @@ function feastPlay() {
       <div class="feast-hands" id="feast-hands">${feastHandsHtml()}</div>
     </div>
   `);
-  $("#screen-event").querySelectorAll(".feast-station").forEach(b => b.addEventListener("click", () => feastPlace(b.dataset.home)));
+  $("#screen-event").querySelectorAll(".feast-station").forEach(b => b.addEventListener("pointerdown", e => { e.preventDefault(); feastPlace(b.dataset.home); }));
   show("event");
   feastPaintHud();
 }
@@ -4304,7 +4304,12 @@ function feastAddFaller(kind, xPct, yPct) {
     el.className = "feast-faller feast-k-" + kind;
     el.style.left = xPct.toFixed(2) + "%"; el.style.top = yPct.toFixed(2) + "%";
     el.innerHTML = ART.tag(k.art, "🍽️", "feast-faller-img");
-    el.addEventListener("click", () => feastCatch(it.uid));
+    // pointerdown (not click): catch the item the instant it's pressed, before it
+    // moves — a click needs press+release on the same spot, which a fast-falling
+    // item won't allow, so taps were being "ignored" on the quicker modes.
+    el.addEventListener("pointerdown", e => { e.preventDefault(); feastCatch(it.uid); });
+    // interpolate between the 55ms sim steps so the item slides smoothly instead of jumping
+    el.style.transition = "top " + FEAST_TICK + "ms linear";
     layer.appendChild(el); it.el = el;
   }
 }
