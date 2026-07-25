@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v613"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v614"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -777,6 +777,9 @@ function storyPaint() {
   // an item being handed over this beat (e.g. giving Red the heart button) — shown as a
   // glowing chip floating in front of the character
   const giveHtml = b.give ? `<div class="story-give">${ART.tag(b.give, b.giveEmoji || "🎁", "story-give-img")}</div>` : "";
+  // an item the character is INSPECTING this beat (e.g. Jasper studying a clue) — shown
+  // big and centred with a glowing, pulsing aura so the art gets its moment on screen
+  const inspectHtml = b.inspect ? `<div class="story-inspect">${ART.tag(b.inspect, b.inspectEmoji || "🔎", "story-inspect-img")}</div>` : "";
   // backdrop: crossfade from the previous beat's scene to this one's (village → shop, etc.)
   const curBg = b.bg || STORY_DEF_BG, prevBg = STORY_BG_PREV || curBg;
   const bgHtml = `
@@ -789,6 +792,7 @@ function storyPaint() {
       ${bgHtml}
       ${top}
       ${giveHtml}
+      ${inspectHtml}
       <div class="story-below">
         ${b.name ? `<div class="story-name">${b.name}</div>` : ""}
         <div class="story-speech">${b.text}</div>
@@ -820,6 +824,7 @@ function storyPaint() {
   }
   // a handed item's art may also load late — repaint so the chip fills in
   if (b.give && !ART.isReady(b.give)) ART.ensure(b.give, () => { if (STORY_BEATS && STORY_BEATS[STORY_I] === b) storyPaint(); });
+  if (b.inspect && !ART.isReady(b.inspect)) ART.ensure(b.inspect, () => { if (STORY_BEATS && STORY_BEATS[STORY_I] === b) storyPaint(); });
 }
 // The very-first-launch arrival: the village, then Little Red, then her tutorial wish.
 function playArrivalIntro() {
@@ -1277,20 +1282,20 @@ function playJasperClue() {
   if (step === 0) {
     clueId = "clue_page";
     beats = [
-      { name: "Jasper the Jester", fig: "jester_excited", bg: "courtyard_shop", text: "You snatched something right off Lady Gothel! Let me see, let me see… <i>(he unfolds the scorched scrap)</i>" },
-      { name: "Jasper the Jester", fig: "jester_think", bg: "courtyard_shop", cta: "Hmm…  ▸", text: "A <b>torn spell-page</b> — and this isn't her usual glamour-magic. This is the <i>nasty</i> sort. <b>Sabotage.</b> But sabotage of <i>what?</i> …I'll pin it to my evidence board. Keep grabbing whatever she drops!" },
+      { name: "Jasper the Jester", fig: "jester_excited", bg: "courtyard_shop", inspect: "clue_page", text: "You snatched something right off Lady Gothel! Let me see, let me see… <i>(he unfolds the scorched scrap)</i>" },
+      { name: "Jasper the Jester", fig: "jester_think", bg: "courtyard_shop", inspect: "clue_page", cta: "Hmm…  ▸", text: "A <b>torn spell-page</b> — and this isn't her usual glamour-magic. This is the <i>nasty</i> sort. <b>Sabotage.</b> But sabotage of <i>what?</i> …I'll pin it to my evidence board. Keep grabbing whatever she drops!" },
     ];
   } else if (step === 1) {
     clueId = "clue_dust";
     beats = [
-      { name: "Jasper the Jester", fig: "jester_think", bg: "courtyard_shop", text: "Another one? <i>(he uncorks the little vial, sniffs — and recoils)</i> Bleugh! Grey powder that reeks of… spoiled milk?" },
-      { name: "Jasper the Jester", fig: "jester_worried", bg: "courtyard_shop", cta: "Uh-oh  ▸", text: "<b>Curdle-dust.</b> A pinch on a banquet and the whole spread turns and tumbles right off the table. She's testing it on <b>food</b> — and the only feast grand enough to bother with is the <b>Royal Ball's.</b> One more clue and I'll have the whole scheme!" },
+      { name: "Jasper the Jester", fig: "jester_think", bg: "courtyard_shop", inspect: "clue_dust", text: "Another one? <i>(he uncorks the little vial, sniffs — and recoils)</i> Bleugh! Grey powder that reeks of… spoiled milk?" },
+      { name: "Jasper the Jester", fig: "jester_worried", bg: "courtyard_shop", inspect: "clue_dust", cta: "Uh-oh  ▸", text: "<b>Curdle-dust.</b> A pinch on a banquet and the whole spread turns and tumbles right off the table. She's testing it on <b>food</b> — and the only feast grand enough to bother with is the <b>Royal Ball's.</b> One more clue and I'll have the whole scheme!" },
     ];
   } else {
     clueId = "clue_plan";
     beats = [
-      { name: "Jasper the Jester", fig: "jester_talk", bg: "courtyard_shop", text: "That's the third! Smooth it out, smooth it out… <i>(he flattens the crumpled sketch across the counter)</i>" },
-      { name: "Jasper the Jester", fig: "jester_scared", bg: "courtyard_shop", cta: "She wouldn't…  ▸", text: "It's the <b>ballroom</b> — and she's ringed <b>three</b> spots in green ink: the <b>banquet table</b>, the <b>dance floor</b>, and the <b>entertainer's stage</b>. She doesn't just mean to spoil the feast…" },
+      { name: "Jasper the Jester", fig: "jester_talk", bg: "courtyard_shop", inspect: "clue_plan", text: "That's the third! Smooth it out, smooth it out… <i>(he flattens the crumpled sketch across the counter)</i>" },
+      { name: "Jasper the Jester", fig: "jester_scared", bg: "courtyard_shop", inspect: "clue_plan", cta: "She wouldn't…  ▸", text: "It's the <b>ballroom</b> — and she's ringed <b>three</b> spots in green ink: the <b>banquet table</b>, the <b>dance floor</b>, and the <b>entertainer's stage</b>. She doesn't just mean to spoil the feast…" },
       { name: "Jasper the Jester", fig: "jester_announce", bg: "courtyard_shop", cta: "We'll be ready  ▸", text: "…she means to wreck the <b>whole Ball!</b> The feast, the dance, <i>and</i> the show. Well — not on our watch. When the night comes, you and I will be right there to stop her at every turn. The case is <b>solved</b>; now we've only to <i>win</i> it." },
     ];
   }
