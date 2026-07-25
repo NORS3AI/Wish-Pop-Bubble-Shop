@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v612"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v613"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -48,7 +48,6 @@ function normalizeGame(g) {
   if (typeof g.clueFound !== "number") g.clueFound = 0;       // Gothel evidence hunt: clues snatched off the shop floor (0-3)
   if (typeof g.clueDone  !== "number") g.clueDone  = 0;       // Gothel evidence clues turned in to Jasper (0-3); 3 = case solved
   if (typeof g.clueChainAt !== "number") g.clueChainAt = -1;  // servedTotal when Jasper's next clue turn-in is due
-  if (typeof g.clueDropAt  !== "number") g.clueDropAt  = -1;  // servedTotal when Gothel's next clue-drop round is due (random phase)
   if (typeof g.wolfArcStep !== "number") g.wolfArcStep = 0;   // the Wolf's own visit count (disguise/hunger arc)
   if (typeof g.wolfArcAt !== "number") g.wolfArcAt = -1;      // servedTotal when the Wolf's next visit is due
   if (typeof g.goldilocksStep !== "number") g.goldilocksStep = 0; // Goldilocks' teddy-bear quest: 0=none,1=have the 3 bears,2=delivered
@@ -1251,19 +1250,19 @@ function enterCluePhase(phase) {
 }
 function maybeClueDrop(phase) {
   if (GAME.realm !== "courtyard" || !ROUND) return;
-  if (ROUND.villain || ROUND.rush || ROUND.copycat || ROUND.frostTest) return; // no ambush on timed/special rounds
+  // Only ever during LADY GOTHEL's own visit — she's the one dropping it, so it must
+  // be her at the counter. The randomness is WHICH phase of her round it slips out in.
+  if (!ROUND.customer || ROUND.customer.id !== "gothel") return;
+  if (ROUND.rush || ROUND.copycat || ROUND.frostTest) return;   // never on a timed/special round
   if (!needGothelClue() || ROUND.clueDropDone) return;
-  // decide once per round (at the first phase we reach) whether — and where — a clue drops
-  if (ROUND.clueDropPhase === undefined) {
-    if (GAME.clueDropAt < 0) { GAME.clueDropAt = servedTotal + 1 + Math.floor(Math.random() * 3); save(); }
-    ROUND.clueDropPhase = (servedTotal >= GAME.clueDropAt) ? R.pick(["scoop", "pop", "mix", "result"]) : null;
-  }
+  // pick one random phase of her visit for the drop (decided the first phase we reach)
+  if (ROUND.clueDropPhase === undefined) ROUND.clueDropPhase = R.pick(["scoop", "pop", "mix", "result"]);
   if (ROUND.clueDropPhase !== phase) return;
-  ROUND.clueDropDone = true; GAME.clueDropAt = -1; save();   // offering it now; the next drop reschedules once this clue is resolved
+  ROUND.clueDropDone = true;
   const delay = 600 + Math.floor(Math.random() * 1500);
   CLUE_TIMER = setTimeout(() => {
     CLUE_TIMER = 0;
-    if (CLUE_PHASE !== phase) return;                                       // player moved on — it'll turn up a later round
+    if (CLUE_PHASE !== phase) return;                                       // player moved on — she'll drop one next visit
     if (document.querySelector(".clue-ov, #item-reveal-overlay, .coach-ov")) return; // never stack overlays
     dropGothelClue(() => {});
   }, delay);
