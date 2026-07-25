@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v607"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v608"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -831,7 +831,7 @@ function playArrivalIntro() {
 // in and declares herself your best customer — then you zoom into the royal shop and play.
 function playCourtyardIntro() {
   SFX.unlock();
-  ["customer_jester", "jester_announce", "jester_scene_tossed", "gothel_intro1", "gothel_intro2"].forEach(k => ART.ensure(k, () => {}));
+  ["customer_jester", "jester_announce", "jester_scene_tossed", "jester_worried", "jester_talk", "jester_smile", "gothel_intro1", "gothel_intro2"].forEach(k => ART.ensure(k, () => {}));
   ["courtyard_mid", "courtyard_shop"].forEach(n => { try { const im = new Image(); im.src = "art/" + n + ".jpg?v=" + BUILD; } catch (e) {} }); // preload the later frames
   renderStoryBeats([
     { vista: true, bg: "courtyard_far", text: "Beyond the great gates opens the <b>King's Courtyard</b> — blue banners, golden crowns, and spires that scrape the clouds. And there, with its jewelled roof and shelves of shimmering potions, stands your very own <b>Royal Wish Shop</b>." },
@@ -839,7 +839,10 @@ function playCourtyardIntro() {
     { name: "Jasper the Jester", fig: "customer_jester", bg: "courtyard_far", text: "I polished every jar, lit every lantern, and swept the step <i>twice</i>. Your shop is all set and sparkling! Now, if I may, allow me to formally intro—" },
     { fig: "jester_scene_tossed", bg: "courtyard_far", text: "<b>THWUMP!</b> A jewelled boot catches Jasper square in the nose and sends him tumbling. <i>“Out of the way, pipsqueak!”</i>" },
     { name: "Lady Gothel", fig: "gothel_intro1", bg: "courtyard_mid", text: "<i>(Jasper scrambles off, clutching his nose.)</i> <b>Lady Gothel.</b> Do commit it to memory, dear. I'm the important one here — and I intend to be your <b>most frequent, most valued</b> customer." },
-    { name: "Lady Gothel", fig: "gothel_intro2", bg: "courtyard_shop", cta: "Get to work  ▸", text: "So do hurry along and get to <b>work</b>. I have ever so many <b>wishes</b> to make… and I simply <i>loathe</i> being kept waiting." },
+    { name: "Lady Gothel", fig: "gothel_intro2", bg: "courtyard_shop", cta: "Continue  ▸", text: "So do hurry along and get to <b>work</b>. I have ever so many <b>wishes</b> to make… and I simply <i>loathe</i> being kept waiting. <i>(She sweeps off in a swirl of green.)</i>" },
+    { name: "Jasper the Jester", fig: "jester_worried", bg: "courtyard_shop", text: "<i>(Jasper peeks back in, rubbing his poor nose.)</i> …Charming, isn't she? That's <b>Lady Gothel</b> — court sorceress, and an absolute <b>menace</b>. Her magic's been fading, so these days she goes about <b>cursing whoever</b> she pleases. Do mind your cauldron when she drops by — she'll hex it just for sport." },
+    { name: "Jasper the Jester", fig: "jester_announce", bg: "courtyard_shop", text: "But here's the <i>real</i> news! Our King's been dreadfully gloomy of late, so the court is throwing the grandest <b>Royal Ball</b> these walls have ever seen — a feast, a dance, the works. And <i>everyone</i> will be coming to <b>your</b> shop to get ready for it!" },
+    { name: "Jasper the Jester", fig: "jester_smile", bg: "courtyard_shop", cta: "Let's get to work  ▸", text: "So that's our little quest, you and I: help the whole court prepare, keep that meddling Gothel from spoiling things, and make sure the Ball goes off <b>without a single hitch</b>. Ready? Your first customers are already at the door!" },
   ], () => { GAME.seenCourtyardIntro = true; save(); playZoomIn(startRound, "courtyard_shop"); });
 }
 
