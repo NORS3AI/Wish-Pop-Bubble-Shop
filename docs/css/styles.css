@@ -2954,32 +2954,38 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
 /* ======================================================================= */
 /* COACH — one-time spotlight tutorial tips + the How-to-Play reference     */
 /* ======================================================================= */
-/* Lady Gothel's evidence "skitters" across the floor — tap the runner to grab it. */
-.clue-ov { position: fixed; inset: 0; z-index: 410; background: rgba(8,5,20,.66);
+/* Lady Gothel's evidence roams the floor — you have 5s to tap the runner to grab it. */
+.clue-ov { position: fixed; inset: 0; z-index: 410; background: rgba(8,5,20,.72);
   backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); overflow: hidden; }
-.clue-cap { position: absolute; left: 50%; top: 12%; transform: translateX(-50%);
+/* big, semi-faded countdown numeral floating on top of the overlay */
+.clue-count { position: fixed; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 42vh; line-height: 1; color: rgba(255,255,255,.24);
+  pointer-events: none; text-shadow: 0 0 50px rgba(0,0,0,.5); }
+.clue-count.beat { animation: clueBeat .5s ease-out; }
+@keyframes clueBeat { 0% { transform: scale(1.3); color: rgba(255,240,190,.5); } 100% { transform: scale(1); color: rgba(255,255,255,.24); } }
+.clue-count.out { opacity: 0; transition: opacity .2s ease; }
+.clue-cap { position: fixed; left: 50%; top: 12%; transform: translateX(-50%); z-index: 4;
   width: min(90vw, 420px); text-align: center; background: linear-gradient(#251b40, #191130);
   color: #fff; border: 1px solid rgba(255,255,255,.15); border-radius: 16px; padding: 13px 16px;
   box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+.clue-cap.out { opacity: 0; transition: opacity .2s ease; }
 .clue-cap .story-name { font-weight: 800; color: #d7a8ff; margin-bottom: 4px; }
 .clue-cap .story-speech { font-size: 14.5px; line-height: 1.42; }
 .clue-hint { display: block; margin-top: 7px; font-weight: 800; color: #ffe08a; }
-/* the runner sits on the "floor" and scoots side to side, bobbing, until tapped */
-.clue-runner { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 15%);
-  width: 92px; height: 92px; border-radius: 50%; border: none; padding: 0; cursor: pointer;
-  background: radial-gradient(circle at 50% 42%, rgba(255,225,130,.5), rgba(255,205,90,.12) 62%, transparent 72%);
-  display: flex; align-items: center; justify-content: center;
-  animation: clueScoot 2.1s ease-in-out infinite, clueBob .5s ease-in-out infinite; touch-action: manipulation; }
+/* the runner is positioned every frame by JS (translate x/y in viewport coords) */
+.clue-runner { position: fixed; left: 0; top: 0; z-index: 3; will-change: transform;
+  width: 90px; height: 90px; border-radius: 50%; border: none; padding: 0; cursor: pointer;
+  background: radial-gradient(circle at 50% 42%, rgba(255,225,130,.55), rgba(255,205,90,.14) 62%, transparent 72%);
+  display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
 .clue-runner-ic { font-size: 46px; line-height: 1; }
 .clue-runner-ic.art, .clue-runner img.art { width: auto; height: auto; max-width: 82px; max-height: 82px; }
-@keyframes clueScoot {
-  0%   { transform: translateX(-38vw) rotate(-8deg); }
-  50%  { transform: translateX(38vw) rotate(8deg); }
-  100% { transform: translateX(-38vw) rotate(-8deg); }
-}
-@keyframes clueBob { 0%,100% { margin-bottom: 0; } 50% { margin-bottom: 12px; } }
-.clue-runner.gone { animation: none; transform: scale(0) rotate(40deg); opacity: 0; transition: transform .4s cubic-bezier(.5,-.5,.4,1.4), opacity .4s ease; }
-.clue-grabbed { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -46%);
+/* the "poof" when the clue escapes — a burst placed where it vanished */
+.clue-poof { position: fixed; left: 0; top: 0; z-index: 4; width: 140px; height: 140px;
+  display: flex; align-items: center; justify-content: center; font-size: 104px;
+  opacity: 0; transform: scale(.3); pointer-events: none; }
+.clue-poof.go { animation: cluePoof .74s ease-out forwards; }
+@keyframes cluePoof { 0% { opacity: 0; transform: scale(.3); } 22% { opacity: 1; } 100% { opacity: 0; transform: scale(1.9); } }
+.clue-grabbed { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -46%); z-index: 6;
   width: min(88vw, 360px); text-align: center; background: linear-gradient(#251b40, #191130);
   color: #fff; border: 1px solid rgba(255,255,255,.15); border-radius: 18px; padding: 20px 18px 18px;
   box-shadow: 0 18px 44px rgba(0,0,0,.6); opacity: 0; pointer-events: none;

@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v610"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v611"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1157,8 +1157,10 @@ const GOTHEL_CLUES = [
 ];
 function holdingGothelClue() { return (GAME.clueFound || 0) > (GAME.clueDone || 0); }
 function needGothelClue() { return !!GAME.seenCourtyardIntro && (GAME.clueFound || 0) < 3 && !holdingGothelClue(); }
-// Tap-to-grab: the dropped clue skitters across the shop floor; tap it to snatch it.
-// Story-critical, so it never truly escapes — it keeps scurrying until you catch it.
+// Tap-to-grab: the dropped clue skitters every-which-way around the shop floor — you
+// have 5 seconds to catch it. Movement is bounded to the visible game column (so it
+// never wanders off-screen on a wide iPad), with a big countdown on the dark overlay.
+// Miss it and it poofs away — but it'll turn up again on her next visit.
 function dropGothelClue(done) {
   const idx = GAME.clueFound || 0, clue = GOTHEL_CLUES[idx];
   if (!clue) { done && done(); return; }
@@ -1166,9 +1168,11 @@ function dropGothelClue(done) {
   const ov = document.createElement("div");
   ov.className = "clue-ov";
   ov.innerHTML = `
+    <div class="clue-count" id="clue-count" aria-hidden="true">5</div>
     <div class="clue-cap"><div class="story-name">Lady Gothel</div>
-      <div class="story-speech">“Oops — did I drop something? …No matter. <i>Ta!</i>” <span class="clue-hint">Quick — grab it off the floor!</span></div></div>
+      <div class="story-speech">“Oops — did I drop something? …No matter. <i>Ta!</i>” <span class="clue-hint">Quick — catch it before it’s gone!</span></div></div>
     <button class="clue-runner" id="clue-runner" aria-label="Grab it!">${ART.tag(clue.id, clue.emoji, "clue-runner-ic")}</button>
+    <div class="clue-poof" id="clue-poof" aria-hidden="true">💨</div>
     <div class="clue-grabbed" id="clue-grabbed">
       <div class="clue-big-ic">${ART.tag(clue.id, clue.emoji, "clue-big-ic-img")}</div>
       <div class="clue-grabbed-name">You grabbed the <b>${clue.name}</b>!</div>
@@ -1176,16 +1180,64 @@ function dropGothelClue(done) {
       <button class="btn good" id="clue-ok">Into the satchel  ▸</button>
     </div>`;
   $("#app").appendChild(ov);
-  const runner = ov.querySelector("#clue-runner");
-  let grabbed = false;
+  const runner = ov.querySelector("#clue-runner"), countEl = ov.querySelector("#clue-count");
+  let ended = false, raf = 0; const timers = [];
+  const SIZE = 90, PAD = 8;
+  // Bounds = the visible game column (#app, max 520px) so the clue can't roam into the
+  // dark iPad letterbox. Recomputed each frame in case of rotation/resize.
+  function bounds() {
+    const r = ($("#app") || document.body).getBoundingClientRect(), vh = window.innerHeight;
+    return { xmin: r.left + PAD, xmax: r.right - PAD - SIZE, ymin: Math.round(vh * 0.34), ymax: vh - PAD - SIZE };
+  }
+  let b = bounds();
+  let x = (b.xmin + b.xmax) / 2, y = (b.ymin + b.ymax) / 2;
+  const spd = Math.max(3, (b.xmax - b.xmin) * 0.014);
+  let a = Math.random() * Math.PI * 2, vx = Math.cos(a) * spd, vy = Math.sin(a) * spd, lastTurn = 0;
+  runner.style.left = "0"; runner.style.top = "0";
+  function frame(t) {
+    if (ended) return;
+    if (!lastTurn) lastTurn = t;
+    if (t - lastTurn > 480) { lastTurn = t; const j = (Math.random() - 0.5) * 1.5, a2 = Math.atan2(vy, vx) + j; vx = Math.cos(a2) * spd; vy = Math.sin(a2) * spd; }
+    b = bounds(); x += vx; y += vy;
+    if (x < b.xmin) { x = b.xmin; vx = Math.abs(vx); } else if (x > b.xmax) { x = b.xmax; vx = -Math.abs(vx); }
+    if (y < b.ymin) { y = b.ymin; vy = Math.abs(vy); } else if (y > b.ymax) { y = b.ymax; vy = -Math.abs(vy); }
+    runner.style.transform = `translate(${x}px, ${y}px) rotate(${Math.sin(t / 190) * 13}deg)`;
+    raf = requestAnimationFrame(frame);
+  }
+  raf = requestAnimationFrame(frame);
+  function stop() { ended = true; cancelAnimationFrame(raf); timers.forEach(clearTimeout); }
+  // 5… 4… 3… 2… 1… then poof
+  let n = 5;
+  const tick = () => {
+    n--;
+    if (n <= 0) { missPoof(); return; }
+    countEl.textContent = n; countEl.classList.remove("beat"); void countEl.offsetWidth; countEl.classList.add("beat");
+    timers.push(setTimeout(tick, 1000));
+  };
+  timers.push(setTimeout(tick, 1000));
   runner.addEventListener("click", () => {
-    if (grabbed) return; grabbed = true;
-    runner.classList.add("gone"); SFX.bonus && SFX.bonus();
+    if (ended) return; stop();
+    SFX.bonus && SFX.bonus();
+    runner.style.transition = "transform .36s cubic-bezier(.5,-.4,.4,1.5), opacity .36s ease";
+    runner.style.transform += " scale(0)"; runner.style.opacity = "0";
+    if (countEl) countEl.classList.add("out");
+    ov.querySelector(".clue-cap").classList.add("out");
     satchelAdd(clue.id); GAME.clueFound = idx + 1;
     GAME.clueChainAt = servedTotal + pacing("clueChainGap", 2); save();
-    ov.classList.add("show-grabbed");
+    timers.push(setTimeout(() => ov.classList.add("show-grabbed"), 150));
   });
   ov.querySelector("#clue-ok").addEventListener("click", () => { ov.remove(); done && done(); });
+  function missPoof() {
+    if (ended) return; stop();
+    SFX.err && SFX.err();
+    const poof = ov.querySelector("#clue-poof");
+    poof.style.left = (x + SIZE / 2 - 70) + "px"; poof.style.top = (y + SIZE / 2 - 70) + "px";
+    poof.classList.add("go");
+    runner.style.transition = "opacity .16s ease"; runner.style.opacity = "0";
+    if (countEl) countEl.classList.add("out");
+    ov.querySelector(".clue-cap").classList.add("out");
+    timers.push(setTimeout(() => { ov.remove(); toast("💨 It scurried off — you’ll get another chance!"); done && done(); }, 760));
+  }
 }
 // Jasper receives the clue you're holding and pieces the scheme together. Each turn-in
 // advances GAME.clueDone; the third reveals Gothel's full three-part plan for the Ball.
