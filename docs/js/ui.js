@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v614"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v615"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1196,13 +1196,14 @@ function dropGothelClue(done) {
   }
   let b = bounds();
   let x = (b.xmin + b.xmax) / 2, y = (b.ymin + b.ymax) / 2;
-  const spd = Math.max(3, (b.xmax - b.xmin) * 0.014);
+  const spd = Math.max(5, (b.xmax - b.xmin) * 0.024);   // quicker — it's meant to be a real chase
   let a = Math.random() * Math.PI * 2, vx = Math.cos(a) * spd, vy = Math.sin(a) * spd, lastTurn = 0;
   runner.style.left = "0"; runner.style.top = "0";
   function frame(t) {
     if (ended) return;
     if (!lastTurn) lastTurn = t;
-    if (t - lastTurn > 480) { lastTurn = t; const j = (Math.random() - 0.5) * 1.5, a2 = Math.atan2(vy, vx) + j; vx = Math.cos(a2) * spd; vy = Math.sin(a2) * spd; }
+    // change heading often and sharply so it darts unpredictably (harder to corner)
+    if (t - lastTurn > 260) { lastTurn = t; const j = (Math.random() - 0.5) * 2.4, a2 = Math.atan2(vy, vx) + j; vx = Math.cos(a2) * spd; vy = Math.sin(a2) * spd; }
     b = bounds(); x += vx; y += vy;
     if (x < b.xmin) { x = b.xmin; vx = Math.abs(vx); } else if (x > b.xmax) { x = b.xmax; vx = -Math.abs(vx); }
     if (y < b.ymin) { y = b.ymin; vy = Math.abs(vy); } else if (y > b.ymax) { y = b.ymax; vy = -Math.abs(vy); }
@@ -1277,7 +1278,7 @@ function maybeClueDrop(phase) {
 function playJasperClue() {
   SFX.unlock();
   const step = GAME.clueDone || 0;
-  ["jester_think", "jester_worried", "jester_talk", "jester_scared", "jester_announce", "jester_excited"].forEach(k => ART.ensure(k, () => {}));
+  ["jester_think", "jester_worried", "jester_talk", "jester_scared", "jester_smile", "jester_excited"].forEach(k => ART.ensure(k, () => {}));
   let beats, clueId;
   if (step === 0) {
     clueId = "clue_page";
@@ -1296,7 +1297,7 @@ function playJasperClue() {
     beats = [
       { name: "Jasper the Jester", fig: "jester_talk", bg: "courtyard_shop", inspect: "clue_plan", text: "That's the third! Smooth it out, smooth it out… <i>(he flattens the crumpled sketch across the counter)</i>" },
       { name: "Jasper the Jester", fig: "jester_scared", bg: "courtyard_shop", inspect: "clue_plan", cta: "She wouldn't…  ▸", text: "It's the <b>ballroom</b> — and she's ringed <b>three</b> spots in green ink: the <b>banquet table</b>, the <b>dance floor</b>, and the <b>entertainer's stage</b>. She doesn't just mean to spoil the feast…" },
-      { name: "Jasper the Jester", fig: "jester_announce", bg: "courtyard_shop", cta: "We'll be ready  ▸", text: "…she means to wreck the <b>whole Ball!</b> The feast, the dance, <i>and</i> the show. Well — not on our watch. When the night comes, you and I will be right there to stop her at every turn. The case is <b>solved</b>; now we've only to <i>win</i> it." },
+      { name: "Jasper the Jester", fig: "jester_smile", bg: "courtyard_shop", cta: "We'll be ready  ▸", text: "…she means to wreck the <b>whole Ball!</b> The feast, the dance, <i>and</i> the show. Well — not on our watch. When the night comes, you and I will be right there to stop her at every turn. The case is <b>solved</b>; now we've only to <i>win</i> it." },
     ];
   }
   renderStoryBeats(beats, () => {
