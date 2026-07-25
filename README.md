@@ -19,8 +19,11 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
-- 🔎 **Catch Lady Gothel in the act.** She's a menace — every time she visits your shop she
-  "accidentally" drops a bit of evidence, and it **skitters across the floor for you to grab**.
+- 🔎 **Catch Lady Gothel in the act.** She's a menace — she keeps "accidentally" dropping bits of
+  evidence around your shop, and each one **skitters across the floor for you to grab**. It can turn
+  up at any moment — while you're scooping, popping, mixing, or reading a customer's results — and
+  you've got five seconds to catch it before it poofs away (it'll be back). Everything else pauses
+  while you chase it, so you won't fumble an ingredient by accident.
   Snatch each clue and take it to Jasper, who pieces the mystery together: a torn spell-page hints
   at sabotage, a vial of curdle-dust points at the feast, and a scribbled ball-plan finally reveals
   she means to wreck the **whole Royal Ball** — the feast, the dance, and the show. Solving the case

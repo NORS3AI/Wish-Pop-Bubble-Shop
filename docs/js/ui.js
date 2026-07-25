@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v611"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v612"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -48,6 +48,7 @@ function normalizeGame(g) {
   if (typeof g.clueFound !== "number") g.clueFound = 0;       // Gothel evidence hunt: clues snatched off the shop floor (0-3)
   if (typeof g.clueDone  !== "number") g.clueDone  = 0;       // Gothel evidence clues turned in to Jasper (0-3); 3 = case solved
   if (typeof g.clueChainAt !== "number") g.clueChainAt = -1;  // servedTotal when Jasper's next clue turn-in is due
+  if (typeof g.clueDropAt  !== "number") g.clueDropAt  = -1;  // servedTotal when Gothel's next clue-drop round is due (random phase)
   if (typeof g.wolfArcStep !== "number") g.wolfArcStep = 0;   // the Wolf's own visit count (disguise/hunger arc)
   if (typeof g.wolfArcAt !== "number") g.wolfArcAt = -1;      // servedTotal when the Wolf's next visit is due
   if (typeof g.goldilocksStep !== "number") g.goldilocksStep = 0; // Goldilocks' teddy-bear quest: 0=none,1=have the 3 bears,2=delivered
@@ -1238,6 +1239,34 @@ function dropGothelClue(done) {
     ov.querySelector(".clue-cap").classList.add("out");
     timers.push(setTimeout(() => { ov.remove(); toast("💨 It scurried off — you’ll get another chance!"); done && done(); }, 760));
   }
+}
+// The drop is unpredictable: on a due round it fires during ONE random phase (scoop,
+// pop, mix, or result) a beat after that screen opens. The chase overlay blocks all
+// play underneath, so you can't tap ingredients/bubbles by accident while grabbing it.
+let CLUE_PHASE = null, CLUE_TIMER = 0;
+function enterCluePhase(phase) {
+  CLUE_PHASE = phase;
+  if (CLUE_TIMER) { clearTimeout(CLUE_TIMER); CLUE_TIMER = 0; }
+  maybeClueDrop(phase);
+}
+function maybeClueDrop(phase) {
+  if (GAME.realm !== "courtyard" || !ROUND) return;
+  if (ROUND.villain || ROUND.rush || ROUND.copycat || ROUND.frostTest) return; // no ambush on timed/special rounds
+  if (!needGothelClue() || ROUND.clueDropDone) return;
+  // decide once per round (at the first phase we reach) whether — and where — a clue drops
+  if (ROUND.clueDropPhase === undefined) {
+    if (GAME.clueDropAt < 0) { GAME.clueDropAt = servedTotal + 1 + Math.floor(Math.random() * 3); save(); }
+    ROUND.clueDropPhase = (servedTotal >= GAME.clueDropAt) ? R.pick(["scoop", "pop", "mix", "result"]) : null;
+  }
+  if (ROUND.clueDropPhase !== phase) return;
+  ROUND.clueDropDone = true; GAME.clueDropAt = -1; save();   // offering it now; the next drop reschedules once this clue is resolved
+  const delay = 600 + Math.floor(Math.random() * 1500);
+  CLUE_TIMER = setTimeout(() => {
+    CLUE_TIMER = 0;
+    if (CLUE_PHASE !== phase) return;                                       // player moved on — it'll turn up a later round
+    if (document.querySelector(".clue-ov, #item-reveal-overlay, .coach-ov")) return; // never stack overlays
+    dropGothelClue(() => {});
+  }, delay);
 }
 // Jasper receives the clue you're holding and pieces the scheme together. Each turn-in
 // advances GAME.clueDone; the third reveals Gothel's full three-part plan for the Ball.
@@ -8196,6 +8225,7 @@ function renderScoop() {
   setTimeout(diveThenLoad, 620);
   wireFamiliar("scoop");
   show("scoop");
+  enterCluePhase("scoop");   // Gothel may drop a clue mid-scoop (Courtyard)
   coachScoopIntro();     // first-ever scoop: the one-time spotlight tip
   placeSecretHotspot();  // pearl is already painted; now the stage has real dimensions for its tap target
   startRushClock();      // In-a-Rush patience clock ticks from here through serve
@@ -8361,6 +8391,7 @@ function renderPop() {
   on("#pop-continue", "click", () => { if (itemGateBlocks()) return; collectAndContinue(); });
   wireFamiliar("pop");
   show("pop");
+  enterCluePhase("pop");   // Gothel may drop a clue mid-pop (Courtyard)
   layoutBubbleField(true);   // scatter the bubbles across the whole field (nothing clipped/hidden)
   coachPopIntro();   // first-ever pop: the one-time spotlight tip
   setupPopWood();
@@ -8808,6 +8839,7 @@ function renderMix() {
   mixFxWasVisible = false; mixPulseColor = null;   // empty pot: no glow until the first ingredient
   mixPrevFace = null;                              // reset the mirror face so it doesn't crossfade on the first paint
   paintMix(); show("mix");
+  enterCluePhase("mix");   // Gothel may drop a clue mid-mix (Courtyard) — overlay blocks ingredient taps
   if (ROUND._mixTimer) clearInterval(ROUND._mixTimer);
   ROUND._mixTimer = setInterval(paintMixTop, 500);
   if (ROUND.frostTest) { if (ROUND._thawTimer) clearInterval(ROUND._thawTimer); ROUND._thawTimer = setInterval(thawTick, 300); }   // real-time ice thaw
@@ -10131,16 +10163,13 @@ function renderResult(res) {
       : wasFrost ? startFrostRound()                                          // admin frost test: loop
       : (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound();
     // Gothel's curse/steal reaction plays here — after the player has seen the results.
-    // Then, if she's a menace this round and the evidence hunt still needs a clue,
-    // she "drops" one for you to snatch off the floor before the next customer.
-    const isGothel = ROUND && ROUND.customer && ROUND.customer.id === "gothel";
-    const afterScene = () => { if (isGothel && needGothelClue()) dropGothelClue(cont); else cont(); };
-    if (res.gothelCurse || res.gothelSteal) playGothelScene(res, afterScene);
-    else afterScene();
+    if (res.gothelCurse || res.gothelSteal) playGothelScene(res, cont);
+    else cont();
   });
   on("#recap-btn", "click", showRoundRecap);
   applyRealmBackground(document.querySelector("#screen-result #cust-bg"));
   show("result");
+  enterCluePhase("result");   // Gothel may drop a clue while you read the results (Courtyard)
   if (win) wireRewardBubbles(res);
   // fallback: if this round was meant to reveal a hunt item but its phase never happened
   // (e.g. a fail with no tip, or no knife cut), reveal it here so it's never skipped.
@@ -10651,7 +10680,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, dropGothelClue, playJasperClue, maybeClueChain, needGothelClue, holdingGothelClue, GOTHEL_CLUES, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, gribbleCard, goblinBegin, goblinCountdown, goblinRequest, goblinFeed, goblinNope, goblinScore, renderGoblin, goblinFinish, GOB_ITEMS, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, playDanceStory, danceWarmup, danceButtonsHtml, danceCountdown, danceStep, danceRehearsalDone, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, dropGothelClue, playJasperClue, maybeClueChain, needGothelClue, holdingGothelClue, GOTHEL_CLUES, enterCluePhase, maybeClueDrop, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, gribbleCard, goblinBegin, goblinCountdown, goblinRequest, goblinFeed, goblinNope, goblinScore, renderGoblin, goblinFinish, GOB_ITEMS, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, playDanceStory, danceWarmup, danceButtonsHtml, danceCountdown, danceStep, danceRehearsalDone, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {
