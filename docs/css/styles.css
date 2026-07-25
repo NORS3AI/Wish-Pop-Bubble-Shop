@@ -2971,7 +2971,7 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
   display: flex; align-items: center; justify-content: center;
   animation: clueScoot 2.1s ease-in-out infinite, clueBob .5s ease-in-out infinite; touch-action: manipulation; }
 .clue-runner-ic { font-size: 46px; line-height: 1; }
-.clue-runner-ic.art, .clue-runner img.art { width: 66px; height: 66px; max-width: none; }
+.clue-runner-ic.art, .clue-runner img.art { width: auto; height: auto; max-width: 82px; max-height: 82px; }
 @keyframes clueScoot {
   0%   { transform: translateX(-38vw) rotate(-8deg); }
   50%  { transform: translateX(38vw) rotate(8deg); }
@@ -2986,8 +2986,8 @@ img.gal-pic { max-height: 52vh; max-width: 66vw; width: auto; height: auto; obje
   transition: opacity .28s ease, transform .28s ease; }
 .clue-ov.show-grabbed .clue-grabbed { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
 .clue-ov.show-grabbed .clue-cap { opacity: 0; transition: opacity .2s ease; }
-.clue-big-ic { font-size: 56px; line-height: 1; margin-bottom: 8px; }
-.clue-big-ic-img.art, .clue-big-ic img.art { width: 72px; height: 72px; max-width: none; }
+.clue-big-ic { font-size: 56px; line-height: 1; margin-bottom: 8px; min-height: 78px; display: flex; align-items: center; justify-content: center; }
+.clue-big-ic-img.art, .clue-big-ic img.art { width: auto; height: auto; max-width: 96px; max-height: 78px; }
 .clue-grabbed-name { font-weight: 800; font-size: 17px; margin-bottom: 6px; }
 .clue-grabbed-note { font-size: 14px; line-height: 1.42; opacity: .95; margin-bottom: 14px; }
 .clue-grabbed .btn { width: 100%; }
