@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v608"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v609"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -45,6 +45,9 @@ function normalizeGame(g) {
   if (typeof g.pigsMoved !== "boolean") g.pigsMoved = false;  // the two pigs have moved out of Willow (to the brick house)
   if (typeof g.buttonStep !== "number") g.buttonStep = 0;     // button clue-chain: 0=none,1=collected,2=shown Red,3=returned
   if (typeof g.buttonChainAt !== "number") g.buttonChainAt = -1; // servedTotal when the next button-chain beat is due
+  if (typeof g.clueFound !== "number") g.clueFound = 0;       // Gothel evidence hunt: clues snatched off the shop floor (0-3)
+  if (typeof g.clueDone  !== "number") g.clueDone  = 0;       // Gothel evidence clues turned in to Jasper (0-3); 3 = case solved
+  if (typeof g.clueChainAt !== "number") g.clueChainAt = -1;  // servedTotal when Jasper's next clue turn-in is due
   if (typeof g.wolfArcStep !== "number") g.wolfArcStep = 0;   // the Wolf's own visit count (disguise/hunger arc)
   if (typeof g.wolfArcAt !== "number") g.wolfArcAt = -1;      // servedTotal when the Wolf's next visit is due
   if (typeof g.goldilocksStep !== "number") g.goldilocksStep = 0; // Goldilocks' teddy-bear quest: 0=none,1=have the 3 bears,2=delivered
@@ -351,6 +354,9 @@ const REALM_PACING = {
     wellAfter:        30,  // Wishy the Fish introduces his wishing well (mid-game — also gated on having gold to spend)
     bandAfter:        52,  // the Bandit Bears come to town (you get the blank tour poster)
     bandVisitGap:      6,  // orders between the announcement and each member's autograph visit (and the final delivery)
+  },
+  courtyard: {
+    clueChainGap:      2,  // orders between snatching a Gothel clue and Jasper dropping by to puzzle over it
   },
 };
 // Read a pacing number for the current realm, falling back to the old default.
@@ -842,7 +848,7 @@ function playCourtyardIntro() {
     { name: "Lady Gothel", fig: "gothel_intro2", bg: "courtyard_shop", cta: "Continue  ▸", text: "So do hurry along and get to <b>work</b>. I have ever so many <b>wishes</b> to make… and I simply <i>loathe</i> being kept waiting. <i>(She sweeps off in a swirl of green.)</i>" },
     { name: "Jasper the Jester", fig: "jester_worried", bg: "courtyard_shop", text: "<i>(Jasper peeks back in, rubbing his poor nose.)</i> …Charming, isn't she? That's <b>Lady Gothel</b> — court sorceress, and an absolute <b>menace</b>. Her magic's been fading, so these days she goes about <b>cursing whoever</b> she pleases. Do mind your cauldron when she drops by — she'll hex it just for sport." },
     { name: "Jasper the Jester", fig: "jester_announce", bg: "courtyard_shop", text: "But here's the <i>real</i> news! Our King's been dreadfully gloomy of late, so the court is throwing the grandest <b>Royal Ball</b> these walls have ever seen — a feast, a dance, the works. And <i>everyone</i> will be coming to <b>your</b> shop to get ready for it!" },
-    { name: "Jasper the Jester", fig: "jester_smile", bg: "courtyard_shop", cta: "Let's get to work  ▸", text: "So that's our little quest, you and I: help the whole court prepare, keep that meddling Gothel from spoiling things, and make sure the Ball goes off <b>without a single hitch</b>. Ready? Your first customers are already at the door!" },
+    { name: "Jasper the Jester", fig: "jester_smile", bg: "courtyard_shop", cta: "Let's get to work  ▸", text: "So that's our little quest, you and I: help the whole court prepare, and keep that meddling Gothel from spoiling things. Oh — and if you ever catch her <b>drop</b> something, <b>snatch it up!</b> Evidence, you see; I mean to catch her in the act. Now then — make sure this Ball goes off <b>without a single hitch</b>. Your first customers are at the door!" },
   ], () => { GAME.seenCourtyardIntro = true; save(); playZoomIn(startRound, "courtyard_shop"); });
 }
 
@@ -1133,6 +1139,95 @@ function maybeButtonChain() {
   if (s === 1) { playRedButtons(); return true; }
   if (s === 2) { playGingerbreadButton(); return true; }
   return false;
+}
+
+/* ======================================================================= */
+/* KING'S COURTYARD — Lady Gothel's evidence hunt.                          */
+/* Gothel is a menace: each time she visits your shop she "accidentally"    */
+/* drops a clue, which skitters across the floor for you to snatch          */
+/* (tap-to-grab). You then take each clue to Jasper, who puzzles over it —  */
+/* his deductions escalate until the third clue reveals she means to wreck  */
+/* the whole Royal Ball (feast + dance + show), setting up the finale.      */
+/* GAME.clueFound = clues snatched (0-3); GAME.clueDone = turned in (0-3).  */
+/* ======================================================================= */
+const GOTHEL_CLUES = [
+  { id: "clue_page", emoji: "📜", name: "Torn Spell-Page",     floor: "A scrap of scorched spellwork flutters from her sleeve." },
+  { id: "clue_dust", emoji: "🧪", name: "Vial of Curdle-Dust", floor: "A little vial of grey powder rolls off your counter." },
+  { id: "clue_plan", emoji: "🗺️", name: "Scribbled Ball Plan", floor: "A crumpled sketch slips out of her cloak." },
+];
+function holdingGothelClue() { return (GAME.clueFound || 0) > (GAME.clueDone || 0); }
+function needGothelClue() { return !!GAME.seenCourtyardIntro && (GAME.clueFound || 0) < 3 && !holdingGothelClue(); }
+// Tap-to-grab: the dropped clue skitters across the shop floor; tap it to snatch it.
+// Story-critical, so it never truly escapes — it keeps scurrying until you catch it.
+function dropGothelClue(done) {
+  const idx = GAME.clueFound || 0, clue = GOTHEL_CLUES[idx];
+  if (!clue) { done && done(); return; }
+  SFX.unlock(); ART.ensure(clue.id, () => {});
+  const ov = document.createElement("div");
+  ov.className = "clue-ov";
+  ov.innerHTML = `
+    <div class="clue-cap"><div class="story-name">Lady Gothel</div>
+      <div class="story-speech">“Oops — did I drop something? …No matter. <i>Ta!</i>” <span class="clue-hint">Quick — grab it off the floor!</span></div></div>
+    <button class="clue-runner" id="clue-runner" aria-label="Grab it!">${ART.tag(clue.id, clue.emoji, "clue-runner-ic")}</button>
+    <div class="clue-grabbed" id="clue-grabbed">
+      <div class="clue-big-ic">${ART.tag(clue.id, clue.emoji, "clue-big-ic-img")}</div>
+      <div class="clue-grabbed-name">You grabbed the <b>${clue.name}</b>!</div>
+      <div class="clue-grabbed-note">${clue.floor}<br>Better show this to <b>Jasper</b>.</div>
+      <button class="btn good" id="clue-ok">Into the satchel  ▸</button>
+    </div>`;
+  $("#app").appendChild(ov);
+  const runner = ov.querySelector("#clue-runner");
+  let grabbed = false;
+  runner.addEventListener("click", () => {
+    if (grabbed) return; grabbed = true;
+    runner.classList.add("gone"); SFX.bonus && SFX.bonus();
+    satchelAdd(clue.id); GAME.clueFound = idx + 1;
+    GAME.clueChainAt = servedTotal + pacing("clueChainGap", 2); save();
+    ov.classList.add("show-grabbed");
+  });
+  ov.querySelector("#clue-ok").addEventListener("click", () => { ov.remove(); done && done(); });
+}
+// Jasper receives the clue you're holding and pieces the scheme together. Each turn-in
+// advances GAME.clueDone; the third reveals Gothel's full three-part plan for the Ball.
+function playJasperClue() {
+  SFX.unlock();
+  const step = GAME.clueDone || 0;
+  ["jester_think", "jester_worried", "jester_talk", "jester_scared", "jester_announce", "jester_excited"].forEach(k => ART.ensure(k, () => {}));
+  let beats, clueId;
+  if (step === 0) {
+    clueId = "clue_page";
+    beats = [
+      { name: "Jasper the Jester", fig: "jester_excited", bg: "courtyard_shop", text: "You snatched something right off Lady Gothel! Let me see, let me see… <i>(he unfolds the scorched scrap)</i>" },
+      { name: "Jasper the Jester", fig: "jester_think", bg: "courtyard_shop", cta: "Hmm…  ▸", text: "A <b>torn spell-page</b> — and this isn't her usual glamour-magic. This is the <i>nasty</i> sort. <b>Sabotage.</b> But sabotage of <i>what?</i> …I'll pin it to my evidence board. Keep grabbing whatever she drops!" },
+    ];
+  } else if (step === 1) {
+    clueId = "clue_dust";
+    beats = [
+      { name: "Jasper the Jester", fig: "jester_think", bg: "courtyard_shop", text: "Another one? <i>(he uncorks the little vial, sniffs — and recoils)</i> Bleugh! Grey powder that reeks of… spoiled milk?" },
+      { name: "Jasper the Jester", fig: "jester_worried", bg: "courtyard_shop", cta: "Uh-oh  ▸", text: "<b>Curdle-dust.</b> A pinch on a banquet and the whole spread turns and tumbles right off the table. She's testing it on <b>food</b> — and the only feast grand enough to bother with is the <b>Royal Ball's.</b> One more clue and I'll have the whole scheme!" },
+    ];
+  } else {
+    clueId = "clue_plan";
+    beats = [
+      { name: "Jasper the Jester", fig: "jester_talk", bg: "courtyard_shop", text: "That's the third! Smooth it out, smooth it out… <i>(he flattens the crumpled sketch across the counter)</i>" },
+      { name: "Jasper the Jester", fig: "jester_scared", bg: "courtyard_shop", cta: "She wouldn't…  ▸", text: "It's the <b>ballroom</b> — and she's ringed <b>three</b> spots in green ink: the <b>banquet table</b>, the <b>dance floor</b>, and the <b>entertainer's stage</b>. She doesn't just mean to spoil the feast…" },
+      { name: "Jasper the Jester", fig: "jester_announce", bg: "courtyard_shop", cta: "We'll be ready  ▸", text: "…she means to wreck the <b>whole Ball!</b> The feast, the dance, <i>and</i> the show. Well — not on our watch. When the night comes, you and I will be right there to stop her at every turn. The case is <b>solved</b>; now we've only to <i>win</i> it." },
+    ];
+  }
+  renderStoryBeats(beats, () => {
+    satchelRemove(clueId); GAME.clueDone = step + 1; GAME.clueChainAt = -1; save();
+    toast(step >= 2 ? "🗺️ Case solved — Jasper knows Gothel's whole plan!" : "🔎 Jasper filed the evidence.");
+    renderStart();
+  });
+}
+// Drive the turn-ins: once you're holding a clue, Jasper drops by a couple of rounds later.
+function maybeClueChain() {
+  if (GAME.realm !== "courtyard") return false;
+  if (!holdingGothelClue()) return false;
+  if (GAME.clueChainAt < 0) { GAME.clueChainAt = servedTotal + pacing("clueChainGap", 2); save(); return false; }
+  if (servedTotal < GAME.clueChainAt) return false;
+  GAME.clueChainAt = -1; save();
+  playJasperClue(); return true;
 }
 
 /* ======================================================================= */
@@ -1817,6 +1912,10 @@ const SATCHEL_ITEMS = {
   button_gumdrop: { name: "Gumdrop Button",      emoji: "🍬", from: "the “button collector”", note: "Show this to Little Red." },
   // Tiny Mouse sews three teddy bears (big / small / just-right) to deliver to bear-loving Goldilocks.
   teddy:          { name: "Teddy Bear", emoji: "🧸", from: "Tiny Mouse", note: "Bring the just-right size to Goldilocks." },
+  // Evidence Lady Gothel drops around your shop — snatch it off the floor, then take it to Jasper.
+  clue_page:      { name: "Torn Spell-Page", emoji: "📜", from: "Lady Gothel", note: "Take this to Jasper." },
+  clue_dust:      { name: "Vial of Curdle-Dust", emoji: "🧪", from: "Lady Gothel", note: "Take this to Jasper." },
+  clue_plan:      { name: "Scribbled Ball Plan", emoji: "🗺️", from: "Lady Gothel", note: "Take this to Jasper." },
 };
 function satchelItem(id) { return SATCHEL_ITEMS[id] || null; }
 function satchelCount(id) { return (GAME.satchel && GAME.satchel[id]) || 0; }
@@ -1855,6 +1954,18 @@ function inventoryGroups() {
         : s >= 2 ? "Little Red kept Grandma’s button. The gumdrop’s gone magical and won’t come loose — it’s yours now."
         : s >= 1 ? "Show these to Little Red — she may recognize one of them."
         : "Freshly dropped in your shop by that “collector.”" });
+  }
+  // --- STORY (no border): Lady Gothel's evidence you're carrying to Jasper ---
+  const clueIds = ["clue_page", "clue_dust", "clue_plan"].filter(id => satchelCount(id) > 0);
+  if (clueIds.length) {
+    const d = GAME.clueDone || 0;
+    groups.push({ id: "clues", kind: "story", name: "Gothel's Evidence",
+      items: clueIds.map(id => ({ art: id, emoji: SATCHEL_ITEMS[id].emoji, name: SATCHEL_ITEMS[id].name })),
+      title: "The Case Against Lady Gothel",
+      desc: "Lady Gothel keeps “dropping” things around your shop. Snatch each one off the floor and take it to Jasper — he’s building a case against her.",
+      progress: d >= 2 ? "You’re holding her final clue — get it to Jasper and he’ll crack the whole scheme."
+        : d >= 1 ? "Jasper’s pinned one clue to his board already. Bring him this one next time he drops by."
+        : "You grabbed it off the floor — show it to Jasper the next time he stops in." });
   }
   // --- QUEST (bordered): Goldilocks' teddy bears ---
   const teddyN = satchelCount("teddy");
@@ -2128,6 +2239,12 @@ function renderAdmin() {
         <button class="btn" id="ad-carpet" style="margin-bottom:8px">🧞 Magic Carpet Dash (practice)</button>
         <button class="btn" id="ad-courtyard" style="margin-bottom:8px">🏰 Go to King's Courtyard (test)</button>
         <button class="btn secondary" id="ad-courtyard-intro" style="margin-bottom:8px">🃏 Replay Courtyard intro (Jasper + Lady Gothel)</button>
+        <div style="border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px;margin-bottom:8px">
+          <div style="font-weight:800;margin-bottom:8px">🔎 Gothel Evidence Hunt <span class="muted" style="font-weight:600;font-size:12px">· found ${GAME.clueFound || 0}/3 · filed ${GAME.clueDone || 0}/3</span></div>
+          <button class="btn small" id="ad-clue-drop" style="margin-bottom:6px">🫳 Drop a clue now (tap-to-grab)</button>
+          <button class="btn small" id="ad-clue-jasper" style="margin-bottom:6px">🃏 Take held clue to Jasper</button>
+          <button class="btn small good" id="ad-clue-reset">↺ Reset evidence hunt</button>
+        </div>
         <button class="btn secondary" id="ad-stepsisters" style="margin-bottom:8px">📿 Replay Stepsisters' lost-bead intro</button>
         <button class="btn good" id="ad-courtyard-reset" style="margin-bottom:8px">↺ Reset Courtyard events + beads (replay all)</button>
         <button class="btn secondary" id="ad-stash" style="margin-bottom:8px">💎 Restore the Gems (hidden stash)</button>
@@ -2202,6 +2319,17 @@ function renderAdmin() {
   on("#ad-carpet", "click", renderCarpetIntro);
   on("#ad-courtyard", "click", () => { GAME.finaleWon = GAME.finaleWon || {}; GAME.finaleWon.willow = true; GAME.unlockedRealms.courtyard = true; save(); travelRealm("courtyard"); });
   on("#ad-courtyard-intro", "click", () => { GAME.realm = "courtyard"; save(); applyRealmTheme(); playCourtyardIntro(); });
+  on("#ad-clue-drop", "click", () => {
+    GAME.realm = "courtyard"; GAME.seenCourtyardIntro = true; save(); applyRealmTheme();
+    if (!needGothelClue()) { toast(holdingGothelClue() ? "You’re already holding a clue — take it to Jasper first." : "All 3 clues already found."); return; }
+    dropGothelClue(() => renderStart());
+  });
+  on("#ad-clue-jasper", "click", () => {
+    GAME.realm = "courtyard"; save(); applyRealmTheme();
+    if (!holdingGothelClue()) { toast("No clue in hand — drop one first."); return; }
+    playJasperClue();
+  });
+  on("#ad-clue-reset", "click", () => { GAME.clueFound = 0; GAME.clueDone = 0; GAME.clueChainAt = -1; ["clue_page","clue_dust","clue_plan"].forEach(id => satchelRemove(id, 99)); save(); toast("Evidence hunt reset."); renderAdmin(); });
   on("#ad-stepsisters", "click", () => { GAME.realm = "courtyard"; GAME.stepsistersMet = false; save(); applyRealmTheme(); playStepsisters(); });
   on("#ad-stash", "click", () => { GAME.realm = "courtyard"; save(); applyRealmTheme(); renderStashHunt(); });
   on("#ad-popstash", "click", () => { GAME.forcePopStash = true; save(); toast("💎 Next Courtyard pop phase will hide the stash — play a round!"); });
@@ -7482,6 +7610,7 @@ function startRound() {
   refreshQuests();
   if (maybeRedVisit()) return;   // Little Red's story visit is due (Grandma's photos / the impostor)
   if (maybeBoPeep()) return;     // Bo Peep drops by early to give her sheep quest
+  if (maybeClueChain()) return;  // Jasper drops by to puzzle over the latest clue you snatched off Gothel (Courtyard)
   if (maybeStepsisters()) return; // the Stepsisters bicker in to give their lost-bead quest (Courtyard)
   if (maybeBeadRematch()) return; // lost the bead game? the sisters squabble back in for a rematch until you win the pot
   if (maybeHare()) return;       // the Hare zooms in early, mid-race (one of the first customers)
@@ -9950,8 +10079,12 @@ function renderResult(res) {
       : wasFrost ? startFrostRound()                                          // admin frost test: loop
       : (ROUND && isStoryWish(ROUND.story)) ? storyWishOutro(ROUND.story, res.success) : startRound();
     // Gothel's curse/steal reaction plays here — after the player has seen the results.
-    if (res.gothelCurse || res.gothelSteal) playGothelScene(res, cont);
-    else cont();
+    // Then, if she's a menace this round and the evidence hunt still needs a clue,
+    // she "drops" one for you to snatch off the floor before the next customer.
+    const isGothel = ROUND && ROUND.customer && ROUND.customer.id === "gothel";
+    const afterScene = () => { if (isGothel && needGothelClue()) dropGothelClue(cont); else cont(); };
+    if (res.gothelCurse || res.gothelSteal) playGothelScene(res, afterScene);
+    else afterScene();
   });
   on("#recap-btn", "click", showRoundRecap);
   applyRealmBackground(document.querySelector("#screen-result #cust-bg"));
@@ -10466,7 +10599,7 @@ function familiarUndo() {
 /* boot */
 // test-only hook (enabled with localStorage wishpop_test=1) for automated checks
 if (localStorage.getItem("wishpop_test") === "1") {
-  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, gribbleCard, goblinBegin, goblinCountdown, goblinRequest, goblinFeed, goblinNope, goblinScore, renderGoblin, goblinFinish, GOB_ITEMS, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, playDanceStory, danceWarmup, danceButtonsHtml, danceCountdown, danceStep, danceRehearsalDone, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
+  window.__wp = { get ROUND() { return ROUND; }, set ROUND(v) { ROUND = v; }, get GAME() { return GAME; }, playArrivalIntro, playCourtyardIntro, renderStashHunt, stashReveal, startRedWish, startStoryWish, storyWishOutro, isStoryWish, playZoomIn, renderStoryBeats, playRedVacation, playRedImpostor, maybeRedVisit, playBoPeep, maybeBoPeep, boPeepCust, playStepsisters, maybeStepsisters, maybeBeadRematch, huntUnlocked, playPigsMoving, maybePigsMoving, playGoldiMouse, playGoldiDeliver, renderGoldiDeliver, goldiFinale, maybeGoldilocksQuest, BAND, bandMember, playBandAnnounce, playBandDeliver, maybeBandVisit, playGrandmaWolf, forceCustomer, maybeHare, maybeTortoise, playWolfButtons, playRedButtons, playGingerbreadButton, maybeButtonChain, wolfCust, dropGothelClue, playJasperClue, maybeClueChain, needGothelClue, holdingGothelClue, GOTHEL_CLUES, satchelLocked, playWolfVisit, maybeWolfArc, WOLF_VISITS, currentWolfVisit, renderSatchel, inventoryGroups, openInvQuest, satchelAdd, satchelCount, satchelRemove, satchelTotal, maybeSatchelDrop, SATCHEL_ITEMS, CUSTOMER_ARCS, custChapter, custStoryStep, advanceCustStory, applyCustArc, adminCustomer, save, popAt, spawnBonusBubbles, charmCelebrate, refreshPop, collectAndContinue, paintMix, paintMixTop, playCharm, addToSlot, renderResult, rollWellPrize, renderWell, wellToss, playWellIntro, maybeWellIntro, renderRecycle, renderMenu, renderHelp, coachShow, coachSeen, coachAfterMix, renderQuests, refreshQuests, bumpStat, serve, startRound, renderCustomer, renderScoop, renderPop, setupPopWood, setupPopArch, popStashReveal, breakPopWood, popTapX, showPopTreasure, grabPopTreasure, rushExpire, renderFairyIntro, renderFairy, maybeEvent, renderDuelIntro, renderDuel, get DUEL() { return DUEL; }, duelResolve, renderStart, custMoodArt, logoMarkup, renderAdmin, renderRumpelIntro, renderRumpelRound, renderRumpelTally, rumpelStop, get RUMPEL() { return RUMPEL; }, set RUMPEL(v) { RUMPEL = v; }, renderGoblinIntro, gribbleCard, goblinBegin, goblinCountdown, goblinRequest, goblinFeed, goblinNope, goblinScore, renderGoblin, goblinFinish, GOB_ITEMS, get GOBLIN() { return GOBLIN; }, set GOBLIN(v) { GOBLIN = v; }, renderWolfIntro, renderWolfFinale, wolfStart, wolfFeed, wolfTick, wolfFinish, get WOLF() { return WOLF; }, set WOLF(v) { WOLF = v; }, renderFeastIntro, renderFeastFinale, feastStart, feastCatch, feastPlace, feastTick, feastFinish, FEAST_KINDS, FEAST_MODES, get FEAST() { return FEAST; }, set FEAST(v) { FEAST = v; }, renderStackIntro, renderStackFinale, stackStart, stackTick, stackFinish, stackCatch, stackBodyHit, stackFinishInfinite, STACK_KINDS, STACK_MODES, STACK_CATCH_Y, get STACK() { return STACK; }, set STACK(v) { STACK = v; }, playWineStory, wineOutro, renderWineIntro, wineStart, wineTick, wineTap, wineThrow, wineFinish, WINE_MODES, get WINE() { return WINE; }, set WINE(v) { WINE = v; }, renderBoutiqueIntro, boutiqueStart, boutiqueTick, boutiqueAdvance, boutiqueSpawn, boutiqueDeliver, boutiqueFinish, BOUTIQUE_MODES, get BOUTIQUE() { return BOUTIQUE; }, set BOUTIQUE(v) { BOUTIQUE = v; }, renderCarpetIntro, carpetStart, carpetTick, carpetSteer, carpetCatchStar, carpetStarHit, carpetCrash, carpetFinish, carpetFinishInfinite, carpetAddStar, carpetAddCloud, carpetAddPlanet, CARPET_MODES, get CARPET() { return CARPET; }, set CARPET(v) { CARPET = v; }, markRealmEventCleared, markRealmFinaleWon, realmFinaleWon, realmEventsCleared, realmEventsNeeded, realmStoryComplete, eventPlanPreview, REALM_EVENT_PLAN, setupHunt, tryHuntFind, doHuntFind, activeHunt, huntState, huntComplete, maybeShowHuntCelebrate, HUNTS, revealItem, openItemReveal, refreshItemBubble, renderDanceIntro, playDanceStory, danceWarmup, danceButtonsHtml, danceCountdown, danceStep, danceRehearsalDone, danceAdvance, danceTap, danceJudge, danceMeterPct, danceFinish, get DANCE() { return DANCE; }, set DANCE(v) { DANCE = v; }, playBeadCutscene, beadsOutro, renderBeadsIntro, beadsStart, beadsNextRound, beadsDrop, beadsGrab, beadsSlip, beadsFinish, get BEADS() { return BEADS; }, set BEADS(v) { BEADS = v; }, renderCakeIntro, cakeStartTier, cakeToDecorate, cakePlace, cakeUndo, cakeRedo, cakeSubmitTier, cakeTierCleared, cakeFinish, get CAKE() { return CAKE; }, set CAKE(v) { CAKE = v; }, renderQueenIntro, renderVillainIntro, queenBuy, queenServe, renderQueenResult, ingInst, injectInfused, injectKeys, applyInfusedEffect, renderVault, openChest, rollChestPrize, renderWardrobe, renderShop, renderCollection, buySkin, equipSkin, grantSkin, showSkinReward, skinPreviewTag, skinArtKey, gainCharm, disallowedCharms, renderMap, travelRealm, unlockRealm, currentRealm, get QUEEN() { return QUEEN; }, set QUEEN(v) { QUEEN = v; } };
 }
 // one delegated handler covers the HUD menu button on every screen (no per-render wiring)
 document.addEventListener("click", e => {

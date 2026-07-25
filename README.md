@@ -19,6 +19,13 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🔎 **Catch Lady Gothel in the act.** She's a menace — every time she visits your shop she
+  "accidentally" drops a bit of evidence, and it **skitters across the floor for you to grab**.
+  Snatch each clue and take it to Jasper, who pieces the mystery together: a torn spell-page hints
+  at sabotage, a vial of curdle-dust points at the feast, and a scribbled ball-plan finally reveals
+  she means to wreck the **whole Royal Ball** — the feast, the dance, and the show. Solving the case
+  sets up the grand finale to come.
+
 - 🏰 **The King's Courtyard now has a story to follow.** When you first arrive, Jasper the Jester
   picks himself up after Lady Gothel's grand entrance and lets you in on the plan: the King is
   gloomy, so the court is throwing the grandest **Royal Ball** ever — and the whole cast will visit
