@@ -19,6 +19,14 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🏰 **The King's Courtyard now has a story to follow.** When you first arrive, Jasper the Jester
+  picks himself up after Lady Gothel's grand entrance and lets you in on the plan: the King is
+  gloomy, so the court is throwing the grandest **Royal Ball** ever — and the whole cast will visit
+  your shop to get ready. Your quest is to help everyone prepare and keep the meddling Gothel (a
+  proper menace who curses people just for sport) from spoiling things, so the Ball goes off without
+  a hitch. Every guest you already knew now fits into one story. And a small fix: the same customer
+  will no longer walk in twice in a row.
+
 - 💃 **The royal dance lessons got a proper opening act.** Jasper the Jester now bursts in before
   each ball to announce he's signed the shop up as the King's royal dance tutors, then introduces
   the pupil — the clanking knight, the nervous prince, and the glass-slippered lady in turn. When
