@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v617"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v618"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -357,6 +357,8 @@ const REALM_PACING = {
   },
   courtyard: {
     clueChainGap:      2,  // orders between snatching a Gothel clue and Jasper dropping by to puzzle over it
+    hareFirstAfter:    2,  // the Hare zooms in this early (one of the first Courtyard customers)
+    hareAgainEvery:   17,  // orders between his later race cameos — spread across the ~70-80 order realm
   },
 };
 // Read a pacing number for the current realm, falling back to the old default.
@@ -1578,34 +1580,61 @@ function maybeGoldilocksQuest() {
 /* the realm finale. Later realms flip it (the Tortoise finally arrives first).*/
 /* ======================================================================= */
 // Force a specific normal customer to be THIS round (used by scripted arrivals).
-function forceCustomer(id) {
-  const rec = (D.CUSTOMERS || []).find(c => c.id === id) || (currentRealm().customers || []).find(c => c.id === id);
+// `over` optionally overrides the customer's wishType (so a visitor from another realm
+// wishes for THIS realm's magics) and/or their line (a realm-specific story beat).
+function forceCustomer(id, over) {
+  let rec = (D.CUSTOMERS || []).find(c => c.id === id) || (currentRealm().customers || []).find(c => c.id === id);
   if (!rec) return false;
+  if (over && over.wishType) rec = Object.assign({}, rec, { wishType: over.wishType });   // apply BEFORE newRound builds the wish
   ROUND = newRound({ servedTotal, betterScoop: !!(GAME.unlocked && GAME.unlocked.scoop), charmFinder: !!(GAME.unlocked && GAME.unlocked.charm), customers: [rec], ingredientSet: currentRealm().ingredients, magicPool: currentRealm().magics, reqBonus: currentRealm().reqBonus || 0 });
   injectInfused(ROUND); injectKeys(ROUND); setupHunt(ROUND); applyCustArc(ROUND);
+  if (over && over.line) ROUND.customer = Object.assign({}, ROUND.customer, { line: over.line });   // set AFTER applyCustArc so it isn't overwritten
   ROUND.rush = false; ROUND.vip = false; ROUND.keyStaked = false;
   renderCustomer();
   return true;
 }
-function hareArcLen() { return CUSTOMER_ARCS.hare ? CUSTOMER_ARCS.hare.length : 0; }
+// Per-realm race arcs. The Hare pops in early + periodically (a chapter each visit,
+// growing cockier then rattled); the Tortoise plods in ONCE near the end. Willow keeps
+// its old behavior (no scripted Hare; Tortoise uses its everyday wishes). Each realm
+// remaps their wishes to that realm's own magics so the brew is actually solvable.
+const RACE_ARC = {
+  courtyard: {
+    hareWish: "c_Joust",
+    hare: [
+      "Ha! The little bubble shop chased me all the way to the palace! Still miles ahead of that tortoise, naturally — charm my legs palace-quick before my victory lap?",
+      "Had a royal little nap in the hedge maze — I'm SO far ahead I've time to smell the roses. Now bubble me a burst of vigor to stretch the lead, would you?",
+      "…Funny. Could've sworn I heard tiny feet plodding somewhere behind me. Couldn't be him — impossible! Still… wish me a touch quicker, hm? Just to be safe.",
+      "He's GAINING?! Since when does a tortoise HUSTLE?! The finish is just past the ballroom — quick, wish me my fastest legs yet before he— oh, I have to GO!",
+    ],
+    tortWish: "c_Counsel",
+    tort: "Slow and steady, dearie… and would you believe it, I do believe I'm nearly there. That hare went zipping by hours ago — napping in the roses now, I'd wager. Settle these old legs for the final stretch? The finish line's just around the corner…",
+  },
+};
 // The Hare bursts in EARLY (he's way ahead) — his cocky arc plays out over a few quick visits.
 function maybeHare() {
-  if (GAME.realm !== "willow" || !GAME.seenIntro) return false;
-  if (custStoryStep("hare") >= hareArcLen()) return false;   // his Willow race arc is done
-  if (GAME.hareAt < 0) { GAME.hareAt = servedTotal + (custStoryStep("hare") === 0 ? pacing("hareFirstAfter", 1) : pacing("hareAgainEvery", 3)); save(); return false; }
+  if (!GAME.seenIntro) return false;
+  const arc = RACE_ARC[GAME.realm]; if (!arc || !arc.hare) return false;   // only realms with a Hare arc (Courtyard for now)
+  const key = "hare_" + GAME.realm, step = custStoryStep(key);
+  if (step >= arc.hare.length) return false;                               // his race arc for this realm is done
+  if (GAME.hareAt < 0) { GAME.hareAt = servedTotal + (step === 0 ? pacing("hareFirstAfter", 2) : pacing("hareAgainEvery", 16)); save(); return false; }
   if (servedTotal < GAME.hareAt) return false;
-  GAME.hareAt = -1; save(); return forceCustomer("hare");
+  GAME.hareAt = -1;
+  const ok = forceCustomer("hare", { wishType: arc.hareWish, line: arc.hare[step] });
+  if (ok) { (GAME.custStory = GAME.custStory || {})[key] = step + 1; }
+  save();
+  return ok;
 }
 // The Tortoise plods in LAST — the final customer before the finale, dead tired but still going.
 function maybeTortoise() {
-  if (GAME.realm !== "willow") return false;
+  const arc = RACE_ARC[GAME.realm];
+  if (GAME.realm !== "willow" && !(arc && arc.tort)) return false;
   if (GAME.tortoiseSeen[GAME.realm]) return false;
   const need = realmEventsNeeded(GAME.realm);
   if (!need || realmFinaleWon(GAME.realm) || realmEventsCleared(GAME.realm) < need - 1) return false;
   GAME.tortoiseSeen[GAME.realm] = true;
   GAME.nextEventAt = servedTotal + 1; // ...and the finale comes the very next round, so he's truly the last
   save();
-  return forceCustomer("tortoise");
+  return forceCustomer("tortoise", arc && arc.tort ? { wishType: arc.tortWish, line: arc.tort } : undefined);
 }
 // After a story wish resolves, the character's goodbye plays (and story progress advances).
 function storyWishOutro(tag, win) {

@@ -19,6 +19,12 @@ A cozy portrait mobile game where fairytale customers visit your magical bubble 
 
 ## What's new
 
+- 🐇🐢 **The Tortoise and the Hare race on into the King's Courtyard.** The cocky Hare zips in as one
+  of your first Courtyard customers and pops back periodically — smug, then napping, then rattled as
+  he swears he hears little feet gaining on him. Then, right at the end of the realm, the Tortoise
+  plods in for a single visit: slow, serene, and "nearly there." Their race carries on from
+  Willow-Wish Village.
+
 - 🔎 **Catch Lady Gothel in the act.** She's a menace — and whenever she stops by your shop she
   "accidentally" drops a bit of evidence that **skitters across the floor for you to grab**. It
   slips out at a random moment during her visit — while you're scooping, popping, mixing, or reading
