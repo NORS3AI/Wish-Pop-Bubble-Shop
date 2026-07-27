@@ -7,7 +7,7 @@
 
 const { R, newRound, applyTripleMatch, scoreMix, scoreResult, BALANCE } = ENGINE;
 const D = DATA;
-const BUILD = "v616"; // bump on each deploy; shown on the start screen to verify the live version
+const BUILD = "v617"; // bump on each deploy; shown on the start screen to verify the live version
 
 
 if (typeof ART !== "undefined" && ART.setVersion) ART.setVersion(BUILD); // cache-bust all art per build so updated images always refetch
@@ -1278,7 +1278,7 @@ function maybeClueDrop(phase) {
 function playJasperClue() {
   SFX.unlock();
   const step = GAME.clueDone || 0;
-  ["jester_think", "jester_worried", "jester_talk", "jester_scared", "jester_smile", "jester_excited"].forEach(k => ART.ensure(k, () => {}));
+  ["jester_think", "jester_worried", "jester_talk", "jester_scared", "customer_jester_angry", "jester_excited"].forEach(k => ART.ensure(k, () => {}));
   let beats, clueId;
   if (step === 0) {
     clueId = "clue_page";
@@ -1297,7 +1297,7 @@ function playJasperClue() {
     beats = [
       { name: "Jasper the Jester", fig: "jester_talk", bg: "courtyard_shop", inspect: "clue_plan", text: "That's the third! Smooth it out, smooth it out… <i>(he flattens the crumpled sketch across the counter)</i>" },
       { name: "Jasper the Jester", fig: "jester_scared", bg: "courtyard_shop", inspect: "clue_plan", cta: "She wouldn't…  ▸", text: "It's the <b>ballroom</b> — and she's ringed <b>three</b> spots in green ink: the <b>banquet table</b>, the <b>dance floor</b>, and the <b>entertainer's stage</b>. She doesn't just mean to spoil the feast…" },
-      { name: "Jasper the Jester", fig: "jester_smile", bg: "courtyard_shop", cta: "We'll be ready  ▸", text: "…she means to wreck the <b>whole Ball!</b> The feast, the dance, <i>and</i> the show. Well — not on our watch. When the night comes, you and I will be right there to stop her at every turn. The case is <b>solved</b>; now we've only to <i>win</i> it." },
+      { name: "Jasper the Jester", fig: "customer_jester_angry", bg: "courtyard_shop", cta: "We'll be ready  ▸", text: "…she means to wreck the <b>whole Ball!</b> The feast, the dance, <i>and</i> the show. Well — not on our watch. When the night comes, you and I will be right there to stop her at every turn. The case is <b>solved</b>; now we've only to <i>win</i> it." },
     ];
   }
   renderStoryBeats(beats, () => {
