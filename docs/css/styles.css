@@ -2822,8 +2822,9 @@ span.story-face { display: inline-flex; align-items: center; justify-content: ce
 @keyframes storyGiveIn { 0% { opacity: 0; transform: translate(-50%, calc(-50% + 28px)) scale(.6); }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes storyGiveBob { 0%,100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 8px)); } }
-/* an item the character is inspecting — big, glowing, gently pulsing so the art shines */
-.story-inspect { position: absolute; left: 50%; top: 33%; transform: translate(-50%, -50%); z-index: 3;
+/* an item the character is inspecting — held down to their side (not over the face),
+   glowing and gently pulsing so the art shines */
+.story-inspect { position: absolute; left: 73%; top: 57%; transform: translate(-50%, -50%); z-index: 3;
   pointer-events: none; display: flex; align-items: center; justify-content: center;
   filter: drop-shadow(0 8px 18px rgba(0,0,0,.55));
   animation: inspectIn .5s cubic-bezier(.3,1.5,.5,1) both, inspectPulse 1.9s ease-in-out .5s infinite; }
@@ -2831,7 +2832,7 @@ span.story-face { display: inline-flex; align-items: center; justify-content: ce
   transform: translate(-50%, -50%); border-radius: 50%; z-index: -1;
   background: radial-gradient(circle, rgba(255,231,150,.7), rgba(255,205,90,.22) 52%, transparent 70%);
   animation: inspectGlow 1.9s ease-in-out .5s infinite; }
-.story-inspect .story-inspect-img { width: auto; height: auto; max-width: 46vw; max-height: 27vh; }
+.story-inspect .story-inspect-img { width: auto; height: auto; max-width: 37vw; max-height: 23vh; }
 .story-inspect span.story-inspect-img { font-size: 88px; line-height: 1; }
 @keyframes inspectIn { 0% { opacity: 0; transform: translate(-50%, calc(-50% + 22px)) scale(.5) rotate(-9deg); }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); } }
